@@ -1,0 +1,114 @@
+# NYSA CRM Roadmap
+
+## Delivery Principles
+
+- Deliver a usable internal workflow at the end of every release.
+- Establish ownership, audit, and data quality before adding automation.
+- Add external integrations only after the underlying CRM records are stable.
+- Treat customer-facing financial outputs as transparent estimates.
+- Keep business rules configurable and migration-safe.
+
+## Release 0: Production Inventory MVP - Implemented
+
+- PostgreSQL production deployment
+- Authentication, invitations, roles, and access revocation
+- Property inventory, search, status, ownership, comments, and archiving
+- Admin dashboard and audit history
+- Secure session handling and production health endpoint
+- Manual PostgreSQL backup with successful isolated restore test
+- Private GitHub repository and initial source commit
+
+Remaining operational item: hosting-provider confirmation of scheduled
+PostgreSQL backup frequency, retention, and off-server storage.
+
+## Release 1: Lead Operations and Sales Enablement - Next
+
+### Foundation
+
+- Product rename from NYSA Pocket Ledger to NYSA CRM
+- Internal role model aligned to NYSA operations
+- Teams, team membership, and team leads
+- Contacts, companies, roles, communication preferences, and duplicate handling
+- Lead sources, capture, ownership, assignment, acceptance, SLA, and reassignment
+- Lead stage and assignment history
+
+### Daily work
+
+- Calls, notes, meetings, tasks, reminders, and next actions
+- Agent work queue and overdue dashboard
+- Manager queue and SLA dashboard
+- Hot/Warm/Cold qualification with reasons and override audit
+- Customer property requirements and inventory links
+
+### Sales enablement
+
+- Mortgage and ROI calculator with configurable assumptions
+- Property media required for customer output
+- Quick Proposal, Investment Presentation, and Property Comparison templates
+- PDF generation, version history, and sent-status tracking
+
+### Management
+
+- New lead, movement, activity, conversion, lost-reason, and SLA reports
+- CSV/Excel-ready exports where appropriate
+- Import framework for data from the current CRM
+
+## Release 2: Opportunity and Deal Pipeline
+
+- Opportunities created from qualified leads
+- Buyer-to-property matching
+- Viewing scheduling, attendance, feedback, and follow-up
+- Offers and negotiation history
+- Booking and reservation records
+- Closed-won and closed-lost deals
+- Buyer, seller, landlord, tenant, broker, property, and developer relationships
+- Configurable sale and rental completion checklists
+
+## Release 3: Communications and Calendar
+
+- Email connection, message logging, and approved templates
+- Google Calendar synchronization
+- WhatsApp Business Platform integration, approved templates, consent, and message logging
+- Integration failure queue, retry controls, and audit history
+
+The final sequence may move selected email or calendar work into Release 1 after
+provider accounts and compliance decisions are confirmed.
+
+## Release 4: Inventory and Partner Operations
+
+- Structured developer and agency profiles
+- Listing source and verification status
+- Availability and price history
+- Duplicate listing detection and merge review
+- Listing media and document management
+- Co-broker and sharing controls only if NYSA later approves external access
+
+## Release 5: Commissions and Finance Operations
+
+- Percentage rules at broker and deal level
+- NYSA, internal-agent, referral, and approved partner splits
+- Approval workflow and exception handling
+- Expected, approved, invoiced, received, and paid statuses
+- Statements and accounting exports
+- Director and accountant reporting
+
+## Release 6: Documents, Compliance, and Advanced Reporting
+
+- Buyer, seller, landlord, tenant, and transaction document records
+- Configurable expiry reminders and completion checklists
+- Restricted document access and approval history
+- Lead conversion, inventory aging, source, revenue, and commission analytics
+- Property portal imports
+- Advanced management exports
+
+## Release Gates
+
+Every production release requires:
+
+1. Approved acceptance criteria and migration plan.
+2. Syntax, integration, permission, and workflow tests.
+3. Verified PostgreSQL backup before deployment.
+4. Forward migration in a non-production or isolated test database.
+5. Production health, login, and controlled workflow smoke tests.
+6. Updated project documents and release notes.
+7. A committed and pushed Git version matching the deployed source.

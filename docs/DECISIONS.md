@@ -1,0 +1,55 @@
+# NYSA CRM Decision Register
+
+## Approved Decisions
+
+| ID | Decision | Rationale | Status |
+| --- | --- | --- | --- |
+| D-001 | NYSA CRM is an internal company system for the current phases. | NYSA does not currently require external broker or customer access. | Approved |
+| D-002 | PostgreSQL is the production database. | Supports growth, constraints, transactions, backup, and future CRM relationships. | Implemented |
+| D-003 | Leads belong to NYSA first, then a team, then one responsible agent. | Prevents personal ownership from causing lost leads and enables management reassignment. | Approved |
+| D-004 | Assignment and reassignment history is immutable and auditable. | Management must understand lead custody and SLA failures. | Approved |
+| D-005 | Lead status and opportunity stage are separate lifecycles. | Qualification and deal execution have different controls, reports, and outcomes. | Approved |
+| D-006 | Internal roles are Admin, Sales Agent, Listing Agent, Manager/Team Lead, Director, and Accountant. | Matches NYSA's stated user groups. | Approved |
+| D-007 | Hot/Warm/Cold qualification uses transparent first-party factors with manual override. | Avoids opaque decisions and inappropriate personal profiling. | Approved |
+| D-008 | Automated social-media screening is excluded from the first release. | Requires a defined lawful purpose, vendor/privacy assessment, and human review. | Approved |
+| D-009 | The financial calculator is informational and assumption-driven. | It must not imply bank approval or guaranteed investment returns. | Approved |
+| D-010 | Customer Proposal Builder is part of the next release. | Rapid, tailored customer presentation is a core sales workflow. | Approved |
+| D-011 | Proposals are editable before PDF export and are versioned against the lead/opportunity. | Protects accuracy and preserves the communication record. | Approved |
+| D-012 | Transaction and compliance checklists are configurable. | Requirements vary by transaction type, emirate, and regulatory change. | Approved |
+| D-013 | GitHub `main` and the versioned project documents are the source of truth. | Preserves continuity across tasks, releases, and future developers. | Implemented |
+| D-014 | The canonical local repository is `C:\Users\ajitr\Projects\NYSA-CRM`. | Avoids OneDrive interference with Git internals. | Implemented |
+| D-015 | User-facing NYSA Pocket Ledger naming will become NYSA CRM in the next release. | The current name no longer represents the product scope. | Approved, pending |
+
+## Recommended Defaults Awaiting Approval
+
+| ID | Recommendation | Proposed default |
+| --- | --- | --- |
+| O-001 | Initial geography | Dubai first, then configure other Emirates |
+| O-002 | Initial queues | Sales, Rentals, Off-plan, Commercial |
+| O-003 | Lead acceptance SLA | 15 minutes during configured business hours |
+| O-004 | First-contact SLA | 30 minutes during configured business hours |
+| O-005 | SLA failure | Alert agent, escalate to team lead, then allow reassignment |
+| O-006 | Proposal outputs | Quick, Investment, and Comparison PDF templates |
+
+## Information Still Required
+
+- Confirmed geography for the first operational release
+- Team and queue structure, managers, and membership
+- Business hours, holidays, SLA values, and reassignment policy
+- Current CRM vendor, export structure, data volume, and attachment volume
+- Email provider and per-user mailbox model
+- Google Calendar account model
+- WhatsApp Business Platform status and dedicated number
+- NYSA proposal sample, logo/brand assets, and approved disclaimers
+- Final sale and rental completion-document checklists
+- Commission percentages, exceptions, approvals, and payment workflow
+
+## Decision Process
+
+New decisions use the next sequential ID and record:
+
+1. The decision in one sentence.
+2. Why it was chosen.
+3. Alternatives materially considered.
+4. Approval status and date.
+5. Any migration, security, or operational consequence.

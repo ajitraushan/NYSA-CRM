@@ -2,6 +2,10 @@
 
 Private, invitation-gated real-estate inventory and broker collaboration application.
 
+This repository is the production baseline for the broader internal NYSA CRM
+roadmap, including lead operations, customer sales enablement, opportunities,
+commissions, documents, reporting, and integrations.
+
 ## Runtime
 
 - Node.js 22.13 or newer
@@ -39,3 +43,13 @@ public/                Lightweight browser application
 ```
 
 Do not add production credentials to this repository. Use hosting environment variables.
+
+## Project Documents
+
+Start with [`docs/README.md`](docs/README.md). The most important working files are:
+
+- [`docs/CURRENT_STATUS.md`](docs/CURRENT_STATUS.md)
+- [`docs/PRODUCT_REQUIREMENTS.md`](docs/PRODUCT_REQUIREMENTS.md)
+- [`docs/DECISIONS.md`](docs/DECISIONS.md)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- [`docs/DEPLOYMENT_RUNBOOK.md`](docs/DEPLOYMENT_RUNBOOK.md)

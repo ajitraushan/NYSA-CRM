@@ -35,6 +35,7 @@ cPanel sets `NODE_ENV=production` and the application port automatically.
 6. Confirm `/api/health` returns `{ "ok": true, "database": "ready" }`.
 7. Open the CRM and create the first administrator using the private bootstrap key.
 8. Sign out and verify normal login.
+9. Remove `BOOTSTRAP_KEY`, save the application settings, restart, and verify login again.
 
 The application automatically applies pending files from `src/migrations` at startup. Never edit an applied migration; add a new numbered migration instead.
 
@@ -50,3 +51,6 @@ The application automatically applies pending files from `src/migrations` at sta
 ## Health check
 
 `GET /api/health` must return HTTP 200 with `{ "ok": true, "database": "ready" }`.
+
+For the full release, backup, migration, smoke-test, rollback, and recovery
+procedure, use [`docs/DEPLOYMENT_RUNBOOK.md`](docs/DEPLOYMENT_RUNBOOK.md).
