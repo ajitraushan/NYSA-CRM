@@ -1,0 +1,16 @@
+{
+  "name": "nysa-pocket-ledger",
+  "version": "1.0.0",
+  "description": "Nysa Realty CRM Phase 1 - private inventory and broker collaboration on PostgreSQL",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "pg": "8.22.0"
+  }
+}

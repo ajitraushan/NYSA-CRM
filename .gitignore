@@ -1,0 +1,27 @@
+node_modules/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# Runtime data, logs, and temporary files
+*.db
+*.db-shm
+*.db-wal
+*.log
+tmp/
+
+# Backups and deployment archives
+*.dump
+*.sql
+*.sql.gz
+!src/migrations/*.sql
+*.zip
+crm-backups/
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

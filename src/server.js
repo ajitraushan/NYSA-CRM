@@ -1,0 +1,47 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createApp } from './lib/http-kit.js';
+import authRoutes from './routes/auth.js';
+import listingRoutes from './routes/listings.js';
+import commentRoutes from './routes/comments.js';
+import adminRoutes from './routes/admin.js';
+import { migrate, closeDatabase } from './db.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const app = createApp();
+
+app.mount('/api', authRoutes);
+app.mount('/api', listingRoutes);
+app.mount('/api', commentRoutes);
+app.mount('/api', adminRoutes);
+app.static(path.join(__dirname, '..', 'public'));
+
+const PORT = process.env.PORT || 3000;
+let server;
+
+async function start() {
+  await migrate();
+  server = app.listen(PORT, () => console.log(`Nysa Pocket Ledger running at http://localhost:${PORT}`));
+}
+
+async function shutdown() {
+  if (!server) {
+    await closeDatabase();
+    process.exit(0);
+  }
+
+  server.close(async () => {
+    await closeDatabase();
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+start().catch(async (error) => {
+  console.error('Application startup failed:', error);
+  await closeDatabase().catch(() => {});
+  process.exit(1);
+});
