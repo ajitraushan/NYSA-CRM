@@ -7,13 +7,21 @@ reviews the field and label register. Items remain here until they are incorpora
 into the approved requirements, data model, acceptance criteria, and signed-off
 field register.
 
+## Consolidation Status
+
+On 2026-07-14, RR-001 through RR-011 were incorporated into the Phase 1 Field and
+Label Register Revision 2 (462 fields across 24 modules) and the working product
+requirements, roadmap, data model, decision register, and acceptance criteria.
+The register remains a review baseline until NYSA provides business sign-off;
+subsequent comments receive new RR identifiers and follow the same controlled process.
+
 ## Review Findings
 
 ### RR-001: Phase 1 Lead Documents and Attachments
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Activities, Leads, Proposal Builder, File Storage, Audit
 
@@ -60,7 +68,7 @@ restricted-access, retention, and compliance controls.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Contacts, Contact Channels and Consent, Documents, Templates,
   Activities, Communications, Audit
@@ -121,7 +129,7 @@ from marketing consent and follow NYSA's approved legal and privacy policy.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Contacts, Contact Channels and Consent, Duplicate Detection,
   Website Intake, Meta and Portal Lead Intake, Communications
@@ -183,7 +191,7 @@ For email values:
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Organization Settings, Companies, Contacts, Leads, Inventory,
   Integrations, Documents, Future Deals and Commissions
@@ -245,7 +253,7 @@ It becomes required when the customer or another material party is an organizati
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Proposal Builder, Property Inventory, Property Media, Financial
   Calculator, Contacts, Documents, Activities, Audit
@@ -305,7 +313,7 @@ the selected media references and immutable display snapshot.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Dashboard, Reporting, Leads, SLA, Activities, Tasks,
   Qualification, Inventory, Integrations, Audit
@@ -376,7 +384,7 @@ approximated deal KPIs before those records exist.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 field and label review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Qualification Model Setup, Qualification Assessment, Leads,
   Activities, SLA, Dashboard, Audit
@@ -434,7 +442,7 @@ assessments remain reproducible.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 controlled-values review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Controlled Values, Identity and Access, Invitations, Audit
 
@@ -495,7 +503,7 @@ lockout and should not be confused with administrative suspension.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 controlled-values review
-- Status: Accepted for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Affected modules: Admin Settings, Controlled Values, Workflow Configuration,
   Reporting, Integrations, Audit
@@ -588,7 +596,7 @@ status. The impact review determines the correct concept.
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 dashboard and reporting review
-- Status: Approved requirement for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Extends: RR-006
 - Affected modules: Dashboard, Reporting, Organization Hierarchy, Teams, Leads,
@@ -719,7 +727,7 @@ and commission KPIs appear only after their authoritative modules are implemente
 
 - Date raised: 2026-07-14
 - Raised during: Phase 1 dashboard mockup review
-- Status: Approved requirement for inclusion in the next register revision
+- Status: Incorporated in Revision 2
 - Priority: Must
 - Extends: RR-006 and RR-010
 - Affected modules: Executive Dashboard, Reporting, Targets, Leads, Qualification,

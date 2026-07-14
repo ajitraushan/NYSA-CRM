@@ -12,6 +12,8 @@
 - Canonical repository: `C:\Users\ajitr\Projects\NYSA-CRM`
 - GitHub repository: `ajitraushan/NYSA-CRM` (private)
 - Baseline source commit: `0a70326`
+- Phase 1 field review: RR-001 through RR-011 incorporated into Revision 2
+- Review workbook: 462 fields across 24 modules, awaiting business sign-off
 
 ## Implemented
 
@@ -64,13 +66,14 @@ Release 1: Lead Operations and Customer Sales Enablement.
 
 Start with:
 
-1. Resolve the open decisions in `docs/DECISIONS.md`.
+1. Obtain business sign-off on the Revision 2 Phase 1 field and label register.
 2. Rename product-facing NYSA Pocket Ledger references to NYSA CRM.
 3. Add automated checks before changing the database schema.
-4. Design and migrate teams, contacts, lead sources, leads, assignments, stage
-   history, activities, tasks, requirements, qualification assessments, and the
-   common integration event/mapping/failure records.
-5. Implement role permissions and dashboards.
+4. Design and migrate organization settings, external companies, teams, contacts,
+   channels, consent agreements, lead sources, leads, assignments, stage history,
+   activities, tasks, documents, requirements, qualification models/assessments,
+   proposals, reporting/configuration, and common integration records.
+5. Implement role permissions, interactive dashboards, and the agent Call Report.
 6. Implement secured NYSA website lead intake into the company queue.
 7. Add calculator, property media, and Customer Proposal Builder.
 8. Prepare vendor access and field-mapping checklists for Meta, Property Finder,

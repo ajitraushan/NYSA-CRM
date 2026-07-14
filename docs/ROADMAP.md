@@ -33,6 +33,9 @@ PostgreSQL backup frequency, retention, and off-server storage.
 - Lead stage and assignment history
 - Integration event, external mapping, idempotency, failure, and controlled-replay foundation
 - Secured NYSA website form intake into the company lead queue
+- NYSA Organization Settings and external-company category/multi-role separation
+- Validated and normalized phone/email channels with duplicate review
+- Versioned controlled-value administration and workflow-change governance
 
 ### Daily work
 
@@ -41,6 +44,8 @@ PostgreSQL backup frequency, retention, and off-server storage.
 - Manager queue and SLA dashboard
 - Hot/Warm/Cold qualification with reasons and override audit
 - Customer property requirements and inventory links
+- Role-specific interactive Agent, Manager, and Managing Director dashboards
+- Agent Call Report with filter, drill-down, reconciliation, and audited export
 
 ### Sales enablement
 
@@ -48,12 +53,18 @@ PostgreSQL backup frequency, retention, and off-server storage.
 - Property media required for customer output
 - Quick Proposal, Investment Presentation, and Property Comparison templates
 - PDF generation, version history, and sent-status tracking
+- Operational lead documents and attachments with secure versioned storage
+- Approved Marketing Agreement template and agreement-driven consent status
+- Versioned Qualification Model Setup separate from lead assessments
+- Proposal cross-module data/media snapshots and exact-version delivery history
 
 ### Management
 
 - New lead, movement, activity, conversion, lost-reason, and SLA reports
 - CSV/Excel-ready exports where appropriate
 - Import framework for data from the current CRM
+- Executive targets, comparisons, trends, forward-looking risk indicators, and
+  hierarchical summary-to-record drill-down
 
 ## Release 2: Opportunity and Deal Pipeline
 

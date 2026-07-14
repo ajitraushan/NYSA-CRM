@@ -81,6 +81,21 @@ The current application already provides:
 - Record preferred language, channel, contact time, consent, and communication restrictions.
 - Detect likely duplicates by phone, email, and normalized identity fields.
 - Preserve merge history and audit information.
+- Separate NYSA's own Organization Settings from external company records.
+- Classify an external company by one category and one or more business roles.
+- Creating an external company record never grants that company CRM access.
+
+Contact channels use a controlled kind (`Phone` or `Email`), a usage label, a raw
+value, and a normalized value. Phone numbers normalize to E.164 and email comparison
+values normalize to lowercase. WhatsApp capability is an attribute of a phone channel,
+not a duplicate channel record. Screen, API, import, and database validation must
+apply the same rules and duplicate review.
+
+Marketing consent may be `Granted` only when linked to an executed NYSA Marketing
+Agreement created from an approved, version-controlled template. Verbal confirmation,
+an unlinked checkbox, an imported flag, or an agent selection is insufficient.
+Withdrawal, expiry, or supersession updates effective consent and suppresses
+prohibited marketing communication.
 
 ### 3. Lead capture and qualification
 
@@ -162,6 +177,12 @@ The initial score will use configurable weights for:
 The result must show why a lead is Hot, Warm, or Cold. Sensitive personal traits
 and unverified social-media conclusions must not influence scoring.
 
+The Qualification Scoring Model is a separately administered, approved, versioned
+rules configuration containing factors, weights, thresholds, missing-input treatment,
+and response guidance. A Qualification Assessment is a historical application of one
+model version to one lead. Active model versions and completed assessments are
+immutable; changes or recalculation create new versions/assessments.
+
 ### 8. Financial and ROI calculator
 
 - Calculate loan amount, down payment, monthly repayment, total repayment, and interest.
@@ -199,6 +220,30 @@ must be linked to the lead or opportunity and record creator, version, creation
 time, and sent time. Generated customer documents and their personal data are
 stored securely outside Git.
 
+Proposal composition draws authoritative data from Contacts, Lead Requirements,
+External Companies, Property Inventory, Property Media, Financial Scenarios, Users,
+and Organization Settings. The agent selects approved media and permitted narrative
+sections. Generation stores an immutable snapshot of every displayed value, selected
+image, template, brand, disclaimer, assumption, creator, and recipient so a sent
+version remains reproducible after source records change.
+
+### 9A. Lead documents and attachments
+
+Phase 1 stores operational documents sent to or received from customers, including
+offer letters, proposals, brochures, floor plans, quotations, payment plans, mortgage
+illustrations, requirement documents, marketing agreements, and correspondence
+attachments.
+
+- Link each document/version to the applicable contact, lead, activity, property,
+  proposal, and communication channel.
+- Record type, title, direction, status, access classification, storage reference,
+  hash, version, creator, recipient, and sent/received/acknowledged times.
+- Generated or sent versions are immutable; revision creates a new version.
+- An activity such as "Offer letter sent" links to the exact document version.
+- Files are private, role-scoped, auditable, and stored outside Git/public storage.
+- Full identity, transaction, compliance, expiry, checklist, and approval management
+  remains a later phase unless separately approved with stronger controls.
+
 ### 10. Dashboards and reports
 
 Minimum reports:
@@ -215,6 +260,44 @@ Minimum reports:
 - Data-quality and duplicate report
 
 Reports must support date, source, team, agent, business line, and stage filters.
+
+The dashboard is the default post-login workspace:
+
+- Agents see assigned work, lead acceptance, SLA, next actions, overdue/due/upcoming
+  tasks, exceptions, recent activities, proposal follow-up, and personal workload.
+- Managers see consolidated information for every agent in their effective-dated
+  reporting hierarchy, with workload, assignment, SLA, aging, calls, activities,
+  follow-up, conversion, proposal, data-quality, consent, document, and integration
+  exceptions.
+- The Managing Director sees strategic company summaries, targets, prior-period
+  comparisons, trends, leading indicators, risks, and data maturity across Executive,
+  Sales, Inventory, and Operations/Risk views.
+
+Dashboards are interactive: filters update applicable components consistently; KPI,
+chart, trend, and exception selections drill down through company, business line,
+team, manager, agent, and underlying record while preserving context. Aggregates must
+reconcile and avoid double counting.
+
+Agents can generate a Call Report covering date/time, customer/lead/property,
+direction, outcome, duration, summary, follow-up, status/qualification at call time,
+and agent. It supports authorized filters, drill-down, and audited export.
+
+Only authoritative modules may supply KPIs. Phase 1 may show approved leading risk
+indicators but must not present deal, revenue, commission, or financial forecasts
+until those source modules and definitions exist.
+
+### 10A. Controlled values and workflow maintenance
+
+Authorized administrators maintain reference values through Admin Settings, not by
+editing source code or production database rows. Stable codes remain immutable after
+use; used values are deprecated/replaced rather than deleted.
+
+- Class A reference values may follow an approved administrative change workflow.
+- Class B workflow/security statuses require impact review, transition/report changes,
+  testing, and controlled release.
+- Class C provider mappings are versioned against stable internal codes.
+- Definition status, display order, default, effective dates, translations, usage,
+  replacement, approval, and change history are recorded.
 
 ### 11. External lead integrations
 

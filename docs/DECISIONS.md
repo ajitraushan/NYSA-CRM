@@ -24,6 +24,15 @@
 | D-018 | Meta lead retrieval and Meta conversion-outcome feedback are separate integrations. | They move different data in opposite directions and need separate access, consent, and approval. | Approved |
 | D-019 | Property Finder and Bayut publication begins only after portal-ready inventory validation and vendor access are complete. | Premature publication would create rejected, incomplete, stale, or duplicate listings. | Approved |
 | D-020 | Only documented vendor APIs, feeds, webhooks, or approved partner mechanisms will be used. | Scraping or browser automation is fragile, unsafe for credentials, and may violate platform terms. | Approved |
+| D-021 | Phase 1 includes secure operational lead documents and attachments, while full compliance-document management remains later. | Customer communications must link to the exact file/version without prematurely expanding into regulated transaction workflows. | Approved |
+| D-022 | Marketing consent can be Granted only from an executed, approved, versioned NYSA Marketing Agreement. | Consent must have consistent documentary evidence and cannot rely on an informal flag. | Approved |
+| D-023 | Contact channel kind, label, normalized value, and WhatsApp capability are separate validated fields. | Prevents duplicate phone records and supports consistent manual/import/integration validation. | Approved |
+| D-024 | NYSA Organization Settings are separate from external companies, which use category plus multiple roles. | Separates NYSA identity from business accounts and avoids duplicate multi-role companies. | Approved |
+| D-025 | Proposals assemble authoritative cross-module data and approved media into immutable version snapshots. | Avoids retyping and preserves the exact content sent to a customer. | Approved |
+| D-026 | Qualification Model Setup is separate from historical Qualification Assessments. | Enables explainable rules, approval, versioning, and reproducibility. | Approved |
+| D-027 | Dashboards are the default role-scoped login workspace with Agent, Manager, and Managing Director hierarchy. | Users need immediate actionable work and management needs consolidated oversight. | Approved |
+| D-028 | The Managing Director dashboard is strategic, summarized, future-oriented, and supports hierarchical drill-down. | Executive decisions require targets, trends, risks, and causes without defaulting to task-level noise. | Approved |
+| D-029 | Controlled values are maintained through governed Admin Settings and used values are never hard-deleted. | Protects historical meaning, workflow behavior, reports, and integrations. | Approved |
 
 ## Recommended Defaults Awaiting Approval
 

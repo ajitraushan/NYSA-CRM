@@ -67,6 +67,12 @@ Migration filenames already applied to the database.
 
 ### Contacts and companies
 
+#### `organization_settings`
+
+- Singleton/versioned NYSA legal identity, trading name, contact details, brand assets,
+  proposal footer, approved disclaimers, default currency, locale, and effective dates
+- Separate from external companies and never used as a customer or partner record
+
 #### `contacts`
 
 - Person identity and display name
@@ -80,9 +86,16 @@ Migration filenames already applied to the database.
 
 - Contact and role such as buyer, seller, landlord, tenant, or investor
 
-#### `companies`
+#### `external_companies`
 
-- Legal/display name, type, registration fields when required, contact details, owner, and status
+- Legal/display name, controlled category, registration fields when required,
+  contact details, owner, status, and merge pointer
+
+#### `external_company_roles`
+
+- Company, controlled business role, validity period, primary flag, and status
+- Allows one company to be developer, agency, employer, supplier, or another
+  approved role without duplicate company records
 
 #### `company_contacts`
 
@@ -90,8 +103,17 @@ Migration filenames already applied to the database.
 
 #### `contact_channels`
 
-- Multiple email or phone values, normalized value, label, verification status,
-  verification time, preferred flag, and restriction status
+- Channel kind (`Phone` or `Email`), controlled usage label, raw value, normalized
+  value, WhatsApp capability for phone channels, verification status/time,
+  preferred flag, and restriction status
+- Uniqueness and duplicate-review rules use normalized values; WhatsApp does not
+  create a second phone record
+
+#### `marketing_agreements`
+
+- Contact, exact executed document version, template version, signed/effective/
+  expiry/withdrawal times, consent scope, permitted channels, status, and audit data
+- Effective `Granted` marketing consent is derived only from a valid executed agreement
 
 ### Leads
 
@@ -147,7 +169,8 @@ validation requirements justify it. Frequently filtered fields remain relational
 
 #### `qualification_models`
 
-- Versioned model name, active period, factors, weights, and thresholds
+- Versioned model name/code, purpose, business-line scope, status, factors, weights,
+  thresholds, missing-input treatment, response guidance, approval, and effective period
 
 #### `qualification_assessments`
 
@@ -183,12 +206,63 @@ also have typed columns.
 
 #### `proposal_versions`
 
-- Proposal, version number, selected property snapshot, financial snapshot,
-  narrative, disclaimer version, file metadata, file hash, created/sent times
+- Proposal, version number, recipient and requirement snapshot, selected property,
+  developer, media and financial snapshots, narrative, template/brand/disclaimer
+  versions, data-as-of time, file metadata/hash, approval, created/sent/acknowledged times
 
 #### `proposal_properties`
 
 - Proposal version, listing, display order, and immutable property snapshot
+
+#### `proposal_media`
+
+- Proposal version, property media, display order, caption, placement, and immutable
+  storage/hash snapshot for the exact customer output
+
+### Operational documents
+
+#### `document_templates`
+
+- Controlled template type, version, approval status, effective period, storage key,
+  hash, owner, and permitted usage
+
+#### `documents`
+
+- Logical document reference, type, title, direction, classification, status,
+  owner, and created/updated metadata
+
+#### `document_versions`
+
+- Document, version number, superseded version, file metadata, private storage key,
+  hash, creator, recipient, created/sent/received/acknowledged times, and immutable flag
+
+#### `document_links`
+
+- Document version, related entity type/ID, relationship type, and creator/time
+- Phase 1 permits links to contacts, leads, activities, listings, proposals, and channels
+
+### Reporting and configuration
+
+#### `report_definitions` and `dashboard_definitions`
+
+- Stable code, version, audience, scope policy, measures, dimensions, default filters,
+  drill-down path, refresh/data-as-of behavior, export policy, status, and owner
+
+#### `saved_views`
+
+- User, dashboard/report, name, filter/sort configuration, private/shared status,
+  and last-used time
+
+#### `value_sets` and `value_definitions`
+
+- Stable code, label, description, definition status, display order, default flag,
+  configuration class, effective dates, replacement mapping, and audit metadata
+- Used values are retired or mapped, never hard-deleted
+
+#### `workflow_transitions`
+
+- Workflow, from/to stable value codes, role/condition guard, reason requirement,
+  effective dates, definition version, and approval metadata
 
 ### Release 1 integration foundation
 
@@ -238,8 +312,6 @@ also have typed columns.
 
 ### Documents and compliance
 
-- `document_types`
-- `documents`
 - `document_access`
 - `checklist_templates`
 - `checklist_template_items`
@@ -257,6 +329,9 @@ also have typed columns.
 
 ```text
 Contact 1---* Lead *---1 Team
+Contact 1---* Contact Channel
+Contact 1---* Marketing Agreement *---1 Document Version
+External Company 1---* External Company Role
                    *---1 Responsible User
 Lead    1---* Assignment History
 Lead    1---* Stage History
@@ -267,6 +342,8 @@ Lead    1---1 Current Requirement
 Lead    1---* Financial Scenario
 Lead    1---* Proposal
 Proposal 1---* Proposal Version *---* Listing Snapshot
+Proposal Version 1---* Proposal Media
+Document Version *---* Contact / Lead / Activity / Listing / Proposal
 
 Qualified Lead 1---* Opportunity (Release 2)
 Opportunity    1---* Viewing / Offer / Activity
@@ -289,10 +366,13 @@ Audit at minimum:
 
 - User role, status, and team changes
 - Contact merges and communication restrictions
+- Marketing-agreement execution, withdrawal, expiry, and effective-consent changes
 - Lead ownership, acceptance, reassignment, SLA, stage, and closure
-- Qualification calculation and override
+- Qualification-model approval/versioning, calculation, and override
 - Activity deletion or correction
-- Financial-scenario and proposal generation/sending
+- Financial-scenario and proposal generation, approval, delivery, and acknowledgement
+- Document upload, version, link, access, send, receive, and acknowledgement
+- Controlled-value, workflow-transition, dashboard, and report-definition changes
 - Opportunity, offer, deal, commission, document, and approval changes
 - Data exports and restricted-document access where feasible
 
