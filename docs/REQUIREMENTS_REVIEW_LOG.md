@@ -371,3 +371,61 @@ approximated deal KPIs before those records exist.
 - Add role-specific dashboard acceptance criteria.
 - Require every displayed count to reconcile to accessible underlying records.
 - Audit exports and enforce the same role and team scope as operational screens.
+
+### RR-007: Separate Qualification Model Setup from Lead Assessment
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 field and label review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Qualification Model Setup, Qualification Assessment, Leads,
+  Activities, SLA, Dashboard, Audit
+
+#### Scope clarification
+
+The Qualification Scoring Model is a separate, version-controlled business-rules
+configuration. A Qualification Assessment is one historical application of a
+specific model version to a specific lead. The assessment references the model and
+stores the factor inputs, calculated result, explanation, and any authorized
+override.
+
+Phase 1 uses an explainable weighted rules model, not an opaque AI or machine-learning
+service. Sensitive traits, inferred social-media characteristics, and unverified
+external conclusions are excluded.
+
+#### Qualification model fields
+
+- Model ID, name, and description
+- Version number and version status: draft, approved, active, retired
+- Effective-from and effective-to dates
+- Factor code, label, guidance, input source, minimum, maximum, and required rule
+- Factor weight and display order
+- Missing-input treatment
+- Score normalization method
+- Hot, Warm, and Cold threshold ranges
+- Recommended response time and communication strategy by result
+- Created by/time, approved by/time, and approval reason
+- Superseded-model reference
+
+An activated model version is immutable. Changes create a new version so prior
+assessments remain reproducible.
+
+#### Assessment behavior
+
+1. The system or authorized agent captures the approved factor inputs.
+2. The active model version calculates a normalized score and proposed Hot/Warm/Cold
+   result.
+3. The assessment shows each factor value, weight, contribution, missing input, and
+   resulting recommendation.
+4. An authorized user may override the final classification only with a reason.
+5. The assessment stores the exact model version and input snapshot.
+6. Recalculation creates a new assessment rather than overwriting the previous one.
+
+#### Required updates
+
+- Add a Qualification Model Setup module to the field register.
+- Keep Qualification Assessment as a separate runtime/history module.
+- Rename the assessment field to `Scoring Model Version` and make it read-only.
+- Add model approval, versioning, threshold, factor-weight, and effective-date fields.
+- Add tests for threshold boundaries, missing inputs, model activation, retirement,
+  override authorization, explanation, and historical reproducibility.
