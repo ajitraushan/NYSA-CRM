@@ -116,3 +116,65 @@ from marketing consent and follow NYSA's approved legal and privacy policy.
 - Add API validation preventing unsupported consent grants.
 - Add acceptance tests for issue, execution, withdrawal, expiry, supersession, and
   communication suppression.
+
+### RR-003: Contact Channel Type and Value Validation
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 field and label review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Contacts, Contact Channels and Consent, Duplicate Detection,
+  Website Intake, Meta and Portal Lead Intake, Communications
+
+#### Data design refinement
+
+Use separate controlled fields rather than treating WhatsApp as a second copy of a
+mobile number:
+
+- Channel kind: `Phone` or `Email`
+- Channel label: `Mobile`, `Work`, `Home`, or `Other`
+- WhatsApp enabled: `Yes`, `No`, or `Unknown` for phone channels
+- Raw value: the value supplied by the customer or provider
+- Normalized value: the canonical value used for matching and communication
+
+The channel kind and label use controlled lists and do not permit arbitrary free text.
+
+#### Conditional validation rules
+
+For phone values:
+
+- Remove display spaces, dashes, and brackets during normalization.
+- Store the normalized value in E.164 form with country code.
+- Require a valid country calling code and plausible digit length.
+- Do not assume that a syntactically valid number exists or belongs to the customer.
+- WhatsApp enabled may only apply to a phone channel.
+
+For email values:
+
+- Trim surrounding whitespace and normalize the comparison value to lowercase.
+- Apply a standards-based email syntax check and a maximum length of 254 characters.
+- Do not treat syntax validation as proof that the mailbox exists or belongs to the
+  customer.
+- Email channels cannot be marked as WhatsApp enabled.
+
+#### Duplicate and verification controls
+
+- The same normalized value may not be duplicated on one contact without an explicit
+  exception.
+- A match on another contact produces a duplicate-review warning; verified matches
+  require authorized reuse or merge review.
+- Verification status remains separate: unverified, pending, verified, invalid, or
+  bounced.
+- Provider-imported values pass through the same server-side validation and
+  normalization as manually entered values.
+- Validation is enforced by the API and database constraints where practical, not
+  only by the screen.
+
+#### Required updates
+
+- Replace the current single `channel_type` list with channel kind, label, and
+  WhatsApp-enabled fields.
+- Document type-specific validation messages and examples in the field register.
+- Add normalized-value uniqueness and duplicate-review rules.
+- Add tests for UAE and international numbers, email edge cases, provider imports,
+  duplicate contacts, and invalid channel/WhatsApp combinations.
