@@ -92,7 +92,8 @@ export function createApp() {
       if (bodyTooLarge) return;
       req.body = {};
       if (chunks.length) {
-        try { req.body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+        req.rawBody = Buffer.concat(chunks).toString('utf8');
+        try { req.body = JSON.parse(req.rawBody); }
         catch { return res.status(400).json({ error: 'Invalid JSON body' }); }
       }
       dispatch(req, res);

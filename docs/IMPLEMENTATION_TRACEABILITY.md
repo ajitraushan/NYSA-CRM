@@ -40,11 +40,36 @@ Verification evidence:
 - PostgreSQL migration execution remains required against a fresh database and an
   isolated restored production backup before this increment can pass deployment acceptance
 
+### Lead operations and secured intake
+
+Implementation files:
+
+- `src/migrations/005_lead_operations.sql`
+- `src/routes/lead-operations.js`
+- `src/routes/website-intake.js`
+- lifecycle, routing, activity, and UI changes in `src/routes/crm.js` and `public/app.js`
+
+Acceptance areas addressed:
+
+- Stable imported identifiers and idempotent signed website events
+- Configurable business calendar and immutable activated SLA policy versions
+- Rule-based team/agent routing and effective assignment sequence history
+- Acceptance, rejection, timeout, scoped reassignment, and required next action
+- Validated lead transitions, stage history, versioned structured requirements,
+  inventory links, conversion scaffolding, task outcomes, and SLA queues
+- Support-visible intake failures and controlled replay without retaining or exposing
+  full sensitive payloads
+
+Verification evidence:
+
+- Fifteen dependency-free domain and authorization assertions pass
+- JavaScript syntax checks and Git whitespace/error checks pass
+- PostgreSQL migration execution and end-to-end HTTP workflow tests remain required
+  in the deployment environment
+
 ## Remaining increments
 
-1. Lead routing, assignment acceptance/history, business-hours SLA, lifecycle,
-   structured requirements, tasks, and secured website intake
-2. Versioned qualification models/assessments and persisted financial scenarios
-3. Private property media, proposals, generated versions, documents, and attachments
-4. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
-5. Full workflow, permission, migration, backup, and controlled smoke-test evidence
+1. Versioned qualification models/assessments and persisted financial scenarios
+2. Private property media, proposals, generated versions, documents, and attachments
+3. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
+4. Full workflow, permission, migration, backup, and controlled smoke-test evidence

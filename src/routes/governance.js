@@ -165,7 +165,11 @@ r.get('/crm/contacts/:id/consent',async(req,res)=>{
     FROM marketing_agreements m JOIN document_versions dv ON dv.id=m.document_version_id JOIN document_templates dt ON dt.id=m.template_id
     WHERE m.contact_id=$1 ORDER BY m.created_at DESC`,[contact.id]);
   const active=agreements.find(a=>a.status==='executed'&&new Date(a.effectiveAt)<=new Date()&&(!a.expiresAt||new Date(a.expiresAt)>new Date()));
-  res.json({effectiveConsent:contact.doNotContact?false:Boolean(active),restricted:Boolean(contact.doNotContact),activeAgreement:active||null,agreements});
+  const evidence=await many(`SELECT id,evidence_type,purpose,status,statement_version,captured_at,evidence_hash,source_event_id
+    FROM consent_evidence WHERE contact_id=$1 ORDER BY captured_at DESC`,[contact.id]);
+  const websiteGrant=evidence.find(e=>e.purpose==='marketing'&&e.status==='granted'&&!e.supersededAt);
+  res.json({effectiveConsent:contact.doNotContact?false:Boolean(active||websiteGrant),restricted:Boolean(contact.doNotContact),activeAgreement:active||null,
+    activeWebsiteEvidence:websiteGrant||null,agreements,evidence});
 });
 
 r.post('/crm/contacts/:id/marketing-agreements',async(req,res)=>{

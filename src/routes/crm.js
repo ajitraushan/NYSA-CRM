@@ -3,9 +3,10 @@ import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS, ACTIVITY_TYPES,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
-  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue } from '../crm-domain.js';
+  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canAssignLead, leadScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
+import { calculateDeadlines } from './lead-operations.js';
 
 const r = Router();
 r.use(requireAuth, requireCrmAccess);
@@ -40,8 +41,14 @@ function canWriteCrm(broker) {
 }
 
 async function refreshAssignmentStatuses() {
-  await execute(`UPDATE leads SET assignment_status='reassignment_due',updated_at=NOW()
-    WHERE assignment_status='assigned' AND assignment_due_at<=NOW() AND stage NOT IN ('Won','Lost')`);
+  await transaction(async client=>{
+    const timed=await many(`UPDATE lead_assignments SET status='timed_out',responded_at=NOW()
+      WHERE status='offered' AND superseded_at IS NULL AND acceptance_due_at<=NOW() RETURNING *`,[],client);
+    for(const assignment of timed){
+      await execute("UPDATE leads SET assignment_status='reassignment_due',updated_at=NOW() WHERE id=$1 AND stage NOT IN ('Won','Lost')",[assignment.leadId],client);
+      await audit('LeadAssignment',assignment.id,'timed_out',assignment.assignedBy||assignment.agentId,{deadline:assignment.acceptanceDueAt},client);
+    }
+  });
 }
 
 function icsEscape(value) {
@@ -337,19 +344,32 @@ r.post('/crm/leads', async (req, res) => {
   const assignee=b.assignedTo?await staffMember(b.assignedTo):null;
   if(b.assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.assignedTeamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.assignedTeamId]))) return res.status(400).json({error:'Invalid assignedTeamId'});
+  const requestedTeam=b.assignedTeamId||assignee?.teamId||null;
+  if(req.broker.role!=='admin'&&requestedTeam&&!(req.broker.managedTeamIds||[]).includes(requestedTeam))return res.status(403).json({error:'Managers can assign only within their managed teams'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
+  if(b.nextFollowUpAt===null&&!['Won','Lost'].includes(b.stage||lead.stage)&&!(await one("SELECT id FROM tasks WHERE lead_id=$1 AND status IN ('open','in_progress') LIMIT 1",[lead.id])))
+    return res.status(409).json({error:'Active leads require a next action or open task'});
   const budget = validateBudget(b.budgetMin,b.budgetMax);
   if (budget.error) return res.status(400).json({error:budget.error});
   const budgetMin=budget.min,budgetMax=budget.max;
   const id=uuid();
-  const lead=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
-    preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,next_follow_up_at,created_by,assignment_status,listing_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-      CASE WHEN $13::uuid IS NULL THEN NULL ELSE NOW()+COALESCE((SELECT lead_response_hours FROM teams WHERE id=$12),4)*INTERVAL '1 hour' END,
-      $14,$15,CASE WHEN $13::uuid IS NULL THEN 'unassigned' ELSE 'assigned' END,$16) RETURNING *`,
-    [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Warm',budgetMin,budgetMax,
-     clean(b.preferredAreas),clean(b.propertyRequirements),b.assignedTeamId||assignee?.teamId||null,b.assignedTo||null,b.nextFollowUpAt||null,req.broker.id,b.listingId||null]);
-  await audit('Lead',id,'created',req.broker.id,{title:lead.title,source:lead.source});
+  const lead=await transaction(async client=>{
+    const rule=(!b.assignedTo&&!b.assignedTeamId)?await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
+      AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client):null;
+    const agentId=b.assignedTo||rule?.agentId||null,teamId=b.assignedTeamId||assignee?.teamId||rule?.teamId||null;
+    const receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
+    const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
+      preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,first_contact_due_at,
+      sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
+      [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Warm',budgetMin,budgetMax,
+       clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
+       b.nextFollowUpAt||null,req.broker.id,agentId?'assigned':'unassigned',b.listingId||null,receivedAt],client);
+    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
+      VALUES($1,$2,1,$3,$4,$5,$6,$7)`,[uuid(),id,teamId,agentId,agentId?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
+    await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',req.broker.id],client);
+    await audit('Lead',id,'created',req.broker.id,{title:row.title,source:row.source,routingRuleId:rule?.id||null},client);return row;
+  });
   res.status(201).json(lead);
 });
 
@@ -364,6 +384,8 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if (b.stage !== undefined) {
     const stageError = validateLeadStage(b.stage, b.lostReason || lead.lostReason);
     if (stageError) return res.status(400).json({error:stageError});
+    const transitionError = validateLeadTransition(lead.stage,b.stage);
+    if (transitionError) return res.status(409).json({error:transitionError});
   }
   if(b.budgetMin!==undefined||b.budgetMax!==undefined){const budget=validateBudget(b.budgetMin===undefined?lead.budgetMin:b.budgetMin,b.budgetMax===undefined?lead.budgetMax:b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});}
   if((b.assignedTo!==undefined||b.assignedTeamId!==undefined)&&!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can reassign this lead'});
@@ -400,8 +422,15 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   }
   if(!sets.length) return res.json(lead);
   params.push(lead.id);
-  const updated=await one(`UPDATE leads SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params);
-  await audit('Lead',lead.id,'edited',req.broker.id,changes);
+  const updated=await transaction(async client=>{
+    const row=await one(`UPDATE leads SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params,client);
+    if(b.stage!==undefined&&b.stage!==lead.stage){
+      await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,reason_code,changed_by) VALUES($1,$2,$3,$4,$5,$6)`,
+        [uuid(),lead.id,lead.stage,b.stage,clean(b.lostReason),req.broker.id],client);
+      await audit('LeadStage',lead.id,'transitioned',req.broker.id,{from:lead.stage,to:b.stage,reason:clean(b.lostReason)},client);
+    }
+    await audit('Lead',lead.id,'edited',req.broker.id,changes,client);return row;
+  });
   res.json(updated);
 });
 
@@ -417,17 +446,25 @@ r.get('/crm/reassignment-queue', async (req,res)=>{
 
 r.post('/crm/leads/:id/claim', async (req,res)=>{
   if(!isManager(req.broker)) return res.status(403).json({error:'Only a scoped manager or admin can claim queued leads'});
+  if(!req.body?.nextActionDue||Number.isNaN(new Date(req.body.nextActionDue).valueOf())) return res.status(400).json({error:'Valid nextActionDue is required when claiming a lead'});
   await refreshAssignmentStatuses();
   const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(req.broker.role!=='admin'&&lead.assignedTeamId&&lead.assignedTeamId!==req.broker.teamId) return res.status(403).json({error:'Lead belongs to another team'});
+  if(req.broker.role!=='admin'&&lead.assignedTeamId&&!(req.broker.managedTeamIds||[]).includes(lead.assignedTeamId)) return res.status(403).json({error:'Lead belongs to another team'});
   if(!['unassigned','reassignment_due'].includes(lead.assignmentStatus)) return res.status(409).json({error:'Lead is not available for reassignment'});
   const updated=await transaction(async client=>{
+    await execute("UPDATE lead_assignments SET status=CASE WHEN status='queued' THEN 'reassigned' ELSE status END,superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
+    const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
     const row=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=COALESCE($2,assigned_team_id),
-      assignment_status='assigned',assignment_due_at=NOW()+COALESCE((SELECT lead_response_hours FROM teams WHERE id=COALESCE($2,assigned_team_id)),4)*INTERVAL '1 hour',
-      reassigned_at=NOW(),reassigned_by=$1,updated_at=NOW() WHERE id=$3 AND assignment_status IN ('unassigned','reassignment_due') RETURNING *`,
+      assignment_status='assigned',accepted_at=NOW(),reassigned_at=NOW(),reassigned_by=$1,updated_at=NOW()
+      WHERE id=$3 AND assignment_status IN ('unassigned','reassignment_due') RETURNING *`,
       [req.broker.id,req.broker.teamId||null,lead.id],client);
     if(!row) throw new Error('Lead was claimed by someone else');
+    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,offered_at,responded_at,acceptance_due_at,assigned_by)
+      VALUES($1,$2,$3,$4,$5,'accepted',NOW(),NOW(),$6,$5)`,[uuid(),lead.id,next.n,row.assignedTeamId,req.broker.id,row.assignmentDueAt],client);
+    await execute(`INSERT INTO tasks(id,lead_id,contact_id,subject,assignee_id,priority,due_at,created_by)
+      VALUES($1,$2,$3,$4,$5,'high',$6,$5)`,[uuid(),lead.id,lead.contactId,clean(req.body.nextActionSubject)||'Contact newly claimed lead',req.broker.id,req.body.nextActionDue],client);
+    await execute('UPDATE leads SET next_follow_up_at=$1 WHERE id=$2',[req.body.nextActionDue,lead.id],client);
     await audit('Lead',lead.id,'claimed',req.broker.id,{previousAssigneeId:lead.assignedTo},client);return row;
   });
   res.json(updated);
@@ -442,11 +479,18 @@ r.post('/crm/leads/:id/assign', async (req,res)=>{
   if(assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
   const teamId=assignedTeamId||assignee?.teamId||null;
   if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId]))) return res.status(400).json({error:'Invalid assignedTeamId'});
-  const updated=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,
-    assignment_status=CASE WHEN $1::uuid IS NULL THEN 'unassigned' ELSE 'assigned' END,
-    assignment_due_at=CASE WHEN $1::uuid IS NULL THEN NULL ELSE NOW()+COALESCE((SELECT lead_response_hours FROM teams WHERE id=$2),4)*INTERVAL '1 hour' END,
-    reassigned_at=NOW(),reassigned_by=$3,updated_at=NOW() WHERE id=$4 RETURNING *`,[assignedTo||null,teamId,req.broker.id,lead.id]);
-  await audit('Lead',lead.id,'reassigned',req.broker.id,{from:lead.assignedTo,to:assignedTo||null,teamId});res.json(updated);
+  if(req.broker.role!=='admin'&&teamId&&!(req.broker.managedTeamIds||[]).includes(teamId))return res.status(403).json({error:'Managers can assign only within their managed teams'});
+  const updated=await transaction(async client=>{
+    const deadlines=await calculateDeadlines(new Date(),client);
+    await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
+    const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
+    const row=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,
+      assignment_status=CASE WHEN $1::uuid IS NULL THEN 'unassigned' ELSE 'assigned' END,assignment_due_at=$3,
+      reassigned_at=NOW(),reassigned_by=$4,updated_at=NOW() WHERE id=$5 RETURNING *`,[assignedTo||null,teamId,deadlines.acceptanceDueAt,req.broker.id,lead.id],client);
+    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[uuid(),lead.id,next.n,teamId,assignedTo||null,assignedTo?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
+    await audit('Lead',lead.id,'reassigned',req.broker.id,{from:lead.assignedTo,to:assignedTo||null,teamId},client);return row;
+  });res.json(updated);
 });
 
 r.post('/crm/leads/:id/activities', async (req,res)=>{
@@ -459,11 +503,16 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   const ownerId=b.ownerId||lead.assignedTo||req.broker.id;
   if(!(await staffMember(ownerId))) return res.status(400).json({error:'Invalid ownerId'});
   const id=uuid();
-  const activity=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-    [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`]);
-  if(b.nextFollowUpAt!==undefined) await execute('UPDATE leads SET next_follow_up_at=$1,updated_at=NOW() WHERE id=$2',[b.nextFollowUpAt||null,lead.id]);
-  await audit('Activity',id,'created',req.broker.id,{leadId:lead.id,type:activity.activityType});
+  const activity=await transaction(async client=>{
+    const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`],client);
+    const isContact=b.direction==='Outbound'&&['Call','Email','WhatsApp','Meeting'].includes(b.activityType);
+    await execute(`UPDATE leads SET next_follow_up_at=CASE WHEN $1::boolean THEN $2 ELSE next_follow_up_at END,
+      first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,updated_at=NOW() WHERE id=$4`,
+      [b.nextFollowUpAt!==undefined,b.nextFollowUpAt||null,isContact,lead.id],client);
+    await audit('Activity',id,'created',req.broker.id,{leadId:lead.id,type:row.activityType,firstContact:isContact},client);return row;
+  });
   res.status(201).json(activity);
 });
 

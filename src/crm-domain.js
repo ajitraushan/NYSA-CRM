@@ -8,6 +8,57 @@ export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting'
 export const JOB_ROLES = ['admin','sales_agent','listing_agent','manager','director','accountant'];
 export const COMPANY_TYPES = ['developer','agency','corporate_client','landlord_company','vendor','other'];
 
+export const LEAD_TRANSITIONS = Object.freeze({
+  New: ['Contacted','Lost'],
+  Contacted: ['Qualified','Lost'],
+  Qualified: ['Viewing','Negotiation','Lost'],
+  Viewing: ['Qualified','Negotiation','Lost'],
+  Negotiation: ['Viewing','Won','Lost'],
+  Won: [],
+  Lost: ['New']
+});
+
+export function validateLeadTransition(from, to) {
+  if (!STAGES.includes(from) || !STAGES.includes(to)) return 'Invalid lead stage';
+  if (from === to) return null;
+  return LEAD_TRANSITIONS[from].includes(to) ? null : `Lead cannot move from ${from} to ${to}`;
+}
+
+// Adds working minutes using a weekly calendar expressed in the calendar's UTC offset.
+// This keeps API and SLA-worker calculations deterministic without relying on host timezone.
+export function addBusinessMinutes(start, minutes, calendar = {}) {
+  const amount = Number(minutes);
+  if (!(start instanceof Date) || Number.isNaN(start.valueOf()) || !Number.isFinite(amount) || amount < 0)
+    return null;
+  const workDays = new Set(calendar.workDays || [1,2,3,4,5]);
+  const startMinute = Number(calendar.startMinute ?? 9 * 60);
+  const endMinute = Number(calendar.endMinute ?? 18 * 60);
+  const offsetMinutes = Number(calendar.utcOffsetMinutes ?? 240);
+  if (startMinute < 0 || endMinute > 1440 || startMinute >= endMinute || !workDays.size) return null;
+  let remaining = amount;
+  let cursor = new Date(start.getTime() + offsetMinutes * 60000);
+  cursor.setUTCSeconds(0, 0);
+  for (let guard = 0; guard < 3700; guard++) {
+    const day = cursor.getUTCDay();
+    const minute = cursor.getUTCHours() * 60 + cursor.getUTCMinutes();
+    if (!workDays.has(day) || minute >= endMinute) {
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+      cursor.setUTCHours(0, 0, 0, 0);
+      continue;
+    }
+    if (minute < startMinute) cursor.setUTCHours(Math.floor(startMinute / 60), startMinute % 60, 0, 0);
+    const available = endMinute - (cursor.getUTCHours() * 60 + cursor.getUTCMinutes());
+    if (remaining <= available) {
+      cursor.setUTCMinutes(cursor.getUTCMinutes() + remaining);
+      return new Date(cursor.getTime() - offsetMinutes * 60000);
+    }
+    remaining -= available;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    cursor.setUTCHours(0, 0, 0, 0);
+  }
+  return null;
+}
+
 export const QUALIFICATION_GUIDANCE = Object.freeze({
   Hot: {
     responseMinutes: 15,
