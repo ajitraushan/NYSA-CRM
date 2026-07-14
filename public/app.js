@@ -154,7 +154,8 @@ function logout(callApi = true) {
 function renderShell() {
   app.innerHTML = `
   <header>
-    <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty CRM"><span>CRM</span></div>
+    <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty"></div>
+    <div class="system-name" aria-label="NYSA Core">CORE</div>
     <div class="userbox">
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
       <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
