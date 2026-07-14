@@ -583,3 +583,134 @@ status. The impact review determines the correct concept.
 - Add workflow-transition and provider-mapping configuration where applicable.
 - Add acceptance tests proving values cannot be deleted after use and retired values
   remain historically readable.
+
+### RR-010: Interactive Role-Based Dashboard Hierarchy and Call Report
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 dashboard and reporting review
+- Status: Approved requirement for inclusion in the next register revision
+- Priority: Must
+- Extends: RR-006
+- Affected modules: Dashboard, Reporting, Organization Hierarchy, Teams, Leads,
+  Assignments, SLA, Activities, Tasks, Qualification, Audit
+
+#### Default login experience
+
+The dashboard is the default authenticated landing screen. Its information and
+actions are determined by the user's role, management hierarchy, team membership,
+and record scope. Users must not need to assemble their daily workload through
+multiple reports before beginning work.
+
+#### Agent dashboard
+
+Each agent sees a clean personal work dashboard containing:
+
+- Leads awaiting acceptance
+- Assigned leads grouped by status and Hot/Warm/Cold qualification
+- Acceptance and first-contact SLA deadlines and breaches
+- Required next actions
+- Overdue, due-today, and upcoming tasks
+- Leads with no next action or no recent activity
+- Exceptions requiring correction, including missing contact details, requirements,
+  consent evidence, activity outcomes, or documents
+- Recent customer communications and activities
+- Proposals to prepare, review, send, or follow up
+- Personal workload and activity summary
+
+The agent may interact with permitted records directly from the dashboard, including
+accepting a lead, opening the customer timeline, logging a call/activity, completing
+or rescheduling a task, setting the next action, and opening proposal preparation.
+
+#### Agent call report
+
+An agent can generate a Call Report for an authorized period containing:
+
+- Call date and time
+- Customer, lead, and related property when applicable
+- Direction: inbound or outbound
+- Call outcome
+- Duration
+- Call summary
+- Follow-up required and next-action date
+- Lead status and qualification at call time
+- Agent identity
+
+The report supports date, call direction, outcome, lead status, and follow-up-status
+filters. It can be viewed on screen, drilled into, and exported to an approved format.
+Counts and durations reconcile to the underlying activity records. Calls without a
+recorded outcome or required follow-up appear as exceptions.
+
+#### Manager dashboard
+
+An Agent Manager or Team Lead sees consolidated information for every active agent
+within the manager's approved hierarchy and teams, plus drill-down to an individual
+agent or permitted record. The manager dashboard includes:
+
+- Team/company queue and unassigned leads within scope
+- Work assigned to each agent
+- Agent workload and distribution
+- Leads awaiting acceptance, approaching SLA, or breaching SLA
+- Overdue tasks and missing next actions by agent
+- Stalled leads and reassignment candidates
+- Calls and activity volume, outcomes, durations, and follow-up compliance
+- Qualification, source, status movement, conversion, and loss-reason summaries
+- Proposal preparation and delivery status
+- Data-quality, consent, document, and integration exceptions
+
+Managers can perform authorized operational actions such as assignment,
+reassignment, escalation, workload review, and opening the underlying lead or task.
+They cannot silently alter an agent's historical activity.
+
+#### Managing Director dashboard
+
+The Managing Director has a full-company view across all teams, managers, agents,
+queues, and business lines, subject only to separately approved restrictions for
+highly sensitive records. The dashboard includes:
+
+- Company-wide lead volume and trend
+- Source and campaign performance
+- Conversion funnel, status movement, and aging
+- SLA and response performance
+- Team, manager, and agent comparison
+- Workload, follow-up, and activity performance
+- Inventory availability, quality, verification, and aging
+- Proposal volume and delivery
+- Consent, data-quality, document, and integration exceptions
+
+The Managing Director can filter from company to team, manager, agent, source,
+business line, and period, then drill through to supporting records. Deal, revenue,
+and commission KPIs appear only after their authoritative modules are implemented.
+
+#### Interactive behavior
+
+- KPI counts and chart segments are clickable and open the contributing records.
+- Filters update all applicable dashboard components consistently.
+- Users can sort, search, save views, reset filters, and return to the prior view.
+- Exception lists support authorized corrective action without losing context.
+- Dashboard state may preserve the user's approved personal view.
+- Loading, empty, partial-data, stale-data, and failure states are explicit.
+- Every dashboard displays a data-as-of or last-refresh timestamp.
+- Exported records respect the same scope and filters as the displayed dashboard.
+- Export actions are audited.
+
+#### Hierarchy and calculation controls
+
+- Manager roll-up is driven by effective-dated team membership and reporting
+  hierarchy, not a manually typed manager name.
+- Transfers do not rewrite historical ownership or performance attribution.
+- Definitions specify how reassignment, duplicates, reopened leads, business hours,
+  and inactive users are counted.
+- The same KPI uses one approved definition at Agent, Manager, and Managing Director
+  levels; only the authorized population changes.
+- Aggregated totals reconcile to accessible underlying records and prevent double
+  counting across overlapping teams.
+
+#### Required updates
+
+- Add Agent, Manager, and Managing Director dashboard definitions to the field register.
+- Add organization hierarchy and effective-dated reporting-scope fields.
+- Add Call Report definition, fields, filters, export, and reconciliation rules.
+- Add interactive component, saved-view, refresh-status, and drill-down fields.
+- Add permission and aggregation tests for Agent, Manager, and Managing Director scopes.
+- Add acceptance tests for dashboard actions, exceptions, drill-down, filter
+  consistency, export scope, refresh states, and count reconciliation.
