@@ -8,7 +8,7 @@ This ledger evaluates every bullet in the committed acceptance baseline. “Impl
 
 | Baseline line | Acceptance criterion | Status | Evidence / remaining proof |
 | ---: | --- | --- | --- |
-| 11 | All user-facing NYSA Pocket Ledger text is replaced with NYSA CRM. | Implemented; locally verified | `package.json`, `public/index.html`, `public/app.js`, `src/server.js`. Covered by source inspection and the passing syntax/domain/policy/file/dashboard test suite. |
+| 11 | All user-facing NYSA Pocket Ledger text is replaced with NYSA CRM. | Implemented; deployed with approved CORE header | The Pocket Ledger name was removed. The header was subsequently branded NYSA CORE under D-030 and deployed in `1179cca`; technical CRM identifiers remain. |
 | 12 | Package description, page title, login, dashboard, server log, and documentation agree. | Implemented; locally verified | `package.json`, `public/index.html`, `public/app.js`, `src/server.js`. Covered by source inspection and the passing syntax/domain/policy/file/dashboard test suite. |
 | 13 | The rename does not change production URL, database identity, users, or existing records. | Implemented; integrated test pending | `package.json`, `public/index.html`, `public/app.js`, `src/server.js`. Implementation is present; PostgreSQL-backed authenticated workflow verification remains required. |
 | 17 | An admin can create and deactivate teams. | Implemented; integrated test pending | `004_governance_and_scope.sql`, `governance.js`, `crm-policy.js`, policy tests. Implementation is present; PostgreSQL-backed authenticated workflow verification remains required. |
@@ -132,9 +132,9 @@ This ledger evaluates every bullet in the committed acceptance baseline. “Impl
 | 205 | A fresh database can apply all migrations from zero. | Environment verification pending | migration runner, local test suite, deployment procedure. Requires executing migrations on fresh and restored PostgreSQL databases and reconciling retained records. |
 | 206 | Automated syntax and critical workflow tests pass on the committed source. | Partial verification | migration runner, local test suite, deployment procedure. All syntax checks and 24 local assertions pass; critical authenticated HTTP workflows remain pending. |
 | 207 | Dependency audit has no unresolved critical or high production vulnerability. | Verified locally | migration runner, local test suite, deployment procedure. `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities on 2026-07-14. |
-| 208 | A new verified PostgreSQL backup exists before production deployment. | Pre-deployment gate pending | migration runner, local test suite, deployment procedure. A new verified backup must be created immediately before deployment. |
-| 209 | Health, login, existing inventory, lead creation, assignment, activity, calculator, proposal generation, and permissions smoke tests pass in production. | Production smoke pending | migration runner, local test suite, deployment procedure. Requires deployment followed by health/login/inventory and Release 1 workflow smoke tests. |
-| 211 | Project documents and release notes match the deployed Git commit. | Deployment reconciliation pending | migration runner, local test suite, deployment procedure. Local documents describe the completion branch; deployed commit must be recorded after release. |
+| 208 | A new verified PostgreSQL backup exists before production deployment. | Verified | `nysacrm-pre-release1-20260714.dump` was created before deployment with SHA-256 `176c74b46c839628b1cf1267a089839fc071ad93e7560963c32b5502ebba400c`. |
+| 209 | Health, login, existing inventory, lead creation, assignment, activity, calculator, proposal generation, and permissions smoke tests pass in production. | Partial production verification | Health, authenticated dashboard, Leads, Inventory, and Administration loading passed after deployment. Lead creation, assignment, activity, calculator, proposal, and complete role-denial smoke tests remain required. |
+| 211 | Project documents and release notes match the deployed Git commit. | Verified | `docs/CURRENT_STATUS.md` and `docs/DEPLOYMENT_HISTORY.md` record deployed source commit `1179cca` and its hotfix ancestry. |
 | 215 | External broker access | Out of scope | `docs/ACCEPTANCE_CRITERIA.md` out-of-scope declaration. No Release 1 implementation claim. |
 | 216 | Customer portal | Out of scope | `docs/ACCEPTANCE_CRITERIA.md` out-of-scope declaration. No Release 1 implementation claim. |
 | 217 | Automated social-media screening | Out of scope | `docs/ACCEPTANCE_CRITERIA.md` out-of-scope declaration. No Release 1 implementation claim. |
@@ -154,9 +154,8 @@ This ledger evaluates every bullet in the committed acceptance baseline. “Impl
 
 ## Gates still required before acceptance
 
-1. Apply migrations 002–009 to a fresh PostgreSQL database and an isolated restored production backup.
+1. Apply migrations `002`–`009` to a fresh PostgreSQL database and an isolated restored production backup.
 2. Run authenticated end-to-end HTTP tests for each role and cross-scope denial cases.
 3. Seed a controlled dataset and reconcile dashboard/report totals to contributing records.
 4. Perform the timed Quick Proposal browser acceptance and exact-version download/review/send workflow.
-5. Create and verify a new pre-deployment backup, deploy the exact commit, run production smoke tests, and record that commit in the release documents.
-
+5. Complete the remaining production workflow smoke tests listed under criterion 209.

@@ -18,7 +18,7 @@
 | D-012 | Transaction and compliance checklists are configurable. | Requirements vary by transaction type, emirate, and regulatory change. | Approved |
 | D-013 | GitHub `main` and the versioned project documents are the source of truth. | Preserves continuity across tasks, releases, and future developers. | Implemented |
 | D-014 | The canonical local repository is `C:\Users\ajitr\Projects\NYSA-CRM`. | Avoids OneDrive interference with Git internals. | Implemented |
-| D-015 | User-facing NYSA Pocket Ledger naming becomes NYSA CRM in Release 1. | The prior name no longer represents the product scope. | Implemented locally; deployment pending |
+| D-015 | User-facing NYSA Pocket Ledger naming becomes NYSA CRM in Release 1. | The prior name no longer represents the product scope. | Implemented and deployed; superseded for the header by D-030 |
 | D-016 | NYSA website leads enter a company-owned queue through a secured, idempotent server endpoint in Release 1. | Website intake is high value, controlled by NYSA, and exercises the common integration foundation early. | Approved |
 | D-017 | External lead payloads are normalized into the standard lead workflow while retaining provider IDs and processing history. | One operating model avoids channel-specific lead silos and supports audit and replay. | Approved |
 | D-018 | Meta lead retrieval and Meta conversion-outcome feedback are separate integrations. | They move different data in opposite directions and need separate access, consent, and approval. | Approved |
@@ -33,6 +33,7 @@
 | D-027 | Dashboards are the default role-scoped login workspace with Agent, Manager, and Managing Director hierarchy. | Users need immediate actionable work and management needs consolidated oversight. | Approved |
 | D-028 | The Managing Director dashboard is strategic, summarized, future-oriented, and supports hierarchical drill-down. | Executive decisions require targets, trends, risks, and causes without defaulting to task-level noise. | Approved |
 | D-029 | Controlled values are maintained through governed Admin Settings and used values are never hard-deleted. | Protects historical meaning, workflow behavior, reports, and integrations. | Approved |
+| D-030 | The user-facing system name is NYSA CORE, displayed centrally between the NYSA logo and user controls. | CORE is the approved operating-system identity while the repository and technical service retain their established CRM identifiers. | Implemented and deployed 2026-07-14 in `1179cca` |
 
 ## Recommended Defaults Awaiting Approval
 

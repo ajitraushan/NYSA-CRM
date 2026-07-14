@@ -19,6 +19,7 @@ describe.
 - [Acceptance criteria](ACCEPTANCE_CRITERIA.md) - release-one definition of done
 - [Requirements review log](REQUIREMENTS_REVIEW_LOG.md) - gaps found during field and label review
 - [Deployment runbook](DEPLOYMENT_RUNBOOK.md) - production release and recovery procedure
+- [Deployment history](DEPLOYMENT_HISTORY.md) - exact deployed commits, hotfixes, and verification evidence
 
 ## Working Agreement
 
