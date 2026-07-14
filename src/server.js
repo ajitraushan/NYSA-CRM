@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
 import commentRoutes from './routes/comments.js';
 import adminRoutes from './routes/admin.js';
+import crmRoutes from './routes/crm.js';
 import { migrate, closeDatabase } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,6 +15,7 @@ app.mount('/api', authRoutes);
 app.mount('/api', listingRoutes);
 app.mount('/api', commentRoutes);
 app.mount('/api', adminRoutes);
+app.mount('/api', crmRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;
@@ -21,7 +23,7 @@ let server;
 
 async function start() {
   await migrate();
-  server = app.listen(PORT, () => console.log(`Nysa Pocket Ledger running at http://localhost:${PORT}`));
+  server = app.listen(PORT, () => console.log(`NYSA CRM running at http://localhost:${PORT}`));
 }
 
 async function shutdown() {

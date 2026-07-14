@@ -1,4 +1,4 @@
-/* Nysa Pocket Ledger — frontend SPA (vanilla JS, no build step) */
+/* NYSA CRM — frontend SPA (vanilla JS, no build step) */
 const $ = (sel, el = document) => el.querySelector(sel);
 const app = $('#app');
 let TOKEN = null;
@@ -12,6 +12,16 @@ const PAYMENT_PLANS = ['Cash','Mortgage','Developer plan','Post-handover'];
 const STATUSES = ['Available','Reserved','Under offer','Closed'];
 const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
 const ROLES = { admin:'Admin', internal_broker:'Internal Broker', partner_broker:'Partner Broker', viewer:'Viewer' };
+const LEAD_STAGES = ['New','Contacted','Qualified','Viewing','Negotiation','Won','Lost'];
+const LEAD_SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'];
+const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
+const TEMPERATURES = ['Hot','Warm','Cold'];
+const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
+const JOB_ROLES = { admin:'Administrator', sales_agent:'Sales Agent', listing_agent:'Listing Agent', manager:'Manager', director:'Director', accountant:'Accountant' };
+const COMPANY_TYPES = { developer:'Developer', agency:'Agency', corporate_client:'Corporate Client', landlord_company:'Landlord Company', vendor:'Vendor', other:'Other' };
+const hasCrmAccess = () => ME && ['admin','internal_broker'].includes(ME.role);
+const isCrmLeader = () => ME && (ME.role === 'admin' || ['manager','director'].includes(ME.jobRole));
+const canWriteCrm = () => ME && ME.jobRole !== 'accountant';
 
 async function api(path, opts = {}) {
   const res = await fetch('/api' + path, {
@@ -44,7 +54,7 @@ function toast(msg) {
 function renderSetup(setupEnabled) {
   app.innerHTML = `
   <div class="auth-wrap"><div class="auth-card">
-    <h1>Nysa Realty</h1>
+    <h1>NYSA CRM</h1>
     <div class="sub">INITIAL CRM SETUP</div>
     <div id="auth-msg">${setupEnabled ? '<div class="info-msg">Create the first administrator account. This screen closes permanently after setup.</div>' : '<div class="error-msg">Add BOOTSTRAP_KEY in the Node.js application environment variables, then restart the application.</div>'}</div>
     <form id="setup-form">
@@ -70,8 +80,8 @@ function renderSetup(setupEnabled) {
 function renderLogin(mode = 'login', prefill = {}) {
   app.innerHTML = `
   <div class="auth-wrap"><div class="auth-card">
-    <h1>Nysa Realty</h1>
-    <div class="sub">POCKET LEDGER — PRIVATE BROKER ACCESS</div>
+    <h1>NYSA CRM</h1>
+    <div class="sub">PRIVATE REAL ESTATE OPERATIONS</div>
     <div id="auth-msg"></div>
     ${mode === 'login' ? `
       <form id="login-form">
@@ -144,15 +154,16 @@ function logout(callApi = true) {
 function renderShell() {
   app.innerHTML = `
   <header>
-    <div class="brand"><h1>Nysa Realty</h1><span>POCKET LEDGER</span></div>
+    <div class="brand"><h1>NYSA CRM</h1><span>REAL ESTATE OPERATIONS</span></div>
     <div class="userbox">
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
-      <span class="role">${esc(ROLES[ME.role])}</span>
+      <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
       <button class="btn btn-sm" id="logout-btn">Sign out</button>
     </div>
   </header>
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
+    ${hasCrmAccess() ? '<button data-tab="crm">Leads</button>' : ''}
     <button data-tab="listings">Inventory</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
   </nav>
@@ -162,7 +173,7 @@ function renderShell() {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : renderListings();
+     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : renderListings();
    }));
   renderDashboard();
 }
@@ -176,6 +187,7 @@ async function renderDashboard() {
         <p>Keep today’s opportunities, inventory, and follow-ups in view.</p>
       </div>
       <div class="dashboard-actions">
+        ${hasCrmAccess() ? '<button class="btn btn-primary btn-sm" id="dash-add-lead">+ Add lead</button>' : ''}
         ${canPost() ? '<button class="btn btn-primary btn-sm" id="dash-add">+ Add listing</button>' : ''}
         <button class="btn btn-sm" id="dash-inventory">Open inventory</button>
       </div>
@@ -185,10 +197,21 @@ async function renderDashboard() {
       <div class="dashboard-panel"><div class="panel-head"><div><div class="eyebrow">INVENTORY PULSE</div><h3>Recent opportunities</h3></div><button class="text-btn" id="dash-see-all">View all</button></div><div id="dash-recent" class="recent-list"><div class="loading-state">Loading inventory…</div></div></div>
       <div class="dashboard-panel"><div class="panel-head"><div><div class="eyebrow">WORKSPACE</div><h3>Next actions</h3></div></div><div class="action-list"><button class="action-row" id="dash-action-inventory"><span class="action-icon">↗</span><span><b>Review inventory</b><small>Search and update available properties</small></span></button><button class="action-row" id="dash-action-comments"><span class="action-icon">◎</span><span><b>Check broker conversations</b><small>See the latest listing comments</small></span></button><div class="module-note"><b>CRM pipeline is next</b><span>Leads, viewings, and deals will appear here as those modules are added.</span></div></div></div>
     </section>`;
+  if (hasCrmAccess()) {
+    const followUpPanel = $('#dash-recent').closest('.dashboard-panel');
+    $('.eyebrow', followUpPanel).textContent = 'MY FOLLOW-UPS';
+    $('h3', followUpPanel).textContent = 'Assigned activities';
+    const note = $('.module-note');
+    if (note) {
+      $('b', note).textContent = 'Release 1 lead pipeline is live';
+      $('span', note).textContent = 'Use Leads to capture customers, assignments, qualification, and every follow-up.';
+    }
+  }
   $('#dash-inventory').addEventListener('click', () => switchTab('listings'));
   $('#dash-see-all').addEventListener('click', () => switchTab('listings'));
   $('#dash-action-inventory').addEventListener('click', () => switchTab('listings'));
   $('#dash-action-comments').addEventListener('click', () => switchTab('listings'));
+  $('#dash-add-lead')?.addEventListener('click', () => openNewLeadForm());
   $('#dash-add')?.addEventListener('click', () => openListingForm());
   try {
     const { listings } = await api('/listings?sort=newest');
@@ -196,13 +219,204 @@ async function renderDashboard() {
     $('#dash-stats').innerHTML = [['Total inventory', counts.total, 'All active records'], ['Available', counts.Available || 0, 'Open opportunities'], ['Under offer', counts['Under offer'] || 0, 'Needs attention'], ['Reserved', counts.Reserved || 0, 'In progress']].map(([label, value, note]) => `<div class="stat-card"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
     $('#dash-recent').innerHTML = listings.slice(0, 5).map(l => `<button class="recent-row" data-id="${esc(l.id)}"><span class="recent-status status-${esc(l.status.replace(' ', '.'))}"></span><span class="recent-main"><b>${esc(l.project)}</b><small>${esc(l.area)} · ${esc(l.propertyType)} · ${fmtPrice(l.price, l.currency)}</small></span><span class="recent-tag">${esc(l.status)}</span></button>`).join('') || '<div class="empty">No inventory yet.</div>';
     $('#dash-recent').querySelectorAll('.recent-row').forEach(row => row.addEventListener('click', () => openDetail(row.dataset.id)));
+    if (hasCrmAccess()) {
+      const { stats, dueActivities } = await api('/crm/overview');
+      $('#dash-stats').innerHTML = [['Open leads', stats.openLeads, 'Active pipeline'], ['New leads', stats.newLeads, 'Awaiting first contact'], ['Hot leads', stats.hotLeads, 'Priority conversations'], ['Overdue', stats.overdueFollowUps, 'Follow-ups need action']].map(([label, value, note]) => `<div class="stat-card"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
+      $('#dash-recent').innerHTML = dueActivities.map(a => `<button class="recent-row" data-lead-id="${esc(a.leadId)}"><span class="recent-status ${a.dueAt && new Date(a.dueAt) < new Date() ? 'status-Closed' : 'status-Available'}"></span><span class="recent-main"><b>${esc(a.subject)}</b><small>${esc(a.contactName)} · ${esc(a.leadTitle)}</small></span><span class="recent-tag">${fmtDate(a.dueAt)}</span></button>`).join('') || '<div class="empty">No assigned activities due.</div>';
+      $('#dash-recent').querySelectorAll('[data-lead-id]').forEach(row => row.addEventListener('click', () => openLead(row.dataset.leadId)));
+    }
   } catch (err) { $('#dash-stats').textContent = err.message; $('#dash-recent').textContent = err.message; }
 }
 
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : renderListings();
+  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : renderListings();
+}
+
+/* ============ CRM LEADS ============ */
+function renderCrm() {
+  $('#view').innerHTML = `
+  <section class="dashboard-head">
+    <div><div class="eyebrow">CRM / RELEASE 1</div><h2>Lead pipeline</h2><p>Capture, assign, qualify, and follow every customer conversation.</p></div>
+    <div class="dashboard-actions">
+      ${canWriteCrm() ? '<button class="btn btn-primary" id="crm-add">+ Add lead</button>' : ''}
+      <button class="btn" id="crm-companies">Companies</button><button class="btn" id="crm-reports">Reports</button><button class="btn" id="crm-mortgage">Mortgage calculator</button>
+      <button class="btn" id="crm-queue">Assignment queue</button>
+    </div>
+  </section>
+  <div class="filterbar">
+    <div class="filter-grid crm-filter-grid">
+      <div><label>Search</label><input id="crm-q" placeholder="Lead or customer name"></div>
+      <div><label>Stage</label><select id="crm-stage"><option value="">All stages</option>${opts(LEAD_STAGES)}</select></div>
+      <div><label>Qualification</label><select id="crm-temp"><option value="">All</option>${opts(TEMPERATURES)}</select></div>
+      <div><label>Assignment</label><select id="crm-owner"><option value="">Everyone</option><option value="me">Assigned to me</option></select></div>
+      <div><label>Assignment status</label><select id="crm-assignment"><option value="">All</option><option value="unassigned">Unassigned</option><option value="assigned">Assigned</option><option value="reassignment_due">Reassignment due</option><option value="closed">Closed</option></select></div>
+    </div>
+    <div class="filter-actions"><button class="btn btn-primary btn-sm" id="crm-apply">Apply</button><button class="btn btn-sm" id="crm-reset">Reset</button><span class="result-count" id="crm-count"></span></div>
+  </div>
+  <div id="crm-results"><div class="loading-state">Loading leads...</div></div>`;
+  $('#crm-add')?.addEventListener('click', openNewLeadForm);
+  $('#crm-companies').addEventListener('click', openCompanies);
+  $('#crm-reports').addEventListener('click', openCrmReports);
+  $('#crm-mortgage').addEventListener('click', openMortgageCalculator);
+  $('#crm-queue').addEventListener('click', openAssignmentQueue);
+  $('#crm-apply').addEventListener('click', loadCRMLeads);
+  $('#crm-reset').addEventListener('click', renderCrm);
+  $('#crm-q').addEventListener('keydown', e => { if (e.key === 'Enter') loadCRMLeads(); });
+  loadCRMLeads();
+}
+
+async function loadCRMLeads() {
+  const p = new URLSearchParams();
+  const set = (k,v) => { if (v) p.set(k,v); };
+  set('q',$('#crm-q').value.trim()); set('stage',$('#crm-stage').value);
+  set('temperature',$('#crm-temp').value); set('assignedTo',$('#crm-owner').value);
+  set('assignmentStatus',$('#crm-assignment').value);
+  try {
+    const { count, leads } = await api('/crm/leads?' + p.toString());
+    $('#crm-count').textContent = `${count} lead${count === 1 ? '' : 's'}`;
+    $('#crm-results').innerHTML = leads.length ? `<div class="pipeline-table-wrap"><table class="pipeline-table"><tr><th>Customer / opportunity</th><th>Stage</th><th>Priority</th><th>Business</th><th>Owner</th><th>Next follow-up</th></tr>${leads.map(l => `<tr data-lead-id="${esc(l.id)}">
+      <td><b>${esc(l.contactName)}</b><small>${esc(l.title)}${l.contactPhone ? ' · ' + esc(l.contactPhone) : ''}</small></td>
+      <td><span class="lead-stage stage-${esc(l.stage.toLowerCase())}">${esc(l.stage)}</span></td>
+      <td><span class="lead-temp temp-${esc(l.temperature.toLowerCase())}">${esc(l.temperature)}</span></td>
+      <td>${esc(l.businessType)}<small>${esc(l.source)}</small></td>
+      <td>${esc(l.assignedToName || l.assignedTeamName || 'Unassigned')}<small>${esc((l.assignmentStatus||'assigned').replace('_',' '))}</small></td>
+      <td class="${l.nextFollowUpAt && new Date(l.nextFollowUpAt) < new Date() && !['Won','Lost'].includes(l.stage) ? 'overdue' : ''}">${fmtDate(l.nextFollowUpAt)}</td>
+    </tr>`).join('')}</table></div>` : '<div class="empty">No leads match these filters.</div>';
+    document.querySelectorAll('[data-lead-id]').forEach(row => row.addEventListener('click', () => openLead(row.dataset.leadId)));
+  } catch (err) { $('#crm-results').textContent = err.message; }
+}
+
+async function openNewLeadForm() {
+  let contacts, staff, teams, companies, listings;
+  try {
+    [{ contacts }, { staff }, { teams }, { companies }, { listings }] = await Promise.all([api('/crm/contacts'), api('/crm/staff'), api('/crm/teams'), api('/crm/companies'), api('/listings?sort=newest')]);
+  } catch (err) { return toast(err.message); }
+  const o = overlay(`<div class="modal"><button class="close-x">×</button><h2>Capture new lead</h2>
+    <form id="lead-form"><div class="form-grid">
+      <div class="span3"><label>Existing contact (optional)</label><select name="contactId"><option value="">Create a new contact below</option>${contacts.map(c => `<option value="${esc(c.id)}">${esc(c.fullName)} · ${esc(c.email || c.phone)}</option>`).join('')}</select></div>
+      <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName"></div>
+      <div class="new-contact"><label>Customer type</label><select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div>
+      <div class="new-contact"><label>Email</label><input name="email" type="email"></div>
+      <div class="new-contact"><label>Phone</label><input name="phone" placeholder="+971..."></div>
+      <div class="new-contact"><label>Preferred channel</label><select name="preferredChannel"><option>WhatsApp</option><option>Phone</option><option>Email</option><option>SMS</option></select></div>
+      <div class="new-contact"><label>Company</label><select name="companyId"><option value="">Individual</option>${companies.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="new-contact span2"><label>Public professional profile (optional)</label><input name="publicProfileUrl" type="url" placeholder="https://..."></div>
+      <div class="span2"><label>Opportunity title *</label><input name="title" required placeholder="e.g. 2BR home in Dubai Marina"></div>
+      <div><label>Qualification</label><select name="temperature">${opts(TEMPERATURES,'Warm')}</select></div>
+      <div><label>Source *</label><select name="source">${opts(LEAD_SOURCES)}</select></div>
+      <div><label>Business type *</label><select name="businessType">${opts(BUSINESS_TYPES)}</select></div>
+      <div><label>Stage</label><select name="stage">${opts(LEAD_STAGES,'New')}</select></div>
+      <div><label>Budget from (AED)</label><input name="budgetMin" type="number" min="0"></div>
+      <div><label>Budget to (AED)</label><input name="budgetMax" type="number" min="0"></div>
+      <div><label>Preferred areas</label><input name="preferredAreas"></div>
+      <div><label>Assign team</label><select name="assignedTeamId"><option value="">Unassigned</option>${teams.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
+      <div><label>Assign broker</label><select name="assignedTo"><option value="">Unassigned</option>${staff.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select></div>
+      <div><label>Next follow-up</label><input name="nextFollowUpAt" type="datetime-local"></div>
+      <div class="span2"><label>Related listing (optional)</label><select name="listingId"><option value="">No listing selected</option>${listings.map(l=>`<option value="${esc(l.id)}">${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select></div>
+      <div class="span3"><label>Property requirements / first conversation</label><textarea name="propertyRequirements" rows="3"></textarea></div>
+    </div><div class="modal-actions"><button type="button" class="btn" id="lead-cancel">Cancel</button><button class="btn btn-primary">Create lead</button></div></form></div>`);
+  const contactSelect = $('[name="contactId"]',o);
+  const toggleContact = () => o.querySelectorAll('.new-contact').forEach(x => x.classList.toggle('hidden', Boolean(contactSelect.value)));
+  contactSelect.addEventListener('change',toggleContact); toggleContact();
+  $('#lead-cancel',o).addEventListener('click',()=>o.remove());
+  $('#lead-form',o).addEventListener('submit',async e=>{
+    e.preventDefault(); const f=Object.fromEntries(new FormData(e.target));
+    try {
+      let contactId=f.contactId;
+      if(!contactId){
+        if(!f.fullName.trim()||(!f.email.trim()&&!f.phone.trim())) throw new Error('New contacts require a name and email or phone');
+        const contact=await api('/crm/contacts',{method:'POST',body:{fullName:f.fullName,email:f.email,phone:f.phone,contactType:f.contactType,preferredChannel:f.preferredChannel,companyId:f.companyId||null,publicProfileUrl:f.publicProfileUrl||null}});
+        contactId=contact.id;
+      }
+      await api('/crm/leads',{method:'POST',body:{contactId,title:f.title,temperature:f.temperature,source:f.source,businessType:f.businessType,stage:f.stage,
+        budgetMin:f.budgetMin||null,budgetMax:f.budgetMax||null,preferredAreas:f.preferredAreas,assignedTeamId:f.assignedTeamId||null,
+        assignedTo:f.assignedTo||null,nextFollowUpAt:f.nextFollowUpAt||null,propertyRequirements:f.propertyRequirements,listingId:f.listingId||null}});
+      toast('Lead created'); o.remove(); loadCRMLeads();
+    } catch(err){ toast(err.message); }
+  });
+}
+
+async function openLead(id) {
+  let lead, activities, qualificationGuidance, staff, teams, listings;
+  try {
+    [{ lead, activities, qualificationGuidance }, { staff }, { teams }, { listings }] = await Promise.all([
+      api('/crm/leads/' + id),api('/crm/staff'),api('/crm/teams'),api('/listings?sort=newest')]);
+  } catch(err) { return toast(err.message); }
+  const phoneHref=lead.contactPhone?lead.contactPhone.replace(/\D/g,''):'';
+  const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button>
+    <div class="detail-head"><div><div class="eyebrow">${esc(lead.businessType)} LEAD · ${esc(lead.source)}</div><h2>${esc(lead.contactName)}</h2><p>${esc(lead.title)}</p></div><span class="lead-temp temp-${esc(lead.temperature.toLowerCase())}">${esc(lead.temperature)}</span></div>
+    <div class="contact-actions">${lead.contactPhone?`<a class="btn btn-sm" href="https://wa.me/${esc(phoneHref)}" target="_blank" rel="noopener">Open WhatsApp</a><a class="btn btn-sm" href="tel:${esc(lead.contactPhone)}">Call</a>`:''}${lead.contactEmail?`<a class="btn btn-sm" href="mailto:${esc(lead.contactEmail)}?subject=${encodeURIComponent(lead.title)}">Email</a>`:''}<button class="btn btn-sm" id="lead-verify">Verification</button></div>
+    <div class="kv-grid"><div><b>Phone</b>${esc(lead.contactPhone||'—')}<br><small>${esc(lead.phoneStatus||'unverified')}</small></div><div><b>Email</b>${esc(lead.contactEmail||'—')}<br><small>${esc(lead.emailStatus||'unverified')}</small></div><div><b>Preferred channel</b>${esc(lead.preferredChannel||'—')}</div>
+    <div><b>Owner</b>${esc(lead.assignedToName||'Unassigned')}</div><div><b>Team</b>${esc(lead.assignedTeamName||'—')}</div><div><b>Next follow-up</b>${fmtDate(lead.nextFollowUpAt)}</div>
+    <div><b>Budget</b>${lead.budgetMin||lead.budgetMax ? `${lead.budgetMin?fmtPrice(lead.budgetMin):'Any'} – ${lead.budgetMax?fmtPrice(lead.budgetMax):'Any'}`:'—'}</div><div><b>Related listing</b>${esc(lead.listingProject||'—')}</div><div><b>Assignment</b>${esc((lead.assignmentStatus||'assigned').replace('_',' '))}${lead.assignmentDueAt?'<br><small>'+fmtDate(lead.assignmentDueAt)+'</small>':''}</div><div class="span3"><b>Requirements</b>${esc(lead.propertyRequirements||'—')}</div></div>
+    <div class="qualification-note"><b>${esc(lead.temperature)} lead response</b><span>Target: within ${qualificationGuidance.responseMinutes < 60 ? qualificationGuidance.responseMinutes + ' minutes' : qualificationGuidance.responseMinutes / 60 + ' hours'}. ${esc(qualificationGuidance.strategy)}</span><small>${esc(qualificationGuidance.cadence)}</small></div>
+    <div class="lead-controls"><div><label>Stage</label><select id="lead-stage" ${canWriteCrm()?'':'disabled'}>${opts(LEAD_STAGES,lead.stage)}</select></div><div><label>Qualification</label><select id="lead-temp" ${canWriteCrm()?'':'disabled'}>${opts(TEMPERATURES,lead.temperature)}</select></div>
+      ${isCrmLeader()?`<div><label>Team</label><select id="lead-team"><option value="">Unassigned</option>${teams.map(t=>`<option value="${t.id}" ${lead.assignedTeamId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div><div><label>Broker</label><select id="lead-owner"><option value="">Unassigned</option>${staff.map(s=>`<option value="${s.id}" ${lead.assignedTo===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div><button class="btn btn-sm" id="lead-assign">Save assignment</button>`:''}
+      ${canWriteCrm()&&['unassigned','reassignment_due'].includes(lead.assignmentStatus)?'<button class="btn btn-primary btn-sm" id="lead-claim">Claim lead</button>':''}
+      ${canWriteCrm()?'<button class="btn btn-sm" id="lead-brief">Create value brief</button><button class="btn btn-sm" id="lead-briefs">View value briefs</button>':''}
+    </div>
+    <div class="comments"><h3>Activity timeline</h3><div id="activity-list">${activityHTML(activities)}</div>
+    ${canWriteCrm()?`<form id="activity-form" class="activity-form"><div><label>Type</label><select name="activityType">${opts(ACTIVITY_TYPES,'Call')}</select></div><div class="activity-subject"><label>Subject *</label><input name="subject" required placeholder="What happened or needs to happen?"></div><div><label>Due / reminder</label><input name="dueAt" type="datetime-local"></div><div class="activity-details"><label>Details / outcome</label><textarea name="details" rows="2"></textarea></div><button class="btn btn-primary btn-sm">Add activity</button></form>`:''}</div></div>`);
+  $('#lead-stage',o).addEventListener('change',async e=>{
+    const body={stage:e.target.value}; if(e.target.value==='Lost'){const reason=prompt('Why was this lead lost?');if(!reason){e.target.value=lead.stage;return;}body.lostReason=reason;}
+    try{await api('/crm/leads/'+id,{method:'PATCH',body});toast('Stage updated');o.remove();openLead(id);loadCRMLeads();}catch(err){toast(err.message);e.target.value=lead.stage;}
+  });
+  $('#lead-temp',o).addEventListener('change',async e=>{try{await api('/crm/leads/'+id,{method:'PATCH',body:{temperature:e.target.value}});toast('Qualification updated');loadCRMLeads();}catch(err){toast(err.message);}});
+  $('#lead-assign',o)?.addEventListener('click',async()=>{try{await api(`/crm/leads/${id}/assign`,{method:'POST',body:{assignedTeamId:$('#lead-team',o).value||null,assignedTo:$('#lead-owner',o).value||null}});toast('Assignment updated');o.remove();openLead(id);loadCRMLeads();}catch(err){toast(err.message);}});
+  $('#lead-claim',o)?.addEventListener('click',async()=>{try{await api(`/crm/leads/${id}/claim`,{method:'POST'});toast('Lead claimed');o.remove();openLead(id);loadCRMLeads();}catch(err){toast(err.message);}});
+  $('#lead-verify',o).addEventListener('click',()=>openContactVerification(lead,o));
+  $('#lead-brief',o)?.addEventListener('click',()=>openValueBriefForm(lead,listings,o));
+  $('#lead-briefs',o)?.addEventListener('click',()=>openValueBriefs(lead,o));
+  $('#activity-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/leads/${id}/activities`,{method:'POST',body:{activityType:f.activityType,subject:f.subject,dueAt:f.dueAt||null,reminderAt:f.dueAt||null,details:f.details}});toast('Activity added');o.remove();openLead(id);}catch(err){toast(err.message);}});
+  o.querySelectorAll('[data-complete-activity]').forEach(b=>b.addEventListener('click',async()=>{try{await api('/crm/activities/'+b.dataset.completeActivity,{method:'PATCH',body:{completed:true}});o.remove();openLead(id);}catch(err){toast(err.message);}}));
+}
+
+function activityHTML(activities) {
+  return activities.length ? activities.map(a=>`<div class="activity-row ${a.completedAt?'completed':''}"><div class="activity-marker">${esc(a.activityType.slice(0,1))}</div><div><b>${esc(a.subject)}</b><small>${esc(a.activityType)} · ${esc(a.ownerName)} · ${fmtDate(a.dueAt||a.createdAt)}</small>${a.details?`<p>${esc(a.details)}</p>`:''}</div><div class="activity-actions">${a.dueAt?`<a class="btn btn-sm" href="/api/crm/activities/${esc(a.id)}/calendar">Calendar</a>`:''}${!a.completedAt&&a.activityType==='Task'?`<button class="btn btn-sm" data-complete-activity="${esc(a.id)}">Complete</button>`:''}</div></div>`).join('') : '<div class="empty">No activity recorded yet.</div>';
+}
+
+async function openCompanies() {
+  let companies,staff;try{[{companies},{staff}]=await Promise.all([api('/crm/companies'),api('/crm/staff')]);}catch(err){return toast(err.message);}
+  const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><h2>Companies and organisations</h2>
+    ${canWriteCrm()?`<form id="company-form" class="form-grid compact-form"><div class="span2"><label>Company name *</label><input name="name" required></div><div><label>Type</label><select name="companyType">${Object.entries(COMPANY_TYPES).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select></div><div><label>Email</label><input name="email" type="email"></div><div><label>Phone</label><input name="phone"></div><div><label>Website</label><input name="website" type="url"></div><div><label>Owner</label><select name="ownerId">${staff.map(s=>`<option value="${s.id}" ${s.id===ME.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div><div class="span2"><label>Address</label><input name="address"></div><button class="btn btn-primary btn-sm">Add company</button></form>`:''}
+    <div class="pipeline-table-wrap" style="margin-top:18px"><table><tr><th>Company</th><th>Type</th><th>Owner</th><th>Contacts</th><th>Contact</th></tr>${companies.map(c=>`<tr><td><b>${esc(c.name)}</b><small>${esc(c.website||'')}</small></td><td>${esc(COMPANY_TYPES[c.companyType]||c.companyType)}</td><td>${esc(c.ownerName||'—')}</td><td>${c.contactCount}</td><td>${esc(c.email||c.phone||'—')}</td></tr>`).join('')}</table></div></div>`);
+  $('#company-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api('/crm/companies',{method:'POST',body:f});toast('Company created');o.remove();openCompanies();}catch(err){toast(err.message);}});
+}
+
+async function openCrmReports() {
+  let report;try{report=await api('/crm/reports/summary');}catch(err){return toast(err.message);}
+  const rows=(items,value='count')=>items.map(x=>`<tr><td>${esc(x.label||x.name)}</td><td>${x[value]??0}</td></tr>`).join('');
+  const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">MANAGEMENT REPORT</div><h2>CRM performance summary</h2></div><button class="btn btn-sm" id="report-print">Print</button></div>
+    <p class="report-date">Generated ${fmtDate(report.generatedAt)}</p><div class="report-grid"><div><h3>Lead stages</h3><table><tr><th>Stage</th><th>Leads</th></tr>${rows(report.stages)}</table></div><div><h3>Lead sources</h3><table><tr><th>Source</th><th>Leads</th></tr>${rows(report.sources)}</table></div><div><h3>Activities</h3><table><tr><th>Type</th><th>Records</th></tr>${rows(report.activities)}</table></div><div><h3>Broker performance</h3><table><tr><th>Broker</th><th>Leads / Won / Calls</th></tr>${report.agents.map(a=>`<tr><td>${esc(a.name)}</td><td>${a.totalLeads} / ${a.wonLeads} / ${a.calls}</td></tr>`).join('')}</table></div><div><h3>Recent lead movement</h3><table><tr><th>Customer</th><th>Movement</th></tr>${(report.movements||[]).map(x=>`<tr><td>${esc(x.contactName)}<small>${fmtDate(x.timestamp)}</small></td><td>${esc(x.fromStage)} → ${esc(x.toStage)}</td></tr>`).join('')}</table></div><div><h3>Closed leads / sales booked</h3><table><tr><th>Customer</th><th>Result</th></tr>${(report.closedLeads||[]).map(x=>`<tr><td>${esc(x.contactName)}<small>${esc(x.title)}</small></td><td>${esc(x.stage)}${x.lostReason?' · '+esc(x.lostReason):''}</td></tr>`).join('')}</table></div><div class="span2"><h3>Call report</h3><table><tr><th>When</th><th>Customer</th><th>Subject</th><th>Owner</th></tr>${(report.calls||[]).map(x=>`<tr><td>${fmtDate(x.createdAt)}</td><td>${esc(x.contactName)}</td><td>${esc(x.subject)}</td><td>${esc(x.ownerName)}</td></tr>`).join('')}</table></div></div></div>`);$('#report-print',o).addEventListener('click',()=>window.print());
+}
+
+function openMortgageCalculator() {
+  const o=overlay(`<div class="modal" style="max-width:720px"><button class="close-x">×</button><h2>Mortgage and repayment calculator</h2><p class="tool-note">Illustrative estimate only. Bank rates, fees, eligibility and final repayments may differ.</p>
+    <form id="mortgage-form"><div class="form-grid"><div><label>Property price (AED)</label><input name="propertyPrice" type="number" min="1" required></div><div><label>Down payment %</label><input name="downPaymentPercent" type="number" min="0" max="100" value="20" required></div><div><label>Annual interest %</label><input name="annualRatePercent" type="number" min="0" step="0.01" value="4.5" required></div><div><label>Term (years)</label><input name="years" type="number" min="1" max="50" value="25" required></div><div><label>Additional upfront costs</label><input name="additionalCosts" type="number" min="0" value="0"></div></div><div class="modal-actions"><button class="btn btn-primary">Calculate</button></div></form><div id="mortgage-result"></div></div>`);
+  $('#mortgage-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const x=await api('/crm/tools/mortgage',{method:'POST',body:f});$('#mortgage-result',o).innerHTML=`<div class="calculator-result"><div><span>Monthly repayment</span><strong>${fmtPrice(x.monthlyPayment)}</strong></div><div><span>Loan principal</span><strong>${fmtPrice(x.principal)}</strong></div><div><span>Upfront cash</span><strong>${fmtPrice(x.upfrontCash)}</strong></div><div><span>Total interest</span><strong>${fmtPrice(x.totalInterest)}</strong></div></div>`;}catch(err){toast(err.message);}});
+}
+
+async function openAssignmentQueue() {
+  let leads;try{({leads}=await api('/crm/reassignment-queue'));}catch(err){return toast(err.message);}
+  const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><h2>Assignment and reassignment queue</h2><p class="tool-note">Unassigned leads and leads whose response SLA has expired are available here.</p><div class="pipeline-table-wrap"><table><tr><th>Customer</th><th>Opportunity</th><th>Status</th><th>Previous owner</th><th></th></tr>${leads.map(l=>`<tr><td>${esc(l.contactName)}</td><td>${esc(l.title)}</td><td>${esc(l.assignmentStatus.replace('_',' '))}</td><td>${esc(l.assignedToName||'—')}</td><td>${canWriteCrm()?`<button class="btn btn-primary btn-sm" data-claim="${l.id}">Claim</button>`:''}</td></tr>`).join('')}</table>${leads.length?'':'<div class="empty">The assignment queue is clear.</div>'}</div></div>`);
+  o.querySelectorAll('[data-claim]').forEach(b=>b.addEventListener('click',async()=>{try{await api(`/crm/leads/${b.dataset.claim}/claim`,{method:'POST'});toast('Lead claimed');o.remove();openAssignmentQueue();loadCRMLeads();}catch(err){toast(err.message);}}));
+}
+
+function openContactVerification(lead,parent) {
+  const o=overlay(`<div class="modal" style="max-width:620px"><button class="close-x">×</button><h2>Contact verification and public profile</h2><p class="tool-note">Format checks are automatic. Mark verified only after an authorised manual or provider check. Record public professional information only when lawful and relevant.</p><form id="verify-form"><div class="form-grid"><div><label>Email status</label><select name="emailStatus">${['unverified','format_valid','verified','invalid'].map(x=>`<option ${lead.emailStatus===x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Phone status</label><select name="phoneStatus">${['unverified','format_valid','verified','invalid'].map(x=>`<option ${lead.phoneStatus===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="span3"><label>Public professional profile URL</label><input name="publicProfileUrl" type="url" value="${esc(lead.publicProfileUrl||'')}"></div><div class="span3"><label>Screening notes</label><textarea name="screeningNotes" rows="3">${esc(lead.screeningNotes||'')}</textarea></div></div><div class="modal-actions"><button class="btn btn-primary">Save verification</button></div></form></div>`);
+  $('#verify-form',o).addEventListener('submit',async e=>{e.preventDefault();try{await api(`/crm/contacts/${lead.contactId}/verification`,{method:'PATCH',body:Object.fromEntries(new FormData(e.target))});toast('Verification updated');o.remove();parent.remove();openLead(lead.id);}catch(err){toast(err.message);}});
+}
+
+function openValueBriefForm(lead,listings,parent) {
+  const o=overlay(`<div class="modal"><button class="close-x">×</button><h2>Create customer value brief</h2><form id="brief-form"><div class="form-grid"><div class="span3"><label>Property *</label><select name="listingId" required><option value="">Select listing</option>${listings.map(l=>`<option value="${l.id}" ${lead.listingId===l.id?'selected':''}>${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select></div><div><label>Expected annual rent</label><input name="expectedAnnualRent" type="number" min="0"></div><div><label>Estimated annual costs</label><input name="estimatedAnnualCosts" type="number" min="0" value="0"></div><div class="span3"><label>Strong points of the deal *</label><textarea name="strengths" rows="3" required placeholder="Location, pricing, payment plan, demand, developer track record..."></textarea></div><div class="span3"><label>Why this customer should consider it *</label><textarea name="recommendation" rows="3" required></textarea></div></div><div class="modal-actions"><button class="btn btn-primary">Generate brief</button></div></form></div>`);
+  $('#brief-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/leads/${lead.id}/value-briefs`,{method:'POST',body:f});toast('Value brief created');o.remove();parent.remove();openValueBriefs(lead);}catch(err){toast(err.message);}});
+}
+
+async function openValueBriefs(lead,parent) {
+  let briefs;try{({briefs}=await api(`/crm/leads/${lead.id}/value-briefs`));}catch(err){return toast(err.message);}
+  parent?.remove();const o=overlay(`<div class="modal lead-modal brief-print"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">NYSA REALTY · CUSTOMER VALUE BRIEF</div><h2>${esc(lead.contactName)}</h2></div><button class="btn btn-sm" id="brief-print">Print</button></div>${briefs.map(b=>`<section class="value-brief"><h3>${esc(b.project)}</h3><p class="brief-meta">${esc(b.area)} · ${esc(b.propertyType)}${b.bedrooms?' · '+esc(b.bedrooms)+' BR':''} · ${fmtPrice(b.price,b.currency)}</p><div class="calculator-result"><div><span>Expected annual rent</span><strong>${b.expectedAnnualRent?fmtPrice(b.expectedAnnualRent,b.currency):'Not provided'}</strong></div><div><span>Estimated net ROI</span><strong>${b.roiPercent==null?'Not calculated':b.roiPercent+'%'}</strong></div></div><h4>Deal strengths</h4><p>${esc(b.strengths)}</p><h4>Recommendation</h4><p>${esc(b.recommendation)}</p></section>`).join('')||'<div class="empty">No value briefs yet.</div>'}</div>`);$('#brief-print',o).addEventListener('click',()=>window.print());
 }
 
 /* ============ LISTINGS ============ */
@@ -496,12 +710,22 @@ function openCloseModal(l) {
 async function renderAdmin() {
   $('#view').innerHTML = `
   <div class="admin-section">
+    <h2>CRM teams</h2>
+    <div class="admin-toolbar">
+      <div><label>Team name</label><input id="team-name" placeholder="e.g. Residential Sales" style="width:220px"></div>
+      <div><label>Lead response SLA (hours)</label><input id="team-sla" type="number" min="1" max="168" value="4" style="width:110px"></div>
+      <button class="btn btn-primary btn-sm" id="team-create" style="height:33px">Create team</button>
+    </div>
+    <div id="team-table">Loading...</div>
+  </div>
+  <div class="admin-section">
     <h2>Invitations</h2>
     <div class="admin-toolbar">
       <div><label>Scope to email (optional)</label><input id="inv-email" type="email" placeholder="broker@partner.ae" style="width:220px"></div>
       <div><label>Role</label><select id="inv-role" style="width:170px">
         <option value="internal_broker">Internal Broker</option><option value="partner_broker">Partner Broker</option>
         <option value="viewer">Viewer</option><option value="admin">Admin</option></select></div>
+      <div><label>Internal job role</label><select id="inv-job-role" style="width:160px">${Object.entries(JOB_ROLES).map(([k,v])=>`<option value="${k}" ${k==='sales_agent'?'selected':''}>${v}</option>`).join('')}</select></div>
       <div><label>Max uses</label><input id="inv-uses" type="number" min="1" value="1" style="width:80px"></div>
       <div><label>Expires</label><input id="inv-exp" type="date" style="width:150px"></div>
       <button class="btn btn-primary btn-sm" id="inv-create" style="height:33px">Issue invitation</button>
@@ -513,15 +737,33 @@ async function renderAdmin() {
     <h2>Audit log</h2>
     <div class="admin-toolbar">
       <div><label>Entity type</label><select id="al-type" style="width:150px"><option value="">All</option>
-        <option>Listing</option><option>Comment</option><option>Broker</option><option>Invitation</option></select></div>
+        <option>Listing</option><option>Comment</option><option>Broker</option><option>Invitation</option><option>Team</option><option>Contact</option><option>Lead</option><option>Activity</option><option>Company</option><option>ValueBrief</option></select></div>
       <button class="btn btn-sm" id="al-refresh" style="height:33px">Refresh</button>
     </div>
     <div id="audit-table">Loading…</div>
   </div>`;
   $('#inv-create').addEventListener('click', createInvite);
+  $('#team-create').addEventListener('click', createTeam);
   $('#al-refresh').addEventListener('click', loadAudit);
   $('#al-type').addEventListener('change', loadAudit);
-  loadInvites(); loadBrokers(); loadAudit();
+  loadTeams(); loadInvites(); loadBrokers(); loadAudit();
+}
+
+async function createTeam() {
+  try {
+    await api('/crm/teams', { method:'POST', body:{ name:$('#team-name').value.trim(), leadResponseHours:+$('#team-sla').value } });
+    $('#team-name').value=''; toast('Team created'); loadTeams(); loadBrokers();
+  } catch (err) { toast(err.message); }
+}
+
+async function loadTeams() {
+  try {
+    const [{ teams },{ staff }] = await Promise.all([api('/crm/teams'),api('/crm/staff')]);
+    $('#team-table').innerHTML = teams.length ? `<table><tr><th>Team</th><th>Manager</th><th>Members</th><th>Response SLA</th></tr>${teams.map(t=>`<tr><td><b>${esc(t.name)}</b></td><td><select data-team-manager="${t.id}" style="width:170px"><option value="">Unassigned</option>${staff.map(s=>`<option value="${s.id}" ${t.managerId===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></td><td>${t.memberCount}</td><td><input data-team-sla="${t.id}" type="number" min="1" max="168" value="${t.leadResponseHours}" style="width:80px"></td></tr>`).join('')}</table>` : '<div class="empty">No teams yet. Create the first team before assigning leads.</div>';
+    const save=async(id,body)=>{try{await api('/crm/teams/'+id,{method:'PATCH',body});toast('Team updated');loadTeams();}catch(err){toast(err.message);}};
+    document.querySelectorAll('[data-team-manager]').forEach(s=>s.addEventListener('change',()=>save(s.dataset.teamManager,{managerId:s.value||null})));
+    document.querySelectorAll('[data-team-sla]').forEach(i=>i.addEventListener('change',()=>save(i.dataset.teamSla,{leadResponseHours:+i.value})));
+  } catch (err) { $('#team-table').textContent=err.message; }
 }
 
 async function createInvite() {
@@ -529,6 +771,7 @@ async function createInvite() {
     const inv = await api('/admin/invitations', { method: 'POST', body: {
       issuedToEmail: $('#inv-email').value.trim() || null,
       role: $('#inv-role').value,
+      jobRole: $('#inv-job-role').value,
       maxUses: +$('#inv-uses').value || 1,
       expiresAt: $('#inv-exp').value || null
     }});
@@ -540,9 +783,9 @@ async function createInvite() {
 async function loadInvites() {
   try {
     const { invitations } = await api('/admin/invitations');
-    $('#inv-table').innerHTML = `<table><tr><th>Code</th><th>Role</th><th>Scoped to</th><th>Uses</th><th>Expires</th><th>Status</th><th></th></tr>
+    $('#inv-table').innerHTML = `<table><tr><th>Code</th><th>Access / job role</th><th>Scoped to</th><th>Uses</th><th>Expires</th><th>Status</th><th></th></tr>
     ${invitations.map(i => `<tr>
-      <td class="mono">${esc(i.code)}</td><td>${esc(ROLES[i.role])}</td><td>${esc(i.issuedToEmail || 'Anyone')}</td>
+      <td class="mono">${esc(i.code)}</td><td>${esc(ROLES[i.role])}${i.jobRole?' · '+esc(JOB_ROLES[i.jobRole]||i.jobRole):''}</td><td>${esc(i.issuedToEmail || 'Anyone')}</td>
       <td>${i.usedCount}/${i.maxUses}</td><td>${i.expiresAt ? esc(i.expiresAt.slice(0,10)) : '—'}</td>
       <td><span class="pill ${esc(i.status)}">${esc(i.status)}</span></td>
       <td>${i.status === 'active' ? `<button class="btn btn-sm btn-danger" data-revoke-inv="${i.id}">Revoke</button>` : ''}</td>
@@ -555,12 +798,14 @@ async function loadInvites() {
 
 async function loadBrokers() {
   try {
-    const { brokers } = await api('/admin/brokers');
-    $('#broker-table').innerHTML = `<table><tr><th>Name</th><th>Email</th><th>Brokerage</th><th>Role</th><th>Can post</th><th>Status</th><th></th></tr>
+    const [{ brokers }, { teams }] = await Promise.all([api('/admin/brokers'), api('/crm/teams')]);
+    $('#broker-table').innerHTML = `<table><tr><th>Name</th><th>Email</th><th>Brokerage</th><th>Access role</th><th>Job role</th><th>CRM team</th><th>Can post</th><th>Status</th><th></th></tr>
     ${brokers.map(b => `<tr>
       <td>${esc(b.name)}</td><td>${esc(b.email)}</td><td>${esc(b.brokerage || '—')}</td>
       <td><select data-role="${b.id}" style="width:150px" ${b.id === ME.id ? 'disabled' : ''}>
         ${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${b.role === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+      <td>${['admin','internal_broker'].includes(b.role)?`<select data-job-role="${b.id}" style="width:150px">${Object.entries(JOB_ROLES).map(([k,v])=>`<option value="${k}" ${b.jobRole===k?'selected':''}>${v}</option>`).join('')}</select>`:'—'}</td>
+      <td>${['admin','internal_broker'].includes(b.role) ? `<select data-team="${b.id}" style="width:150px"><option value="">Unassigned</option>${teams.map(t=>`<option value="${t.id}" ${b.teamId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select>` : '—'}</td>
       <td>${b.role === 'partner_broker' ? `<input type="checkbox" data-canpost="${b.id}" ${b.canPost ? 'checked' : ''}>` : (b.role === 'viewer' ? 'No' : 'Yes')}</td>
       <td><span class="pill ${esc(b.status)}">${esc(b.status)}</span></td>
       <td>${b.id !== ME.id ? (b.status === 'active'
@@ -569,6 +814,8 @@ async function loadBrokers() {
     </tr>`).join('')}</table>`;
     const patch = async (id, body) => { try { await api('/admin/brokers/' + id, { method: 'PATCH', body }); loadBrokers(); } catch (e) { toast(e.message); loadBrokers(); } };
     document.querySelectorAll('[data-role]').forEach(s => s.addEventListener('change', () => patch(s.dataset.role, { role: s.value })));
+    document.querySelectorAll('[data-job-role]').forEach(s => s.addEventListener('change', () => patch(s.dataset.jobRole, { jobRole: s.value })));
+    document.querySelectorAll('[data-team]').forEach(s => s.addEventListener('change', () => patch(s.dataset.team, { teamId: s.value || null })));
     document.querySelectorAll('[data-canpost]').forEach(c => c.addEventListener('change', () => patch(c.dataset.canpost, { canPost: c.checked })));
     document.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', () => {
       if (confirm('Revoke access? The broker is signed out immediately.')) patch(b.dataset.revoke, { status: 'revoked' });

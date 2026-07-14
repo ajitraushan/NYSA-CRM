@@ -62,8 +62,8 @@ r.post('/auth/setup', async (req, res) => {
 
   const id = uuid();
   await transaction(async (client) => {
-    await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, can_post, password_hash)
-                   VALUES ($1,$2,$3,$4,$5,'admin',1,$6)`,
+    await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role, can_post, password_hash)
+                   VALUES ($1,$2,$3,$4,$5,'admin','admin',1,$6)`,
       [id, name.trim(), email.trim().toLowerCase(), phone || null, 'Nysa Realty', hashPassword(password)], client);
     await audit('Broker', id, 'initial_admin_created', id, null, client);
   });
@@ -89,7 +89,7 @@ r.post('/auth/redeem-invite', async (req, res) => {
   if (!code) return res.status(400).json({ error: 'code is required' });
   const { inv, error } = await validInvite(code.trim());
   if (error) return res.status(400).json({ error });
-  res.json({ valid: true, issuedToEmail: inv.issuedToEmail, role: inv.role });
+  res.json({ valid: true, issuedToEmail: inv.issuedToEmail, role: inv.role, jobRole: inv.jobRole });
 });
 
 // Complete registration
@@ -113,9 +113,10 @@ r.post('/auth/register', async (req, res) => {
       WHERE id = $1 AND status = 'active' AND used_count < max_uses
       RETURNING id`, [inv.id], client);
     if (!consumed) throw new Error('Invitation is no longer available');
-    await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, can_post, password_hash, invited_by)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role, can_post, password_hash, invited_by)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [id, name.trim(), email.trim(), phone || null, brokerage || null, inv.role,
+       inv.jobRole || (inv.role === 'admin' ? 'admin' : inv.role === 'internal_broker' ? 'sales_agent' : null),
        inv.role === 'partner_broker' ? 0 : 1, hashPassword(password), inv.issuedBy], client);
     await audit('Broker', id, 'registered', id, { via_invitation: inv.id }, client);
   });
