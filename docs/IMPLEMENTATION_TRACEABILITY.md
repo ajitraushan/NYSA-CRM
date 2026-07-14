@@ -67,9 +67,32 @@ Verification evidence:
 - PostgreSQL migration execution and end-to-end HTTP workflow tests remain required
   in the deployment environment
 
+### Qualification and financial snapshots
+
+Implementation files:
+
+- `src/migrations/006_qualification_and_finance.sql`
+- `src/routes/qualification-finance.js`
+- deterministic calculation and validation functions in `src/crm-domain.js`
+- administration, assessment-history, and scenario screens in `public/app.js`
+
+Acceptance areas addressed:
+
+- Draft, approval, activation, retirement, and immutable model versions
+- Explainable factor contributions, boundary thresholds, missing-input policy,
+  prohibited sensitive/social inputs, controlled override, and assessment history
+- Mortgage principal, payment, repayment, interest, LTV, and DBR calculations
+- Gross/net yield, annual cost, vacancy, and cash-on-cash calculations
+- Versioned regulatory assumptions and immutable customer/property scenario snapshots
+
+Verification evidence:
+
+- Qualification boundary, missing-input, override, model-change, and prohibited-factor tests
+- Independently calculable mortgage and investment headline-output tests
+- PostgreSQL and HTTP workflow execution remain open deployment-environment checks
+
 ## Remaining increments
 
-1. Versioned qualification models/assessments and persisted financial scenarios
-2. Private property media, proposals, generated versions, documents, and attachments
-3. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
-4. Full workflow, permission, migration, backup, and controlled smoke-test evidence
+1. Private property media, proposals, generated versions, documents, and attachments
+2. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
+3. Full workflow, permission, migration, backup, and controlled smoke-test evidence

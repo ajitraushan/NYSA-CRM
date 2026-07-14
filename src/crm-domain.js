@@ -118,20 +118,24 @@ export function validateContactIdentity(email, phone) {
   };
 }
 
-export function calculateMortgage({ propertyPrice, downPaymentPercent, annualRatePercent, years, additionalCosts = 0 }) {
-  const price = Number(propertyPrice), down = Number(downPaymentPercent), rate = Number(annualRatePercent), term = Number(years), costs = Number(additionalCosts || 0);
+export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmount, annualRatePercent, years, additionalCosts = 0, monthlyIncome, monthlyDebt = 0 }) {
+  const price = Number(propertyPrice), requestedLoan=loanAmount===undefined||loanAmount===null||loanAmount===''?null:Number(loanAmount),
+    down = requestedLoan===null?Number(downPaymentPercent):((price-requestedLoan)/price)*100, rate = Number(annualRatePercent), term = Number(years), costs = Number(additionalCosts || 0);
   if (!Number.isFinite(price) || price <= 0) return { error: 'Property price must be positive' };
   if (!Number.isFinite(down) || down < 0 || down > 100) return { error: 'Down payment must be between 0 and 100' };
   if (!Number.isFinite(rate) || rate < 0 || rate > 100) return { error: 'Annual rate must be between 0 and 100' };
   if (!Number.isFinite(term) || term <= 0 || term > 50) return { error: 'Mortgage term must be between 1 and 50 years' };
   if (!Number.isFinite(costs) || costs < 0) return { error: 'Additional costs cannot be negative' };
   const downPayment = price * down / 100;
-  const principal = price - downPayment;
+  const principal = requestedLoan===null?price-downPayment:requestedLoan;
+  if (!Number.isFinite(principal) || principal < 0 || principal > price) return { error:'Loan amount must be between zero and property price' };
   const months = Math.round(term * 12);
   const monthlyRate = rate / 100 / 12;
   const monthlyPayment = monthlyRate === 0 ? principal / months
     : principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
   const totalRepayment = monthlyPayment * months;
+  const income=monthlyIncome===undefined||monthlyIncome===null||monthlyIncome===''?null:Number(monthlyIncome),debt=Number(monthlyDebt||0);
+  if((income!==null&&(!Number.isFinite(income)||income<=0))||!Number.isFinite(debt)||debt<0)return {error:'Income and debt inputs are invalid'};
   return {
     propertyPrice: price,
     downPayment,
@@ -140,7 +144,9 @@ export function calculateMortgage({ propertyPrice, downPaymentPercent, annualRat
     totalInterest: totalRepayment - principal,
     totalRepayment,
     upfrontCash: downPayment + costs,
-    months
+    months,loanToValue:Math.round(principal/price*10000)/100,
+    debtBurdenRatio:income===null?null:Math.round((monthlyPayment+debt)/income*10000)/100,
+    monthlyIncome:income,monthlyDebt:debt,additionalCosts:costs
   };
 }
 
@@ -149,6 +155,55 @@ export function calculateRoi(price, annualRent, annualCosts = 0) {
   if (!Number.isFinite(p) || p <= 0 || !Number.isFinite(rent) || rent < 0 || !Number.isFinite(costs) || costs < 0)
     return null;
   return Math.round(((rent - costs) / p) * 10000) / 100;
+}
+
+const SENSITIVE_FACTOR_PATTERN=/(age|gender|sex|religion|ethnic|nationality|health|disability|social[_ -]?media|race|marital|politic)/i;
+export function validateQualificationFactors(factors){
+  if(!Array.isArray(factors)||!factors.length)return 'At least one qualification factor is required';
+  const codes=new Set();
+  for(const f of factors){
+    if(!f||!String(f.code||'').match(/^[a-z][a-z0-9_]{1,39}$/))return 'Every factor needs a stable lowercase code';
+    if(codes.has(f.code))return `Duplicate factor code: ${f.code}`;codes.add(f.code);
+    if(SENSITIVE_FACTOR_PATTERN.test(`${f.code} ${f.label||''} ${f.inputSource||''}`))return `Sensitive or social factor is prohibited: ${f.code}`;
+    if(!Number.isFinite(Number(f.min))||!Number.isFinite(Number(f.max))||Number(f.max)<=Number(f.min)||!Number.isFinite(Number(f.weight))||Number(f.weight)<=0)
+      return `Invalid range or weight for ${f.code}`;
+    if(!['reject','zero','exclude'].includes(f.missingTreatment||'reject'))return `Invalid missing-input treatment for ${f.code}`;
+  }
+  return null;
+}
+
+export function calculateQualification(model,inputs={}){
+  const factors=model?.factors,invalid=validateQualificationFactors(factors);if(invalid)return {error:invalid};
+  const contributions=[];let weighted=0,totalWeight=0;
+  for(const f of factors){
+    const raw=inputs[f.code],missing=raw===undefined||raw===null||raw==='';
+    if(missing&&(f.required||f.missingTreatment==='reject'))return {error:`Missing required factor: ${f.code}`};
+    if(missing&&f.missingTreatment==='exclude'){contributions.push({code:f.code,label:f.label,value:null,weight:Number(f.weight),contribution:0,missing:true,excluded:true});continue;}
+    const value=missing?Number(f.min):Number(raw);if(!Number.isFinite(value))return {error:`Invalid factor value: ${f.code}`};
+    const normalized=Math.max(0,Math.min(100,((value-Number(f.min))/(Number(f.max)-Number(f.min)))*100));
+    const contribution=normalized*Number(f.weight);weighted+=contribution;totalWeight+=Number(f.weight);
+    contributions.push({code:f.code,label:f.label,value:missing?null:value,weight:Number(f.weight),normalized,contribution,missing});
+  }
+  const score=totalWeight?Math.round(weighted/totalWeight*100)/100:0;
+  const hotMin=Number(model.thresholds?.hotMin??75),warmMin=Number(model.thresholds?.warmMin??45);
+  const temperature=score>=hotMin?'Hot':score>=warmMin?'Warm':'Cold';
+  return {score,temperature,contributions,recommendation:model.guidance?.[temperature]||null};
+}
+
+export function applyQualificationOverride(calculated,temperature,reason,authorized){
+  if(!temperature||temperature===calculated?.temperature)return {finalTemperature:calculated?.temperature,overrideReason:null};
+  if(!authorized)return {error:'Qualification override is not authorized'};
+  if(!['Hot','Warm','Cold'].includes(temperature)||!String(reason||'').trim())return {error:'Qualification override requires a valid result and reason'};
+  return {finalTemperature:temperature,overrideReason:String(reason).trim()};
+}
+
+export function calculateInvestmentReturns({price,annualRent,annualCosts=0,vacancyPercent=0,cashInvested}){
+  const p=Number(price),rent=Number(annualRent),costs=Number(annualCosts),vacancy=Number(vacancyPercent),cash=Number(cashInvested??price);
+  if(!Number.isFinite(p)||p<=0||!Number.isFinite(rent)||rent<0||!Number.isFinite(costs)||costs<0||!Number.isFinite(vacancy)||vacancy<0||vacancy>100||!Number.isFinite(cash)||cash<=0)
+    return {error:'Investment inputs are invalid'};
+  const effectiveRent=rent*(1-vacancy/100),netIncome=effectiveRent-costs;
+  return {price:p,annualRent:rent,annualCosts:costs,vacancyPercent:vacancy,effectiveRent,netIncome,
+    grossYield:Math.round(rent/p*10000)/100,netYield:Math.round(netIncome/p*10000)/100,cashOnCashReturn:Math.round(netIncome/cash*10000)/100,cashInvested:cash};
 }
 
 export function isReassignmentDue(lead, now = new Date()) {

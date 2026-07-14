@@ -9,6 +9,7 @@ import crmRoutes from './routes/crm.js';
 import governanceRoutes from './routes/governance.js';
 import leadOperationRoutes from './routes/lead-operations.js';
 import websiteIntakeRoutes from './routes/website-intake.js';
+import qualificationFinanceRoutes from './routes/qualification-finance.js';
 import { migrate, closeDatabase } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -22,6 +23,7 @@ app.mount('/api', websiteIntakeRoutes);
 app.mount('/api', crmRoutes);
 app.mount('/api', governanceRoutes);
 app.mount('/api', leadOperationRoutes);
+app.mount('/api', qualificationFinanceRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;
