@@ -240,3 +240,134 @@ It becomes required when the customer or another material party is an organizati
 - Add company-to-contact, lead, activity, document, project, and listing relationships.
 - Add duplicate review based on normalized legal name, trade licence, registration
   country, and verified contact details.
+
+### RR-005: Proposal Composition, Media Selection, and Version Snapshot
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 field and label review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Proposal Builder, Property Inventory, Property Media, Financial
+  Calculator, Contacts, Documents, Activities, Audit
+
+#### Scope clarification
+
+Proposal Setup should contain composition and delivery controls, not duplicate all
+customer, property, media, and financial data. A proposal pulls approved data from
+the linked contact, lead requirement, selected properties, property media, and saved
+financial scenarios. Before generation, it creates an immutable version snapshot so
+the exact content sent to the customer remains reproducible even if source records
+later change.
+
+Property images are managed in Property Media. Proposal Setup allows the agent to
+select which approved images, cover image, floor plans, brochure pages, video/virtual
+tour links, and captions appear in each property section. The proposal version stores
+the selected media references and immutable display snapshot.
+
+#### Proposal fields and controls to add
+
+- Proposal title, language, currency, and validity date
+- Recipient name, recipient company, and delivery contact
+- Agent name, title, phone, email, and team snapshot
+- Selected sections and display order
+- Selected properties and comparison order
+- Selected cover image and approved media per property
+- Image captions, floor-plan inclusion, and optional media links
+- Customer objective and requirement summary snapshot
+- Property highlights, location highlights, amenities, and suitability narrative
+- Payment-plan and acquisition-cost sections
+- Selected mortgage/ROI scenarios and visible assumptions
+- Key considerations, risk notes, disclaimer, and call to action
+- Template version, brand version, disclaimer version, and data-as-of time
+- Proposal version number and superseded-version reference
+- Review/approval status, reviewer, and approval time
+- Generated file name, storage reference, file hash, and generation time
+- Delivery channel, recipient, sent by, sent time, and acknowledgement/view status
+
+#### Validation and audit
+
+- Only approved property media may be selected.
+- Required property, price, permit, media-rights, and financial assumptions must pass
+  validation before generation.
+- Generated or sent versions are immutable; editing creates a new version.
+- Every generated version links to the customer, lead, properties, financial scenario,
+  template, media snapshot, creator, and delivery activity.
+- Customer documents and images remain outside Git and public storage.
+
+#### Required updates
+
+- Expand Proposal Setup fields and add explicit proposal-media selection.
+- Link generated proposal versions to Lead Documents and Activities.
+- Add proposal-version snapshot entities and relationships to the data model.
+- Add generation, visual-content, version, delivery, and reproduction acceptance tests.
+
+### RR-006: Dedicated Phase 1 Reporting and Dashboard Module
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 field and label review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Dashboard, Reporting, Leads, SLA, Activities, Tasks,
+  Qualification, Inventory, Integrations, Audit
+
+#### Gap
+
+The product requirements include dashboards and management reports, and the field
+register identifies fields used in reports, but the register does not currently
+define a dedicated Reporting and Dashboard module with its own filters, measures,
+views, drill-down behavior, export rules, and role scope.
+
+#### Phase 1 dashboards
+
+Agent dashboard:
+
+- Assigned leads by status and qualification
+- Leads awaiting acceptance and approaching/breaching SLA
+- Overdue, due-today, and upcoming tasks and next actions
+- Recent customer activities and follow-up gaps
+- Personal activity counts and lead movement
+
+Manager dashboard:
+
+- Company/team queue, unassigned leads, and assignment workload
+- Acceptance and first-contact SLA performance
+- Lead aging, stage movement, and stalled leads
+- Team calls, activities, follow-up completion, and overdue work
+- Qualification distribution, source performance, conversion, and loss reasons
+- Integration failures requiring operational attention
+
+Director dashboard:
+
+- Lead volume and trend by source, business line, team, and agent
+- Conversion funnel and lead aging
+- SLA and response performance
+- Inventory availability, verification, and aging
+- Proposal generation and delivery activity
+- Data-quality, duplicate, consent, and integration exception indicators
+
+#### Reporting controls and fields
+
+- Reporting period and comparison period
+- Business line, source, campaign, team, agent, queue, and lead-status filters
+- Qualification, activity type, task status, inventory status, and portal filters
+- Saved view name, owner, visibility, default flag, and filter definition
+- Measure definition, calculation date/time, and data-as-of timestamp
+- Drill-down target and record-scope enforcement
+- Export format, requested by, requested time, row count, and audit reference
+- Dashboard refresh status and last successful refresh time
+
+#### Scope boundary
+
+Phase 1 reports use Phase 1 records only. Viewing, offer, negotiation, booking, deal,
+revenue, and commission measures become available when their source modules are
+implemented in later releases. The dashboard must not display invented or manually
+approximated deal KPIs before those records exist.
+
+#### Required updates
+
+- Add Reporting and Dashboard as a field-register module.
+- Add a report catalogue with owner, audience, filters, measures, drill-down, export,
+  and reconciliation rules.
+- Add role-specific dashboard acceptance criteria.
+- Require every displayed count to reconcile to accessible underlying records.
+- Audit exports and enforce the same role and team scope as operational screens.
