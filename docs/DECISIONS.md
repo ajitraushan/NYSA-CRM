@@ -13,12 +13,12 @@
 | D-007 | Hot/Warm/Cold qualification uses transparent first-party factors with manual override. | Avoids opaque decisions and inappropriate personal profiling. | Approved |
 | D-008 | Automated social-media screening is excluded from the first release. | Requires a defined lawful purpose, vendor/privacy assessment, and human review. | Approved |
 | D-009 | The financial calculator is informational and assumption-driven. | It must not imply bank approval or guaranteed investment returns. | Approved |
-| D-010 | Customer Proposal Builder is part of the next release. | Rapid, tailored customer presentation is a core sales workflow. | Approved |
+| D-010 | Customer Proposal Builder is part of Release 1. | Rapid, tailored customer presentation is a core sales workflow. | Implemented locally; acceptance pending |
 | D-011 | Proposals are editable before PDF export and are versioned against the lead/opportunity. | Protects accuracy and preserves the communication record. | Approved |
 | D-012 | Transaction and compliance checklists are configurable. | Requirements vary by transaction type, emirate, and regulatory change. | Approved |
 | D-013 | GitHub `main` and the versioned project documents are the source of truth. | Preserves continuity across tasks, releases, and future developers. | Implemented |
 | D-014 | The canonical local repository is `C:\Users\ajitr\Projects\NYSA-CRM`. | Avoids OneDrive interference with Git internals. | Implemented |
-| D-015 | User-facing NYSA Pocket Ledger naming will become NYSA CRM in the next release. | The current name no longer represents the product scope. | Approved, pending |
+| D-015 | User-facing NYSA Pocket Ledger naming becomes NYSA CRM in Release 1. | The prior name no longer represents the product scope. | Implemented locally; deployment pending |
 | D-016 | NYSA website leads enter a company-owned queue through a secured, idempotent server endpoint in Release 1. | Website intake is high value, controlled by NYSA, and exercises the common integration foundation early. | Approved |
 | D-017 | External lead payloads are normalized into the standard lead workflow while retaining provider IDs and processing history. | One operating model avoids channel-specific lead silos and supports audit and replay. | Approved |
 | D-018 | Meta lead retrieval and Meta conversion-outcome feedback are separate integrations. | They move different data in opposite directions and need separate access, consent, and approval. | Approved |

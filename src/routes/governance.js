@@ -165,11 +165,11 @@ r.get('/crm/contacts/:id/consent',async(req,res)=>{
     FROM marketing_agreements m JOIN document_versions dv ON dv.id=m.document_version_id JOIN document_templates dt ON dt.id=m.template_id
     WHERE m.contact_id=$1 ORDER BY m.created_at DESC`,[contact.id]);
   const active=agreements.find(a=>a.status==='executed'&&new Date(a.effectiveAt)<=new Date()&&(!a.expiresAt||new Date(a.expiresAt)>new Date()));
-  const evidence=await many(`SELECT id,evidence_type,purpose,status,statement_version,captured_at,evidence_hash,source_event_id
+  const evidence=await many(`SELECT id,evidence_type,purpose,status,statement_version,captured_at,evidence_hash,source_event_id,superseded_at
     FROM consent_evidence WHERE contact_id=$1 ORDER BY captured_at DESC`,[contact.id]);
-  const websiteGrant=evidence.find(e=>e.purpose==='marketing'&&e.status==='granted'&&!e.supersededAt);
-  res.json({effectiveConsent:contact.doNotContact?false:Boolean(active||websiteGrant),restricted:Boolean(contact.doNotContact),activeAgreement:active||null,
-    activeWebsiteEvidence:websiteGrant||null,agreements,evidence});
+  const websiteEvidence=evidence.find(e=>e.purpose==='marketing'&&!e.supersededAt);
+  res.json({effectiveConsent:contact.doNotContact?false:Boolean(active),restricted:Boolean(contact.doNotContact),activeAgreement:active||null,
+    websiteEvidence:websiteEvidence||null,agreements,evidence});
 });
 
 r.post('/crm/contacts/:id/marketing-agreements',async(req,res)=>{
@@ -187,6 +187,7 @@ r.post('/crm/contacts/:id/marketing-agreements',async(req,res)=>{
       (id,contact_id,document_version_id,template_id,status,consent_scope,permitted_channels,signed_at,effective_at,expires_at,created_by)
       VALUES ($1,$2,$3,$4,'executed',$5,$6,$7,$8,$9,$10) RETURNING *`,
       [id,contact.id,evidence.id,b.templateId,b.consentScope,b.permittedChannels,b.signedAt||new Date(),b.effectiveAt||new Date(),b.expiresAt||null,req.broker.id],client);
+    await execute("UPDATE marketing_agreements SET status='superseded',superseded_by=$2 WHERE contact_id=$1 AND status='executed' AND id<>$2",[contact.id,id],client);
     await audit('MarketingAgreement',id,'executed',req.broker.id,{contactId:contact.id,documentVersionId:evidence.id},client);return row;
   });
   res.status(201).json(agreement);
@@ -204,8 +205,10 @@ r.post('/crm/marketing-agreements/:id/withdraw',async(req,res)=>{
 
 r.get('/admin/value-sets',async(req,res)=>{
   if(!adminOnly(req,res))return;
-  const sets=await many(`SELECT vs.*,(SELECT COALESCE(json_agg(vd ORDER BY vd.display_order,vd.display_label_en),'[]'::json)
-    FROM value_definitions vd WHERE vd.value_set_id=vs.id) AS definitions FROM value_sets vs ORDER BY vs.name`);
+  const sets=await many(`SELECT vs.*,(SELECT COALESCE(json_agg(json_build_object('id',vd.id,'stableCode',vd.stable_code,
+    'displayLabelEn',vd.display_label_en,'displayLabelAr',vd.display_label_ar,'definitionStatus',vd.definition_status,'displayOrder',vd.display_order,
+    'isDefault',vd.is_default,'effectiveFrom',vd.effective_from,'effectiveTo',vd.effective_to,'replacementValueId',vd.replacement_value_id)
+    ORDER BY vd.display_order,vd.display_label_en),'[]'::json) FROM value_definitions vd WHERE vd.value_set_id=vs.id) AS definitions FROM value_sets vs ORDER BY vs.name`);
   res.json({sets});
 });
 
@@ -223,14 +226,15 @@ r.post('/admin/value-sets/:id/definitions',async(req,res)=>{
   const id=uuid(),row=await one(`INSERT INTO value_definitions
     (id,value_set_id,stable_code,display_label_en,display_label_ar,description,definition_status,display_order,is_default,effective_from,created_by)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[id,set.id,clean(b.stableCode),clean(b.displayLabelEn),clean(b.displayLabelAr),
-      clean(b.description),b.definitionStatus||'draft',Number(b.displayOrder)||0,b.isDefault?1:0,b.effectiveFrom||null,req.broker.id]);
+      clean(b.description),'draft',Number(b.displayOrder)||0,b.isDefault?1:0,b.effectiveFrom||null,req.broker.id]);
   await audit('ValueDefinition',id,'created',req.broker.id,{valueSetId:set.id,stableCode:row.stableCode});res.status(201).json(row);
 });
 
 r.patch('/admin/value-definitions/:id',async(req,res)=>{
   if(!adminOnly(req,res))return;const current=await one('SELECT * FROM value_definitions WHERE id=$1',[req.params.id]);if(!current)return res.status(404).json({error:'Value definition not found'});
   if(req.body?.stableCode!==undefined&&req.body.stableCode!==current.stableCode)return res.status(400).json({error:'Stable codes are immutable'});
-  const b=req.body||{},map={displayLabelEn:'display_label_en',displayLabelAr:'display_label_ar',description:'description',definitionStatus:'definition_status',displayOrder:'display_order',isDefault:'is_default',effectiveFrom:'effective_from',effectiveTo:'effective_to',replacementValueId:'replacement_value_id'};
+  const b=req.body||{};if(b.definitionStatus&&b.definitionStatus!==current.definitionStatus&&(!clean(b.changeReason)||!clean(b.impactReview)))return res.status(400).json({error:'Status changes require changeReason and impactReview'});
+  const map={displayLabelEn:'display_label_en',displayLabelAr:'display_label_ar',description:'description',definitionStatus:'definition_status',displayOrder:'display_order',isDefault:'is_default',effectiveFrom:'effective_from',effectiveTo:'effective_to',replacementValueId:'replacement_value_id',changeReason:'change_reason',impactReview:'impact_review'};
   const sets=[],params=[],changes={};for(const [f,c] of Object.entries(map))if(b[f]!==undefined){let v=b[f];if(f==='isDefault')v=v?1:0;params.push(v);sets.push(`${c}=$${params.length}`);changes[f]=v;}
   if(!sets.length)return res.json(current);params.push(req.broker.id);sets.push(`approved_by=$${params.length}`,`approved_at=NOW()`,`updated_at=NOW()`);params.push(current.id);
   const updated=await one(`UPDATE value_definitions SET ${sets.join(',')} WHERE id=$${params.length} RETURNING *`,params);

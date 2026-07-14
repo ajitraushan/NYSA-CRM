@@ -21,7 +21,12 @@
 Remaining operational item: hosting-provider confirmation of scheduled
 PostgreSQL backup frequency, retention, and off-server storage.
 
-## Release 1: Lead Operations and Sales Enablement - Next
+## Release 1: Lead Operations and Sales Enablement - Local Completion Candidate
+
+The implementation below is present on `agent/release-1-completion`. Production
+acceptance remains gated by fresh/restored PostgreSQL migration, authenticated
+workflow and reconciliation tests, timed proposal acceptance, verified backup,
+exact-commit deployment, and production smoke testing.
 
 ### Foundation
 

@@ -151,3 +151,29 @@ Verification evidence:
 2. Authenticated end-to-end workflow and role-permission tests with controlled data
 3. Dependency audit, verified pre-deployment backup, and production smoke tests
 4. Final deployed-commit documentation and release-note reconciliation
+
+### Acceptance hardening
+
+Implementation files:
+
+- `src/migrations/009_acceptance_hardening.sql`
+- hardening changes in CRM, governance, lead operations, website intake, private
+  documents/proposals, dashboards, and `public/app.js`
+- `docs/RELEASE_1_ACCEPTANCE_STATUS.md`
+
+Acceptance behavior added or corrected:
+
+- Exact executed Marketing Agreement enforcement for outbound channels
+- Governed lost/unqualified/duplicate reasons and database stage-transition guard
+- Explicit SLA continue/pause policy with original and effective deadline history
+- Auditable activity correction and soft-void behavior
+- Generic scoped document links and approved document-template versions
+- Controlled-value activation reason and impact review
+- Approved proposal disclaimers/sections, immutable version-labelled PDF snapshots,
+  and literal company-to-business-to-team-to-manager-to-agent drill-down
+- Manager-visible failed intake exceptions without retaining sensitive payloads
+
+Local verification now totals 24 passing assertions. All JavaScript syntax checks,
+`git diff --check`, the production dependency audit, and rendered PDF visual QA pass.
+The line-by-line status and remaining environment gates are recorded in
+`docs/RELEASE_1_ACCEPTANCE_STATUS.md`.

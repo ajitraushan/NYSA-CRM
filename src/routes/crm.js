@@ -337,6 +337,7 @@ r.post('/crm/leads', async (req, res) => {
   const enumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||
     invalidEnum(b.stage||'New',STAGES,'stage')||invalidEnum(b.temperature||'Warm',TEMPERATURES,'temperature');
   if(enumError) return res.status(400).json({error:enumError});
+  if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
   if(!(await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params)))
     return res.status(400).json({error:'Invalid or inaccessible contactId'});
@@ -359,9 +360,9 @@ r.post('/crm/leads', async (req, res) => {
     const agentId=b.assignedTo||rule?.agentId||null,teamId=b.assignedTeamId||assignee?.teamId||rule?.teamId||null;
     const receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
     const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
-      preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,first_contact_due_at,
+      preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
       sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
       [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Warm',budgetMin,budgetMax,
        clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
        b.nextFollowUpAt||null,req.broker.id,agentId?'assigned':'unassigned',b.listingId||null,receivedAt],client);
@@ -384,6 +385,14 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if (b.stage !== undefined) {
     const stageError = validateLeadStage(b.stage, b.lostReason || lead.lostReason);
     if (stageError) return res.status(400).json({error:stageError});
+    if(b.stage==='Lost'&&!['lost','unqualified','duplicate'].includes(b.resolutionCode||lead.resolutionCode))return res.status(400).json({error:'Lost leads require resolutionCode: lost, unqualified, or duplicate'});
+    if(b.stage==='Lost'){
+      const reasonCode=clean(b.resolutionReasonCode||lead.resolutionReasonCode);if(!reasonCode)return res.status(400).json({error:'Lost leads require an approved resolutionReasonCode'});
+      const approved=await one(`SELECT vd.id FROM value_definitions vd JOIN value_sets vs ON vs.id=vd.value_set_id
+        WHERE vs.stable_code='lead_outcome_reason' AND vd.stable_code=$1 AND vd.definition_status='active'
+        AND (vd.effective_from IS NULL OR vd.effective_from<=NOW()) AND (vd.effective_to IS NULL OR vd.effective_to>NOW())`,[reasonCode]);
+      if(!approved)return res.status(400).json({error:'resolutionReasonCode is not an active approved lead outcome reason'});
+    }
     const transitionError = validateLeadTransition(lead.stage,b.stage);
     if (transitionError) return res.status(409).json({error:transitionError});
   }
@@ -392,7 +401,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if(b.assignedTo&&!(await staffMember(b.assignedTo))) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
   const map={title:'title',source:'source',businessType:'business_type',stage:'stage',temperature:'temperature',budgetMin:'budget_min',
-    budgetMax:'budget_max',preferredAreas:'preferred_areas',propertyRequirements:'property_requirements',assignedTeamId:'assigned_team_id',
+    budgetMax:'budget_max',preferredAreas:'preferred_areas',propertyRequirements:'property_requirements',resolutionCode:'resolution_code',resolutionReasonCode:'resolution_reason_code',assignedTeamId:'assigned_team_id',
     assignedTo:'assigned_to',nextFollowUpAt:'next_follow_up_at',lostReason:'lost_reason',listingId:'listing_id'};
   const sets=[],params=[],changes={};
   let stageParam = null;
@@ -408,7 +417,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if(b.stage!==undefined){
     sets.push(`won_at=CASE WHEN $${stageParam}='Won' THEN COALESCE(won_at,NOW()) ELSE NULL END`);
     sets.push(`closed_at=CASE WHEN $${stageParam} IN ('Won','Lost') THEN COALESCE(closed_at,NOW()) ELSE NULL END`);
-    if(b.stage!=='Lost') sets.push('lost_reason=NULL');
+    if(b.stage!=='Lost') sets.push('lost_reason=NULL','resolution_code=NULL','resolution_reason_code=NULL');
     if(b.assignedTo===undefined) sets.push(`assignment_status=CASE WHEN $${stageParam} IN ('Won','Lost') THEN 'closed' WHEN assigned_to IS NULL THEN 'unassigned' ELSE 'assigned' END`);
   }
   if(b.assignedTo!==undefined){
@@ -502,6 +511,14 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   if(!clean(b.subject)) return res.status(400).json({error:'subject is required'});
   if(b.durationSeconds!==undefined&&b.durationSeconds!==null&&(!Number.isInteger(Number(b.durationSeconds))||Number(b.durationSeconds)<0))return res.status(400).json({error:'durationSeconds must be a non-negative integer'});
   if(b.followUpRequired&&!b.dueAt)return res.status(400).json({error:'A due date is required when follow-up is required'});
+  if(b.direction==='Outbound'&&['Call','Email','WhatsApp'].includes(b.activityType)){
+    const contact=await one('SELECT do_not_contact FROM contacts WHERE id=$1',[lead.contactId]);
+    if(contact?.doNotContact)return res.status(409).json({error:'Outbound communication is blocked by the contact restriction'});
+    const permittedChannel=b.activityType==='Call'?'Phone':b.activityType;
+    const consent=await one(`SELECT id FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW()
+      AND (expires_at IS NULL OR expires_at>NOW()) AND permitted_channels @> ARRAY[$2]::text[] LIMIT 1`,[lead.contactId,permittedChannel]);
+    if(!consent)return res.status(409).json({error:`No effective agreement permits outbound ${b.activityType}`});
+  }
   if(/^offer letter sent$/i.test(clean(b.subject))){
     if(!b.documentVersionId)return res.status(400).json({error:'Offer letter sent requires documentVersionId'});
     const sentVersion=await one("SELECT id FROM document_versions WHERE id=$1 AND status='sent' AND immutable=1",[b.documentVersionId]);
@@ -525,15 +542,26 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
 });
 
 r.patch('/crm/activities/:id', async (req,res)=>{
-  const activity=await one('SELECT * FROM activities WHERE id=$1',[req.params.id]);
+  const activity=await one(`SELECT a.*,l.assigned_to,l.assigned_team_id,l.created_by AS lead_created_by FROM activities a JOIN leads l ON l.id=a.lead_id WHERE a.id=$1`,[req.params.id]);
   if(!activity) return res.status(404).json({error:'Activity not found'});
-  if(req.broker.role!=='admin'&&activity.ownerId!==req.broker.id) return res.status(403).json({error:'Only the activity owner or an admin can update it'});
+  if(activity.ownerId!==req.broker.id&&!canWriteLead(req.broker,{assignedTo:activity.assignedTo,assignedTeamId:activity.assignedTeamId,createdBy:activity.leadCreatedBy})) return res.status(403).json({error:'Activity is outside your writable scope'});
   const completed=req.body.completed;
   if(completed===undefined) return res.status(400).json({error:'completed is required'});
   const updated=await one('UPDATE activities SET completed_at=CASE WHEN $1 THEN COALESCE(completed_at,NOW()) ELSE NULL END,updated_at=NOW() WHERE id=$2 RETURNING *',[Boolean(completed),activity.id]);
   await audit('Activity',activity.id,completed?'completed':'reopened',req.broker.id);
   res.json(updated);
 });
+
+r.patch('/crm/activities/:id/correct',async(req,res)=>{
+  const activity=await one(`SELECT a.*,l.assigned_to,l.assigned_team_id,l.created_by AS lead_created_by FROM activities a JOIN leads l ON l.id=a.lead_id WHERE a.id=$1`,[req.params.id]);if(!activity)return res.status(404).json({error:'Activity not found'});
+  if(activity.ownerId!==req.broker.id&&!canWriteLead(req.broker,{assignedTo:activity.assignedTo,assignedTeamId:activity.assignedTeamId,createdBy:activity.leadCreatedBy}))return res.status(403).json({error:'Activity is outside your writable scope'});
+  const reason=clean(req.body?.correctionReason);if(!reason)return res.status(400).json({error:'correctionReason is required'});const allowed={details:'details',outcome:'outcome',dueAt:'due_at',durationSeconds:'duration_seconds'},sets=[],params=[],changed={};
+  if(req.body?.durationSeconds!==undefined&&req.body.durationSeconds!==null&&(!Number.isInteger(Number(req.body.durationSeconds))||Number(req.body.durationSeconds)<0))return res.status(400).json({error:'durationSeconds must be a non-negative integer'});
+  for(const [field,column] of Object.entries(allowed))if(req.body[field]!==undefined){const value=field==='durationSeconds'?numberOrNull(req.body[field]):clean(req.body[field]);params.push(value);sets.push(`${column}=$${params.length}`);changed[field]=value;}
+  if(!sets.length)return res.status(400).json({error:'At least one correctable field is required'});const row=await transaction(async client=>{params.push(activity.id);const updated=await one(`UPDATE activities SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params,client);const correctionId=uuid();await execute(`INSERT INTO activity_corrections(id,activity_id,prior_snapshot,corrected_fields,correction_reason,corrected_by) VALUES($1,$2,$3,$4,$5,$6)`,[correctionId,activity.id,JSON.stringify(activity),JSON.stringify(changed),reason,req.broker.id],client);await audit('ActivityCorrection',correctionId,'corrected',req.broker.id,{activityId:activity.id,reason,fields:Object.keys(changed)},client);return updated;});res.json(row);
+});
+
+r.delete('/crm/activities/:id',async(req,res)=>{const activity=await one(`SELECT a.*,l.assigned_to,l.assigned_team_id,l.created_by AS lead_created_by FROM activities a JOIN leads l ON l.id=a.lead_id WHERE a.id=$1`,[req.params.id]);if(!activity)return res.status(404).json({error:'Activity not found'});if(activity.ownerId!==req.broker.id&&!canWriteLead(req.broker,{assignedTo:activity.assignedTo,assignedTeamId:activity.assignedTeamId,createdBy:activity.leadCreatedBy}))return res.status(403).json({error:'Activity is outside your writable scope'});const reason=clean(req.body?.reason);if(!reason)return res.status(400).json({error:'Void reason is required'});const row=await one('UPDATE activities SET voided_at=NOW(),voided_by=$1,void_reason=$2,updated_at=NOW() WHERE id=$3 AND voided_at IS NULL RETURNING *',[req.broker.id,reason,activity.id]);if(!row)return res.status(409).json({error:'Activity is already voided'});await audit('Activity',activity.id,'voided',req.broker.id,{reason});res.json(row);});
 
 r.get('/crm/activities/:id/calendar', async (req,res)=>{
   const activity=await one(`SELECT a.*,c.full_name AS contact_name,l.title AS lead_title,l.assigned_to,l.assigned_team_id,l.created_by FROM activities a

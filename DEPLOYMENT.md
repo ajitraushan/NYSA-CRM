@@ -21,6 +21,11 @@ PGPASSWORD=<private database password>
 BOOTSTRAP_KEY=<private random value of at least 24 characters>
 TRUST_PROXY=1
 PGPOOL_MAX=3
+WEBSITE_INTAKE_SECRET=<private random value of at least 32 characters>
+WEBSITE_INTAKE_ACTOR_ID=<active internal broker UUID>
+PRIVATE_STORAGE_DIR=<private absolute directory outside public and source control>
+MAX_MEDIA_BYTES=8388608
+MAX_DOCUMENT_BYTES=10485760
 ```
 
 cPanel sets `NODE_ENV=production` and the application port automatically.
@@ -41,10 +46,10 @@ cPanel sets `NODE_ENV=production` and the application port automatically.
 1. Back up the PostgreSQL database before replacing application files.
 2. Deploy the new `public`, `src`, `test`, `package.json`, and `package-lock.json` contents.
 3. Run NPM Install and restart the application.
-4. Startup applies `002_crm_foundation.sql` and `003_phase1_completion.sql` transactionally. Existing brokers, sessions, listings, comments, invitations, and CRM records are retained.
+4. Startup applies pending numbered migrations `002` through `009` transactionally and records each in `schema_migrations`. Existing brokers, sessions, listings, comments, invitations, and CRM records are retained.
 5. Sign in as an administrator, create CRM teams, and assign internal staff to them.
-6. Run `npm test` and confirm all domain tests pass.
-7. Complete the Phase 1 acceptance checks below.
+6. Run `npm test`, `npm audit --omit=dev --audit-level=high`, and the authenticated PostgreSQL workflow suite.
+7. Complete every open gate in `docs/RELEASE_1_ACCEPTANCE_STATUS.md` and the Phase 1 acceptance checks below.
 
 ### Phase 1 acceptance checks
 

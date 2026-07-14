@@ -3,7 +3,7 @@
 ## Snapshot
 
 - Date: 2026-07-14
-- Environment: Production
+- Production environment: Release 0 remains deployed; Release 1 completion is local and not yet deployed
 - URL: https://crm.nysarealty.com
 - Health endpoint: `GET /api/health`
 - Expected health response: `{ "ok": true, "database": "ready" }`
@@ -11,7 +11,9 @@
 - Node.js hosting runtime: 24.16.0
 - Canonical repository: `C:\Users\ajitr\Projects\NYSA-CRM`
 - GitHub repository: `ajitraushan/NYSA-CRM` (private)
-- Baseline source commit: `0a70326`
+- Production baseline source commit: `0a70326`
+- Release 1 requirements baseline: `3ccbcc78edefb338c3e0d9742c0cdb6b563b537a`
+- Local completion branch: `agent/release-1-completion`
 - Phase 1 field review: RR-001 through RR-011 incorporated into Revision 2
 - Review workbook: 462 fields across 24 modules, awaiting business sign-off
 
@@ -26,6 +28,20 @@
 - Audit records for material current-MVP actions
 - cPanel production deployment and TLS endpoint
 - Private Git source control with secrets and runtime data excluded
+
+## Release 1 Local Completion Candidate
+
+The local completion branch now implements the Release 1 governance, scoped CRM
+access, contacts/companies/channels, documentary marketing consent, lead routing and
+SLA, signed/idempotent website intake, lifecycle/requirements/tasks, explainable
+qualification, immutable finance scenarios, private media/documents, controlled
+proposal versions, role dashboards, reports, governed values, activity correction,
+and hierarchical drill-down described by the `3ccbcc7` baseline.
+
+Local evidence is recorded in `docs/RELEASE_1_ACCEPTANCE_STATUS.md`. This is not a
+production-completion claim: PostgreSQL migration, authenticated end-to-end,
+controlled-data reconciliation, timed proposal, backup, deployment, and production
+smoke gates remain open.
 
 ## Production Verification Completed
 
@@ -50,34 +66,20 @@
 
 ## Known Gaps
 
-- Product package/runtime text still contains NYSA Pocket Ledger naming.
 - Production source is manually deployed; deployment is not yet automated from Git.
-- No dedicated team, contact, lead, activity, opportunity, deal, commission, or document modules.
-- Current roles do not yet match the approved internal NYSA role model.
-- No property media model suitable for customer proposals.
-- No automated test suite or continuous-integration workflow.
+- Release 1 migrations 004–009 have not yet been executed on a fresh database or an isolated restored production backup.
+- Authenticated PostgreSQL-backed role/workflow tests, dashboard reconciliation, and the timed proposal test remain pending.
+- Production still runs Release 0 until a verified backup, exact-commit deployment, and smoke test are completed.
+- Full opportunity/deal, commission, and transaction-compliance workflows remain later releases.
 - No configured email, calendar, WhatsApp, portal, or accounting integration.
 - No configured NYSA website, Meta, Property Finder, or Bayut integration credentials.
 - External broker and customer access are intentionally excluded.
 
 ## Next Approved Workstream
 
-Release 1: Lead Operations and Customer Sales Enablement.
-
-Start with:
-
-1. Obtain business sign-off on the Revision 2 Phase 1 field and label register.
-2. Rename product-facing NYSA Pocket Ledger references to NYSA CRM.
-3. Add automated checks before changing the database schema.
-4. Design and migrate organization settings, external companies, teams, contacts,
-   channels, consent agreements, lead sources, leads, assignments, stage history,
-   activities, tasks, documents, requirements, qualification models/assessments,
-   proposals, reporting/configuration, and common integration records.
-5. Implement role permissions, interactive dashboards, and the agent Call Report.
-6. Implement secured NYSA website lead intake into the company queue.
-7. Add calculator, property media, and Customer Proposal Builder.
-8. Prepare vendor access and field-mapping checklists for Meta, Property Finder,
-   and Bayut without placing credentials in Git.
+Validate and deploy the Release 1 local completion candidate using the five open
+gates in `docs/RELEASE_1_ACCEPTANCE_STATUS.md`; do not start Release 2 until those
+gates and business sign-off are complete.
 
 ## Handoff Prompt for a New Task
 

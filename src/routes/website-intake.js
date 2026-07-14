@@ -57,8 +57,8 @@ async function processEvent(event,b,identity,actor){
     const receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client),leadId=uuid();
     const lead=await one(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,budget_min,budget_max,preferred_areas,property_requirements,
       assigned_team_id,assigned_to,assignment_status,received_at,external_source_id,campaign_code,source_page,source_form,assignment_due_at,
-      original_acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$20,$21,$22) RETURNING *`,
+      original_acceptance_due_at,acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$19,$20,$21,$22) RETURNING *`,
       [leadId,contact.id,clean(b.title)||`${b.businessType} website enquiry`,b.source||'Website',b.businessType,b.temperature||'Warm',b.requirement.budgetMin??null,b.requirement.budgetMax??null,
        Array.isArray(b.requirement.areas)?b.requirement.areas.join(', '):null,clean(b.requirement.notes),rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,event.eventId,
        clean(b.campaign),clean(b.page),clean(b.form),deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,actor.id],client);

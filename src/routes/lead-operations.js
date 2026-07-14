@@ -96,8 +96,8 @@ r.post('/crm/imports/leads',async(req,res)=>{
     const rule=await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source='Current CRM') AND (business_type IS NULL OR business_type=$1) ORDER BY priority,id LIMIT 1`,[b.businessType],client);
     const due=await calculateDeadlines(receivedAt,client),id=uuid();
     const lead=await one(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,assigned_team_id,assigned_to,assignment_status,received_at,
-      external_source_id,assignment_due_at,original_acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
-      VALUES($1,$2,$3,'Current CRM',$4,$5,$6,$7,$8,$9,$10,$11,$11,$12,$13,$14) RETURNING *`,
+      external_source_id,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
+      VALUES($1,$2,$3,'Current CRM',$4,$5,$6,$7,$8,$9,$10,$11,$11,$11,$12,$13,$14) RETURNING *`,
       [id,b.contactId,text(b.title),b.businessType,b.temperature||'Warm',rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,stableId,due.acceptanceDueAt,due.firstContactDueAt,due.policy?.id||null,req.broker.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,$5,$6,$7)`,
       [uuid(),id,rule?.teamId||null,rule?.agentId||null,rule?.agentId?'offered':'queued',due.acceptanceDueAt,req.broker.id],client);
@@ -154,6 +154,17 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
       [id,lead.id,version,text(b.businessLine),b.purpose,Array.isArray(b.propertyTypes)?b.propertyTypes:[],Array.isArray(b.areas)?b.areas:[],budget.min,budget.max,b.fundingMethod,b.bedroomsMin??null,b.bedroomsMax??null,text(b.timelineCode),text(b.notes),req.broker.id],client);
     await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version},client);return created;
   });res.status(201).json(row);
+});
+
+r.post('/crm/leads/:id/holding-status',async(req,res)=>{
+  const {lead,error}=await scopedLead(req);if(error)return res.status(error[0]).json({error:error[1]});if(!canWriteLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your writable scope'});
+  const status=req.body?.holdingStatus;if(!['active','nurture','paused','closed'].includes(status))return res.status(400).json({error:'Invalid holdingStatus'});
+  const row=await transaction(async client=>{const current=await one('SELECT l.*,p.timer_policy FROM leads l LEFT JOIN sla_policies p ON p.id=l.sla_policy_id WHERE l.id=$1 FOR UPDATE',[lead.id],client),pausePolicy=current.timerPolicy==='pause_in_nurture';
+    let updated;if(pausePolicy&&['nurture','paused'].includes(status)&&!current.slaPausedAt){updated=await one('UPDATE leads SET holding_status=$1,sla_paused_at=NOW(),updated_at=NOW() WHERE id=$2 RETURNING *',[status,lead.id],client);}
+    else if(pausePolicy&&status==='active'&&current.slaPausedAt){updated=await one(`UPDATE leads SET holding_status='active',sla_paused_seconds=sla_paused_seconds+EXTRACT(EPOCH FROM (NOW()-sla_paused_at))::int,
+      acceptance_due_at=acceptance_due_at+(NOW()-sla_paused_at),assignment_due_at=assignment_due_at+(NOW()-sla_paused_at),first_contact_due_at=first_contact_due_at+(NOW()-sla_paused_at),sla_paused_at=NULL,updated_at=NOW() WHERE id=$1 RETURNING *`,[lead.id],client);}
+    else updated=await one('UPDATE leads SET holding_status=$1,updated_at=NOW() WHERE id=$2 RETURNING *',[status,lead.id],client);
+    await audit('Lead',lead.id,'holding_status_changed',req.broker.id,{from:current.holdingStatus,to:status,timerPolicy:current.timerPolicy||'continue'},client);return updated;});res.json(row);
 });
 
 r.post('/crm/leads/:id/requirements/:requirementId/matches',async(req,res)=>{
@@ -216,10 +227,10 @@ r.patch('/crm/tasks/:id',async(req,res)=>{
 r.get('/crm/sla-queue',async(req,res)=>{
   const params=[],scope=leadScopeSql('l',req.broker,params);
   const rows=await many(`SELECT l.*,c.full_name AS contact_name,COALESCE(p.warning_minutes,30) AS warning_minutes,
-    CASE WHEN l.accepted_at IS NULL THEN l.original_acceptance_due_at ELSE l.first_contact_due_at END AS active_deadline,
+    CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS active_deadline,
     CASE WHEN l.accepted_at IS NULL THEN 'acceptance' ELSE 'first_contact' END AS sla_kind
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN sla_policies p ON p.id=l.sla_policy_id WHERE (${scope.clause}) AND l.stage NOT IN ('Won','Lost')
-    AND ((l.accepted_at IS NULL AND l.original_acceptance_due_at IS NOT NULL) OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at IS NOT NULL))
+    AND ((l.accepted_at IS NULL AND l.acceptance_due_at IS NOT NULL) OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at IS NOT NULL))
     ORDER BY active_deadline`,params);
   for(const lead of rows){
     const deadline=new Date(lead.activeDeadline),minutes=(deadline-Date.now())/60000;
