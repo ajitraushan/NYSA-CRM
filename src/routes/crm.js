@@ -500,13 +500,18 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   const b=req.body||{};
   if(!ACTIVITY_TYPES.includes(b.activityType)) return res.status(400).json({error:'Invalid activityType'});
   if(!clean(b.subject)) return res.status(400).json({error:'subject is required'});
+  if(/^offer letter sent$/i.test(clean(b.subject))){
+    if(!b.documentVersionId)return res.status(400).json({error:'Offer letter sent requires documentVersionId'});
+    const sentVersion=await one("SELECT id FROM document_versions WHERE id=$1 AND status='sent' AND immutable=1",[b.documentVersionId]);
+    if(!sentVersion)return res.status(400).json({error:'Offer letter sent requires the exact immutable sent document version'});
+  }
   const ownerId=b.ownerId||lead.assignedTo||req.broker.id;
   if(!(await staffMember(ownerId))) return res.status(400).json({error:'Invalid ownerId'});
   const id=uuid();
   const activity=await transaction(async client=>{
-    const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`],client);
+    const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid,document_version_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null],client);
     const isContact=b.direction==='Outbound'&&['Call','Email','WhatsApp','Meeting'].includes(b.activityType);
     await execute(`UPDATE leads SET next_follow_up_at=CASE WHEN $1::boolean THEN $2 ELSE next_follow_up_at END,
       first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,updated_at=NOW() WHERE id=$4`,

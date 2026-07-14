@@ -81,7 +81,7 @@ export function createApp() {
     req.on('data', (c) => {
       if (bodyTooLarge) return;
       bodySize += c.length;
-      if (bodySize > 1e6) {
+      if (bodySize > Number(process.env.MAX_JSON_BODY_BYTES || 12582912)) {
         bodyTooLarge = true;
         chunks.length = 0;
         return res.status(413).json({ error: 'Request body is too large' });

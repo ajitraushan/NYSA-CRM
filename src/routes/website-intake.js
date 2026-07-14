@@ -78,6 +78,7 @@ async function processEvent(event,b,identity,actor){
 }
 
 r.post('/intake/website',async(req,res)=>{
+  if(Buffer.byteLength(req.rawBody||'')>262144)return res.status(413).json({error:'Website intake body is too large'});
   const auth=authenticate(req);if(auth)return res.status(auth.status).json({error:auth.error});
   const b=req.body||{},checked=validatePayload(b);if(checked.error)return res.status(400).json({error:checked.error});
   const actor=await intakeActor();if(!actor)return res.status(503).json({error:'Website intake is not configured'});

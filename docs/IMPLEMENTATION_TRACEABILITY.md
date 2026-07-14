@@ -91,8 +91,34 @@ Verification evidence:
 - Independently calculable mortgage and investment headline-output tests
 - PostgreSQL and HTTP workflow execution remain open deployment-environment checks
 
+### Private media, documents, and proposal versions
+
+Implementation files:
+
+- `src/migrations/007_media_documents_proposals.sql`
+- `src/private-files.js`, `src/simple-pdf.js`, and `src/routes/files-proposals.js`
+- media, document, proposal-template, builder, review, delivery, and download screens
+  in `public/app.js`
+
+Acceptance areas addressed:
+
+- Private random-key storage outside public/Git paths with configured limits
+- Type, magic-byte, extension, size, security-test, hash, ownership, order, source,
+  approval, and download-audit controls
+- Operational document metadata, exact immutable versions, record links, revisions,
+  scoped metadata/download, and precise sent-document activity linking
+- Quick, Investment, and Comparison templates; one-to-three-property validation;
+  authoritative organization/contact/requirement/property/media/finance snapshots;
+  generated PDF hash; review; immutable versioning; and exact delivery evidence
+
+Verification evidence:
+
+- Upload validation, malicious-test rejection, SHA-256, and PDF structure tests pass
+- Full JavaScript syntax and Git patch checks pass
+- Visual PDF fidelity, timed three-minute preparation, PostgreSQL execution, and
+  end-to-end authenticated download workflows remain environment-level tests
+
 ## Remaining increments
 
-1. Private property media, proposals, generated versions, documents, and attachments
-2. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
-3. Full workflow, permission, migration, backup, and controlled smoke-test evidence
+1. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
+2. Full workflow, permission, migration, backup, and controlled smoke-test evidence
