@@ -714,3 +714,133 @@ and commission KPIs appear only after their authoritative modules are implemente
 - Add permission and aggregation tests for Agent, Manager, and Managing Director scopes.
 - Add acceptance tests for dashboard actions, exceptions, drill-down, filter
   consistency, export scope, refresh states, and count reconciliation.
+
+### RR-011: Strategic Managing Director Dashboard and Executive Drill-down
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 dashboard mockup review
+- Status: Approved requirement for inclusion in the next register revision
+- Priority: Must
+- Extends: RR-006 and RR-010
+- Affected modules: Executive Dashboard, Reporting, Targets, Leads, Qualification,
+  SLA, Activities, Inventory, Proposals, Data Quality, Integrations, Future
+  Opportunities, Deals, Revenue and Commissions
+
+#### Executive purpose
+
+The Managing Director dashboard is a strategic decision workspace, not a larger
+version of the manager's operational dashboard. It must help management understand:
+
+1. What is happening across NYSA.
+2. Why performance or risk is changing.
+3. What is likely to happen next based on available authoritative data.
+4. Where management intervention is required.
+
+The default view is summarized and future-oriented. Individual tasks, calls, and
+lead details appear through drill-down or when they contribute to a material
+exception.
+
+#### Executive views
+
+The Managing Director dashboard provides separate interactive views or tabs:
+
+- Executive: company KPIs, period comparison, targets, trends, forecasts where
+  supported, and material exceptions
+- Sales: lead velocity, source quality, qualification, funnel, aging, team capacity,
+  and future pipeline indicators
+- Inventory: availability, aging, verification, permit exposure, media completeness,
+  and portal readiness
+- Operations and Risk: SLA, follow-up, consent, documents, data quality, duplicate
+  records, security/operational exceptions, and integration health
+
+#### Executive KPI presentation
+
+Every applicable KPI includes:
+
+- Current value and unit
+- Approved target or benchmark where available
+- Previous-period value and variance
+- Trend direction and historical series
+- Exception threshold and status
+- Data-as-of and last-refresh time
+- Approved definition and calculation basis
+- Click-through to the contributing population
+
+The dashboard highlights material changes and exceptions instead of presenting an
+unprioritized collection of metrics.
+
+#### Phase 1 forward-looking indicators
+
+Phase 1 may present leading indicators derived from authoritative Phase 1 records:
+
+- New-lead velocity and source mix trend
+- Hot and Warm lead volume and aging
+- Leads at risk of becoming stale
+- Leads without a scheduled next action
+- Expected proposal workload and follow-up exposure
+- Team workload and capacity pressure
+- Inventory aging and availability-confirmation exposure
+- Permit, verification, and media-readiness exposure
+- SLA breach risk based on current deadlines
+- Consent, document, data-quality, and integration exception trends
+
+These indicators must be described as operational forecasts or risk indicators and
+must show their assumptions. They must not be represented as booked revenue.
+
+#### Future financial and pipeline indicators
+
+When the Opportunity, Deal, Revenue, and Commission modules are implemented, the
+executive dashboard may add:
+
+- Weighted opportunity pipeline
+- Expected bookings and closing dates
+- Revenue forecast and forecast versus target
+- Closing probability and stage conversion
+- Commission forecast
+- Marketing source return and acquisition efficiency
+- Scenario and sensitivity comparisons
+
+These measures remain hidden or explicitly unavailable until their authoritative
+source records and approved calculation definitions exist. The system must not infer
+financial performance from free-text notes or proposal values.
+
+#### Hierarchical drill-down
+
+The Managing Director can drill down without losing filter and period context:
+
+```text
+Company
+-> Business line
+-> Team
+-> Manager
+-> Agent
+-> Lead, task, activity, property, proposal, or exception record
+```
+
+Chart segments, KPI values, trend points, and exception counts open the contributing
+records. Breadcrumbs and a return-to-summary action preserve navigation context.
+Drill-down totals reconcile to the selected parent aggregate and prevent double
+counting across overlapping team memberships.
+
+#### Strategic interaction
+
+- Compare current and previous periods.
+- Compare business lines, teams, managers, sources, and campaigns.
+- Apply company-wide filters consistently across views.
+- Save an approved executive view.
+- Open the underlying population and inspect causes.
+- Export the selected, authorized population with an audit record.
+- Initiate permitted management follow-up or reassignment from an exception without
+  altering historical records.
+
+#### Required updates
+
+- Expand the Managing Director dashboard definition in the field register.
+- Add executive-view/tab, target, benchmark, variance, trend, threshold, forecast,
+  assumption, breadcrumb, and drill-down configuration fields.
+- Add a data-maturity rule for each KPI indicating the release/source module required.
+- Add acceptance tests for summary-to-detail reconciliation, period comparison,
+  target variance, future-indicator assumptions, data-maturity gating, navigation
+  context, and company-wide permission scope.
+- Update the dashboard mockup so the Managing Director view is more strategic and
+  summarized while preserving drill-down to operational detail.
