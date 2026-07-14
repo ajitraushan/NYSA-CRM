@@ -429,3 +429,64 @@ assessments remain reproducible.
 - Add model approval, versioning, threshold, factor-weight, and effective-date fields.
 - Add tests for threshold boundaries, missing inputs, model activation, retirement,
   override authorization, explanation, and historical reproducibility.
+
+### RR-008: Separate Controlled-Value Definition Status from User Account Status
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 controlled-values review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Controlled Values, Identity and Access, Invitations, Audit
+
+#### Clarification
+
+The `Active` value currently displayed beside `sales_agent` in the Controlled Values
+sheet describes whether the role code is available for selection. It is not the
+account status of a user assigned to that role. The combined `Status / Order` column
+is ambiguous and must be separated.
+
+Role and account status are independent dimensions. For example:
+
+```text
+role_code = sales_agent
+user_status = suspended
+```
+
+A suspended or revoked user remains historically identifiable as a Sales Agent. The
+role value must not be replaced with `suspended` or `revoked`.
+
+#### Controlled-value register changes
+
+Replace `Status / Order` with separate fields:
+
+- Definition status: draft, active, deprecated, or retired
+- Display order: numeric order in user-interface lists
+- Is default: yes or no, where a default is permitted
+- Effective-from and optional effective-to date
+
+Add a separate `User Account Status` value set:
+
+- Invited
+- Active
+- Suspended
+- Revoked
+
+Optional future status `Locked` may be system-controlled for temporary security
+lockout and should not be confused with administrative suspension.
+
+#### Status behavior
+
+- `Invited`: invitation issued but registration is incomplete.
+- `Active`: user may authenticate and perform authorized actions.
+- `Suspended`: access is temporarily disabled; history and assignments are retained.
+- `Revoked`: access is terminated; active sessions are invalidated and the record is
+  retained for audit.
+- Account-status changes require an authorized actor, reason, timestamp, and audit.
+
+#### Required updates
+
+- Add User Account Status to the Controlled Values sheet.
+- Split definition status, display order, and default indicator into separate columns.
+- Clarify that value-definition status is metadata about the code itself.
+- Add validation and permission tests for invitation, activation, suspension,
+  reactivation, revocation, and session invalidation.
