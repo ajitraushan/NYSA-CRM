@@ -43,7 +43,9 @@ export async function requireAuth(req, res, next) {
   const presented = cookie || token;
   if (!presented) return res.status(401).json({ error: 'Authentication required' });
   const row = await one(`
-    SELECT b.* FROM sessions s JOIN brokers b ON b.id = s.broker_id
+    SELECT b.*,COALESCE((SELECT ARRAY_AGG(tm.team_id::text) FROM team_memberships tm
+      WHERE tm.broker_id=b.id AND tm.membership_role='manager' AND tm.ends_at IS NULL),ARRAY[]::text[]) AS managed_team_ids
+    FROM sessions s JOIN brokers b ON b.id = s.broker_id
     WHERE s.token = $1 AND s.expires_at > NOW()`, [sessionHash(decodeURIComponent(presented))]);
   if (!row) return res.status(401).json({ error: 'Invalid or expired session' });
   if (row.status !== 'active') return res.status(403).json({ error: 'Access revoked' });

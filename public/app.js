@@ -20,8 +20,8 @@ const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewi
 const JOB_ROLES = { admin:'Administrator', sales_agent:'Sales Agent', listing_agent:'Listing Agent', manager:'Manager', director:'Director', accountant:'Accountant' };
 const COMPANY_TYPES = { developer:'Developer', agency:'Agency', corporate_client:'Corporate Client', landlord_company:'Landlord Company', vendor:'Vendor', other:'Other' };
 const hasCrmAccess = () => ME && ['admin','internal_broker'].includes(ME.role);
-const isCrmLeader = () => ME && (ME.role === 'admin' || ['manager','director'].includes(ME.jobRole));
-const canWriteCrm = () => ME && ME.jobRole !== 'accountant';
+const isCrmLeader = () => ME && (ME.role === 'admin' || ME.jobRole === 'manager');
+const canWriteCrm = () => ME && !['director','accountant'].includes(ME.jobRole);
 
 async function api(path, opts = {}) {
   const res = await fetch('/api' + path, {
@@ -32,7 +32,7 @@ async function api(path, opts = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && ME) { logout(false); throw new Error('Session expired — please sign in again'); }
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (!res.ok) { const error=new Error(data.error || 'Request failed'); error.status=res.status; error.data=data; throw error; }
   return data;
 }
 
@@ -327,7 +327,12 @@ async function openNewLeadForm() {
       let contactId=f.contactId;
       if(!contactId){
         if(!f.fullName.trim()||(!f.email.trim()&&!f.phone.trim())) throw new Error('New contacts require a name and email or phone');
-        const contact=await api('/crm/contacts',{method:'POST',body:{fullName:f.fullName,email:f.email,phone:f.phone,contactType:f.contactType,preferredChannel:f.preferredChannel,companyId:f.companyId||null,publicProfileUrl:f.publicProfileUrl||null}});
+        const contactBody={fullName:f.fullName,email:f.email,phone:f.phone,contactType:f.contactType,preferredChannel:f.preferredChannel,
+          whatsappEnabled:f.preferredChannel==='WhatsApp',companyId:f.companyId||null,publicProfileUrl:f.publicProfileUrl||null};
+        let contact;try{contact=await api('/crm/contacts',{method:'POST',body:contactBody});}
+        catch(error){if(error.status!==409||!error.data?.duplicates?.length)throw error;
+          const names=error.data.duplicates.map(x=>x.fullName).join(', ');if(!confirm(`Possible duplicate found: ${names}. Create a separate contact after review?`))return;
+          contact=await api('/crm/contacts',{method:'POST',body:{...contactBody,duplicateReviewed:true}});}
         contactId=contact.id;
       }
       await api('/crm/leads',{method:'POST',body:{contactId,title:f.title,temperature:f.temperature,source:f.source,businessType:f.businessType,stage:f.stage,
@@ -339,15 +344,17 @@ async function openNewLeadForm() {
 }
 
 async function openLead(id) {
-  let lead, activities, qualificationGuidance, staff, teams, listings;
+  let lead, activities, qualificationGuidance, staff, teams, listings, consent;
   try {
     [{ lead, activities, qualificationGuidance }, { staff }, { teams }, { listings }] = await Promise.all([
       api('/crm/leads/' + id),api('/crm/staff'),api('/crm/teams'),api('/listings?sort=newest')]);
   } catch(err) { return toast(err.message); }
+  try{consent=await api(`/crm/contacts/${lead.contactId}/consent`);}catch{consent={effectiveConsent:false,restricted:false};}
   const phoneHref=lead.contactPhone?lead.contactPhone.replace(/\D/g,''):'';
+  const contactLinks=consent.restricted?'<span class="pill revoked">Do not contact</span>':`${lead.contactPhone?`<a class="btn btn-sm" href="https://wa.me/${esc(phoneHref)}" target="_blank" rel="noopener">Open WhatsApp</a><a class="btn btn-sm" href="tel:${esc(lead.contactPhone)}">Call</a>`:''}${lead.contactEmail?`<a class="btn btn-sm" href="mailto:${esc(lead.contactEmail)}?subject=${encodeURIComponent(lead.title)}">Email</a>`:''}`;
   const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button>
     <div class="detail-head"><div><div class="eyebrow">${esc(lead.businessType)} LEAD · ${esc(lead.source)}</div><h2>${esc(lead.contactName)}</h2><p>${esc(lead.title)}</p></div><span class="lead-temp temp-${esc(lead.temperature.toLowerCase())}">${esc(lead.temperature)}</span></div>
-    <div class="contact-actions">${lead.contactPhone?`<a class="btn btn-sm" href="https://wa.me/${esc(phoneHref)}" target="_blank" rel="noopener">Open WhatsApp</a><a class="btn btn-sm" href="tel:${esc(lead.contactPhone)}">Call</a>`:''}${lead.contactEmail?`<a class="btn btn-sm" href="mailto:${esc(lead.contactEmail)}?subject=${encodeURIComponent(lead.title)}">Email</a>`:''}<button class="btn btn-sm" id="lead-verify">Verification</button></div>
+    <div class="contact-actions">${contactLinks}<button class="btn btn-sm" id="lead-verify">Verification</button><button class="btn btn-sm" id="lead-governance">Channels, consent & duplicates</button>${!consent.effectiveConsent&&!consent.restricted?'<span class="tool-note" style="margin:6px 0">No effective marketing consent</span>':''}</div>
     <div class="kv-grid"><div><b>Phone</b>${esc(lead.contactPhone||'—')}<br><small>${esc(lead.phoneStatus||'unverified')}</small></div><div><b>Email</b>${esc(lead.contactEmail||'—')}<br><small>${esc(lead.emailStatus||'unverified')}</small></div><div><b>Preferred channel</b>${esc(lead.preferredChannel||'—')}</div>
     <div><b>Owner</b>${esc(lead.assignedToName||'Unassigned')}</div><div><b>Team</b>${esc(lead.assignedTeamName||'—')}</div><div><b>Next follow-up</b>${fmtDate(lead.nextFollowUpAt)}</div>
     <div><b>Budget</b>${lead.budgetMin||lead.budgetMax ? `${lead.budgetMin?fmtPrice(lead.budgetMin):'Any'} – ${lead.budgetMax?fmtPrice(lead.budgetMax):'Any'}`:'—'}</div><div><b>Related listing</b>${esc(lead.listingProject||'—')}</div><div><b>Assignment</b>${esc((lead.assignmentStatus||'assigned').replace('_',' '))}${lead.assignmentDueAt?'<br><small>'+fmtDate(lead.assignmentDueAt)+'</small>':''}</div><div class="span3"><b>Requirements</b>${esc(lead.propertyRequirements||'—')}</div></div>
@@ -367,6 +374,7 @@ async function openLead(id) {
   $('#lead-assign',o)?.addEventListener('click',async()=>{try{await api(`/crm/leads/${id}/assign`,{method:'POST',body:{assignedTeamId:$('#lead-team',o).value||null,assignedTo:$('#lead-owner',o).value||null}});toast('Assignment updated');o.remove();openLead(id);loadCRMLeads();}catch(err){toast(err.message);}});
   $('#lead-claim',o)?.addEventListener('click',async()=>{try{await api(`/crm/leads/${id}/claim`,{method:'POST'});toast('Lead claimed');o.remove();openLead(id);loadCRMLeads();}catch(err){toast(err.message);}});
   $('#lead-verify',o).addEventListener('click',()=>openContactVerification(lead,o));
+  $('#lead-governance',o).addEventListener('click',()=>openContactGovernance(lead,o));
   $('#lead-brief',o)?.addEventListener('click',()=>openValueBriefForm(lead,listings,o));
   $('#lead-briefs',o)?.addEventListener('click',()=>openValueBriefs(lead,o));
   $('#activity-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/leads/${id}/activities`,{method:'POST',body:{activityType:f.activityType,subject:f.subject,dueAt:f.dueAt||null,reminderAt:f.dueAt||null,details:f.details}});toast('Activity added');o.remove();openLead(id);}catch(err){toast(err.message);}});
@@ -380,10 +388,13 @@ function activityHTML(activities) {
 async function openCompanies() {
   let companies,staff;try{[{companies},{staff}]=await Promise.all([api('/crm/companies'),api('/crm/staff')]);}catch(err){return toast(err.message);}
   const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><h2>Companies and organisations</h2>
-    ${canWriteCrm()?`<form id="company-form" class="form-grid compact-form"><div class="span2"><label>Company name *</label><input name="name" required></div><div><label>Type</label><select name="companyType">${Object.entries(COMPANY_TYPES).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select></div><div><label>Email</label><input name="email" type="email"></div><div><label>Phone</label><input name="phone"></div><div><label>Website</label><input name="website" type="url"></div><div><label>Owner</label><select name="ownerId">${staff.map(s=>`<option value="${s.id}" ${s.id===ME.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div><div class="span2"><label>Address</label><input name="address"></div><button class="btn btn-primary btn-sm">Add company</button></form>`:''}
-    <div class="pipeline-table-wrap" style="margin-top:18px"><table><tr><th>Company</th><th>Type</th><th>Owner</th><th>Contacts</th><th>Contact</th></tr>${companies.map(c=>`<tr><td><b>${esc(c.name)}</b><small>${esc(c.website||'')}</small></td><td>${esc(COMPANY_TYPES[c.companyType]||c.companyType)}</td><td>${esc(c.ownerName||'—')}</td><td>${c.contactCount}</td><td>${esc(c.email||c.phone||'—')}</td></tr>`).join('')}</table></div></div>`);
-  $('#company-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api('/crm/companies',{method:'POST',body:f});toast('Company created');o.remove();openCompanies();}catch(err){toast(err.message);}});
+    ${canWriteCrm()?`<form id="company-form" class="form-grid compact-form"><div class="span2"><label>Company name *</label><input name="name" required></div><div><label>Category</label><select name="companyType">${Object.entries(COMPANY_TYPES).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select></div><div><label>Initial business role</label><select name="companyRole"><option>developer</option><option>agency</option><option>employer</option><option>supplier</option><option>corporate_client</option><option>landlord</option><option>vendor</option><option>other</option></select></div><div><label>Email</label><input name="email" type="email"></div><div><label>Phone</label><input name="phone"></div><div><label>Website</label><input name="website" type="url"></div><div><label>Owner</label><select name="ownerId">${staff.map(s=>`<option value="${s.id}" ${s.id===ME.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div><div class="span2"><label>Address</label><input name="address"></div><button class="btn btn-primary btn-sm">Add company</button></form>`:''}
+    <div class="pipeline-table-wrap" style="margin-top:18px"><table><tr><th>Company</th><th>Category</th><th>Owner</th><th>Contacts</th><th>Contact</th><th></th></tr>${companies.map(c=>`<tr><td><b>${esc(c.name)}</b><small>${esc(c.website||'')}</small></td><td>${esc(COMPANY_TYPES[c.companyType]||c.companyType)}</td><td>${esc(c.ownerName||'—')}</td><td>${c.contactCount}</td><td>${esc(c.email||c.phone||'—')}</td><td><button class="btn btn-sm" data-company-roles="${c.id}">Roles</button></td></tr>`).join('')}</table></div></div>`);
+  $('#company-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const company=await api('/crm/companies',{method:'POST',body:f});await api(`/crm/companies/${company.id}/roles`,{method:'POST',body:{roleCode:f.companyRole,isPrimary:true}});toast('Company created');o.remove();openCompanies();}catch(err){toast(err.message);}});
+  o.querySelectorAll('[data-company-roles]').forEach(b=>b.addEventListener('click',()=>openCompanyRoles(b.dataset.companyRoles)));
 }
+
+async function openCompanyRoles(companyId){let roles;try{({roles}=await api(`/crm/companies/${companyId}/roles`));}catch(err){return toast(err.message);}const o=overlay(`<div class="modal"><button class="close-x">×</button><h2>Company business roles</h2><div>${roles.map(r=>`<span class="pill active">${esc(r.roleCode)}${r.isPrimary?' · primary':''}</span>`).join(' ')||'No roles yet'}</div>${canWriteCrm()?`<form id="company-role-form" class="admin-toolbar" style="margin-top:18px"><select name="roleCode"><option>developer</option><option>agency</option><option>employer</option><option>supplier</option><option>corporate_client</option><option>landlord</option><option>vendor</option><option>other</option></select><label><input type="checkbox" name="isPrimary"> Primary</label><button class="btn btn-primary btn-sm">Add role</button></form>`:''}</div>`);$('#company-role-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.isPrimary=Boolean(f.isPrimary);try{await api(`/crm/companies/${companyId}/roles`,{method:'POST',body:f});o.remove();openCompanyRoles(companyId);}catch(err){toast(err.message);}});}
 
 async function openCrmReports() {
   let report;try{report=await api('/crm/reports/summary');}catch(err){return toast(err.message);}
@@ -407,6 +418,22 @@ async function openAssignmentQueue() {
 function openContactVerification(lead,parent) {
   const o=overlay(`<div class="modal" style="max-width:620px"><button class="close-x">×</button><h2>Contact verification and public profile</h2><p class="tool-note">Format checks are automatic. Mark verified only after an authorised manual or provider check. Record public professional information only when lawful and relevant.</p><form id="verify-form"><div class="form-grid"><div><label>Email status</label><select name="emailStatus">${['unverified','format_valid','verified','invalid'].map(x=>`<option ${lead.emailStatus===x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Phone status</label><select name="phoneStatus">${['unverified','format_valid','verified','invalid'].map(x=>`<option ${lead.phoneStatus===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="span3"><label>Public professional profile URL</label><input name="publicProfileUrl" type="url" value="${esc(lead.publicProfileUrl||'')}"></div><div class="span3"><label>Screening notes</label><textarea name="screeningNotes" rows="3">${esc(lead.screeningNotes||'')}</textarea></div></div><div class="modal-actions"><button class="btn btn-primary">Save verification</button></div></form></div>`);
   $('#verify-form',o).addEventListener('submit',async e=>{e.preventDefault();try{await api(`/crm/contacts/${lead.contactId}/verification`,{method:'PATCH',body:Object.fromEntries(new FormData(e.target))});toast('Verification updated');o.remove();parent.remove();openLead(lead.id);}catch(err){toast(err.message);}});
+}
+
+async function openContactGovernance(lead,parent){
+  let channels,candidates,consent;try{[{channels},{candidates},consent]=await Promise.all([
+    api(`/crm/contacts/${lead.contactId}/channels`),api(`/crm/contacts/${lead.contactId}/duplicates`),api(`/crm/contacts/${lead.contactId}/consent`)]);
+  }catch(err){return toast(err.message);}
+  const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><h2>Contact governance</h2>
+    <div class="kv-grid"><div><b>Marketing consent</b>${consent.effectiveConsent?'Granted':'Not granted'}</div><div><b>Communication restriction</b>${consent.restricted?'Do not contact':'None'}</div><div><b>Evidence</b>${consent.activeAgreement?esc(consent.activeAgreement.templateName+' v'+consent.activeAgreement.templateVersion):'No active executed agreement'}</div></div>
+    <h3 style="margin-top:20px">Validated channels</h3><div class="pipeline-table-wrap"><table><tr><th>Kind</th><th>Label</th><th>Raw value</th><th>Normalized</th><th>Verification</th><th>WhatsApp</th><th>Restriction</th></tr>
+    ${channels.map(c=>`<tr><td>${esc(c.channelKind)}</td><td>${esc(c.usageLabel)}</td><td>${esc(c.rawValue)}</td><td class="mono">${esc(c.normalizedValue)}</td><td>${esc(c.verificationStatus)}</td><td>${c.whatsappEnabled?'Yes':'No'}</td><td>${esc(c.restrictionStatus)}</td></tr>`).join('')||'<tr><td colspan="7">No channels</td></tr>'}</table></div>
+    ${canWriteCrm()?`<form id="channel-form" class="form-grid compact-form" style="margin-top:16px"><div><label>Kind</label><select name="channelKind"><option>Phone</option><option>Email</option></select></div><div><label>Usage label</label><input name="usageLabel" value="Primary"></div><div><label>Value</label><input name="rawValue" required></div><div><label><input name="whatsappEnabled" type="checkbox"> WhatsApp enabled</label></div><button class="btn btn-primary btn-sm">Add channel</button></form>
+    <form id="contact-role-form" class="admin-toolbar"><div><label>Additional customer role</label><select name="roleCode"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div><button class="btn btn-sm">Add role</button></form>`:''}
+    <h3 style="margin-top:20px">Duplicate review</h3>${candidates.length?`<table><tr><th>Candidate</th><th>Match</th><th></th></tr>${candidates.map(c=>`<tr><td>${esc(c.fullName)}<small>${esc(c.email||c.phone||'')}</small></td><td>${esc(c.matchType)}</td><td>${canWriteCrm()&&isCrmLeader()?`<button class="btn btn-danger btn-sm" data-merge="${c.id}">Merge into candidate</button>`:''}</td></tr>`).join('')}</table>`:'<div class="empty">No likely duplicates found.</div>'}</div>`);
+  $('#channel-form',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/contacts/${lead.contactId}/channels`,{method:'POST',body:{...f,whatsappEnabled:Boolean(f.whatsappEnabled)}});toast('Channel added');o.remove();openContactGovernance(lead,parent);}catch(err){if(err.status===409&&err.data?.duplicates?.length&&confirm(`This channel exists on ${err.data.duplicates.map(x=>x.fullName).join(', ')}. Add after duplicate review?`)){await api(`/crm/contacts/${lead.contactId}/channels`,{method:'POST',body:{...f,whatsappEnabled:Boolean(f.whatsappEnabled),duplicateReviewed:true}});o.remove();openContactGovernance(lead,parent);}else toast(err.message);}});
+  $('#contact-role-form',o)?.addEventListener('submit',async e=>{e.preventDefault();try{await api(`/crm/contacts/${lead.contactId}/roles`,{method:'POST',body:Object.fromEntries(new FormData(e.target))});toast('Contact role added');}catch(err){toast(err.message);}});
+  o.querySelectorAll('[data-merge]').forEach(b=>b.addEventListener('click',async()=>{const reason=prompt('Required merge reason');if(!reason)return;try{await api(`/crm/contacts/${lead.contactId}/merge`,{method:'POST',body:{targetContactId:b.dataset.merge,reason}});toast('Contacts merged');o.remove();parent.remove();loadCRMLeads();}catch(err){toast(err.message);}}));
 }
 
 function openValueBriefForm(lead,listings,parent) {
@@ -709,6 +736,12 @@ function openCloseModal(l) {
 /* ============ ADMIN ============ */
 async function renderAdmin() {
   $('#view').innerHTML = `
+  <div class="admin-section"><h2>NYSA Organization Settings</h2><p class="tool-note">Versioned company identity used by proposals, documents and disclaimers. This is separate from external company records.</p>
+    <form id="organization-form" class="form-grid"><div><label>Legal name *</label><input name="legalName" required></div><div><label>Display name *</label><input name="displayName" required></div><div><label>Trade license</label><input name="tradeLicenseNumber"></div><div><label>Registration authority</label><input name="registrationAuthority"></div><div><label>Primary email</label><input name="primaryEmail" type="email"></div><div><label>Primary phone</label><input name="primaryPhone"></div><div><label>Website</label><input name="websiteUrl" type="url"></div><div><label>Currency</label><input name="defaultCurrency" value="AED" maxlength="3"></div><div class="span3"><label>Registered address</label><input name="registeredAddress"></div><div class="span3"><label>Default proposal disclaimer</label><textarea name="defaultDisclaimer" rows="2"></textarea></div><button class="btn btn-primary btn-sm">Save active version</button></form><div id="organization-version" class="tool-note" style="margin-top:10px"></div>
+  </div>
+  <div class="admin-section"><h2>Controlled values</h2><p class="tool-note">Stable codes cannot be renamed after creation and used values are retired, never deleted.</p>
+    <form id="value-set-form" class="admin-toolbar"><div><label>Stable code</label><input name="stableCode" required placeholder="loss_reason"></div><div><label>Name</label><input name="name" required></div><div><label>Class</label><select name="configurationClass"><option>A</option><option>B</option><option>C</option></select></div><button class="btn btn-primary btn-sm">Create value set</button></form><div id="value-set-table">Loading...</div>
+  </div>
   <div class="admin-section">
     <h2>CRM teams</h2>
     <div class="admin-toolbar">
@@ -746,8 +779,29 @@ async function renderAdmin() {
   $('#team-create').addEventListener('click', createTeam);
   $('#al-refresh').addEventListener('click', loadAudit);
   $('#al-type').addEventListener('change', loadAudit);
-  loadTeams(); loadInvites(); loadBrokers(); loadAudit();
+  $('#organization-form').addEventListener('submit',saveOrganization);
+  $('#value-set-form').addEventListener('submit',createValueSet);
+  loadOrganization();loadValueSets();loadTeams(); loadInvites(); loadBrokers(); loadAudit();
 }
+
+async function loadOrganization(){
+  try{const{organization:o}=await api('/crm/organization');if(!o){$('#organization-version').textContent='No active organization version yet.';return;}
+    const form=$('#organization-form');for(const key of ['legalName','displayName','tradeLicenseNumber','registrationAuthority','primaryEmail','primaryPhone','websiteUrl','defaultCurrency','registeredAddress','defaultDisclaimer'])if(form.elements[key])form.elements[key].value=o[key]||'';
+    $('#organization-version').textContent=`Active version ${o.version} · effective ${fmtDate(o.effectiveFrom)}`;
+  }catch(err){$('#organization-version').textContent=err.message;}
+}
+
+async function saveOrganization(e){e.preventDefault();const body=Object.fromEntries(new FormData(e.target));body.status='active';try{await api('/crm/organization/versions',{method:'POST',body});toast('Organization version activated');loadOrganization();}catch(err){toast(err.message);}}
+
+async function createValueSet(e){e.preventDefault();try{await api('/admin/value-sets',{method:'POST',body:Object.fromEntries(new FormData(e.target))});e.target.reset();toast('Value set created');loadValueSets();}catch(err){toast(err.message);}}
+
+async function loadValueSets(){
+  try{const{sets}=await api('/admin/value-sets');$('#value-set-table').innerHTML=sets.length?`<table><tr><th>Set</th><th>Class</th><th>Definitions</th><th></th></tr>${sets.map(s=>`<tr><td><b>${esc(s.name)}</b><small class="mono">${esc(s.stableCode)}</small></td><td>${esc(s.configurationClass)}</td><td>${(s.definitions||[]).map(v=>`${esc(v.displayLabelEn)} <small>(${esc(v.definitionStatus)})</small>`).join('<br>')||'—'}</td><td><button class="btn btn-sm" data-add-definition="${s.id}">Add definition</button></td></tr>`).join('')}</table>`:'<div class="empty">No controlled value sets yet.</div>';
+    document.querySelectorAll('[data-add-definition]').forEach(b=>b.addEventListener('click',()=>openValueDefinition(b.dataset.addDefinition)));
+  }catch(err){$('#value-set-table').textContent=err.message;}
+}
+
+function openValueDefinition(setId){const o=overlay(`<div class="modal"><button class="close-x">×</button><h2>Add controlled value</h2><form id="definition-form"><div class="form-grid"><div><label>Stable code *</label><input name="stableCode" required></div><div><label>English label *</label><input name="displayLabelEn" required></div><div><label>Arabic label</label><input name="displayLabelAr"></div><div><label>Status</label><select name="definitionStatus"><option>draft</option><option>active</option><option>deprecated</option><option>retired</option></select></div><div><label>Display order</label><input name="displayOrder" type="number" value="0"></div><div><label><input name="isDefault" type="checkbox"> Default</label></div></div><div class="modal-actions"><button class="btn btn-primary">Create</button></div></form></div>`);$('#definition-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));f.isDefault=Boolean(f.isDefault);try{await api(`/admin/value-sets/${setId}/definitions`,{method:'POST',body:f});toast('Controlled value created');o.remove();loadValueSets();}catch(err){toast(err.message);}});}
 
 async function createTeam() {
   try {
@@ -759,10 +813,11 @@ async function createTeam() {
 async function loadTeams() {
   try {
     const [{ teams },{ staff }] = await Promise.all([api('/crm/teams'),api('/crm/staff')]);
-    $('#team-table').innerHTML = teams.length ? `<table><tr><th>Team</th><th>Manager</th><th>Members</th><th>Response SLA</th></tr>${teams.map(t=>`<tr><td><b>${esc(t.name)}</b></td><td><select data-team-manager="${t.id}" style="width:170px"><option value="">Unassigned</option>${staff.map(s=>`<option value="${s.id}" ${t.managerId===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></td><td>${t.memberCount}</td><td><input data-team-sla="${t.id}" type="number" min="1" max="168" value="${t.leadResponseHours}" style="width:80px"></td></tr>`).join('')}</table>` : '<div class="empty">No teams yet. Create the first team before assigning leads.</div>';
+    $('#team-table').innerHTML = teams.length ? `<table><tr><th>Team</th><th>Manager</th><th>Members</th><th>Response SLA</th><th></th></tr>${teams.map(t=>`<tr><td><b>${esc(t.name)}</b></td><td><select data-team-manager="${t.id}" style="width:170px"><option value="">Unassigned</option>${staff.map(s=>`<option value="${s.id}" ${t.managerId===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></td><td>${t.memberCount}</td><td><input data-team-sla="${t.id}" type="number" min="1" max="168" value="${t.leadResponseHours}" style="width:80px"></td><td><button class="btn btn-danger btn-sm" data-team-deactivate="${t.id}">Deactivate</button></td></tr>`).join('')}</table>` : '<div class="empty">No teams yet. Create the first team before assigning leads.</div>';
     const save=async(id,body)=>{try{await api('/crm/teams/'+id,{method:'PATCH',body});toast('Team updated');loadTeams();}catch(err){toast(err.message);}};
     document.querySelectorAll('[data-team-manager]').forEach(s=>s.addEventListener('change',()=>save(s.dataset.teamManager,{managerId:s.value||null})));
     document.querySelectorAll('[data-team-sla]').forEach(i=>i.addEventListener('change',()=>save(i.dataset.teamSla,{leadResponseHours:+i.value})));
+    document.querySelectorAll('[data-team-deactivate]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Deactivate this team? Existing history is retained.'))save(b.dataset.teamDeactivate,{active:false});}));
   } catch (err) { $('#team-table').textContent=err.message; }
 }
 

@@ -6,6 +6,7 @@ import listingRoutes from './routes/listings.js';
 import commentRoutes from './routes/comments.js';
 import adminRoutes from './routes/admin.js';
 import crmRoutes from './routes/crm.js';
+import governanceRoutes from './routes/governance.js';
 import { migrate, closeDatabase } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,7 @@ app.mount('/api', listingRoutes);
 app.mount('/api', commentRoutes);
 app.mount('/api', adminRoutes);
 app.mount('/api', crmRoutes);
+app.mount('/api', governanceRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;

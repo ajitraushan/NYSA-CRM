@@ -71,6 +71,9 @@ r.patch('/admin/brokers/:id', async (req, res) => {
     if (teamId !== undefined && (teamId || null) !== broker.teamId) {
       changes.teamId = { from:broker.teamId, to:teamId||null };
       await execute('UPDATE brokers SET team_id=$1 WHERE id=$2', [teamId||null,broker.id], client);
+      await execute('UPDATE team_memberships SET ends_at=NOW() WHERE broker_id=$1 AND ends_at IS NULL',[broker.id],client);
+      if(teamId) await execute(`INSERT INTO team_memberships (id,team_id,broker_id,membership_role,created_by)
+        VALUES ($1,$2,$3,$4,$5)`,[uuid(),teamId,broker.id,(jobRole||broker.jobRole)==='manager'?'manager':'member',req.broker.id],client);
     }
     if (jobTitle !== undefined && (jobTitle || null) !== broker.jobTitle) {
       changes.jobTitle = { from:broker.jobTitle, to:jobTitle||null };

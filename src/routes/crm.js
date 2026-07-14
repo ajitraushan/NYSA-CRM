@@ -4,12 +4,14 @@ import { requireAuth } from '../auth.js';
 import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS, ACTIVITY_TYPES,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
   validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue } from '../crm-domain.js';
+import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
+  canWriteLead, canAssignLead, leadScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 
 const r = Router();
 r.use(requireAuth, requireCrmAccess);
 
 function requireCrmAccess(req, res, next) {
-  if (!['admin', 'internal_broker'].includes(req.broker.role))
+  if (!hasInternalCrmIdentity(req.broker))
     return res.status(403).json({ error: 'CRM customer data is restricted to NYSA staff' });
   next();
 }
@@ -33,17 +35,8 @@ async function staffMember(id) {
   return one("SELECT id, team_id FROM brokers WHERE id=$1 AND role IN ('admin','internal_broker') AND status='active'", [id]);
 }
 
-function canManageLead(broker, lead) {
-  return isLeader(broker) || lead.assignedTo === broker.id || lead.createdBy === broker.id ||
-    (broker.teamId && lead.assignedTeamId === broker.teamId);
-}
-
-function isLeader(broker) {
-  return broker.role === 'admin' || ['manager','director'].includes(broker.jobRole);
-}
-
 function canWriteCrm(broker) {
-  return broker.jobRole !== 'accountant';
+  return !isCrmReadOnly(broker);
 }
 
 async function refreshAssignmentStatuses() {
@@ -61,6 +54,7 @@ function icsDate(value) {
 
 r.get('/crm/overview', async (req, res) => {
   await refreshAssignmentStatuses();
+  const scoped=leadScopeSql('leads',req.broker,[]);
   const stats = await one(`SELECT
     COUNT(*) FILTER (WHERE stage NOT IN ('Won','Lost'))::int AS open_leads,
     COUNT(*) FILTER (WHERE stage = 'New')::int AS new_leads,
@@ -68,7 +62,7 @@ r.get('/crm/overview', async (req, res) => {
     COUNT(*) FILTER (WHERE next_follow_up_at < NOW() AND stage NOT IN ('Won','Lost'))::int AS overdue_follow_ups,
     COUNT(*) FILTER (WHERE stage = 'Won' AND won_at >= DATE_TRUNC('month', NOW()))::int AS won_this_month,
     COUNT(*) FILTER (WHERE assignment_status IN ('unassigned','reassignment_due') AND stage NOT IN ('Won','Lost'))::int AS assignment_queue
-    FROM leads`);
+    FROM leads WHERE ${scoped.clause}`,scoped.params);
   const due = await many(`SELECT a.*, l.title AS lead_title, c.full_name AS contact_name
     FROM activities a JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id
     WHERE a.completed_at IS NULL AND a.owner_id=$1 AND COALESCE(a.reminder_at,a.due_at) IS NOT NULL
@@ -77,8 +71,12 @@ r.get('/crm/overview', async (req, res) => {
 });
 
 r.get('/crm/staff', async (req, res) => {
+  const params=[];let scope='id=$1';params.push(req.broker.id);
+  if(isCompanyReader(req.broker)){scope="role IN ('admin','internal_broker')";params.length=0;}
+  else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships tm
+    WHERE tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL AND tm.team_id=brokers.team_id))`;}
   const staff = await many(`SELECT id,name,email,team_id,job_title,job_role FROM brokers
-    WHERE role IN ('admin','internal_broker') AND status='active' ORDER BY name`);
+    WHERE (${scope}) AND role IN ('admin','internal_broker') AND status='active' ORDER BY name`,params);
   res.json({ staff });
 });
 
@@ -97,29 +95,43 @@ r.post('/crm/teams', async (req, res) => {
     return res.status(400).json({ error: 'leadResponseHours must be between 1 and 168' });
   if (managerId && !(await staffMember(managerId))) return res.status(400).json({ error: 'Invalid managerId' });
   const id = uuid();
-  const team = await one(`INSERT INTO teams (id,name,manager_id,lead_response_hours)
-    VALUES ($1,$2,$3,$4) RETURNING *`, [id, clean(name), managerId || null, +leadResponseHours]);
-  await audit('Team', id, 'created', req.broker.id, { name: team.name });
+  const team = await transaction(async client=>{
+    const row=await one(`INSERT INTO teams (id,name,manager_id,lead_response_hours)
+      VALUES ($1,$2,$3,$4) RETURNING *`, [id, clean(name), managerId || null, +leadResponseHours],client);
+    if(managerId){await execute(`INSERT INTO team_memberships (id,team_id,broker_id,membership_role,created_by)
+      VALUES ($1,$2,$3,'manager',$4)`,[uuid(),id,managerId,req.broker.id],client);await execute('UPDATE brokers SET team_id=COALESCE(team_id,$1) WHERE id=$2',[id,managerId],client);}
+    await audit('Team', id, 'created', req.broker.id, { name: row.name },client);return row;
+  });
   res.status(201).json(team);
 });
 
 r.patch('/crm/teams/:id', async (req, res) => {
   if (req.broker.role !== 'admin') return res.status(403).json({ error: 'Only admins can edit teams' });
-  const team = await one('SELECT * FROM teams WHERE id=$1 AND active=1', [req.params.id]);
+  const team = await one('SELECT * FROM teams WHERE id=$1', [req.params.id]);
   if (!team) return res.status(404).json({ error: 'Team not found' });
-  const { name, managerId, leadResponseHours } = req.body || {};
+  const { name, managerId, leadResponseHours, active } = req.body || {};
   if (managerId && !(await staffMember(managerId))) return res.status(400).json({ error: 'Invalid managerId' });
   if (leadResponseHours !== undefined && (!Number.isInteger(+leadResponseHours) || +leadResponseHours < 1 || +leadResponseHours > 168))
     return res.status(400).json({ error: 'leadResponseHours must be between 1 and 168' });
-  const updated = await one(`UPDATE teams SET name=COALESCE($1,name),manager_id=$2,
-    lead_response_hours=COALESCE($3,lead_response_hours) WHERE id=$4 RETURNING *`,
-    [clean(name), managerId === undefined ? team.managerId : managerId || null, leadResponseHours === undefined ? null : +leadResponseHours, team.id]);
-  await audit('Team', team.id, 'edited', req.broker.id, { name:updated.name, managerId:updated.managerId, leadResponseHours:updated.leadResponseHours });
+  if(active!==undefined&&![0,1,true,false].includes(active))return res.status(400).json({error:'active must be boolean'});
+  const updated = await transaction(async client=>{
+    const nextManager=managerId===undefined?team.managerId:managerId||null;
+    const row=await one(`UPDATE teams SET name=COALESCE($1,name),manager_id=$2,
+      lead_response_hours=COALESCE($3,lead_response_hours),active=COALESCE($4,active) WHERE id=$5 RETURNING *`,
+      [clean(name),nextManager,leadResponseHours===undefined?null:+leadResponseHours,active===undefined?null:active?1:0,team.id],client);
+    if(managerId!==undefined&&nextManager!==team.managerId){
+      await execute("UPDATE team_memberships SET ends_at=NOW() WHERE team_id=$1 AND membership_role='manager' AND ends_at IS NULL",[team.id],client);
+      if(nextManager) await execute(`INSERT INTO team_memberships (id,team_id,broker_id,membership_role,created_by)
+        VALUES ($1,$2,$3,'manager',$4) ON CONFLICT (team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role='manager'`,[uuid(),team.id,nextManager,req.broker.id],client);
+    }
+    await audit('Team',team.id,'edited',req.broker.id,{name:row.name,managerId:row.managerId,leadResponseHours:row.leadResponseHours,active:row.active},client);return row;
+  });
   res.json(updated);
 });
 
 r.get('/crm/companies', async (req, res) => {
   const params=[], where=['c.archived_at IS NULL'];
+  where.push(companyScopeSql('c',req.broker,params).clause);
   if (req.query.q) { params.push(`%${req.query.q}%`); where.push(`(c.name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`); }
   const companies = await many(`SELECT c.*,b.name AS owner_name,
     (SELECT COUNT(*)::int FROM contacts x WHERE x.company_id=c.id AND x.archived_at IS NULL) AS contact_count
@@ -159,6 +171,7 @@ r.patch('/crm/companies/:id', async (req,res)=>{
 
 r.get('/crm/contacts', async (req, res) => {
   const where = ['c.archived_at IS NULL'], params = [];
+  where.push(contactScopeSql('c',req.broker,params).clause);
   if (req.query.q) {
     params.push(`%${req.query.q}%`);
     where.push(`(c.full_name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`);
@@ -182,14 +195,30 @@ r.post('/crm/contacts', async (req, res) => {
   const ownerId = b.ownerId || req.broker.id;
   if (!(await staffMember(ownerId))) return res.status(400).json({ error: 'Invalid ownerId' });
   if (b.companyId && !(await one('SELECT id FROM companies WHERE id=$1 AND archived_at IS NULL',[b.companyId]))) return res.status(400).json({error:'Invalid companyId'});
+  const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
+    JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+    ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
+  if(duplicates.length&&!b.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates});
+  const roles=Array.isArray(b.contactRoles)&&b.contactRoles.length?[...new Set(b.contactRoles)]:[b.contactType||'buyer'];
+  if(roles.some(role=>!CONTACT_TYPES.includes(role)))return res.status(400).json({error:'Invalid contact role'});
   const id = uuid();
-  const contact = await one(`INSERT INTO contacts
-    (id,full_name,email,phone,contact_type,company_name,company_id,preferred_channel,nationality,language,notes,owner_id,created_by,email_status,phone_status,public_profile_url)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-    [id,clean(b.fullName),identity.email,identity.phone,b.contactType||'buyer',clean(b.companyName),b.companyId||null,
-     b.preferredChannel||null,clean(b.nationality),clean(b.language),clean(b.notes),ownerId,req.broker.id,identity.emailStatus,identity.phoneStatus,clean(b.publicProfileUrl)]);
-  await audit('Contact', id, 'created', req.broker.id, { fullName: contact.fullName });
-  res.status(201).json(contact);
+  const contact = await transaction(async client=>{
+    const row=await one(`INSERT INTO contacts
+      (id,full_name,email,phone,contact_type,company_name,company_id,preferred_channel,nationality,language,notes,owner_id,created_by,email_status,phone_status,public_profile_url,
+       preferred_contact_time,do_not_contact,contact_restriction_reason,source_first_seen)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
+      [id,clean(b.fullName),identity.email,identity.phone,b.contactType||'buyer',clean(b.companyName),b.companyId||null,
+       b.preferredChannel||null,clean(b.nationality),clean(b.language),clean(b.notes),ownerId,req.broker.id,identity.emailStatus,identity.phoneStatus,clean(b.publicProfileUrl),
+       clean(b.preferredContactTime),b.doNotContact?1:0,clean(b.contactRestrictionReason),clean(b.sourceFirstSeen)],client);
+    for(const role of roles)await execute(`INSERT INTO contact_roles (id,contact_id,role_code,created_by) VALUES ($1,$2,$3,$4)`,[uuid(),id,role,req.broker.id],client);
+    if(identity.email)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+      VALUES ($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),id,String(b.email).trim(),identity.email,identity.emailStatus,req.broker.id],client);
+    if(identity.phone)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
+      VALUES ($1,$2,'Phone','Primary',$3,$4,$5,1,$6,$7)`,[uuid(),id,String(b.phone).trim(),identity.phone,b.whatsappEnabled||b.preferredChannel==='WhatsApp'?1:0,identity.phoneStatus,req.broker.id],client);
+    if(b.companyId)await execute(`INSERT INTO company_contacts (id,company_id,contact_id,relationship_role,is_primary,created_by) VALUES ($1,$2,$3,$4,1,$5)`,[uuid(),b.companyId,id,clean(b.companyRelationshipRole)||'customer_contact',req.broker.id],client);
+    await audit('Contact',id,'created',req.broker.id,{fullName:row.fullName,duplicateReviewed:Boolean(b.duplicateReviewed)},client);return row;
+  });
+  res.status(201).json({...contact,duplicateWarnings:duplicates});
 });
 
 r.patch('/crm/contacts/:id', async (req, res) => {
@@ -210,6 +239,11 @@ r.patch('/crm/contacts/:id', async (req, res) => {
     if(identity.error) return res.status(400).json({error:identity.error});
     req.body.email=identity.email;req.body.phone=identity.phone;
     patchedIdentity=identity;
+    const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
+      JOIN contacts c ON c.id=cc.contact_id WHERE c.id<>$1 AND c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+      ((cc.channel_kind='Email' AND cc.normalized_value=$2) OR (cc.channel_kind='Phone' AND cc.normalized_value=$3))`,
+      [contact.id,identity.email,identity.phone]);
+    if(duplicates.length&&!req.body.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates});
   }
   const sets=[], params=[], changes={};
   for (const [field,column] of Object.entries(map)) if (req.body[field] !== undefined) {
@@ -219,15 +253,30 @@ r.patch('/crm/contacts/:id', async (req, res) => {
   if(patchedIdentity){params.push(patchedIdentity.emailStatus);sets.push(`email_status=$${params.length}`);params.push(patchedIdentity.phoneStatus);sets.push(`phone_status=$${params.length}`);}
   if (!sets.length) return res.json(contact);
   params.push(contact.id);
-  const updated = await one(`UPDATE contacts SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`, params);
-  await audit('Contact', contact.id, 'edited', req.broker.id, changes);
+  const updated = await transaction(async client=>{
+    const row=await one(`UPDATE contacts SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params,client);
+    if(patchedIdentity){
+      for(const [kind,value,raw,status,whatsapp] of [
+        ['Email',patchedIdentity.email,req.body.email,patchedIdentity.emailStatus,0],
+        ['Phone',patchedIdentity.phone,req.body.phone,patchedIdentity.phoneStatus,req.body.whatsappEnabled||req.body.preferredChannel==='WhatsApp'?1:0]]){
+        if(value){const existing=await one(`SELECT id FROM contact_channels WHERE contact_id=$1 AND channel_kind=$2 ORDER BY is_primary DESC,created_at LIMIT 1`,[contact.id,kind],client);
+          if(existing)await execute(`UPDATE contact_channels SET raw_value=$1,normalized_value=$2,verification_status=$3,whatsapp_enabled=$4,updated_at=NOW() WHERE id=$5`,[String(raw??value).trim(),value,status,whatsapp,existing.id],client);
+          else await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
+            VALUES ($1,$2,$3,'Primary',$4,$5,$6,1,$7,$8)`,[uuid(),contact.id,kind,String(raw??value).trim(),value,whatsapp,status,req.broker.id],client);
+        }else await execute(`DELETE FROM contact_channels WHERE contact_id=$1 AND channel_kind=$2 AND is_primary=1`,[contact.id,kind],client);
+      }
+    }
+    await audit('Contact',contact.id,'edited',req.broker.id,changes,client);return row;
+  });
   res.json(updated);
 });
 
 r.patch('/crm/contacts/:id/verification', async (req,res)=>{
   const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
   if(!contact) return res.status(404).json({error:'Contact not found'});
-  if(!canManageLead(req.broker,{assignedTo:contact.ownerId,createdBy:contact.createdBy,assignedTeamId:null})) return res.status(403).json({error:'Insufficient permissions'});
+  const scopeParams=[contact.id],scope=contactScopeSql('c',req.broker,scopeParams);
+  const permitted=await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND ${scope.clause}`,scope.params);
+  if(!permitted||isCrmReadOnly(req.broker)) return res.status(403).json({error:'Insufficient permissions'});
   const {emailStatus,phoneStatus,publicProfileUrl,screeningNotes}=req.body||{};
   const statuses=['unverified','format_valid','verified','invalid'];
   if(emailStatus&&!statuses.includes(emailStatus)||phoneStatus&&!statuses.includes(phoneStatus)) return res.status(400).json({error:'Invalid verification status'});
@@ -241,6 +290,7 @@ r.patch('/crm/contacts/:id/verification', async (req,res)=>{
 r.get('/crm/leads', async (req, res) => {
   await refreshAssignmentStatuses();
   const where = ['1=1'], params=[];
+  where.push(leadScopeSql('l',req.broker,params).clause);
   const add=(clause,value)=>{ params.push(value); where.push(clause.replace('?',`$${params.length}`)); };
   if (req.query.stage && STAGES.includes(req.query.stage)) add('l.stage=?',req.query.stage);
   if (req.query.temperature && TEMPERATURES.includes(req.query.temperature)) add('l.temperature=?',req.query.temperature);
@@ -266,6 +316,7 @@ r.get('/crm/leads/:id', async (req, res) => {
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
     LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN listings x ON x.id=l.listing_id WHERE l.id=$1`,[req.params.id]);
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
+  if (!canReadLead(req.broker,lead)) return res.status(403).json({ error:'Lead is outside your permitted scope' });
   const activities = await many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name FROM activities a
     JOIN brokers b ON b.id=a.owner_id JOIN brokers x ON x.id=a.created_by
     WHERE a.lead_id=$1 ORDER BY COALESCE(a.due_at,a.created_at) DESC`,[lead.id]);
@@ -279,7 +330,10 @@ r.post('/crm/leads', async (req, res) => {
   const enumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||
     invalidEnum(b.stage||'New',STAGES,'stage')||invalidEnum(b.temperature||'Warm',TEMPERATURES,'temperature');
   if(enumError) return res.status(400).json({error:enumError});
-  if(!(await one('SELECT id FROM contacts WHERE id=$1 AND archived_at IS NULL',[b.contactId]))) return res.status(400).json({error:'Invalid contactId'});
+  const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
+  if(!(await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params)))
+    return res.status(400).json({error:'Invalid or inaccessible contactId'});
+  if((b.assignedTo||b.assignedTeamId)&&!isManager(req.broker)) return res.status(403).json({error:'Only managers or admins can assign a new lead'});
   const assignee=b.assignedTo?await staffMember(b.assignedTo):null;
   if(b.assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.assignedTeamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.assignedTeamId]))) return res.status(400).json({error:'Invalid assignedTeamId'});
@@ -302,8 +356,7 @@ r.post('/crm/leads', async (req, res) => {
 r.patch('/crm/leads/:id', async (req,res)=>{
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
-  if(!canManageLead(req.broker,lead)) return res.status(403).json({error:'Lead is assigned to another team'});
+  if(!canWriteLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your writable scope'});
   const b=req.body||{};
   const enumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||
     invalidEnum(b.stage,STAGES,'stage')||invalidEnum(b.temperature,TEMPERATURES,'temperature');
@@ -313,7 +366,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
     if (stageError) return res.status(400).json({error:stageError});
   }
   if(b.budgetMin!==undefined||b.budgetMax!==undefined){const budget=validateBudget(b.budgetMin===undefined?lead.budgetMin:b.budgetMin,b.budgetMax===undefined?lead.budgetMax:b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});}
-  if((b.assignedTo!==undefined||b.assignedTeamId!==undefined)&&!isLeader(req.broker)) return res.status(403).json({error:'Only managers, directors, or admins can reassign leads'});
+  if((b.assignedTo!==undefined||b.assignedTeamId!==undefined)&&!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can reassign this lead'});
   if(b.assignedTo&&!(await staffMember(b.assignedTo))) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
   const map={title:'title',source:'source',businessType:'business_type',stage:'stage',temperature:'temperature',budgetMin:'budget_min',
@@ -354,18 +407,20 @@ r.patch('/crm/leads/:id', async (req,res)=>{
 
 r.get('/crm/reassignment-queue', async (req,res)=>{
   await refreshAssignmentStatuses();
+  const params=[],scope=leadScopeSql('l',req.broker,params);
   const leads=await many(`SELECT l.*,c.full_name AS contact_name,b.name AS assigned_to_name,t.name AS assigned_team_name
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id
-    WHERE l.assignment_status IN ('unassigned','reassignment_due') AND l.stage NOT IN ('Won','Lost')
-    ORDER BY CASE l.assignment_status WHEN 'reassignment_due' THEN 1 ELSE 2 END,l.created_at ASC`);
+    WHERE (${scope.clause}) AND l.assignment_status IN ('unassigned','reassignment_due') AND l.stage NOT IN ('Won','Lost')
+    ORDER BY CASE l.assignment_status WHEN 'reassignment_due' THEN 1 ELSE 2 END,l.created_at ASC`,scope.params);
   res.json({count:leads.length,leads});
 });
 
 r.post('/crm/leads/:id/claim', async (req,res)=>{
-  if(!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
+  if(!isManager(req.broker)) return res.status(403).json({error:'Only a scoped manager or admin can claim queued leads'});
   await refreshAssignmentStatuses();
   const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
+  if(req.broker.role!=='admin'&&lead.assignedTeamId&&lead.assignedTeamId!==req.broker.teamId) return res.status(403).json({error:'Lead belongs to another team'});
   if(!['unassigned','reassignment_due'].includes(lead.assignmentStatus)) return res.status(409).json({error:'Lead is not available for reassignment'});
   const updated=await transaction(async client=>{
     const row=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=COALESCE($2,assigned_team_id),
@@ -379,9 +434,9 @@ r.post('/crm/leads/:id/claim', async (req,res)=>{
 });
 
 r.post('/crm/leads/:id/assign', async (req,res)=>{
-  if(!isLeader(req.broker)) return res.status(403).json({error:'Only managers, directors, or admins can assign leads'});
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
+  if(!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can assign this lead'});
   const {assignedTo,assignedTeamId}=req.body||{};
   const assignee=assignedTo?await staffMember(assignedTo):null;
   if(assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
@@ -397,8 +452,7 @@ r.post('/crm/leads/:id/assign', async (req,res)=>{
 r.post('/crm/leads/:id/activities', async (req,res)=>{
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
-  if(!canManageLead(req.broker,lead)) return res.status(403).json({error:'Lead is assigned to another team'});
+  if(!canWriteLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your writable scope'});
   const b=req.body||{};
   if(!ACTIVITY_TYPES.includes(b.activityType)) return res.status(400).json({error:'Invalid activityType'});
   if(!clean(b.subject)) return res.status(400).json({error:'subject is required'});
@@ -425,9 +479,11 @@ r.patch('/crm/activities/:id', async (req,res)=>{
 });
 
 r.get('/crm/activities/:id/calendar', async (req,res)=>{
-  const activity=await one(`SELECT a.*,c.full_name AS contact_name,l.title AS lead_title FROM activities a
+  const activity=await one(`SELECT a.*,c.full_name AS contact_name,l.title AS lead_title,l.assigned_to,l.assigned_team_id,l.created_by FROM activities a
     JOIN contacts c ON c.id=a.contact_id JOIN leads l ON l.id=a.lead_id WHERE a.id=$1`,[req.params.id]);
   if(!activity) return res.status(404).json({error:'Activity not found'});
+  if(!canReadLead(req.broker,{assignedTo:activity.assignedTo,assignedTeamId:activity.assignedTeamId,createdBy:activity.createdBy}))
+    return res.status(403).json({error:'Activity is outside your permitted scope'});
   if(!activity.dueAt) return res.status(400).json({error:'Activity needs a due date before calendar export'});
   const start=icsDate(activity.dueAt),end=icsDate(new Date(new Date(activity.dueAt).getTime()+30*60000));
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NYSA CRM//EN','BEGIN:VEVENT',`UID:${icsEscape(activity.calendarUid||activity.id+'@crm.nysarealty.com')}`,
@@ -441,32 +497,40 @@ r.post('/crm/tools/mortgage', async (req,res)=>{
 });
 
 r.get('/crm/reports/summary', async (req,res)=>{
+  const scoped=(alias)=>{const params=[];const result=leadScopeSql(alias,req.broker,params);return{...result,params};};
+  const stageScope=scoped('l'),sourceScope=scoped('l'),activityScope=scoped('l'),agentScope=scoped('l'),
+    movementScope=scoped('l'),callScope=scoped('l'),closedScope=scoped('l');
   const [stages,sources,activities,agents,movements,calls,closedLeads]=await Promise.all([
-    many(`SELECT stage AS label,COUNT(*)::int AS count FROM leads GROUP BY stage ORDER BY count DESC`),
-    many(`SELECT source AS label,COUNT(*)::int AS count FROM leads GROUP BY source ORDER BY count DESC`),
-    many(`SELECT activity_type AS label,COUNT(*)::int AS count,
-      COUNT(*) FILTER (WHERE completed_at IS NOT NULL)::int AS completed FROM activities GROUP BY activity_type ORDER BY count DESC`),
-    many(`SELECT b.id,b.name,
-      (SELECT COUNT(*)::int FROM leads l WHERE l.assigned_to=b.id) AS total_leads,
-      (SELECT COUNT(*)::int FROM leads l WHERE l.assigned_to=b.id AND l.stage='Won') AS won_leads,
-      (SELECT COUNT(*)::int FROM activities a WHERE a.owner_id=b.id AND a.activity_type='Call') AS calls
-      FROM brokers b WHERE b.role IN ('admin','internal_broker') ORDER BY total_leads DESC`),
+    many(`SELECT l.stage AS label,COUNT(*)::int AS count FROM leads l WHERE ${stageScope.clause} GROUP BY l.stage ORDER BY count DESC`,stageScope.params),
+    many(`SELECT l.source AS label,COUNT(*)::int AS count FROM leads l WHERE ${sourceScope.clause} GROUP BY l.source ORDER BY count DESC`,sourceScope.params),
+    many(`SELECT a.activity_type AS label,COUNT(*)::int AS count,
+      COUNT(*) FILTER (WHERE a.completed_at IS NOT NULL)::int AS completed FROM activities a JOIN leads l ON l.id=a.lead_id
+      WHERE ${activityScope.clause} GROUP BY a.activity_type ORDER BY count DESC`,activityScope.params),
+    many(`SELECT b.id,b.name,COUNT(DISTINCT l.id)::int AS total_leads,
+      COUNT(DISTINCT l.id) FILTER (WHERE l.stage='Won')::int AS won_leads,
+      COUNT(DISTINCT a.id) FILTER (WHERE a.activity_type='Call')::int AS calls
+      FROM brokers b LEFT JOIN leads l ON l.assigned_to=b.id AND (${agentScope.clause})
+      LEFT JOIN activities a ON a.lead_id=l.id WHERE b.role IN ('admin','internal_broker')
+      GROUP BY b.id,b.name ORDER BY total_leads DESC`,agentScope.params),
     many(`SELECT a.timestamp,c.full_name AS contact_name,l.title,a.details::jsonb->'stage'->>'from' AS from_stage,
       a.details::jsonb->'stage'->>'to' AS to_stage,b.name AS performed_by_name
       FROM audit_log a JOIN leads l ON l.id=a.entity_id JOIN contacts c ON c.id=l.contact_id JOIN brokers b ON b.id=a.performed_by
-      WHERE a.entity_type='Lead' AND a.action='edited' AND a.details IS NOT NULL AND a.details::jsonb ? 'stage'
-      ORDER BY a.timestamp DESC LIMIT 100`),
+      WHERE (${movementScope.clause}) AND a.entity_type='Lead' AND a.action='edited' AND a.details IS NOT NULL AND a.details::jsonb ? 'stage'
+      ORDER BY a.timestamp DESC LIMIT 100`,movementScope.params),
     many(`SELECT a.created_at,c.full_name AS contact_name,l.title,a.subject,a.outcome,b.name AS owner_name
       FROM activities a JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=l.contact_id JOIN brokers b ON b.id=a.owner_id
-      WHERE a.activity_type='Call' ORDER BY a.created_at DESC LIMIT 100`),
+      WHERE (${callScope.clause}) AND a.activity_type='Call' ORDER BY a.created_at DESC LIMIT 100`,callScope.params),
     many(`SELECT l.closed_at,c.full_name AS contact_name,l.title,l.stage,l.lost_reason,b.name AS assigned_to_name
       FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
-      WHERE l.stage IN ('Won','Lost') ORDER BY l.closed_at DESC LIMIT 100`)
+      WHERE (${closedScope.clause}) AND l.stage IN ('Won','Lost') ORDER BY l.closed_at DESC LIMIT 100`,closedScope.params)
   ]);
   res.json({generatedAt:new Date().toISOString(),stages,sources,activities,agents,movements,calls,closedLeads});
 });
 
 r.get('/crm/leads/:id/value-briefs', async (req,res)=>{
+  const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
+  if(!lead) return res.status(404).json({error:'Lead not found'});
+  if(!canReadLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your permitted scope'});
   const briefs=await many(`SELECT v.*,l.project,l.developer,l.area,l.property_type,l.bedrooms,l.size_sqft,l.price,l.currency,
     c.full_name AS contact_name FROM value_briefs v JOIN listings l ON l.id=v.listing_id JOIN leads x ON x.id=v.lead_id
     JOIN contacts c ON c.id=x.contact_id WHERE v.lead_id=$1 ORDER BY v.created_at DESC`,[req.params.id]);
@@ -474,8 +538,8 @@ r.get('/crm/leads/:id/value-briefs', async (req,res)=>{
 });
 
 r.post('/crm/leads/:id/value-briefs', async (req,res)=>{
-  if(!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);if(!lead) return res.status(404).json({error:'Lead not found'});
+  if(!canWriteLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your writable scope'});
   const b=req.body||{},listingId=b.listingId||lead.listingId;
   if(!listingId||!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[listingId]))) return res.status(400).json({error:'A valid listingId is required'});
   if(!clean(b.strengths)||!clean(b.recommendation)) return res.status(400).json({error:'strengths and recommendation are required'});
