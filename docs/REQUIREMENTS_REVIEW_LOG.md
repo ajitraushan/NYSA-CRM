@@ -490,3 +490,96 @@ lockout and should not be confused with administrative suspension.
 - Clarify that value-definition status is metadata about the code itself.
 - Add validation and permission tests for invitation, activation, suspension,
   reactivation, revocation, and session invalidation.
+
+### RR-009: Controlled-Value and Workflow Maintenance
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 controlled-values review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Admin Settings, Controlled Values, Workflow Configuration,
+  Reporting, Integrations, Audit
+
+#### Maintenance principle
+
+Authorized administrators maintain approved business reference values through an
+Admin Settings screen. They must not edit application code, database rows, or Excel
+files to change production values. Stable codes remain immutable after use; display
+labels may be changed with history.
+
+#### Configuration classes
+
+Class A - configurable reference values:
+
+- Lead sources and source details
+- Company categories and roles
+- Activity outcomes
+- Loss, unqualified, reassignment, and task reasons
+- Property features, amenities, and internal labels
+
+Authorized admins may add, activate, deprecate, reorder, translate, and set effective
+dates for these values through controlled settings.
+
+Class B - workflow and security statuses:
+
+- User account status
+- Lead status
+- Assignment status
+- Task status
+- Qualification result
+- Proposal/document status
+- Property availability and publication status
+
+These values affect transitions, permissions, SLA calculations, dashboards, reports,
+and integrations. Adding or changing one requires an impact review, approved
+transition rules, migration/report mapping, tests, and a controlled release. They are
+not freely editable in production merely because they appear in a controlled list.
+
+Class C - provider and integration mappings:
+
+- Property Finder and Bayut property/location/status mappings
+- Meta form, campaign, and outcome mappings
+- Email, WhatsApp, and calendar provider mappings
+
+Internal stable codes remain authoritative. Provider-specific codes are maintained as
+versioned mappings with effective dates and reconciliation tests.
+
+#### Controlled-value fields
+
+- Value-set ID, stable code, and display label
+- Description and usage guidance
+- Definition status and display order
+- Is default flag
+- Effective-from and effective-to dates
+- English and Arabic labels where required
+- Created/changed/approved by and timestamps
+- Deprecation reason and replacement value
+- Usage count and impact summary
+
+#### Maintenance workflow
+
+1. Administrator proposes a new value or label change.
+2. The system identifies affected records, rules, reports, templates, and mappings.
+3. Low-risk reference changes follow the approved admin permission policy.
+4. Workflow/security changes require business and technical approval.
+5. The change is tested and becomes effective on the approved date.
+6. Every change is audited and reversible by deprecation/replacement, not deletion.
+
+Values already used by business records are never hard-deleted. A retired value
+remains visible on historical records but cannot be selected for new records.
+
+#### Modeling caution
+
+New concepts should not automatically be added to the nearest status list. For
+example, `On Leave` describes staff availability, not authentication status, and
+should be maintained as a separate availability field rather than a new user account
+status. The impact review determines the correct concept.
+
+#### Required updates
+
+- Add Admin Settings and Controlled-Value Maintenance to the field register.
+- Identify each value set as Class A, B, or C.
+- Add approval, effective-date, replacement, translation, and usage-impact fields.
+- Add workflow-transition and provider-mapping configuration where applicable.
+- Add acceptance tests proving values cannot be deleted after use and retired values
+  remain historically readable.
