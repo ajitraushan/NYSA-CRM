@@ -55,6 +55,7 @@
 - No property media model suitable for customer proposals.
 - No automated test suite or continuous-integration workflow.
 - No configured email, calendar, WhatsApp, portal, or accounting integration.
+- No configured NYSA website, Meta, Property Finder, or Bayut integration credentials.
 - External broker and customer access are intentionally excluded.
 
 ## Next Approved Workstream
@@ -67,9 +68,13 @@ Start with:
 2. Rename product-facing NYSA Pocket Ledger references to NYSA CRM.
 3. Add automated checks before changing the database schema.
 4. Design and migrate teams, contacts, lead sources, leads, assignments, stage
-   history, activities, tasks, requirements, and qualification assessments.
+   history, activities, tasks, requirements, qualification assessments, and the
+   common integration event/mapping/failure records.
 5. Implement role permissions and dashboards.
-6. Add calculator, property media, and Customer Proposal Builder.
+6. Implement secured NYSA website lead intake into the company queue.
+7. Add calculator, property media, and Customer Proposal Builder.
+8. Prepare vendor access and field-mapping checklists for Meta, Property Finder,
+   and Bayut without placing credentials in Git.
 
 ## Handoff Prompt for a New Task
 

@@ -40,6 +40,18 @@ production smoke test passes after deployment.
 - Managers can reassign only within permitted scope unless an admin intervenes.
 - No lead can silently lose company, team, or responsible-agent ownership history.
 
+### NYSA website intake
+
+- An approved website form creates one company-owned lead with source, campaign,
+  page/form, consent, received time, and customer requirement fields.
+- Invalid authentication, oversized bodies, malformed data, and replayed requests
+  are rejected without partial contact or lead records.
+- Retrying the same accepted website event does not create another contact or lead.
+- Processing failure is visible to authorized support users and can be replayed
+  after correction without bypassing validation or audit.
+- Secrets and full sensitive payloads are absent from browser code, application
+  logs, Git, and user-visible error messages.
+
 ## 5. SLA and Work Queues
 
 - Business hours and SLA values are configurable.
@@ -149,3 +161,5 @@ production smoke test passes after deployment.
 - Commission settlement
 - Full transaction document management
 - Live email, Google Calendar, and WhatsApp integration unless separately approved
+- Live Property Finder, Bayut, or Meta integration; Release 1 provides the common
+  event/mapping/failure foundation and the NYSA website intake only

@@ -190,6 +190,29 @@ also have typed columns.
 
 - Proposal version, listing, display order, and immutable property snapshot
 
+### Release 1 integration foundation
+
+#### `integration_accounts`
+
+- Provider, environment, external account reference, enabled capabilities,
+  credential reference, owner, status, and token/key expiry metadata
+- Secret values remain outside the database record and repository
+
+#### `integration_events`
+
+- Provider, direction, event type, external event ID, idempotency key, received time,
+  bounded/redacted payload, processing state, attempt count, and related CRM entity
+
+#### `integration_failures`
+
+- Event, failure category, safe error detail, first/last failure time, retry time,
+  attempt count, resolution actor, resolution reason, and final state
+
+#### `external_mappings`
+
+- Provider, external object type/ID, internal entity type/ID, mapping version,
+  active status, and last reconciliation time
+
 ## Later Entities
 
 ### Opportunity and deal
@@ -225,10 +248,10 @@ also have typed columns.
 
 ### Integrations
 
-- `integration_accounts`
-- `integration_events`
-- `integration_failures`
-- `external_mappings`
+- `portal_publications`
+- `portal_sync_runs`
+- `portal_validation_results`
+- `integration_checkpoints`
 
 ## Core Relationships
 

@@ -19,6 +19,11 @@
 | D-013 | GitHub `main` and the versioned project documents are the source of truth. | Preserves continuity across tasks, releases, and future developers. | Implemented |
 | D-014 | The canonical local repository is `C:\Users\ajitr\Projects\NYSA-CRM`. | Avoids OneDrive interference with Git internals. | Implemented |
 | D-015 | User-facing NYSA Pocket Ledger naming will become NYSA CRM in the next release. | The current name no longer represents the product scope. | Approved, pending |
+| D-016 | NYSA website leads enter a company-owned queue through a secured, idempotent server endpoint in Release 1. | Website intake is high value, controlled by NYSA, and exercises the common integration foundation early. | Approved |
+| D-017 | External lead payloads are normalized into the standard lead workflow while retaining provider IDs and processing history. | One operating model avoids channel-specific lead silos and supports audit and replay. | Approved |
+| D-018 | Meta lead retrieval and Meta conversion-outcome feedback are separate integrations. | They move different data in opposite directions and need separate access, consent, and approval. | Approved |
+| D-019 | Property Finder and Bayut publication begins only after portal-ready inventory validation and vendor access are complete. | Premature publication would create rejected, incomplete, stale, or duplicate listings. | Approved |
+| D-020 | Only documented vendor APIs, feeds, webhooks, or approved partner mechanisms will be used. | Scraping or browser automation is fragile, unsafe for credentials, and may violate platform terms. | Approved |
 
 ## Recommended Defaults Awaiting Approval
 
@@ -43,6 +48,10 @@
 - NYSA proposal sample, logo/brand assets, and approved disclaimers
 - Final sale and rental completion-document checklists
 - Commission percentages, exceptions, approvals, and payment workflow
+- Website form fields, consent wording, sender authentication, and website deployment owner
+- Property Finder Enterprise API account, sandbox/live access, approved scopes, and key owner
+- Bayut XML feed specification, Profolio Leads API entitlement, credentials, and polling limits
+- Meta Business assets, lead forms, application owner, permissions, token rotation, and privacy approval
 
 ## Decision Process
 

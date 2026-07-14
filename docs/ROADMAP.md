@@ -31,6 +31,8 @@ PostgreSQL backup frequency, retention, and off-server storage.
 - Contacts, companies, roles, communication preferences, and duplicate handling
 - Lead sources, capture, ownership, assignment, acceptance, SLA, and reassignment
 - Lead stage and assignment history
+- Integration event, external mapping, idempotency, failure, and controlled-replay foundation
+- Secured NYSA website form intake into the company lead queue
 
 ### Daily work
 
@@ -64,11 +66,15 @@ PostgreSQL backup frequency, retention, and off-server storage.
 - Buyer, seller, landlord, tenant, broker, property, and developer relationships
 - Configurable sale and rental completion checklists
 
-## Release 3: Communications and Calendar
+## Release 3: Communications and External Lead Channels
 
 - Email connection, message logging, and approved templates
 - Google Calendar synchronization
 - WhatsApp Business Platform integration, approved templates, consent, and message logging
+- Property Finder lead retrieval after Enterprise API access and scopes are approved
+- Bayut lead retrieval after Profolio Leads API entitlement is approved
+- Meta Facebook/Instagram lead retrieval after business assets, permissions, and forms are approved
+- Optional Meta conversion-outcome feedback as a separate privacy-approved data flow
 - Integration failure queue, retry controls, and audit history
 
 The final sequence may move selected email or calendar work into Release 1 after
@@ -81,6 +87,9 @@ provider accounts and compliance decisions are confirmed.
 - Availability and price history
 - Duplicate listing detection and merge review
 - Listing media and document management
+- Portal-ready location, amenity, agent, permit, off-plan, and publication validation
+- Property Finder listing publication and reconciliation through the Enterprise API
+- Bayut/dubizzle listing publication and reconciliation through an approved XML feed
 - Co-broker and sharing controls only if NYSA later approves external access
 
 ## Release 5: Commissions and Finance Operations
@@ -98,7 +107,6 @@ provider accounts and compliance decisions are confirmed.
 - Configurable expiry reminders and completion checklists
 - Restricted document access and approval history
 - Lead conversion, inventory aging, source, revenue, and commission analytics
-- Property portal imports
 - Advanced management exports
 
 ## Release Gates

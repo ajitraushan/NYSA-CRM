@@ -87,7 +87,7 @@ Reporting
   - Operational queries, management metrics, exports
 
 Integrations
-  - Email, Google Calendar, WhatsApp, portals, accounting adapters
+  - Website intake, email, Google Calendar, WhatsApp, Meta, portals, accounting adapters
 ```
 
 Each module owns its validation and business rules. Cross-module operations use
@@ -157,6 +157,37 @@ Retries must be idempotent and visible in an integration failure queue.
 
 Integration credentials are environment or secret-manager values. They never
 appear in browser code, database exports, repository files, or audit details.
+
+### Inbound lead flow
+
+```text
+NYSA Website / Meta / Property Finder / Bayut
+  -> authenticated webhook or scheduled provider pull
+  -> bounded raw event record and provider acknowledgement
+  -> signature/access validation and idempotency check
+  -> provider-specific field mapping
+  -> canonical contact and company-owned lead transaction
+  -> routing, SLA, activity, audit, and support status
+```
+
+Website requests use a rotatable signing secret and replay protection. Provider
+pulls use least-privilege credentials and checkpoints. Slow provider processing
+must not hold a public request open; short scheduled jobs are acceptable on the
+current host until reliability or volume justifies a dedicated queue.
+
+### Portal publication flow
+
+Property Finder uses its approved Enterprise API adapter. Bayut/dubizzle uses a
+vendor-accessible XML feed URL and provider-supported authentication when available;
+the feed contains only approved portal fields, never CRM-only customer data. Portal
+adapters consume an approved listing snapshot rather than reading unfinished drafts.
+Each publication stores the provider identifier, payload version, state, validation
+response, and reconciliation time.
+
+Publication is blocked unless required media, location taxonomy, agent, offering
+type, price, availability, and jurisdiction-specific permit fields pass the
+provider profile. Deactivation and price/availability changes are idempotent and
+must surface failures instead of silently diverging.
 
 ## Reporting Pattern
 
