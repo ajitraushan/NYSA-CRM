@@ -118,7 +118,36 @@ Verification evidence:
 - Visual PDF fidelity, timed three-minute preparation, PostgreSQL execution, and
   end-to-end authenticated download workflows remain environment-level tests
 
-## Remaining increments
+### Role dashboards, reports, and export
 
-1. Agent, Manager, and Managing Director dashboards, drill-down, filtering, and audited export
-2. Full workflow, permission, migration, backup, and controlled smoke-test evidence
+Implementation files:
+
+- `src/migrations/008_dashboards_reporting.sql`
+- `src/dashboard-domain.js` and `src/routes/dashboards.js`
+- role-specific dashboard, common filters, call report, saved views, drill-down,
+  targets, and export screens in `public/app.js`
+
+Acceptance areas addressed:
+
+- Default Agent, Manager, and Managing Director/Executive views
+- Effective record scope, personal/team/company workload, qualification, SLA,
+  tasks, activity, calls, follow-up, proposals, consent, documents, data quality,
+  integration exceptions, and inventory readiness
+- Executive tabs, current/prior/target/variance/trend context, approved definitions,
+  data-as-of, leading indicators, and explicit unavailability for later-phase metrics
+- Shared date/source/team/agent/business-line/stage filters, saved views, scoped
+  contributing-record drill-down, detailed call report, and audited CSV export
+
+Verification evidence:
+
+- Dashboard role-selection and KPI arithmetic/reconciliation tests pass
+- Existing record-scope tests cover company, managed-team, own-record, and denied scope
+- Controlled-dataset SQL reconciliation and browser interaction tests remain
+  environment-level checks
+
+## Remaining production-readiness evidence
+
+1. PostgreSQL migrations on a fresh database and isolated restored production backup
+2. Authenticated end-to-end workflow and role-permission tests with controlled data
+3. Dependency audit, verified pre-deployment backup, and production smoke tests
+4. Final deployed-commit documentation and release-note reconciliation

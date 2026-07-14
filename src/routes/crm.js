@@ -500,6 +500,8 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   const b=req.body||{};
   if(!ACTIVITY_TYPES.includes(b.activityType)) return res.status(400).json({error:'Invalid activityType'});
   if(!clean(b.subject)) return res.status(400).json({error:'subject is required'});
+  if(b.durationSeconds!==undefined&&b.durationSeconds!==null&&(!Number.isInteger(Number(b.durationSeconds))||Number(b.durationSeconds)<0))return res.status(400).json({error:'durationSeconds must be a non-negative integer'});
+  if(b.followUpRequired&&!b.dueAt)return res.status(400).json({error:'A due date is required when follow-up is required'});
   if(/^offer letter sent$/i.test(clean(b.subject))){
     if(!b.documentVersionId)return res.status(400).json({error:'Offer letter sent requires documentVersionId'});
     const sentVersion=await one("SELECT id FROM document_versions WHERE id=$1 AND status='sent' AND immutable=1",[b.documentVersionId]);
@@ -509,9 +511,10 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   if(!(await staffMember(ownerId))) return res.status(400).json({error:'Invalid ownerId'});
   const id=uuid();
   const activity=await transaction(async client=>{
-    const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid,document_version_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null],client);
+    const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid,document_version_id,
+      duration_seconds,follow_up_required,lead_stage_snapshot,qualification_snapshot)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null,b.durationSeconds??null,b.followUpRequired?1:0,lead.stage,lead.temperature],client);
     const isContact=b.direction==='Outbound'&&['Call','Email','WhatsApp','Meeting'].includes(b.activityType);
     await execute(`UPDATE leads SET next_follow_up_at=CASE WHEN $1::boolean THEN $2 ELSE next_follow_up_at END,
       first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,updated_at=NOW() WHERE id=$4`,

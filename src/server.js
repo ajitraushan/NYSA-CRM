@@ -11,6 +11,7 @@ import leadOperationRoutes from './routes/lead-operations.js';
 import websiteIntakeRoutes from './routes/website-intake.js';
 import qualificationFinanceRoutes from './routes/qualification-finance.js';
 import filesProposalRoutes from './routes/files-proposals.js';
+import dashboardRoutes from './routes/dashboards.js';
 import { migrate, closeDatabase } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ app.mount('/api', governanceRoutes);
 app.mount('/api', leadOperationRoutes);
 app.mount('/api', qualificationFinanceRoutes);
 app.mount('/api', filesProposalRoutes);
+app.mount('/api', dashboardRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;
