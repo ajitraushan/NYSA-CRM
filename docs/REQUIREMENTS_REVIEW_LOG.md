@@ -178,3 +178,65 @@ For email values:
 - Add normalized-value uniqueness and duplicate-review rules.
 - Add tests for UAE and international numbers, email edge cases, provider imports,
   duplicate contacts, and invalid channel/WhatsApp combinations.
+
+### RR-004: Separate NYSA Organization Settings from External Companies
+
+- Date raised: 2026-07-14
+- Raised during: Phase 1 field and label review
+- Status: Accepted for inclusion in the next register revision
+- Priority: Must
+- Affected modules: Organization Settings, Companies, Contacts, Leads, Inventory,
+  Integrations, Documents, Future Deals and Commissions
+
+#### Scope clarification
+
+The Companies module represents external organizations with which NYSA has a
+business relationship. Examples include developers, corporate customers, other
+real-estate agencies, referral partners, banks or mortgage providers, property
+managers, vendors, professional service providers, and relevant government bodies.
+
+Creating an external company record does not create a user account or grant access
+to NYSA CRM. External access remains out of scope unless separately approved.
+
+NYSA Realty's own legal identity, branches, licence details, branding, and provider
+accounts belong in a separate Organization Settings module and must not be mixed
+with external company records.
+
+#### Data design refinement
+
+Replace the single `company_type` concept with two separate concepts:
+
+- Company category: the organization's fundamental classification, such as
+  Developer, Real-estate Agency, Corporate Customer, Financial Institution,
+  Vendor, Government, or Other.
+- Company roles: one or more business roles in relation to NYSA, such as Buyer,
+  Seller, Landlord, Tenant, Developer, Referral Partner, Service Provider, Mortgage
+  Provider, or Listing Source.
+
+A company may hold multiple roles without creating duplicate company records.
+
+#### Phase 1 company scope
+
+- Company ID and external reference
+- Legal and display name
+- Company category and multiple roles
+- Registration country and trade licence when applicable
+- Primary contact and additional associated contacts
+- NYSA relationship owner
+- Lifecycle/status
+- Contact details and website
+- Related leads, activities, documents, projects, and listings
+- Current CRM and future portal mapping identifiers
+
+Company selection remains optional and unobtrusive for individual consumer leads.
+It becomes required when the customer or another material party is an organization.
+
+#### Required updates
+
+- Add a separate NYSA Organization Settings module and field group.
+- Rename/refine the Companies module as External Companies or Business Accounts.
+- Replace `company_type` with company category and multi-role relationships.
+- Ensure company records do not imply authentication or external access.
+- Add company-to-contact, lead, activity, document, project, and listing relationships.
+- Add duplicate review based on normalized legal name, trade licence, registration
+  country, and verified contact details.
