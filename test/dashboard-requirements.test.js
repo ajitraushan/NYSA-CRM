@@ -113,6 +113,12 @@ test('dashboard titles use the authenticated maintained name and Agent exception
   assert.match(ui,/My operational exceptions/);
 });
 
+test('Agent dashboards remove hierarchy filters fixed by maintained identity',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  assert.match(ui,/if\(likelyType==='agent'\).*\['businessType','teamId','managerId','agentId'\]/);
+  assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
