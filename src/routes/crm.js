@@ -5,7 +5,7 @@ import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
   validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
-  canWriteLead, canAssignLead, leadScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
+  canWriteLead, canAssignLead, leadScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
 
 const r = Router();
@@ -88,9 +88,10 @@ r.get('/crm/staff', async (req, res) => {
 });
 
 r.get('/crm/teams', async (req, res) => {
+  const scope=teamScopeSql('t',req.broker,[]);
   const teams = await many(`SELECT t.*, b.name AS manager_name,
     (SELECT COUNT(*)::int FROM brokers x WHERE x.team_id=t.id AND x.status='active') AS member_count
-    FROM teams t LEFT JOIN brokers b ON b.id=t.manager_id WHERE t.active=1 ORDER BY t.name`);
+    FROM teams t LEFT JOIN brokers b ON b.id=t.manager_id WHERE t.active=1 AND ${scope.clause} ORDER BY t.name`,scope.params);
   res.json({ teams });
 });
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  leadScopeSql,contactScopeSql } from '../src/crm-policy.js';
+  leadScopeSql,teamScopeSql,contactScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -52,4 +52,11 @@ test('SQL scopes are parameterized and deny accountants',()=>{
   const contact=contactScopeSql('c',accountant,[]);
   assert.equal(contact.clause,'1=0');
   assert.deepEqual(contact.params,[]);
+});
+
+test('team selectors expose company scope to directors managed scope to managers and own team to agents',()=>{
+  const directorScope=teamScopeSql('t',director,[]),managerScope=teamScopeSql('t',manager,[]),agentScope=teamScopeSql('t',agent,[]);
+  assert.equal(directorScope.clause,'1=1');
+  assert.match(managerScope.clause,/team_memberships/);assert.deepEqual(managerScope.params,['m']);
+  assert.match(agentScope.clause,/t\.id=\$1/);assert.deepEqual(agentScope.params,['t1']);
 });

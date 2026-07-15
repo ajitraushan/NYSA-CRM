@@ -51,6 +51,17 @@ export function leadScopeSql(alias, broker, params = []) {
   return { clause:`(${alias}.assigned_to=${id} OR ${alias}.created_by=${id})`, params };
 }
 
+export function teamScopeSql(alias,broker,params=[]){
+  if(isCompanyReader(broker))return {clause:'1=1',params};
+  if(!hasInternalCrmIdentity(broker)||broker.jobRole==='accountant')return {clause:'1=0',params};
+  if(broker.jobRole==='manager'){
+    const id=bind(params,broker.id);
+    return {clause:`EXISTS (SELECT 1 FROM team_memberships tm WHERE tm.team_id=${alias}.id AND tm.broker_id=${id} AND tm.membership_role='manager' AND tm.ends_at IS NULL)`,params};
+  }
+  if(broker.teamId){const teamId=bind(params,broker.teamId);return {clause:`${alias}.id=${teamId}`,params};}
+  return {clause:'1=0',params};
+}
+
 export function contactScopeSql(alias, broker, params = []) {
   if (isCompanyReader(broker)) return { clause:'1=1', params };
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
