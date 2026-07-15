@@ -6,7 +6,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test --test-isolation=none"
+    "test": "node --test --test-isolation=none",
+    "test:dashboard:seed": "node scripts/seed-dashboard-fixtures.js",
+    "test:dashboard:roles": "node --test --test-isolation=none test/dashboard-domain.test.js test/dashboard-requirements.test.js"
   },
   "engines": {
     "node": ">=22.13"

@@ -74,6 +74,9 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 
 ## Known Gaps
 
+- The Agent, Manager, and Managing Director dashboard rebuild is implemented locally
+  with migration `010`, but has not yet been migrated, seeded, visually accepted, or
+  deployed. The guarded test procedure is in `docs/DASHBOARD_ROLE_TESTING.md`.
 - Production source is manually deployed; deployment is not yet automated from Git.
 - Release 1 migrations `002`–`009` still require execution on a fresh database and
   an isolated restored production backup for formal acceptance evidence.

@@ -11,16 +11,19 @@ const PAYMENT_PLANS = ['Cash','Mortgage','Developer plan','Post-handover'];
 const STATUSES = ['Available','Reserved','Under offer','Closed'];
 const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
 const CLOSED_REASONS = ['Sold','Withdrawn','Expired'];
+const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
+const PORTAL_STATUSES = ['not_ready','ready','published','blocked'];
 const EDITABLE = ['project','developer','area','propertyType','bedrooms','sizeSqft','price','referencePrice',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
-  'handoverDate','exclusivityTier','contact','notes'];
+  'handoverDate','exclusivityTier','contact','notes','availabilityConfirmedAt','verificationStatus','verificationExpiresAt','permitNumber','permitExpiresAt','portalStatus'];
 const COLUMN = {
   project:'project', developer:'developer', area:'area', propertyType:'property_type', bedrooms:'bedrooms',
   sizeSqft:'size_sqft', price:'price', referencePrice:'reference_price', currency:'currency',
   paymentPlanType:'payment_plan_type', downPaymentPercent:'down_payment_percent',
   onHandoverPercent:'on_handover_percent', postHandoverYears:'post_handover_years',
   paymentPlanNotes:'payment_plan_notes', handoverDate:'handover_date', exclusivityTier:'exclusivity_tier',
-  contact:'contact', notes:'notes'
+  contact:'contact', notes:'notes', availabilityConfirmedAt:'availability_confirmed_at',verificationStatus:'verification_status',
+  verificationExpiresAt:'verification_expires_at',permitNumber:'permit_number',permitExpiresAt:'permit_expires_at',portalStatus:'portal_status'
 };
 
 function withDiscount(listing) {
@@ -42,6 +45,9 @@ function validateListingFields(body) {
     if (body[field] !== undefined && body[field] !== null && Number(body[field]) > 100) return `${field} cannot exceed 100`;
   }
   if (body.handoverDate !== undefined && body.handoverDate !== null && body.handoverDate !== 'Ready' && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.handoverDate))) return 'handoverDate must be Ready or YYYY-MM-DD';
+  for(const field of ['availabilityConfirmedAt','verificationExpiresAt','permitExpiresAt'])if(body[field]!==undefined&&body[field]!==null&&body[field]!==''&&Number.isNaN(new Date(body[field]).valueOf()))return `${field} must be a valid date/time`;
+  if(body.verificationStatus!==undefined&&!VERIFICATION_STATUSES.includes(body.verificationStatus))return 'Invalid verificationStatus';
+  if(body.portalStatus!==undefined&&!PORTAL_STATUSES.includes(body.portalStatus))return 'Invalid portalStatus';
   return null;
 }
 
@@ -98,12 +104,14 @@ r.post('/listings', requirePostRights, async (req, res) => {
   const id = uuid();
   const listing = await one(`INSERT INTO listings (id,project,developer,area,property_type,bedrooms,size_sqft,price,
     reference_price,currency,payment_plan_type,down_payment_percent,on_handover_percent,post_handover_years,
-    payment_plan_notes,handover_date,exclusivity_tier,posted_by,contact,notes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
+    payment_plan_notes,handover_date,exclusivity_tier,posted_by,contact,notes,availability_confirmed_at,verification_status,
+    verification_expires_at,permit_number,permit_expires_at,portal_status)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26) RETURNING *`,
     [id,b.project,b.developer||null,b.area,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
      b.referencePrice??null,b.currency||'AED',b.paymentPlanType||null,b.downPaymentPercent??null,
      b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,
-     b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null]);
+     b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null,b.availabilityConfirmedAt||null,
+     b.verificationStatus||'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,b.portalStatus||'not_ready']);
   await audit('Listing', id, 'created', req.broker.id, { project:b.project, area:b.area, price:+b.price });
   res.status(201).json(withDiscount(listing));
 });
