@@ -115,12 +115,15 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 - No configured email, calendar, WhatsApp, portal, or accounting integration.
 - No configured NYSA website, Meta, Property Finder, or Bayut integration credentials.
 - External broker and customer access are intentionally excluded.
+- The existing `listing_agent` role currently uses the lead-centric Agent dashboard;
+  Release 1.1 will provide its approved Listing Executive inventory workspace.
 
 ## Next Approved Workstream
 
 Complete the remaining Release 1 acceptance gates in
-`docs/RELEASE_1_ACCEPTANCE_STATUS.md`; do not start Release 2 until those gates and
-business sign-off are complete.
+`docs/RELEASE_1_ACCEPTANCE_STATUS.md`, then implement the approved Release 1.1 scope
+in `docs/RELEASE_1_1_SCOPE.md`. Do not start Release 2 until Release 1 acceptance,
+Release 1.1, and the applicable business sign-offs are complete.
 
 ## Handoff Prompt for a New Task
 

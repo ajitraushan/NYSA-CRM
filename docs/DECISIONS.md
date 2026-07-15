@@ -34,6 +34,7 @@
 | D-028 | The Managing Director dashboard is strategic, summarized, future-oriented, and supports hierarchical drill-down. | Executive decisions require targets, trends, risks, and causes without defaulting to task-level noise. | Approved |
 | D-029 | Controlled values are maintained through governed Admin Settings and used values are never hard-deleted. | Protects historical meaning, workflow behavior, reports, and integrations. | Approved |
 | D-030 | The user-facing system name is NYSA CORE, displayed centrally between the NYSA logo and user controls. | CORE is the approved operating-system identity while the repository and technical service retain their established CRM identifiers. | Implemented and deployed 2026-07-14 in `1179cca` |
+| D-031 | Release 1.1 delivers a dedicated Listing Executive workspace, manual inventory workflow, property media, and provider-neutral integration-created drafts; live portal publication remains Release 4. | Listing Executives require an inventory-first workspace, while human review and a stable authoritative record must precede vendor automation. | Approved 2026-07-15 |
 
 ## Recommended Defaults Awaiting Approval
 

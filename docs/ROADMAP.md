@@ -71,6 +71,24 @@ exact-commit deployment, and production smoke testing.
 - Executive targets, comparisons, trends, forward-looking risk indicators, and
   hierarchical summary-to-record drill-down
 
+## Release 1.1: Listing Executive Workspace and Inventory Intake
+
+- Dedicated personalized Listing Executive workspace for the existing
+  `listing_agent` role
+- Manual draft listing creation through a guided inventory workflow
+- Controlled integration/import intake that creates reviewable, idempotent drafts
+- Listing source, ownership, property, commercial, availability, verification,
+  permit and readiness capture
+- Private multi-image, floor-plan and brochure upload with cover, order, caption,
+  source, rights, hash and approval controls
+- Own/team/company inventory permissions and complete audit history
+- Availability, expiry, completeness, duplicate, media and intake-exception queues
+- Manager/admin review and approval controls
+
+The detailed boundary and acceptance criteria are in `RELEASE_1_1_SCOPE.md`.
+Live Property Finder, Bayut/dubizzle and other publication connectors remain
+Release 4 scope.
+
 ## Release 2: Opportunity and Deal Pipeline
 
 - Opportunities created from qualified leads

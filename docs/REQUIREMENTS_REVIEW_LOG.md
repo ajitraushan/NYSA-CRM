@@ -852,3 +852,28 @@ counting across overlapping team memberships.
   context, and company-wide permission scope.
 - Update the dashboard mockup so the Managing Director view is more strategic and
   summarized while preserving drill-down to operational detail.
+
+### RR-012: Listing Executive Workspace and Controlled Inventory Intake
+
+**Status:** Approved for Release 1.1 on 2026-07-15
+
+**Decision:** D-031
+
+**Detailed scope:** `RELEASE_1_1_SCOPE.md`
+
+The existing Listing Agent role must not inherit a lead-centric Sales Agent
+workspace. The user-facing Listing Executive receives a dedicated inventory-first
+workspace for manual drafts, media, availability, verification, permits, readiness,
+and review queues.
+
+Listings may also be initiated by an approved provider-neutral integration/import
+event. Such an event creates an idempotent reviewable draft with source, external
+identifier, mapping and processing history. It cannot auto-publish, bypass approval,
+or silently overwrite approved NYSA inventory.
+
+Property media includes private photographs, floor plans and brochures with type,
+size, hash, source, rights, caption, order, cover and approval controls. Only
+approved permitted-use media can satisfy readiness or enter customer proposals.
+
+Live Property Finder, Bayut/dubizzle and other portal publication/reconciliation
+connectors remain Release 4 scope.
