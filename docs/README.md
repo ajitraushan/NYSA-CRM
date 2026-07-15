@@ -17,6 +17,8 @@ describe.
 - [Data model](DATA_MODEL.md) - current schema and planned entities
 - [Permissions matrix](PERMISSIONS_MATRIX.md) - role-based access policy
 - [Acceptance criteria](ACCEPTANCE_CRITERIA.md) - release-one definition of done
+- [Release 1 acceptance status](RELEASE_1_ACCEPTANCE_STATUS.md) - criterion-by-criterion verification state
+- [Release 1 test findings](RELEASE_1_TEST_FINDINGS.md) - numbered manual UAT findings, corrections, and retest conditions
 - [Release 1.1 scope](RELEASE_1_1_SCOPE.md) - Listing Executive workspace and inventory-intake definition of done
 - [Requirements review log](REQUIREMENTS_REVIEW_LOG.md) - gaps found during field and label review
 - [Deployment runbook](DEPLOYMENT_RUNBOOK.md) - production release and recovery procedure
