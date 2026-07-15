@@ -32,12 +32,13 @@
 - Audit records for material current-MVP actions
 - cPanel production deployment and TLS endpoint
 - Private Git source control with secrets and runtime data excluded
-- R1-AMD-001 through R1-AMD-012 are implemented locally as one consolidated
-  Release 1 administration correction candidate. The automated suite passes 62
-  assertions and all changed JavaScript passes syntax validation.
-- R1-UAT-001 through R1-UAT-013 remain open. None may advance beyond
-  `Implemented locally` until the consolidated package is deployed to CRM Test;
-  none may close until the user explicitly confirms the applicable retest.
+- R1-AMD-001 through R1-AMD-012 are deployed to CRM Test as effective source
+  `ab0ee8e`. The corrected consolidated package is
+  `nysa-core-r1-uat-crm-test-ab0ee8e.zip`; package `b89b21e` is superseded.
+- The automated suite passes 62 assertions. CRM Test migrations 011 and 012 are
+  recorded, and health returns HTTP 200 with database ready.
+- R1-UAT-001 through R1-UAT-013 remain open at `Deployed to CRM Test`; none may
+  close until authenticated retesting passes and the user explicitly confirms it.
 - Production is excluded from this correction cycle. The only authorized deployment
   and manual-test target is `https://crm-test.nysarealty.com/`.
 

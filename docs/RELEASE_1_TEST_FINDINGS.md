@@ -20,7 +20,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Controlled Values
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Evidence: User screenshots show the set name and stable code joined together,
   vertically centred Class and Add definition controls, and definition labels/statuses/
@@ -39,7 +39,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Controlled Values
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 181, 183, 184 and 185
 - Finding: The frontend exposes creation and activation but no Edit, Delete unused
@@ -66,7 +66,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Controlled Values
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Evidence: CRM Test accepted a mixed-case stable code (`Loss_Reason`) and the earlier
   screen accepted a space-separated code.
@@ -79,7 +79,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration and operational CRM screens
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must for full controlled-value acceptance
 - Finding: The governed registry is versioned and audited, but several Release 1
   operational dropdowns and reason fields still use fixed application values or free
@@ -94,7 +94,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Leads -> Routing, queues and assignment
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 47, 48, 49, 50, 51, 69, 70 and 71
 - Evidence: Managers can assign only after locating and opening an individual lead;
@@ -145,7 +145,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Website Intake Operations
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Medium
 - Related acceptance criterion: 60
 - Evidence: Website Intake Operations is an informational event table comparable to
@@ -173,7 +173,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Qualification model versions
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 95, 97, 98, 101, 102 and 103
 - Evidence: The current section is named Qualification model versions and requires an
@@ -214,7 +214,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
 - Evidence: Administration maintains only template type, name, brand version, lines of
@@ -271,7 +271,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Dashboard targets, benchmarks and exception thresholds
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 163 and 175
 - Evidence: The form exposes Scope ID and Unit as free-text inputs even though scope
@@ -313,7 +313,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Invitations and Brokers
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 18, 20, 21 and 22
 - Evidence: The onboarding-code form is labelled Invitations while the adjacent active
@@ -393,7 +393,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA Organization Settings; Proposal generation
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 26, 128, 130 and 132
 - Evidence: The prior screen directly saved an active version, omitted timezone,
@@ -426,7 +426,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-16
 - Area: Administration -> Business Hours and SLA Policies
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 67 and 68
 - Evidence: Working-day start and end are entered as minute-from-midnight numbers,
@@ -450,7 +450,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-16
 - Area: Administration -> Regulatory and Fee Assumption Versions
-- Status: Implemented locally; automated verification passed; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 112, 130, 131, 132 and 137
 - Evidence: The current screen accepts a free-form assumptions JSON object and a
@@ -482,7 +482,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Agreed requirement: Separate the value-set name and stable code, top-align set/class/
   actions, provide labelled fixed columns for definitions, statuses and actions, and
   preserve a usable responsive layout for multiple definitions.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-001 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -494,7 +494,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   stable codes immutable; and replace hard deletion of used values with reasoned,
   effective-dated deprecation/retirement, impact visibility, optional replacement and
   complete audit evidence.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-002 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -505,7 +505,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Agreed requirement: Accept only unique lowercase snake_case stable codes, explain the
   required format inline and reject blanks, spaces, mixed case and duplicates with
   clear messages.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-003 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -517,7 +517,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   authoritative for applicable lead, activity, assignment, task, company and listing
   fields, while preserving historical labels by stable code and keeping Class B state
   machines application-controlled.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-004 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -529,7 +529,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and Business day ends at time selectors; rename the targets Lead acceptance target
   (business minutes) and First customer-contact target (business minutes); and provide
   explanations and examples beside each field.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -546,7 +546,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   validation and governed versions. Use the definition to drive a lead-based Quick
   Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
   rejecting unknown placeholders.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.
 
@@ -561,7 +561,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   first-contact SLA breach; and allow eligible agents in that team to self-claim on a
   first-successful-claim basis, with repeat recycling and complete SLA/assignment
   history.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-005 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -573,7 +573,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   maintainable configuration. Remove their standalone Administration maintenance
   section and make them available through a filtered consolidated Audit/Operations
   log, with failed-event support actions only in context.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-006 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -585,7 +585,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Versions and replace JSON maintenance with a structured business screen for factor
   logic, weightage, score bands, response guidance, testing, approval and governed
   version history.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-007 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -597,7 +597,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   contextual scope selectors, Target period, Target number with automatic unit, a
   plain-language exception rule, Approved by and Approval basis/reference. Keep record
   IDs hidden and show the KPI calculation definition as read-only system context.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-009 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -613,7 +613,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   listing scope, multiple compatible effective-dated scoped roles with one primary role,
   and audit evidence. Retain External Broker only as an interface identity
   classification; external authentication and CRM access remain outside Release 1.
-- Status: Implemented locally; CRM Test deployment and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-010 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -628,7 +628,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   history and comparison; and make the active version authoritative for proposal
   identity, currency fallback, localized dates, brand reference, footer, disclaimer
   and immutable organization/logo evidence.
-- Status: Implemented locally; deployment to CRM Test and user retest pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-011 CRM Test retest condition passes and the user
   explicitly confirms the result.
 

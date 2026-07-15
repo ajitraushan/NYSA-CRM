@@ -4,6 +4,45 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-16 — Release 1 administration corrections on CRM Test
+
+- Environment: CRM Test only
+- URL: `https://crm-test.nysarealty.com`
+- Application root: `/home/nysareal/nysa-core-dashboard-dd6262a-stage`
+- Database: `nysareal_nysacrm_r1test`
+- Startup file: `src/server.js`
+- Initial consolidated source commit/package: `b89b21e`
+- Migration compatibility correction: `ab0ee8e`
+- Effective deployed source: `ab0ee8e`
+- Corrected consolidated package: `nysa-core-r1-uat-crm-test-ab0ee8e.zip`
+- Corrected package SHA-256:
+  `5193dcaff03a3b785ce23cbc8da9240b16d1015560a9f421aeb2b741c3ae0af9`
+- The earlier `nysa-core-r1-uat-crm-test-b89b21e.zip` is superseded and must
+  not be used for a fresh deployment.
+
+### Backup and migration evidence
+
+- CRM Test database backup:
+  `~/crm-backups/nysacrm-r1test-before-b89b21e.dump`
+- Backup size: 196 KiB; custom archive listed successfully with 394 TOC entries.
+- CRM Test application backup:
+  `~/crm-backups/nysa-core-dashboard-dd6262a-stage-before-b89b21e.tar.gz`
+- Application backup size: 187 KiB; archive listing verified.
+- Migration `011_organization_profile_governance.sql` applied at
+  `2026-07-15 21:29:09.777489+00`.
+- Migration `012_release1_admin_uat_corrections.sql` applied at
+  `2026-07-15 21:37:21.491864+00` after the sequence-compatibility correction.
+
+### Deployment verification and acceptance state
+
+- CRM Test returned HTTP 200 with `{"ok":true,"database":"ready"}` at
+  `2026-07-15 21:38:49+00`.
+- Security headers remained present.
+- The new Lead Qualification Versions frontend was confirmed from the deployed URL.
+- R1-UAT-001 through R1-UAT-013 and R1-AMD-001 through R1-AMD-012 are
+  `Deployed to CRM Test`; none is closed. Authenticated workflow retesting and
+  explicit user confirmation remain required.
+
 ## 2026-07-15 — Role dashboard production release
 
 - Production URL: `https://crm.nysarealty.com`
