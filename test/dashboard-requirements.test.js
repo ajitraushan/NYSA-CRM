@@ -91,6 +91,15 @@ test('executive landing and Sales view cover all overview domains including camp
   assert.match(ui,/campaignCode/);
 });
 
+test('hierarchy navigation preserves manager breadcrumb and record breadcrumbs are visually separated',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const css=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.match(ui,/data-dashboard-manager/);
+  assert.match(ui,/managerId:b\.dataset\.dashboardManager/);
+  assert.match(ui,/class="record-breadcrumb"/);
+  assert.match(css,/\.record-breadcrumb\{display:block/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
