@@ -100,6 +100,13 @@ test('hierarchy navigation preserves manager breadcrumb and record breadcrumbs a
   assert.match(css,/\.record-breadcrumb\{display:block/);
 });
 
+test('dashboard tables explicitly map Won Overdue and Open columns to their named values',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  for(const key of ['won','overdue','open'])assert.match(ui,new RegExp(`valueKey:'${key}'`));
+  assert.match(ui,/row\[options\.valueKey\]/);
+  assert.doesNotMatch(ui,/row\.won\?\?row\.overdue\?\?row\.open/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
