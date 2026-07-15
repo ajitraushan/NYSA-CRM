@@ -14,6 +14,9 @@
 - Production deployed source commit: `1179cca8345fe76ebe0167aaede1feed4f56450d`
 - Release 1 requirements baseline: `3ccbcc78edefb338c3e0d9742c0cdb6b563b537a`
 - Local completion branch: `agent/release-1-completion`
+- Dashboard production-candidate implementation commit: `0f836f2`
+- Dashboard staging URL: `https://crm-test.nysarealty.com`
+- Dashboard staging database: `nysareal_nysacrm_r1test`
 - Phase 1 field review: RR-001 through RR-011 incorporated into Revision 2
 - Review workbook: 462 fields across 24 modules, awaiting business sign-off
 
@@ -60,6 +63,14 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 - Backup restored successfully into an isolated database.
 - Restored counts matched the expected admin, smoke-test, audit, and migration data.
 - Restore-test database was removed and production health remained ready.
+- Migration `010_role_dashboard_rebuild.sql` was applied to the isolated dashboard
+  staging database and a second run completed without reapplication.
+- Guarded dashboard fixtures were created only in the `_r1test` database.
+- Managing Director, Manager, and Agent dashboards passed role-specific visual
+  testing, including hierarchy scope, complete breadcrumbs, drill-down records,
+  personalized titles, period presets, source-dependent Campaign filtering, and
+  inventory attribution/detail access.
+- The committed automated suite passes 48 tests with no failures.
 
 ## Backup Status
 
@@ -74,9 +85,8 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 
 ## Known Gaps
 
-- The Agent, Manager, and Managing Director dashboard rebuild is implemented locally
-  with migration `010`, but has not yet been migrated, seeded, visually accepted, or
-  deployed. The guarded test procedure is in `docs/DASHBOARD_ROLE_TESTING.md`.
+- The Agent, Manager, and Managing Director dashboard rebuild is staging-accepted
+  with migration `010`, but is not yet deployed to production.
 - Production source is manually deployed; deployment is not yet automated from Git.
 - Release 1 migrations `002`–`009` still require execution on a fresh database and
   an isolated restored production backup for formal acceptance evidence.

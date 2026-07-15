@@ -46,7 +46,7 @@ cPanel sets `NODE_ENV=production` and the application port automatically.
 1. Back up the PostgreSQL database before replacing application files.
 2. Deploy the new `public`, `src`, `test`, `package.json`, and `package-lock.json` contents.
 3. Run NPM Install and restart the application.
-4. Startup applies pending numbered migrations `002` through `009` transactionally and records each in `schema_migrations`. Existing brokers, sessions, listings, comments, invitations, and CRM records are retained.
+4. Startup applies pending numbered migrations `002` through `010` transactionally and records each in `schema_migrations`. Existing brokers, sessions, listings, comments, invitations, and CRM records are retained.
 5. Sign in as an administrator, create CRM teams, and assign internal staff to them.
 6. Run `npm test`, `npm audit --omit=dev --audit-level=high`, and the authenticated PostgreSQL workflow suite.
 7. Complete every open gate in `docs/RELEASE_1_ACCEPTANCE_STATUS.md` and the Phase 1 acceptance checks below.
