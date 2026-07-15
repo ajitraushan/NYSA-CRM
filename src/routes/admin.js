@@ -43,7 +43,10 @@ r.delete('/admin/invitations/:id', async (req, res) => {
 });
 
 r.get('/admin/brokers', async (req, res) => {
-  const rows = await many(`SELECT b.*,(SELECT COALESCE(json_agg(r ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b ORDER BY joined_at DESC`);
+  const rows = await many(`SELECT b.*,(SELECT COALESCE(json_agg(json_build_object(
+    'id',r.id,'jobRole',r.job_role,'teamId',r.team_id,'isPrimary',r.is_primary=1,
+    'status',r.status,'startsAt',r.starts_at,'endsAt',r.ends_at,'changeReason',r.change_reason
+  ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b ORDER BY joined_at DESC`);
   res.json({ count:rows.length, brokers:rows.map(publicBroker) });
 });
 

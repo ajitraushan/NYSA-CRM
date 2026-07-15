@@ -45,6 +45,11 @@ test('Admin Assistant can maintain routine teams settings and listings without a
   assert.match(listings,/admin_assistant/);
 });
 
+test('user-management API returns effective role assignments with browser-facing field names',()=>{
+  const source=read('src/routes/admin.js');
+  for(const field of ["'jobRole',r.job_role","'teamId',r.team_id","'isPrimary',r.is_primary=1","'startsAt',r.starts_at"])assert.match(source,new RegExp(field.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+});
+
 test('administration navigation consolidates read-only website intake into audit operations',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Audit and Operations/);
