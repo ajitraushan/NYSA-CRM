@@ -1,12 +1,14 @@
 import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
-import { requireAuth, requireRole, publicBroker } from '../auth.js';
+import { requireAuth, publicBroker,hashPassword } from '../auth.js';
 import { JOB_ROLES } from '../crm-domain.js';
 
 const r = Router();
-r.use(requireAuth, requireRole('admin'));
+r.use(requireAuth,(req,res,next)=>(req.broker.role==='admin'||req.broker.jobRole==='admin_assistant')?next():res.status(403).json({error:'Administrator or Admin Assistant access required'}));
 const ROLES = ['admin','internal_broker','partner_broker','viewer'];
+const privileged=role=>['admin','director'].includes(role);
+const canMaintain=(req,jobRole)=>req.broker.role==='admin'||!privileged(jobRole);
 
 r.get('/admin/invitations', async (req, res) => {
   const rows = await many(`SELECT i.*, b.name AS issued_by_name FROM invitations i
@@ -15,17 +17,20 @@ r.get('/admin/invitations', async (req, res) => {
 });
 
 r.post('/admin/invitations', async (req, res) => {
-  const { issuedToEmail, role='internal_broker', jobRole, maxUses=1, expiresAt } = req.body || {};
+  const { issuedToEmail, role='internal_broker', jobRole, expiresAt,teamId } = req.body || {};
   if (!ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   const resolvedJobRole = role === 'admin' ? 'admin' : role === 'internal_broker' ? (jobRole || 'sales_agent') : null;
   if (resolvedJobRole && !JOB_ROLES.includes(resolvedJobRole)) return res.status(400).json({ error:'Invalid jobRole' });
-  if (!Number.isInteger(+maxUses) || +maxUses < 1) return res.status(400).json({ error:'maxUses must be a positive integer' });
+  if (!issuedToEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(issuedToEmail)) return res.status(400).json({ error:'A valid named user email is required' });
+  if(!canMaintain(req,resolvedJobRole))return res.status(403).json({error:'Admin Assistant cannot appoint Administrator or Director access'});
+  if(['sales_agent','listing_agent','manager'].includes(resolvedJobRole)&&!teamId)return res.status(400).json({error:'Team is required for this user role'});
+  if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId])))return res.status(400).json({error:'Active team not found'});
   const id = uuid();
   const code = 'NYSA-' + crypto.randomBytes(8).toString('hex').toUpperCase();
   const invitation = await one(`INSERT INTO invitations
-    (id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [id,code,req.broker.id,issuedToEmail||null,role,resolvedJobRole,+maxUses,expiresAt||null]);
-  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail:issuedToEmail||null });
+    (id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at,team_id) VALUES ($1,$2,$3,$4,$5,$6,1,$7,$8) RETURNING *`,
+    [id,code,req.broker.id,issuedToEmail.toLowerCase(),role,resolvedJobRole,expiresAt||null,teamId||null]);
+  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail,teamId:teamId||null });
   res.status(201).json(invitation);
 });
 
@@ -38,9 +43,44 @@ r.delete('/admin/invitations/:id', async (req, res) => {
 });
 
 r.get('/admin/brokers', async (req, res) => {
-  const rows = await many('SELECT * FROM brokers ORDER BY joined_at DESC');
+  const rows = await many(`SELECT b.*,(SELECT COALESCE(json_agg(r ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b ORDER BY joined_at DESC`);
   res.json({ count:rows.length, brokers:rows.map(publicBroker) });
 });
+
+r.post('/admin/users',async(req,res)=>{
+  const b=req.body||{},email=String(b.email||'').trim().toLowerCase(),classification=b.userClassification||'internal_user',assignments=Array.isArray(b.roleAssignments)?b.roleAssignments:[];
+  if(!String(b.name||'').trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!['internal_user','viewer','external_broker'].includes(classification))return res.status(400).json({error:'Name, valid email and user classification are required'});
+  if(await one('SELECT id FROM brokers WHERE LOWER(email)=LOWER($1)',[email]))return res.status(409).json({error:'A user with this email already exists'});
+  if(classification==='internal_user'&&(!assignments.length||assignments.filter(x=>x.isPrimary).length!==1))return res.status(400).json({error:'Internal users require exactly one primary role'});
+  if(classification!=='internal_user'&&assignments.length)return res.status(400).json({error:'Role assignments apply only to internal users'});
+  if(assignments.some(x=>!JOB_ROLES.includes(x.jobRole)||!canMaintain(req,x.jobRole)))return res.status(403).json({error:'One or more role assignments are invalid or outside your authority'});
+  for(const a of assignments){if(['sales_agent','listing_agent','manager'].includes(a.jobRole)&&!a.teamId)return res.status(400).json({error:`Team is required for ${a.jobRole}`});if(a.teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[a.teamId])))return res.status(400).json({error:'One or more assigned teams are unavailable'});}
+  const primary=assignments.find(x=>x.isPrimary),role=classification==='viewer'?'viewer':classification==='external_broker'?'partner_broker':primary?.jobRole==='admin'?'admin':'internal_broker',status=classification==='external_broker'?'revoked':'pending_activation',id=uuid(),code='NYSA-'+crypto.randomBytes(8).toString('hex').toUpperCase();
+  const result=await transaction(async client=>{
+    const user=await one(`INSERT INTO brokers(id,name,email,role,job_role,team_id,status,password_hash,invited_by,user_classification) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,[id,String(b.name).trim(),email,role,primary?.jobRole||null,primary?.teamId||null,status,hashPassword(crypto.randomBytes(32).toString('hex')),req.broker.id,classification],client);
+    for(const a of assignments){await execute(`INSERT INTO user_role_assignments(id,broker_id,job_role,team_id,is_primary,status,starts_at,ends_at,approved_by,change_reason) VALUES($1,$2,$3,$4,$5,'active',COALESCE($6,NOW()),$7,$8,$9)`,[uuid(),id,a.jobRole,a.teamId||null,a.isPrimary?1:0,a.startsAt||null,a.endsAt||null,req.broker.id,String(a.changeReason||'Initial approved role').trim()],client);if(a.teamId)await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5)`,[uuid(),a.teamId,id,a.jobRole==='manager'?'manager':'member',req.broker.id],client);}
+    if(classification!=='external_broker')await execute(`INSERT INTO invitations(id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at,team_id,pending_broker_id) VALUES($1,$2,$3,$4,$5,$6,1,NOW()+INTERVAL '7 days',$7,$8)`,[uuid(),code,req.broker.id,email,role,primary?.jobRole||null,primary?.teamId||null,id],client);
+    await audit('Broker',id,'user_added',req.broker.id,{classification,status,roles:assignments},client);return user;
+  });
+  res.status(201).json({user:publicBroker(result),activationCode:classification==='external_broker'?null:code});
+});
+
+r.post('/admin/users/:id/roles',async(req,res)=>{
+  const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),b=req.body||{},reason=String(b.changeReason||'').trim();
+  if(!target)return res.status(404).json({error:'User not found'});
+  if(!JOB_ROLES.includes(b.jobRole)||!canMaintain(req,b.jobRole)||!reason)return res.status(400).json({error:'Valid role and change reason are required'});
+  if(['sales_agent','listing_agent','manager'].includes(b.jobRole)&&!b.teamId)return res.status(400).json({error:'Team is required for this role'});
+  if(b.teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.teamId])))return res.status(400).json({error:'Active team not found'});
+  const row=await transaction(async client=>{
+    if(b.isPrimary)await execute("UPDATE user_role_assignments SET is_primary=0 WHERE broker_id=$1 AND status='active'",[target.id],client);
+    const created=await one(`INSERT INTO user_role_assignments(id,broker_id,job_role,team_id,is_primary,status,starts_at,ends_at,approved_by,change_reason) VALUES($1,$2,$3,$4,$5,'active',COALESCE($6,NOW()),$7,$8,$9) RETURNING *`,[uuid(),target.id,b.jobRole,b.teamId||null,b.isPrimary?1:0,b.startsAt||null,b.endsAt||null,req.broker.id,reason],client);
+    if(b.teamId)await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT (team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role=EXCLUDED.membership_role`,[uuid(),b.teamId,target.id,b.jobRole==='manager'?'manager':'member',req.broker.id],client);
+    if(b.isPrimary)await execute('UPDATE brokers SET job_role=$1,team_id=$2,updated_at=NOW() WHERE id=$3',[b.jobRole,b.teamId||null,target.id],client);
+    await audit('Broker',target.id,'role_assigned',req.broker.id,{roleAssignmentId:created.id,jobRole:b.jobRole,teamId:b.teamId||null},client);return created;
+  });
+  res.status(201).json(row);
+});
+r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),action=req.body?.action,reason=String(req.body?.reason||'').trim();if(!target)return res.status(404).json({error:'User not found'});if(target.id===req.broker.id)return res.status(400).json({error:'You cannot change your own access state'});if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});if(!['suspend','reactivate','revoke'].includes(action)||!reason)return res.status(400).json({error:'Valid action and reason are required'});const status=action==='reactivate'?'active':action==='suspend'?'suspended':'revoked';await transaction(async client=>{await execute(`UPDATE brokers SET status=$1,suspended_at=CASE WHEN $1='suspended' THEN NOW() ELSE suspended_at END,revoked_at=CASE WHEN $1='revoked' THEN NOW() ELSE revoked_at END,access_change_reason=$2,updated_at=NOW() WHERE id=$3`,[status,reason,target.id],client);if(status!=='active')await execute('DELETE FROM sessions WHERE broker_id=$1',[target.id],client);await audit('Broker',target.id,action,req.broker.id,{reason},client);});res.json({ok:true,status});});
 
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
@@ -48,7 +88,8 @@ r.patch('/admin/brokers/:id', async (req, res) => {
   const { role, status, canPost, teamId, jobTitle, jobRole } = req.body || {};
   if (role !== undefined && !ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   if (jobRole !== undefined && jobRole !== null && !JOB_ROLES.includes(jobRole)) return res.status(400).json({ error:'Invalid jobRole' });
-  if (status !== undefined && !['active','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
+  if (status !== undefined && !['pending_activation','active','suspended','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
+  if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Admin Assistant cannot alter privileged roles or access status' });
   if (teamId && !(await one('SELECT id FROM teams WHERE id=$1 AND active=1', [teamId]))) return res.status(400).json({ error:'Invalid teamId' });
   if (broker.id === req.broker.id && role !== undefined && role !== 'admin') return res.status(400).json({ error:'You cannot demote yourself' });
   if (broker.id === req.broker.id && status === 'revoked') return res.status(400).json({ error:'You cannot revoke yourself' });

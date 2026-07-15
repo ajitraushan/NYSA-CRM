@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Date: 2026-07-15
+- Date: 2026-07-16
 - Production environment: Release 1 deployed with the NYSA CORE user-facing brand
 - URL: https://crm.nysarealty.com
 - Health endpoint: `GET /api/health`
@@ -32,6 +32,14 @@
 - Audit records for material current-MVP actions
 - cPanel production deployment and TLS endpoint
 - Private Git source control with secrets and runtime data excluded
+- R1-AMD-001 through R1-AMD-012 are implemented locally as one consolidated
+  Release 1 administration correction candidate. The automated suite passes 62
+  assertions and all changed JavaScript passes syntax validation.
+- R1-UAT-001 through R1-UAT-013 remain open. None may advance beyond
+  `Implemented locally` until the consolidated package is deployed to CRM Test;
+  none may close until the user explicitly confirms the applicable retest.
+- Production is excluded from this correction cycle. The only authorized deployment
+  and manual-test target is `https://crm-test.nysarealty.com/`.
 
 ## Release 1 Deployed Implementation
 
@@ -114,7 +122,8 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 - Full opportunity/deal, commission, and transaction-compliance workflows remain later releases.
 - No configured email, calendar, WhatsApp, portal, or accounting integration.
 - No configured NYSA website, Meta, Property Finder, or Bayut integration credentials.
-- External broker and customer access are intentionally excluded.
+- External Broker remains an interface identity classification only; external broker
+  authentication and CRM access, and customer access, remain intentionally excluded.
 - The existing `listing_agent` role currently uses the lead-centric Agent dashboard;
   Release 1.1 will provide its approved Listing Executive inventory workspace.
 

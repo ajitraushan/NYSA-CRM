@@ -1,4 +1,4 @@
-export const CRM_JOB_ROLES = ['admin','sales_agent','listing_agent','manager','director','accountant'];
+export const CRM_JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
 
 export function hasInternalCrmIdentity(broker) {
   return Boolean(broker && ['admin','internal_broker'].includes(broker.role) && CRM_JOB_ROLES.includes(broker.jobRole));
@@ -29,6 +29,7 @@ export function canWriteLead(broker, lead) {
 }
 
 export function canAssignLead(broker, lead) {
+  if (broker?.jobRole==='director'&&hasInternalCrmIdentity(broker))return true;
   if (!canWriteLead(broker, lead)) return false;
   const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
   return broker.role === 'admin' || (broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId));

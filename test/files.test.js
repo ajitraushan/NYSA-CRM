@@ -22,7 +22,8 @@ test('proposal generator creates a structurally complete PDF byte stream',()=>{
   const pdf=makeTextPdf(['NYSA REALTY','CUSTOMER PROPOSAL','Prepared for: Sample Customer','Prepared by: Sample Agent','',
     'PROPERTY','Marina Residence - Dubai Marina','Apartment | 2 bedrooms | AED 1,000,000','Developer: Sample Developer','',
     'FINANCIAL SCENARIO','Monthly estimate: AED 4,447','Gross yield: 7.5% | Net yield: 6.2%','',
-    'DISCLAIMER','Illustrative information only; verify all details independently.']);
+    'DISCLAIMER','Illustrative information only; verify all details independently.'],{footer:'NYSA Realty | Approved proposal footer'});
   assert.equal(pdf.subarray(0,8).toString(),'%PDF-1.4');assert.match(pdf.toString('latin1'),/xref/);assert.match(pdf.toString('latin1'),/%%EOF/);
+  assert.match(pdf.toString('latin1'),/Approved proposal footer/);
   if(process.env.PDF_FIXTURE)fs.writeFileSync(process.env.PDF_FIXTURE,pdf);
 });

@@ -1,5 +1,5 @@
 function esc(value){return String(value??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[^\x20-\x7e]/g,'?');}
-export function makeTextPdf(lines){
+export function makeTextPdf(lines,{footer}={}){
   const brand=String(lines[0]||'NYSA REALTY').toUpperCase(),wrapped=[];
   for(const raw of lines.slice(1)){const value=String(raw??'');if(!value){wrapped.push('');continue;}for(let rest=value;rest.length;){if(rest.length<=88){wrapped.push(rest);break;}let cut=rest.lastIndexOf(' ',88);if(cut<45)cut=88;wrapped.push(rest.slice(0,cut));rest=rest.slice(cut).trim();}}
   const pages=[];for(let i=0;i<wrapped.length;i+=38)pages.push(wrapped.slice(i,i+38));if(!pages.length)pages.push(['']);
@@ -8,7 +8,7 @@ export function makeTextPdf(lines){
   for(let pageIndex=0;pageIndex<pages.length;pageIndex++){
     let y=790;const commands=['0.12 0.15 0.18 rg',`BT /F2 17 Tf 50 ${y} Td (${esc(brand)}) Tj ET`,'0.72 0.56 0.22 RG 1.5 w 50 770 m 545 770 l S'];y=745;
     for(const line of pages[pageIndex]){const heading=line&&line===line.toUpperCase()&&line.length<55;if(!line){y-=9;continue;}if(heading)y-=4;commands.push(`0.12 0.15 0.18 rg BT /${heading?'F2':'F1'} ${heading?'12':'10'} Tf 50 ${y} Td (${esc(line)}) Tj ET`);y-=heading?19:14;}
-    commands.push(`0.45 0.47 0.50 rg BT /F1 8 Tf 50 28 Td (Private customer proposal - generated ${new Date().toISOString().slice(0,10)}) Tj ET`);
+    commands.push(`0.45 0.47 0.50 rg BT /F1 8 Tf 50 28 Td (${esc(footer||`Private customer proposal - generated ${new Date().toISOString().slice(0,10)}`)}) Tj ET`);
     commands.push(`BT /F1 8 Tf 500 28 Td (Page ${pageIndex+1} of ${pages.length}) Tj ET`);const content=commands.join('\n');
     const stream=add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`);pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${regular} 0 R /F2 ${bold} 0 R >> >> /Contents ${stream} 0 R >>`));
   }

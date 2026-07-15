@@ -5,7 +5,7 @@ export const TEMPERATURES = ['Hot','Warm','Cold'];
 export const CONTACT_TYPES = ['buyer','seller','landlord','tenant','developer','investor','other'];
 export const CHANNELS = ['Phone','Email','WhatsApp','SMS'];
 export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
-export const JOB_ROLES = ['admin','sales_agent','listing_agent','manager','director','accountant'];
+export const JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
 export const COMPANY_TYPES = ['developer','agency','corporate_client','landlord_company','vendor','other'];
 
 export const LEAD_TRANSITIONS = Object.freeze({

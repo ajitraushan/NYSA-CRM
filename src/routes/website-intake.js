@@ -62,6 +62,7 @@ async function processEvent(event,b,identity,actor){
       [leadId,contact.id,clean(b.title)||`${b.businessType} website enquiry`,b.source||'Website',b.businessType,b.temperature||'Warm',b.requirement.budgetMin??null,b.requirement.budgetMax??null,
        Array.isArray(b.requirement.areas)?b.requirement.areas.join(', '):null,clean(b.requirement.notes),rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,event.eventId,
        clean(b.campaign),clean(b.page),clean(b.form),deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,actor.id],client);
+    await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',lead.id],client);
     if(rule){
       const status=rule.agentId?'offered':'queued';
       await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,$5,$6,$7)`,

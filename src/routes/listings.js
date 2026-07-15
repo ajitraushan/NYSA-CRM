@@ -33,7 +33,7 @@ function withDiscount(listing) {
 }
 
 function canEdit(broker, listing) {
-  return broker.role === 'admin' || listing.postedBy === broker.id;
+  return broker.role === 'admin' || broker.jobRole==='admin_assistant' || listing.postedBy === broker.id;
 }
 
 function validateListingFields(body) {

@@ -36,9 +36,10 @@ test('lead access follows company, team, and own-record scope',()=>{
   assert.equal(canReadLead(accountant,teamLead),false);
 });
 
-test('write and assignment rights exclude directors and cross-team managers',()=>{
+test('directors have assignment intervention while routine writes remain restricted',()=>{
   const teamLead={assignedTo:'someone',assignedTeamId:'t1',createdBy:'other'};
   assert.equal(canWriteLead(director,teamLead),false);
+  assert.equal(canAssignLead(director,teamLead),true);
   assert.equal(canWriteLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,{...teamLead,assignedTeamId:'t2'}),false);

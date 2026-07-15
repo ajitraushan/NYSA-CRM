@@ -4,7 +4,7 @@
 
 | ID | Decision | Rationale | Status |
 | --- | --- | --- | --- |
-| D-001 | NYSA CRM is an internal company system for the current phases. | NYSA does not currently require external broker or customer access. | Approved |
+| D-001 | NYSA CRM is an internal company system for the current phases. | NYSA does not currently require external broker or customer access. | Approved; reaffirmed by D-033 |
 | D-002 | PostgreSQL is the production database. | Supports growth, constraints, transactions, backup, and future CRM relationships. | Implemented |
 | D-003 | Leads belong to NYSA first, then a team, then one responsible agent. | Prevents personal ownership from causing lost leads and enables management reassignment. | Approved |
 | D-004 | Assignment and reassignment history is immutable and auditable. | Management must understand lead custody and SLA failures. | Approved |
@@ -35,6 +35,9 @@
 | D-029 | Controlled values are maintained through governed Admin Settings and used values are never hard-deleted. | Protects historical meaning, workflow behavior, reports, and integrations. | Approved |
 | D-030 | The user-facing system name is NYSA CORE, displayed centrally between the NYSA logo and user controls. | CORE is the approved operating-system identity while the repository and technical service retain their established CRM identifiers. | Implemented and deployed 2026-07-14 in `1179cca` |
 | D-031 | Release 1.1 delivers a dedicated Listing Executive workspace, manual inventory workflow, property media, and provider-neutral integration-created drafts; live portal publication remains Release 4. | Listing Executives require an inventory-first workspace, while human review and a stable authoritative record must precede vendor automation. | Approved 2026-07-15 |
+| D-032 | Restricted External Broker access is brought into Release 1 under R1-AMD-011 Revision 2; customer access remains excluded. | External collaboration was considered during User Management review. | Withdrawn 2026-07-15; superseded by D-033 |
+| D-033 | External Broker remains an interface identity classification only; external authentication and CRM access stay outside Release 1. | The classification is useful for interface identification, but no external-user workspace or data-access scope is currently required. | Approved 2026-07-15 |
+| D-034 | The active governed NYSA company-profile version is the authoritative source for proposal legal/contact/regional/brand defaults; proposals retain a safe immutable snapshot of that version and its logo hash. | Company identity must be maintainable by administrators without silent live changes, applied consistently to customer output, and reproducible without exposing private file-storage keys. | Approved and implemented locally 2026-07-15 under R1-AMD-012; CRM Test acceptance pending |
 
 ## Recommended Defaults Awaiting Approval
 

@@ -28,7 +28,7 @@ test('Lost leads require a reason while Won leads do not', () => {
 });
 
 test('internal job roles cover the approved NYSA staff groups', () => {
-  assert.deepEqual(JOB_ROLES, ['admin','sales_agent','listing_agent','manager','director','accountant']);
+  assert.deepEqual(JOB_ROLES, ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant']);
 });
 
 test('contact identity validates email and international phone formats', () => {

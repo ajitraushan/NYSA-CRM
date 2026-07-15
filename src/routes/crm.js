@@ -96,7 +96,7 @@ r.get('/crm/teams', async (req, res) => {
 });
 
 r.post('/crm/teams', async (req, res) => {
-  if (req.broker.role !== 'admin') return res.status(403).json({ error: 'Only admins can create teams' });
+  if (req.broker.role !== 'admin' && req.broker.jobRole !== 'admin_assistant') return res.status(403).json({ error: 'Only administrators and Admin Assistants can create teams' });
   const { name, managerId, leadResponseHours=4 } = req.body || {};
   if (!clean(name)) return res.status(400).json({ error: 'name is required' });
   if (!Number.isInteger(+leadResponseHours) || +leadResponseHours < 1 || +leadResponseHours > 168)
@@ -114,7 +114,7 @@ r.post('/crm/teams', async (req, res) => {
 });
 
 r.patch('/crm/teams/:id', async (req, res) => {
-  if (req.broker.role !== 'admin') return res.status(403).json({ error: 'Only admins can edit teams' });
+  if (req.broker.role !== 'admin' && req.broker.jobRole !== 'admin_assistant') return res.status(403).json({ error: 'Only administrators and Admin Assistants can edit teams' });
   const team = await one('SELECT * FROM teams WHERE id=$1', [req.params.id]);
   if (!team) return res.status(404).json({ error: 'Team not found' });
   const { name, managerId, leadResponseHours, active } = req.body || {};
@@ -367,6 +367,7 @@ r.post('/crm/leads', async (req, res) => {
       [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Warm',budgetMin,budgetMax,
        clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
        b.nextFollowUpAt||null,req.broker.id,agentId?'assigned':'unassigned',b.listingId||null,receivedAt],client);
+    await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Manual assignment or company unassigned fallback',row.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
       VALUES($1,$2,1,$3,$4,$5,$6,$7)`,[uuid(),id,teamId,agentId,agentId?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
     await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',req.broker.id],client);

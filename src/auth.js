@@ -48,7 +48,7 @@ export async function requireAuth(req, res, next) {
     FROM sessions s JOIN brokers b ON b.id = s.broker_id
     WHERE s.token = $1 AND s.expires_at > NOW()`, [sessionHash(decodeURIComponent(presented))]);
   if (!row) return res.status(401).json({ error: 'Invalid or expired session' });
-  if (row.status !== 'active') return res.status(403).json({ error: 'Access revoked' });
+  if (row.status !== 'active') return res.status(403).json({ error: row.status==='suspended'?'Access is suspended':'Access is not active' });
   req.broker = row;
   req.token = decodeURIComponent(presented);
   next();
