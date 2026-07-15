@@ -11,10 +11,11 @@
 - Node.js hosting runtime: 24.16.0
 - Canonical repository: `C:\Users\ajitr\Projects\NYSA-CRM`
 - GitHub repository: `ajitraushan/NYSA-CRM` (private)
-- Production deployed source commit: `1179cca8345fe76ebe0167aaede1feed4f56450d`
+- Production deployed source commit: `b3637d4ef398a1516298182ee4c52966968f3b4e`
 - Release 1 requirements baseline: `3ccbcc78edefb338c3e0d9742c0cdb6b563b537a`
 - Local completion branch: `agent/release-1-completion`
-- Dashboard production-candidate implementation commit: `0f836f2`
+- Dashboard production package commit: `b7341df639f6afa28045535651a2502930ab468c`
+- Effective dashboard production release commit: `b3637d4ef398a1516298182ee4c52966968f3b4e`
 - Dashboard staging URL: `https://crm-test.nysarealty.com`
 - Dashboard staging database: `nysareal_nysacrm_r1test`
 - Phase 1 field review: RR-001 through RR-011 incorporated into Revision 2
@@ -72,11 +73,27 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
   inventory attribution/detail access.
 - The committed automated suite passes 49 tests with no failures, including the
   LiteSpeed/CloudLinux CommonJS-to-ESM startup wrapper contract.
+- Production migration `010_role_dashboard_rebuild.sql` applied exactly once;
+  `dashboard_metric_snapshots` exists and all captured business-record counts were
+  unchanged after deployment.
+- Production returned HTTP 200 with database ready after the cPanel startup file
+  was changed to `app.cjs`.
+- Production UI smoke testing passed for Administration, Leads, Inventory,
+  personalized role dashboards, all four Managing Director views, period presets,
+  and Source/Campaign filtering. No dashboard fixtures were seeded in production.
 
 ## Backup Status
 
 - Verified pre-Release 1 server backup: `~/crm-backups/nysacrm-pre-release1-20260714.dump`
 - Pre-Release 1 backup SHA-256: `176c74b46c839628b1cf1267a089839fc071ad93e7560963c32b5502ebba400c`
+- Verified pre-dashboard database backup:
+  `~/crm-backups/nysacrm-pre-dashboard-b7341df-20260715.dump`
+- Pre-dashboard database backup SHA-256:
+  `baa38ddee84f67b392b84222016ec217888f06cbbd471bb5697b52e848d3e591`
+- Verified pre-dashboard application backup:
+  `~/crm-backups/nysa-crm-app-pre-dashboard-b7341df-20260715.tar.gz`
+- Pre-dashboard application backup SHA-256:
+  `8fd0d58ca4086a4b6f82367c91b37f2965c43907dd84932bc068b88d5533701b`
 - Verified server backup: `~/crm-backups/nysacrm-2026-07-13.dump`
 - Verified local backup: `CRM Backup/nysacrm-2026-07-13.dump`
 - Verified local SHA-256: `9FF995D145D0A7E9A348D239993E7F9280DBA672857433EE3B0294AD3FFF3C60`
@@ -86,8 +103,8 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 
 ## Known Gaps
 
-- The Agent, Manager, and Managing Director dashboard rebuild is staging-accepted
-  with migration `010`, but is not yet deployed to production.
+- The Agent, Manager, and Managing Director dashboard rebuild is deployed and
+  production-smoke-tested; formal requirement acceptance remains separate.
 - Production source is manually deployed; deployment is not yet automated from Git.
 - Release 1 migrations `002`–`009` still require execution on a fresh database and
   an isolated restored production backup for formal acceptance evidence.

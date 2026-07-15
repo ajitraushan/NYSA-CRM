@@ -1,11 +1,13 @@
-# NYSA CORE Release 1 Dashboard Production Candidate
+# NYSA CORE Release 1 Dashboard Production Deployment
 
 ## Release identity
 
 - Planned production URL: `https://crm.nysarealty.com`
 - Production application root: `/home/nysareal/nysa-crm`
 - Production database: `nysareal_nysacrm`
-- Currently deployed commit: `1179cca8345fe76ebe0167aaede1feed4f56450d`
+- Prior deployed commit: `1179cca8345fe76ebe0167aaede1feed4f56450d`
+- Dashboard package commit: `b7341df639f6afa28045535651a2502930ab468c`
+- Effective deployed commit: `b3637d4ef398a1516298182ee4c52966968f3b4e`
 - Dashboard implementation through: `0f836f2`
 - Requirements baseline: `3ccbcc78edefb338c3e0d9742c0cdb6b563b537a`
 - New migration: `010_role_dashboard_rebuild.sql`
@@ -13,9 +15,8 @@
 - Environment-variable changes: none
 - cPanel startup file: `app.cjs`
 
-The final archive filename, release commit, and SHA-256 are recorded alongside the
-generated artifact. Production remains on `1179cca` until every cutover and smoke
-test step below succeeds.
+The dashboard package and the committed CloudLinux startup compatibility hotfix
+were deployed successfully. The completion evidence is recorded below.
 
 ## Included scope
 
@@ -175,7 +176,24 @@ tar -xzf ~/crm-backups/nysa-crm-app-pre-dashboard-20260715.tar.gz
 
 ## Completion record
 
-After success, record the release archive SHA, backup SHA, migration result, record
-counts, health result, smoke-test outcome, operator, and time in
-`docs/DEPLOYMENT_HISTORY.md`. Only then mark the production deployed commit in
-`docs/CURRENT_STATUS.md`.
+- Completed: 2026-07-15; health verified at 08:08 UTC
+- Operator account: `nysareal`
+- Production package: `nysa-core-release1-dashboard-production-b7341df.zip`
+- Production package SHA-256:
+  `2ab4ca5a022b1de0b3788ca97e5586ab12a6698e991e772ebed3df2fc78fe0e6`
+- Startup hotfix: `nysa-core-cloudlinux-startup-b3637d4.zip`
+- Startup hotfix SHA-256:
+  `59335abed57f7c4f9cff81cfb480bc9213c9459babdce165b98cca1f562a2963`
+- Database backup SHA-256:
+  `baa38ddee84f67b392b84222016ec217888f06cbbd471bb5697b52e848d3e591`
+- Application backup SHA-256:
+  `8fd0d58ca4086a4b6f82367c91b37f2965c43907dd84932bc068b88d5533701b`
+- Migration result: migrations `001` through `010` recorded;
+  `dashboard_metric_snapshots` present.
+- Record counts preserved: `audit_log=14`, `brokers=2`, `comments=1`,
+  `contacts=0`, `leads=0`, `listings=1`, `sessions=3`.
+- Health result: HTTP 200 and `{"ok":true,"database":"ready"}`.
+- UI smoke result: passed for Administration, Leads, Inventory, all role
+  dashboards, all Managing Director views, period presets, and Source/Campaign
+  filtering.
+- Test-data result: no dashboard fixtures seeded into production.
