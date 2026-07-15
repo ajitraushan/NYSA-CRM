@@ -42,10 +42,13 @@ ALTER TABLE regulatory_assumption_versions ADD COLUMN updated_at TIMESTAMPTZ NOT
 ALTER TABLE dashboard_targets DROP CONSTRAINT dashboard_targets_status_check;
 ALTER TABLE dashboard_targets ADD CONSTRAINT dashboard_targets_status_check
   CHECK (status IN ('draft','approved','active','retired'));
-ALTER TABLE dashboard_targets ADD COLUMN exception_threshold NUMERIC(18,2);
-ALTER TABLE dashboard_targets ADD COLUMN threshold_direction TEXT NOT NULL DEFAULT 'high_bad'
+-- Migration 010 already adds these three dashboard columns. IF NOT EXISTS keeps
+-- this migration compatible with both the canonical sequence and older staging
+-- databases that may not yet contain them.
+ALTER TABLE dashboard_targets ADD COLUMN IF NOT EXISTS exception_threshold NUMERIC(18,2);
+ALTER TABLE dashboard_targets ADD COLUMN IF NOT EXISTS threshold_direction TEXT NOT NULL DEFAULT 'high_bad'
   CHECK (threshold_direction IN ('high_bad','low_bad'));
-ALTER TABLE dashboard_targets ADD COLUMN benchmark_source TEXT;
+ALTER TABLE dashboard_targets ADD COLUMN IF NOT EXISTS benchmark_source TEXT;
 ALTER TABLE dashboard_targets ADD COLUMN approval_basis TEXT;
 ALTER TABLE dashboard_targets ADD COLUMN approved_by UUID REFERENCES brokers(id);
 ALTER TABLE dashboard_targets ADD COLUMN approved_at TIMESTAMPTZ;

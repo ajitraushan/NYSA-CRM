@@ -12,6 +12,7 @@ test('Release 1 migrations remain sequential and include the administration corr
   assert.deepEqual(migrations.slice(-2),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql']);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
+  for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
 });
 
 test('assignment queue supports scoped visibility atomic claim and repeat-cycle deadlines',()=>{
