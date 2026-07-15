@@ -70,7 +70,8 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
   testing, including hierarchy scope, complete breadcrumbs, drill-down records,
   personalized titles, period presets, source-dependent Campaign filtering, and
   inventory attribution/detail access.
-- The committed automated suite passes 48 tests with no failures.
+- The committed automated suite passes 49 tests with no failures, including the
+  LiteSpeed/CloudLinux CommonJS-to-ESM startup wrapper contract.
 
 ## Backup Status
 

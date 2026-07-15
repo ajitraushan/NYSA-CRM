@@ -147,6 +147,14 @@ test('inventory cards identify the listing creator and make the full-detail acti
   assert.match(page,/\.comment-ct\{display:flex/);
 });
 
+test('CloudLinux startup uses a CommonJS wrapper with dynamic ESM import',()=>{
+  const wrapper=fs.readFileSync(new URL('../app.cjs',import.meta.url),'utf8');
+  const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
+  assert.match(wrapper,/import\('\.\/src\/server\.js'\)/);
+  assert.equal(pkg.main,'app.cjs');
+  assert.equal(pkg.scripts.start,'node app.cjs');
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){

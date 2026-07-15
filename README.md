@@ -61,7 +61,8 @@ The server applies numbered SQL migrations from `src/migrations` before acceptin
 ## Structure
 
 ```text
-src/server.js          Application entry point and migration startup
+app.cjs                LiteSpeed/CloudLinux-compatible CommonJS startup wrapper
+src/server.js          ESM application entry point and migration startup
 src/db.js              PostgreSQL pool, transaction, migration, and query helpers
 src/migrations/        Numbered PostgreSQL schema migrations
 src/auth.js            Passwords, sessions, and authorization middleware

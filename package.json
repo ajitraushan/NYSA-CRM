@@ -3,9 +3,9 @@
   "version": "1.1.0",
   "description": "NYSA CRM Release 1 - lead lifecycle, customer activity, and real estate inventory on PostgreSQL",
   "type": "module",
-  "main": "src/server.js",
+  "main": "app.cjs",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node app.cjs",
     "test": "node --test --test-isolation=none",
     "test:dashboard:seed": "node scripts/seed-dashboard-fixtures.js",
     "test:dashboard:roles": "node --test --test-isolation=none test/dashboard-domain.test.js test/dashboard-requirements.test.js"

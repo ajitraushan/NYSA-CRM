@@ -11,6 +11,7 @@
 - New migration: `010_role_dashboard_rebuild.sql`
 - Dependency changes: none
 - Environment-variable changes: none
+- cPanel startup file: `app.cjs`
 
 The final archive filename, release commit, and SHA-256 are recorded alongside the
 generated artifact. Production remains on `1179cca` until every cutover and smoke
@@ -37,7 +38,7 @@ test step below succeeds.
 - Guarded fixtures were refused outside a database ending `_r1test`.
 - Managing Director, Manager, and Agent role presentations were visually tested.
 - Period, hierarchy, drill-down, source/campaign, and inventory-card checks passed.
-- Automated suite: 48 passed, 0 failed.
+- Automated suite: 49 passed, 0 failed.
 - Production dependencies are unchanged from the previously audited lockfile.
 
 ## Hard stop conditions
@@ -116,10 +117,12 @@ Then replace the versioned application content:
 /bin/cp -a ~/nysa-core-dashboard-production-stage/package-lock.json ~/nysa-crm/package-lock.json
 /bin/cp -a ~/nysa-core-dashboard-production-stage/README.md ~/nysa-crm/README.md
 /bin/cp -a ~/nysa-core-dashboard-production-stage/DEPLOYMENT.md ~/nysa-crm/DEPLOYMENT.md
+/bin/cp -a ~/nysa-core-dashboard-production-stage/app.cjs ~/nysa-crm/app.cjs
 ```
 
 Dependencies did not change. Do not remove or replace the CloudLinux `node_modules`
-symlink. Restart the application once in cPanel; startup applies migration `010`
+symlink. Set the cPanel startup file to `app.cjs`, then restart the application once;
+the wrapper dynamically imports the ESM server and startup applies migration `010`
 transactionally.
 
 ## Immediate verification

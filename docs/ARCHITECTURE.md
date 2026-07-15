@@ -34,7 +34,8 @@ PostgreSQL
 
 ### Application server
 
-- Entry point: `src/server.js`
+- Hosting entry point: `app.cjs` (CommonJS wrapper for LiteSpeed/CloudLinux)
+- Application entry point: `src/server.js` (ESM server and migration startup)
 - HTTP/router helpers: `src/lib/http-kit.js`
 - Authentication and authorization: `src/auth.js`
 - Feature endpoints: `src/routes/`

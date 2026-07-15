@@ -6,7 +6,7 @@
 - Node.js: `24.16.0`
 - Mode: `Production`
 - Application root: `nysa-crm`
-- Startup file: `src/server.js`
+- Startup file: `app.cjs`
 
 ## Environment variables
 
