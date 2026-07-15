@@ -128,6 +128,17 @@ test('dashboard period presets replace manual date entry for every role',()=>{
   assert.match(ui,/Object\.assign\(out,dashboardPeriodBounds\(out\.periodPreset\)\)/);
 });
 
+test('campaign filter is a role-scoped source-dependent dropdown on every dashboard',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
+  assert.match(ui,/select name="campaignCode" id="dashboard-campaign"/);
+  assert.match(ui,/loadCampaignOptions\(defaults\.source,defaults\.campaignCode\)/);
+  assert.match(ui,/dashboard-source.*addEventListener\('change'/s);
+  assert.match(routes,/\/crm\/dashboard\/filter-options/);
+  assert.match(routes,/leadScopeSql\('l',req\.broker,params\)/);
+  assert.match(routes,/if\(req\.query\.source\).*l\.source=/s);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
