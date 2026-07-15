@@ -119,6 +119,15 @@ test('Agent dashboards remove hierarchy filters fixed by maintained identity',()
   assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
 });
 
+test('dashboard period presets replace manual date entry for every role',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  for(const preset of ['last_week','last_month','last_quarter','last_6_months','older_than_6_months'])assert.match(ui,new RegExp(`'${preset}'`));
+  assert.match(ui,/name="periodPreset"/);
+  assert.doesNotMatch(ui,/name="dateFrom" type="date"/);
+  assert.doesNotMatch(ui,/name="dateTo" type="date"/);
+  assert.match(ui,/Object\.assign\(out,dashboardPeriodBounds\(out\.periodPreset\)\)/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
