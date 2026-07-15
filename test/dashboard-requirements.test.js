@@ -100,3 +100,10 @@ test('acceptance ledger keeps executive criteria partial until integrated accept
     assert.match(row,/pending|Partial/i);
   }
 });
+
+test('guarded dashboard fixtures satisfy nullable assignment and terminal-loss constraints',()=>{
+  const seed=fs.readFileSync(new URL('../scripts/seed-dashboard-fixtures.js',import.meta.url),'utf8');
+  assert.match(seed,/\$9::uuid IS NULL/);
+  assert.match(seed,/lost_reason,resolution_code,resolution_reason_code/);
+  assert.match(seed,/test_not_proceeding/);
+});
