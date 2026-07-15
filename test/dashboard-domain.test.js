@@ -24,6 +24,7 @@ test('agent manager and managing director presentations are separate contracts',
   assert.equal(manager.view,'Team performance');
   assert.equal(director.view,'Executive');
   assert.ok(agent.panels.includes('agent_actions'));
+  assert.ok(agent.panels.includes('agent_exceptions'));
   assert.ok(!agent.panels.includes('agent_workload'));
   assert.ok(manager.panels.includes('agent_workload'));
   assert.ok(manager.panels.includes('manager_hierarchy'));

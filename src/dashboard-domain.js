@@ -85,7 +85,7 @@ export function buildRoleDashboardPresentation(input){
     type==='manager'?['unassigned_leads','sla_breaches','overdue_tasks','stale_risk']:
     view==='Sales'?['new_leads','won_leads','hot_leads','stale_risk']:
     EXECUTIVE_KPI_CODES[view]||EXECUTIVE_KPI_CODES.Executive;
-  const panels=type==='agent'?['agent_actions','lead_status','qualification','tasks','proposals','recent_activity']:
+  const panels=type==='agent'?['agent_actions','lead_status','qualification','tasks','proposals','agent_exceptions','recent_activity']:
     type==='manager'?['manager_interventions','agent_workload','team_queue','sla','lead_aging','source_conversion','activity','proposals','exceptions','manager_hierarchy']:
     view==='Sales'?['executive_sales_funnel','source_quality','lead_velocity','qualification_aging','team_capacity','sales_hierarchy']:
     view==='Inventory'?['inventory_availability','inventory_aging','inventory_readiness','inventory_maturity']:

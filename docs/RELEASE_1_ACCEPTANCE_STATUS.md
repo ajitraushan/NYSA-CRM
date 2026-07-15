@@ -147,7 +147,7 @@ This ledger evaluates every bullet in the committed acceptance baseline. “Impl
 ## Verification recorded
 
 - JavaScript syntax: all repository `.js` files pass `node --check`.
-- Automated tests: 43 passed, including exhaustive Managing Director view, KPI metadata, leading-indicator, campaign/source quality, intervention-ranking, complete hierarchy breadcrumb, explicit table-value mapping, team-selector isolation, scope, contributing-population, concise-screen, guarded-fixture constraint, UI-contract, and acceptance-ledger assertions.
+- Automated tests: 44 passed, including exhaustive Managing Director view, KPI metadata, leading-indicator, campaign/source quality, intervention-ranking, complete hierarchy breadcrumb, explicit table-value mapping, maintained-name titles, Agent exceptions, team-selector isolation, scope, contributing-population, concise-screen, guarded-fixture constraint, UI-contract, and acceptance-ledger assertions.
 - Dependency audit: 0 vulnerabilities at high/critical production threshold.
 - Git patch integrity: `git diff --check` passes.
 - PDF output: rendered with Poppler and visually inspected for hierarchy, wrapping, footer, page numbering, and clipping.

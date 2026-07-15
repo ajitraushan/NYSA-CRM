@@ -107,6 +107,12 @@ test('dashboard tables explicitly map Won Overdue and Open columns to their name
   assert.doesNotMatch(ui,/row\.won\?\?row\.overdue\?\?row\.open/);
 });
 
+test('dashboard titles use the authenticated maintained name and Agent exceptions are visible',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  assert.match(ui,/const dashboardTitle=ME\.name\|\|roleName/);
+  assert.match(ui,/My operational exceptions/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
