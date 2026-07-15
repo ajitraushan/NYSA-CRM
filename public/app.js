@@ -594,7 +594,7 @@ function cardHTML(l) {
       <span class="badge tier">${esc(l.exclusivityTier)}</span>
       ${l.paymentPlanType ? `<span class="badge">${esc(l.paymentPlanType)}</span>` : ''}
     </div>
-    <div class="comment-ct">${l.commentCount || 0} 💬 · ${esc(l.postedByName)}</div>
+    <div class="comment-ct"><span>${l.commentCount || 0} comments</span><span>Listed by ${esc(l.postedByName)}</span><b>View details →</b></div>
   </div>`;
 }
 

@@ -139,6 +139,14 @@ test('campaign filter is a role-scoped source-dependent dropdown on every dashbo
   assert.match(routes,/if\(req\.query\.source\).*l\.source=/s);
 });
 
+test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{
+  const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.match(app,/Listed by \$\{esc\(l\.postedByName\)\}/);
+  assert.match(app,/View details →/);
+  assert.match(page,/\.comment-ct\{display:flex/);
+});
+
 test('acceptance ledger keeps executive criteria partial until integrated acceptance passes',()=>{
   const ledger=fs.readFileSync(new URL('../docs/RELEASE_1_ACCEPTANCE_STATUS.md',import.meta.url),'utf8');
   for(const line of [163,165,169]){
