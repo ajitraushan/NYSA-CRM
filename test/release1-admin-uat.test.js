@@ -94,7 +94,7 @@ test('fee maintenance is business-labelled and drives contextual scenario calcul
 
 test('fee rule-set lifecycle supports safe draft editing comparison approval activation and retirement',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js');
-  for(const contract of ['fillAssumptionForm','Save draft changes','Saved versions in the table are read-only','Create new version','Compare changes','Edit draft','Retirement reason'])assert.match(ui,new RegExp(contract));
+  for(const contract of ['fillAssumptionForm','closeAssumptionForm','form-grid hidden','Start new rule set','Save draft changes','Saved versions are read-only','Create new version','Compare changes','Edit draft','Retirement reason'])assert.match(ui,new RegExp(contract));
   assert.match(ui,/method:id\?'PATCH':'POST'/);
   assert.match(routes,/r\.patch\('\/admin\/regulatory-assumptions\/:assumptionId'/);
   assert.match(routes,/r\.post\('\/admin\/regulatory-assumptions\/:assumptionId\/retire'/);

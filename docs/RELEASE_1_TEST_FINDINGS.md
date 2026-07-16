@@ -463,7 +463,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-16
 - Area: Administration -> Regulatory and Fee Assumption Versions
-- Status: Revision 5 corrected locally; CRM Test deployment, user retest and explicit
+- Status: Revision 6 corrected locally; CRM Test deployment, user retest and explicit
   confirmation pending
 - Priority: Must
 - Related acceptance criteria: 112, 130, 131, 132 and 137
@@ -477,6 +477,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   explicit Edit draft/Save draft changes action. The user also confirmed that a
   mortgage fee must depend on bank financing rather than merely having a mortgage-value
   calculation base.
+  Revision 5 then exposed the correct row actions, but the new-draft form remained open
+  above the saved table. The user could therefore change controls without first selecting
+  Edit draft and without seeing Save draft changes, making the unsaved new-draft fields
+  appear to be the persisted record.
 - Required correction:
   - Replace JSON maintenance with structured rows for each regulatory or fee item.
   - Maintain business label, stable code, calculation basis, percentage, fixed,
@@ -489,6 +493,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   - Keep saved rows read-only. Require an explicit Edit draft action to expose Save
     draft changes, and an explicit Create new version action for approved, active or
     retired versions.
+  - Keep the maintenance form closed by default. Open it only through Start new rule
+    set, Edit draft or Create new version; Cancel and successful save must close it.
   - Maintain executable funding-method applicability: all funding, cash, bank finance,
     mixed finance, developer payment plan or other. A bank-finance-only fee must not
     calculate for a cash-funded purchase even if a mortgage amount happens to be present.
@@ -567,16 +573,17 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 5: Governed fee editing, funding applicability and proposal template design
+### R1-AMD-006 Revision 6: Closed-state governed fee editing, funding applicability and proposal template design
 
-- Amendment ID: R1-AMD-006 Revision 5
+- Amendment ID: R1-AMD-006 Revision 6
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
   range rules with the correct purchase-price, mortgage-value, property-value or
   quantity basis; support VAT, caps, payer, exact/range total treatment and executable
-  transaction, funding-method, property and service-channel applicability; keep saved
-  versions read-only until an explicit draft edit or create-new-version action; and expose calculated results
+  transaction, funding-method, property and service-channel applicability; keep the
+  maintenance form closed and saved versions read-only until an explicit start-new,
+  draft-edit or create-new-version action; and expose calculated results
   and audit details through an approved placeholder catalogue. Extend that catalogue into a
   business-friendly proposal template designer with ordered sections, curated
   authoritative system-field mappings, agent input prompts, approved fixed content,
@@ -584,7 +591,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   validation and governed versions. Use the definition to drive a lead-based Quick
   Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
   rejecting unknown placeholders.
-- Status: Revision 5 corrected locally and verified by 69 automated tests; CRM Test
+- Status: Revision 6 corrected locally and verified by 69 automated tests; CRM Test
   deployment, user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.

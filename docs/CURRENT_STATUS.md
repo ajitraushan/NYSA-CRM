@@ -43,11 +43,13 @@
   be reason-deleted, and version comparison is explained. Profile v5 is Approved with
   logo evidence; v1-v4 are Retired protected history. Profile v5 was subsequently
   activated during user retest; proposal-output confirmation remains pending.
-- R1-AMD-006 Revision 5 is corrected locally but not yet deployed. The Revision 4
-  hotfix deployment attempt returned a healthy application response, but authenticated
-  browser inspection still showed the older fee screen, so it is not accepted as an
-  effective deployment. Revision 5 replaces the
-  incomplete simple fee rows with contextual bases/formulas, conditional bands, VAT,
+- R1-AMD-006 Revision 6 is corrected locally but not yet deployed. Revision 5 source
+  is now served by CRM Test and its funding-method rules are present, but user review
+  found that the new-draft form still appeared permanently editable. Revision 6 keeps
+  that form closed until Start new rule set, Edit draft or Create new version. The
+  earlier Revision 4 attempt was not accepted because CRM Test still served the old
+  screen. Revisions 5 and 6 replace the incomplete simple fee rows with contextual
+  bases/formulas, conditional bands, VAT,
   quantities, estimates/caps, payer/source governance and scenario snapshot details;
   drafts can be explicitly edited/tested, saved versions remain read-only, new versions
   can be created from governed history, bank-finance-only fees are excluded from cash
