@@ -64,3 +64,11 @@ test('organization profile copy action cannot silently clear an unsaved first pr
   assert.match(ui,/No active profile exists to copy/);
   assert.match(ui,/It is listed below and remains inactive until approved and activated/);
 });
+
+test('organization profile save ignores an unselected logo and reports partial logo failure accurately',()=>{
+  const ui=read('public/app.js');
+  assert.match(ui,/rawFile\?\.name\?rawFile:null/);
+  assert.match(ui,/Company profile saved; logo not attached/);
+  assert.match(ui,/Edit the listed draft to try another logo/);
+  assert.match(ui,/selected logo file is empty/);
+});

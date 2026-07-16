@@ -400,7 +400,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   locale, brand version, proposal footer and logo maintenance, and offered no draft
   editing, approval, retirement or version comparison. Proposal generation used only
   the display name and default disclaimer, formatted the date as raw UTC, and did not
-  consistently consume the maintained legal/contact/regional/brand defaults.
+  consistently consume the maintained legal/contact/regional/brand defaults. During
+  CRM Test retest on 2026-07-16, the first profile draft was successfully created as
+  version 1, but the browser then attempted to upload the unselected optional logo as
+  an empty file and incorrectly reported that the draft was not saved.
 - Required correction:
   - Rename the screen NYSA company profile and document defaults and explain its
     operational use separately from external company records.
@@ -414,7 +417,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   - Apply the active profile to proposal company/contact lines, currency fallback,
     localized preparation date, brand reference, footer and disclaimer. Snapshot the
     exact organization version and logo hash without disclosing its private storage key.
-- Retest condition: On CRM Test, an administrator creates and edits a complete draft,
+- Retest condition: On CRM Test, an administrator can create and edit a complete draft
+  without selecting a logo and receives a correct persistent success message and row;
+  a genuinely invalid selected logo is rejected without misrepresenting the saved
+  profile state; the administrator then
   attaches a valid logo, compares it with the prior version, records an approval reason
   and activates it. The prior active version becomes Retired. A newly generated proposal
   displays the active legal/contact/brand/default fields, localized date, footer and
@@ -617,9 +623,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-010 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-012: Governed NYSA company profile and proposal defaults
+### R1-AMD-012 Revision 2: Governed NYSA company profile and safe optional-logo workflow
 
-- Amendment ID: R1-AMD-012
+- Amendment ID: R1-AMD-012 Revision 2
 - Related UAT finding: R1-UAT-011
 - Agreed requirement: Replace the informational/incomplete Organization Settings
   screen with business-friendly, versioned NYSA company profile and document-default
@@ -627,10 +633,15 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   approved logo; require draft editing, reasoned approval, activation, retirement,
   history and comparison; and make the active version authoritative for proposal
   identity, currency fallback, localized dates, brand reference, footer, disclaimer
-  and immutable organization/logo evidence.
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
-- Retest condition: The R1-UAT-011 CRM Test retest condition passes and the user
-  explicitly confirms the result.
+  and immutable organization/logo evidence. An unselected optional logo must never be
+  uploaded as an empty file, draft-save and logo-upload outcomes must be reported
+  separately and accurately, and the first-profile copy action must never clear
+  unsaved input.
+- Status: Revision 2 corrected locally and verified by 65 automated tests; CRM Test
+  hotfix deployment, user retest and explicit confirmation pending
+- Retest condition: The R1-UAT-011 CRM Test retest condition passes, including creation
+  without a logo and accurate partial-success handling for a rejected selected logo,
+  and the user explicitly confirms the result.
 
 ## Review discipline
 
