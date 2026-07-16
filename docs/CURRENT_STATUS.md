@@ -43,10 +43,11 @@
   be reason-deleted, and version comparison is explained. Profile v5 is Approved with
   logo evidence; v1-v4 are Retired protected history. Profile v5 was subsequently
   activated during user retest; proposal-output confirmation remains pending.
-- R1-AMD-006 Revision 6 is corrected locally but not yet deployed. Revision 5 source
-  is now served by CRM Test and its funding-method rules are present, but user review
-  found that the new-draft form still appeared permanently editable. Revision 6 keeps
-  that form closed until Start new rule set, Edit draft or Create new version. The
+- R1-AMD-006 Revision 6 is deployed to CRM Test as hotfix source `53aa930`. The user
+  confirmed the closed-by-default edit/new-version workflow and aligned version summary
+  on 2026-07-16. Funding-method calculation and proposal-output retests remain pending.
+  Revision 6 keeps the form closed until Start new rule set, Edit draft or Create new
+  version. The
   earlier Revision 4 attempt was not accepted because CRM Test still served the old
   screen. Revisions 5 and 6 replace the incomplete simple fee rows with contextual
   bases/formulas, conditional bands, VAT,
@@ -55,8 +56,8 @@
   can be created from governed history, bank-finance-only fees are excluded from cash
   purchases, versions can be compared, and unused draft/approved versions can be
   reason-retired before administrator approval and activation.
-- R1-UAT-001 through R1-UAT-012 remain open at `Deployed to CRM Test`; R1-UAT-013
-  remains locally corrected pending deployment. None may close until authenticated
+- R1-UAT-001 through R1-UAT-013 remain open at `Deployed to CRM Test`; R1-UAT-013 has
+  partial user confirmation for its fee-screen workflow only. None may close until all authenticated
   retesting passes and the user explicitly confirms it.
 - Production is excluded from this correction cycle. The only authorized deployment
   and manual-test target is `https://crm-test.nysarealty.com/`.

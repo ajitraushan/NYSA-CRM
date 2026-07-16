@@ -463,8 +463,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-16
 - Area: Administration -> Regulatory and Fee Assumption Versions
-- Status: Revision 6 corrected locally; CRM Test deployment, user retest and explicit
-  confirmation pending
+- Status: Revision 6 deployed to CRM Test; closed-form editing workflow and alignment
+  user-confirmed on 2026-07-16; calculation and proposal-output retest pending
 - Priority: Must
 - Related acceptance criteria: 112, 130, 131, 132 and 137
 - Evidence: The original screen accepted free-form assumptions JSON. The first
@@ -594,8 +594,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   validation and governed versions. Use the definition to drive a lead-based Quick
   Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
   rejecting unknown placeholders.
-- Status: Revision 6 corrected locally and verified by 69 automated tests; CRM Test
-  deployment, user retest and explicit confirmation pending
+- Status: Revision 6 deployed to CRM Test and verified by 69 automated tests; the user
+  confirmed the closed-form edit/new-version workflow and aligned summary on 2026-07-16.
+  Funding calculation and proposal-output retests remain pending under R1-UAT-013.
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.
 
