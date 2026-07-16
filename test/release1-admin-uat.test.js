@@ -69,6 +69,17 @@ test('organization profile save ignores an unselected logo and reports partial l
   const ui=read('public/app.js');
   assert.match(ui,/rawFile\?\.name\?rawFile:null/);
   assert.match(ui,/Company profile saved; logo not attached/);
-  assert.match(ui,/Edit the listed draft to try another logo/);
+  assert.match(ui,/form remains linked to draft/);
   assert.match(ui,/selected logo file is empty/);
+});
+
+test('organization profile retries reuse the saved draft and unused duplicates can be deleted safely',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/governance.js');
+  assert.match(ui,/fillOrganizationForm\(saved\)/);
+  assert.match(ui,/Delete unused draft/);
+  assert.match(ui,/Compare changes shows what differs from the immediately preceding version/);
+  assert.match(routes,/r\.delete\('\/admin\/organization-settings\/:id'/);
+  assert.match(routes,/status='draft'/);
+  assert.match(routes,/unused_draft_deleted/);
+  assert.match(routes,/approved, active and historical versions are retained/);
 });

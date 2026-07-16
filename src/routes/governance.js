@@ -85,6 +85,13 @@ r.post('/admin/organization-settings/:id/approve',async(req,res)=>{if(!adminOnly
 r.post('/admin/organization-settings/:id/activate',async(req,res)=>{if(!adminOnly(req,res))return;const row=await transaction(async client=>{const target=await one('SELECT * FROM organization_settings WHERE id=$1 FOR UPDATE',[req.params.id],client);if(!target||target.status!=='approved')return null;await execute("UPDATE organization_settings SET status='retired',effective_to=NOW(),updated_at=NOW() WHERE status='active'",[],client);const active=await one("UPDATE organization_settings SET status='active',effective_from=NOW(),effective_to=NULL,updated_at=NOW() WHERE id=$1 RETURNING *",[target.id],client);await audit('OrganizationSettings',active.id,'activated',req.broker.id,{version:active.version},client);return active;});if(!row)return res.status(409).json({error:'Only an approved organization version can be activated'});res.json(publicOrganization(row));});
 r.post('/admin/organization-settings/:id/retire',async(req,res)=>{if(!adminOnly(req,res))return;const row=await one("UPDATE organization_settings SET status='retired',effective_to=COALESCE(effective_to,NOW()),updated_at=NOW() WHERE id=$1 AND status IN ('draft','approved') RETURNING *",[req.params.id]);if(!row)return res.status(409).json({error:'Draft or approved versions can be retired; activate a replacement to retire the active version'});await audit('OrganizationSettings',row.id,'retired',req.broker.id,{version:row.version});res.json(publicOrganization(row));
 });
+r.delete('/admin/organization-settings/:id',async(req,res)=>{
+  if(!adminOnly(req,res))return;const reason=clean(req.body?.reason);if(!reason)return res.status(400).json({error:'Deletion reason is required'});
+  const removed=await transaction(async client=>{const row=await one("DELETE FROM organization_settings WHERE id=$1 AND status='draft' RETURNING *",[req.params.id],client);if(!row)return null;await audit('OrganizationSettings',row.id,'unused_draft_deleted',req.broker.id,{version:row.version,reason},client);return row;});
+  if(!removed)return res.status(409).json({error:'Only an unused draft company profile can be deleted; approved, active and historical versions are retained'});
+  if(removed.logoStorageKey){const shared=await one('SELECT COUNT(*)::int AS count FROM organization_settings WHERE logo_storage_key=$1',[removed.logoStorageKey]);if(!shared.count)await removePrivate(removed.logoStorageKey).catch(()=>{});}
+  res.json({deleted:true,id:removed.id,version:removed.version});
+});
 
 r.get('/crm/contacts/:id/channels',async(req,res)=>{
   const contact=await scopedContact(req,req.params.id);if(!contact)return res.status(404).json({error:'Contact not found'});

@@ -401,9 +401,12 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   editing, approval, retirement or version comparison. Proposal generation used only
   the display name and default disclaimer, formatted the date as raw UTC, and did not
   consistently consume the maintained legal/contact/regional/brand defaults. During
-  CRM Test retest on 2026-07-16, the first profile draft was successfully created as
-  version 1, but the browser then attempted to upload the unselected optional logo as
-  an empty file and incorrectly reported that the draft was not saved.
+  CRM Test retest on 2026-07-16, the profile draft was successfully created, but the
+  selected logo exceeded 2 MB and its separate upload was rejected with a generic size
+  error; the browser incorrectly reported that the draft was not saved. Subsequent
+  retries created six separate drafts because profile creation completed before logo
+  validation failed. The Compare action also lacked an inline explanation of its
+  pre-approval purpose.
 - Required correction:
   - Rename the screen NYSA company profile and document defaults and explain its
     operational use separately from external company records.
@@ -420,7 +423,11 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: On CRM Test, an administrator can create and edit a complete draft
   without selecting a logo and receives a correct persistent success message and row;
   a genuinely invalid selected logo is rejected without misrepresenting the saved
-  profile state; the administrator then
+  profile state or creating another draft; failed-logo retry remains linked to the
+  same draft. The administrator deletes only the unused duplicate drafts with a reason,
+  while approved, active and historical versions remain protected. Compare changes
+  clearly explains and displays differences from the immediately preceding version.
+  The administrator then
   attaches a valid logo, compares it with the prior version, records an approval reason
   and activates it. The prior active version becomes Retired. A newly generated proposal
   displays the active legal/contact/brand/default fields, localized date, footer and
@@ -623,9 +630,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-010 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-012 Revision 2: Governed NYSA company profile and safe optional-logo workflow
+### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
-- Amendment ID: R1-AMD-012 Revision 2
+- Amendment ID: R1-AMD-012 Revision 3
 - Related UAT finding: R1-UAT-011
 - Agreed requirement: Replace the informational/incomplete Organization Settings
   screen with business-friendly, versioned NYSA company profile and document-default
@@ -636,12 +643,16 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and immutable organization/logo evidence. An unselected optional logo must never be
   uploaded as an empty file, draft-save and logo-upload outcomes must be reported
   separately and accurately, and the first-profile copy action must never clear
-  unsaved input.
-- Status: Revision 2 corrected locally and verified by 65 automated tests; CRM Test
+  unsaved input. Validate logo size/type/readability before creating a version; keep a
+  failed logo retry linked to the same saved draft; allow reasoned, audited permanent
+  deletion only for unused drafts; and explain that Compare changes reviews differences
+  from the immediately preceding version before approval.
+- Status: Revision 3 corrected locally and verified by 66 automated tests; CRM Test
   hotfix deployment, user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-011 CRM Test retest condition passes, including creation
-  without a logo and accurate partial-success handling for a rejected selected logo,
-  and the user explicitly confirms the result.
+  without a logo, accurate partial-success handling for a rejected selected logo,
+  same-draft retry, safe deletion of the five unused duplicate drafts and clear version
+  comparison, and the user explicitly confirms the result.
 
 ## Review discipline
 
