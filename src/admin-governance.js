@@ -24,6 +24,7 @@ export const DASHBOARD_METRICS=Object.freeze({
 const FEE_TYPES=['percentage','fixed','conditional_fixed','percentage_plus_fixed','estimate_range','quantity','tiered'];
 const FEE_BASES=['purchase_price','mortgage_amount','property_value','quantity','none'];
 const FEE_TRANSACTIONS=['all','purchase','resale','off_plan','mortgage','investment','gift'];
+const FEE_FUNDING_METHODS=['all','cash','bank_finance','mixed_finance','developer_payment_plan','other'];
 const FEE_CHANNELS=['all','trustee_centre','dubai_now','dld_online','bank','other'];
 const FEE_PAYERS=['buyer','seller','shared','contractual','lender','not_applicable'];
 const finiteNonNegative=value=>Number.isFinite(Number(value))&&Number(value)>=0;
@@ -38,6 +39,7 @@ export function validateFeeItems(items){
     if(!FEE_TYPES.includes(item.calculationType))return `Invalid calculation type for ${item.code}`;
     const basis=item.calculationBasis||(item.calculationType==='fixed'?'none':'purchase_price');if(!FEE_BASES.includes(basis))return `Invalid calculation basis for ${item.code}`;
     if(item.transactionType&&!FEE_TRANSACTIONS.includes(item.transactionType))return `Invalid transaction type for ${item.code}`;
+    if(item.fundingMethod&&!FEE_FUNDING_METHODS.includes(item.fundingMethod))return `Invalid funding method for ${item.code}`;
     if(item.serviceChannel&&!FEE_CHANNELS.includes(item.serviceChannel))return `Invalid service channel for ${item.code}`;
     if(item.payer&&!FEE_PAYERS.includes(item.payer))return `Invalid payer for ${item.code}`;
     if(item.vatPercent!==''&&item.vatPercent!==undefined&&(!finiteNonNegative(item.vatPercent)||Number(item.vatPercent)>100))return `VAT must be between 0 and 100 for ${item.code}`;
@@ -58,9 +60,9 @@ export function validateFeeItems(items){
 
 const feeNorm=value=>String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
 const feeRound=value=>Math.round(Number(value)*100)/100;
-function feeContext(input){if(typeof input==='number')return {propertyPrice:input,propertyValue:input,mortgageAmount:0,quantity:1,transactionTypes:['purchase'],propertyType:null,serviceChannel:null};const x=input||{};return {propertyPrice:Number(x.propertyPrice??x.baseAmount??0),propertyValue:Number(x.propertyValue??x.propertyPrice??x.baseAmount??0),mortgageAmount:Number(x.mortgageAmount??x.loanAmount??0),quantity:Number(x.quantity??1),quantities:x.quantities||{},transactionTypes:(Array.isArray(x.transactionTypes)?x.transactionTypes:[x.transactionType||'purchase']).map(feeNorm),propertyType:feeNorm(x.propertyType)||null,serviceChannel:feeNorm(x.serviceChannel)||null};}
+function feeContext(input){if(typeof input==='number')return {propertyPrice:input,propertyValue:input,mortgageAmount:0,quantity:1,transactionTypes:['purchase'],fundingMethod:null,propertyType:null,serviceChannel:null};const x=input||{};return {propertyPrice:Number(x.propertyPrice??x.baseAmount??0),propertyValue:Number(x.propertyValue??x.propertyPrice??x.baseAmount??0),mortgageAmount:Number(x.mortgageAmount??x.loanAmount??0),quantity:Number(x.quantity??1),quantities:x.quantities||{},transactionTypes:(Array.isArray(x.transactionTypes)?x.transactionTypes:[x.transactionType||'purchase']).map(feeNorm),fundingMethod:feeNorm(x.fundingMethod)||null,propertyType:feeNorm(x.propertyType)||null,serviceChannel:feeNorm(x.serviceChannel)||null};}
 function feeBase(item,context){return {purchase_price:context.propertyPrice,mortgage_amount:context.mortgageAmount,property_value:context.propertyValue,quantity:context.quantity,none:0}[item.calculationBasis||(item.calculationType==='fixed'?'none':'purchase_price')];}
-function feeApplies(item,context){const transaction=feeNorm(item.transactionType||'all'),property=feeNorm(item.propertyType||'all'),channel=feeNorm(item.serviceChannel||'all');if(transaction!=='all'&&!context.transactionTypes.includes(transaction))return false;if(property!=='all'&&context.propertyType!==property)return false;if(channel!=='all'&&context.serviceChannel!==channel)return false;return true;}
+function feeApplies(item,context){const transaction=feeNorm(item.transactionType||'all'),funding=feeNorm(item.fundingMethod||'all'),property=feeNorm(item.propertyType||'all'),channel=feeNorm(item.serviceChannel||'all');if(transaction!=='all'&&!context.transactionTypes.includes(transaction))return false;if(funding!=='all'&&context.fundingMethod!==funding)return false;if(property!=='all'&&context.propertyType!==property)return false;if(channel!=='all'&&context.serviceChannel!==channel)return false;return true;}
 function matchingBand(item,context){return (item.bands||[]).find(band=>{const dimension=band.dimension,value=['property_type','service_channel'].includes(dimension)?context[dimension==='property_type'?'propertyType':'serviceChannel']:{purchase_price:context.propertyPrice,mortgage_amount:context.mortgageAmount,property_value:context.propertyValue}[dimension];if(band.operator==='equals')return typeof value==='number'?value===Number(band.value):String(band.value).split(',').map(feeNorm).includes(feeNorm(value));if(!Number.isFinite(Number(value)))return false;return band.operator==='below'?Number(value)<Number(band.value):Number(value)>=Number(band.value);});}
 
 export function calculateFeeItems(items,input){
@@ -78,7 +80,7 @@ export function calculateFeeItems(items,input){
     else for(const tier of item.tiers){const from=Number(tier.from||0),to=tier.to===null||tier.to===undefined?Infinity:Number(tier.to),slice=Math.max(0,Math.min(base,to)-from);net+=slice*Number(tier.ratePercent||0)/100;}
     if(item.capAmount!==''&&item.capAmount!==undefined&&Number.isFinite(Number(item.capAmount)))net=Math.min(net,Number(item.capAmount));
     const vat=feeRound(net*vatRate/100),amount=min===null?feeRound(net+vat):null,minWithVat=min===null?amount:feeRound(min*(1+vatRate/100)),maxWithVat=max===null?amount:feeRound(max*(1+vatRate/100));values[item.code]=reason?0:amount;
-    details[item.code]={label:item.label,placeholder:`fee.${item.code}`,applied:!reason,reason,calculationType:item.calculationType,calculationBasis:item.calculationBasis||'purchase_price',baseAmount:base,netAmount:min===null?feeRound(net):null,vatAmount:min===null?vat:null,amount:reason?0:amount,minimum:reason?0:minWithVat,maximum:reason?0:maxWithVat,payer:item.payer||'contractual',includeInTotal:include,matchedBand:band||null,sourceReference:item.sourceReference||null};
+    details[item.code]={label:item.label,placeholder:`fee.${item.code}`,applied:!reason,reason,calculationType:item.calculationType,calculationBasis:item.calculationBasis||'purchase_price',baseAmount:base,netAmount:min===null?feeRound(net):null,vatAmount:min===null?vat:null,amount:reason?0:amount,minimum:reason?0:minWithVat,maximum:reason?0:maxWithVat,payer:item.payer||'contractual',fundingMethod:item.fundingMethod||'all',includeInTotal:include,matchedBand:band||null,sourceReference:item.sourceReference||null};
     if(!reason&&include){if(amount!==null){total+=amount;totalMinimum+=amount;totalMaximum+=amount;}else{totalMinimum+=minWithVat;totalMaximum+=maxWithVat;}}
   }
   return {context,values,details,total:feeRound(total),totalMinimum:feeRound(totalMinimum),totalMaximum:feeRound(totalMaximum)};

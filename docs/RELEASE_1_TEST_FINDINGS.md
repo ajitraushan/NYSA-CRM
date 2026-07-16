@@ -459,11 +459,11 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   version displays the same business values and controlled deadline examples calculate
   correctly. The user explicitly confirms the result before closure.
 
-### R1-UAT-013: Regulatory and fee assumptions lack complete maintainable calculation rules
+### R1-UAT-013: Regulatory and fee assumptions lack complete maintainable calculation and editing rules
 
 - Date raised: 2026-07-16
 - Area: Administration -> Regulatory and Fee Assumption Versions
-- Status: Revision 4 corrected locally; CRM Test deployment, user retest and explicit
+- Status: Revision 5 corrected locally; CRM Test deployment, user retest and explicit
   confirmation pending
 - Priority: Must
 - Related acceptance criteria: 112, 130, 131, 132 and 137
@@ -472,6 +472,11 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   on 2026-07-16 showed that it still could not accurately represent DLD/trustee,
   property-type, VAT, mortgage-value, quantity, estimate-range or percentage-plus-fixed
   charges. Applicability remained explanatory text rather than an executable rule.
+  After the Revision 4 deployment attempt, authenticated CRM Test inspection still
+  displayed the older form: a saved fee appeared in editable controls without an
+  explicit Edit draft/Save draft changes action. The user also confirmed that a
+  mortgage fee must depend on bank financing rather than merely having a mortgage-value
+  calculation base.
 - Required correction:
   - Replace JSON maintenance with structured rows for each regulatory or fee item.
   - Maintain business label, stable code, calculation basis, percentage, fixed,
@@ -481,6 +486,12 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     and required disclaimer.
   - Provide draft editing, validation, test calculations, approval, activation,
     retirement and version comparison while preserving historical scenario snapshots.
+  - Keep saved rows read-only. Require an explicit Edit draft action to expose Save
+    draft changes, and an explicit Create new version action for approved, active or
+    retired versions.
+  - Maintain executable funding-method applicability: all funding, cash, bank finance,
+    mixed finance, developer payment plan or other. A bank-finance-only fee must not
+    calculate for a cash-funded purchase even if a mortgage amount happens to be present.
   - Publish approved calculated results through a curated proposal-placeholder
     catalogue; reject unknown or unavailable placeholders rather than rendering them
     blank or permitting retyped values.
@@ -489,6 +500,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   purchase-price and mortgage-value bases remain separate; property/service conditions,
   VAT, quantities, composite additions, estimates and caps calculate correctly; excluded
   estimates do not enter exact totals; saved financial scenarios snapshot rule details,
+  a cash-funded scenario excludes bank-finance-only fees while a bank-financed scenario
+  includes them; draft changes save only after Edit draft and active-version changes
+  create a separate new draft;
   exact and range totals and the active version; proposals resolve every approved
   placeholder; unknown placeholders are rejected; and the user explicitly confirms the
   result before closure.
@@ -553,15 +567,16 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 4: Contextual regulatory/fee calculations and proposal template design
+### R1-AMD-006 Revision 5: Governed fee editing, funding applicability and proposal template design
 
-- Amendment ID: R1-AMD-006 Revision 4
+- Amendment ID: R1-AMD-006 Revision 5
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
   range rules with the correct purchase-price, mortgage-value, property-value or
   quantity basis; support VAT, caps, payer, exact/range total treatment and executable
-  transaction/property/service-channel applicability; and expose calculated results
+  transaction, funding-method, property and service-channel applicability; keep saved
+  versions read-only until an explicit draft edit or create-new-version action; and expose calculated results
   and audit details through an approved placeholder catalogue. Extend that catalogue into a
   business-friendly proposal template designer with ordered sections, curated
   authoritative system-field mappings, agent input prompts, approved fixed content,
@@ -569,7 +584,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   validation and governed versions. Use the definition to drive a lead-based Quick
   Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
   rejecting unknown placeholders.
-- Status: Revision 4 corrected locally and verified by 69 automated tests; CRM Test
+- Status: Revision 5 corrected locally and verified by 69 automated tests; CRM Test
   deployment, user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.

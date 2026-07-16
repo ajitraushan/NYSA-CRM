@@ -86,15 +86,15 @@ test('organization profile retries reuse the saved draft and unused duplicates c
 
 test('fee maintenance is business-labelled and drives contextual scenario calculations',()=>{
   const ui=read('public/app.js'),domain=read('src/admin-governance.js'),routes=read('src/routes/qualification-finance.js');
-  for(const label of ['Calculation formula','Calculated on','VAT added to this charge','Transaction applicability','Property type applicability','Service channel','Usually paid by','Official source/reference','Include in calculated total','Conditional amount bands'])assert.match(ui,new RegExp(label));
+  for(const label of ['Calculation formula','Calculated on','VAT added to this charge','Transaction applicability','Funding method applicability','Property type applicability','Service channel','Usually paid by','Official source/reference','Include in calculated total','Conditional amount bands'])assert.match(ui,new RegExp(label));
   for(const formula of ['conditional_fixed','percentage_plus_fixed','estimate_range','quantity'])assert.match(domain,new RegExp(formula));
-  assert.match(domain,/mortgage_amount/);assert.match(domain,/totalMinimum/);assert.match(domain,/matchedBand/);
-  assert.match(routes,/regulatoryFeeDetails/);assert.match(routes,/regulatoryFeeTotalMinimum/);assert.match(routes,/propertyType:b\.inputs/);assert.match(routes,/serviceChannel:b\.inputs/);
+  assert.match(domain,/mortgage_amount/);assert.match(domain,/bank_finance/);assert.match(domain,/totalMinimum/);assert.match(domain,/matchedBand/);
+  assert.match(routes,/regulatoryFeeDetails/);assert.match(routes,/regulatoryFeeTotalMinimum/);assert.match(routes,/fundingMethod:b\.inputs/);assert.match(routes,/propertyType:b\.inputs/);assert.match(routes,/serviceChannel:b\.inputs/);
 });
 
 test('fee rule-set lifecycle supports safe draft editing comparison approval activation and retirement',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js');
-  for(const contract of ['fillAssumptionForm','Save draft version','Compare changes','Edit draft','Retirement reason'])assert.match(ui,new RegExp(contract));
+  for(const contract of ['fillAssumptionForm','Save draft changes','Saved versions in the table are read-only','Create new version','Compare changes','Edit draft','Retirement reason'])assert.match(ui,new RegExp(contract));
   assert.match(ui,/method:id\?'PATCH':'POST'/);
   assert.match(routes,/r\.patch\('\/admin\/regulatory-assumptions\/:assumptionId'/);
   assert.match(routes,/r\.post\('\/admin\/regulatory-assumptions\/:assumptionId\/retire'/);
