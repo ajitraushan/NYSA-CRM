@@ -56,3 +56,11 @@ test('administration navigation consolidates read-only website intake into audit
   assert.match(ui,/WebsiteIntake/);
   assert.doesNotMatch(ui,/data-admin-section="website-intake"/);
 });
+
+test('organization profile copy action cannot silently clear an unsaved first profile',()=>{
+  const ui=read('public/app.js');
+  assert.match(ui,/Copy active profile into form/);
+  assert.match(ui,/button\.disabled=!active/);
+  assert.match(ui,/No active profile exists to copy/);
+  assert.match(ui,/It is listed below and remains inactive until approved and activated/);
+});
