@@ -459,32 +459,39 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   version displays the same business values and controlled deadline examples calculate
   correctly. The user explicitly confirms the result before closure.
 
-### R1-UAT-013: Regulatory and fee assumptions rely on JSON and lack maintainable calculation rules
+### R1-UAT-013: Regulatory and fee assumptions lack complete maintainable calculation rules
 
 - Date raised: 2026-07-16
 - Area: Administration -> Regulatory and Fee Assumption Versions
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 4 corrected locally; CRM Test deployment, user retest and explicit
+  confirmation pending
 - Priority: Must
 - Related acceptance criteria: 112, 130, 131, 132 and 137
-- Evidence: The current screen accepts a free-form assumptions JSON object and a
-  disclaimer but does not let an administrator maintain individual regulatory or fee
-  items, percentage/fixed/tiered rules, applicability, effective dates or approved
-  proposal placeholders in business terms.
+- Evidence: The original screen accepted free-form assumptions JSON. The first
+  correction exposed percentage, fixed and progressive tier rows, but CRM Test review
+  on 2026-07-16 showed that it still could not accurately represent DLD/trustee,
+  property-type, VAT, mortgage-value, quantity, estimate-range or percentage-plus-fixed
+  charges. Applicability remained explanatory text rather than an executable rule.
 - Required correction:
   - Replace JSON maintenance with structured rows for each regulatory or fee item.
-  - Maintain business label, stable code, description, calculation type, percentage,
-    fixed amount or tier bands, currency, applicability conditions, effective dates,
-    source/reference and required disclaimer.
+  - Maintain business label, stable code, calculation basis, percentage, fixed,
+    conditional fixed, percentage-plus-fixed, quantity and estimate-range formulas;
+    optional caps; VAT; payer; inclusion in totals; currency; executable transaction,
+    property-type and service-channel applicability; effective dates; authority/source;
+    and required disclaimer.
   - Provide draft editing, validation, test calculations, approval, activation,
     retirement and version comparison while preserving historical scenario snapshots.
   - Publish approved calculated results through a curated proposal-placeholder
     catalogue; reject unknown or unavailable placeholders rather than rendering them
     blank or permitting retyped values.
-- Retest condition: On CRM Test, an administrator configures percentage, fixed and
-  tiered fee items without JSON; test examples and saved financial scenarios use the
-  applicable active version; proposals and communications resolve every approved
-  placeholder correctly; unknown placeholders are rejected; and the user explicitly
-  confirms the result before closure.
+- Retest condition: On CRM Test, an administrator configures the approved Dubai charge
+  set without JSON. Tests below/at each price threshold select the correct fixed band;
+  purchase-price and mortgage-value bases remain separate; property/service conditions,
+  VAT, quantities, composite additions, estimates and caps calculate correctly; excluded
+  estimates do not enter exact totals; saved financial scenarios snapshot rule details,
+  exact and range totals and the active version; proposals resolve every approved
+  placeholder; unknown placeholders are rejected; and the user explicitly confirms the
+  result before closure.
 
 ## Agreed amendments
 
@@ -546,20 +553,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 3: Business-friendly regulatory/fee rules and proposal template design
+### R1-AMD-006 Revision 4: Contextual regulatory/fee calculations and proposal template design
 
-- Amendment ID: R1-AMD-006 Revision 3
+- Amendment ID: R1-AMD-006 Revision 4
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
-  percentage, fixed and tiered calculation rules and expose their calculated results
-  through an approved placeholder catalogue. Extend that catalogue into a
+  percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
+  range rules with the correct purchase-price, mortgage-value, property-value or
+  quantity basis; support VAT, caps, payer, exact/range total treatment and executable
+  transaction/property/service-channel applicability; and expose calculated results
+  and audit details through an approved placeholder catalogue. Extend that catalogue into a
   business-friendly proposal template designer with ordered sections, curated
   authoritative system-field mappings, agent input prompts, approved fixed content,
   media/scenario blocks, per-section and per-field Mandatory/Optional rules, preview,
   validation and governed versions. Use the definition to drive a lead-based Quick
   Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
   rejecting unknown placeholders.
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 4 corrected locally and verified by 69 automated tests; CRM Test
+  deployment, user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.
 

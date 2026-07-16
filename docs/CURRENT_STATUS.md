@@ -36,15 +36,21 @@
   `3b49652`. The current consolidated package is
   `nysa-core-r1-uat-crm-test-3b49652.zip`; all earlier CRM Test correction packages
   through un-deployed `7705e0b` are superseded.
-- The automated suite passes 66 assertions. CRM Test migrations 011 and 012 are
+- The automated suite passes 69 assertions. CRM Test migrations 011 and 012 are
   recorded, and health returns HTTP 200 with database ready.
 - R1-AMD-012 Revision 3 is deployed: oversized-logo validation occurs before profile
   creation, failed-logo retry stays linked to the saved draft, unused drafts alone can
   be reason-deleted, and version comparison is explained. Profile v5 is Approved with
-  logo evidence; v1-v4 are Retired protected history. Activation/user confirmation is
-  still pending.
-- R1-UAT-001 through R1-UAT-013 remain open at `Deployed to CRM Test`; none may
-  close until authenticated retesting passes and the user explicitly confirms it.
+  logo evidence; v1-v4 are Retired protected history. Profile v5 was subsequently
+  activated during user retest; proposal-output confirmation remains pending.
+- R1-AMD-006 Revision 4 is corrected locally but not yet deployed. It replaces the
+  incomplete simple fee rows with contextual bases/formulas, conditional bands, VAT,
+  quantities, estimates/caps, payer/source governance and scenario snapshot details;
+  drafts can be edited/tested, versions compared, and unused draft/approved versions
+  reason-retired before administrator approval and activation.
+- R1-UAT-001 through R1-UAT-012 remain open at `Deployed to CRM Test`; R1-UAT-013
+  remains locally corrected pending deployment. None may close until authenticated
+  retesting passes and the user explicitly confirms it.
 - Production is excluded from this correction cycle. The only authorized deployment
   and manual-test target is `https://crm-test.nysarealty.com/`.
 
