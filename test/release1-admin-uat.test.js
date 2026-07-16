@@ -93,7 +93,7 @@ test('fee maintenance is business-labelled and drives contextual scenario calcul
 });
 
 test('fee rule-set lifecycle supports safe draft editing comparison approval activation and retirement',()=>{
-  const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js');
+  const ui=read('public/app.js'),styles=read('public/index.html'),routes=read('src/routes/qualification-finance.js');
   for(const contract of ['fillAssumptionForm','closeAssumptionForm','form-grid hidden','Start new rule set','Save draft changes','Saved versions are read-only','Create new version','Compare changes','Edit draft','Retirement reason'])assert.match(ui,new RegExp(contract));
   assert.match(ui,/method:id\?'PATCH':'POST'/);
   assert.match(routes,/r\.patch\('\/admin\/regulatory-assumptions\/:assumptionId'/);
@@ -101,4 +101,5 @@ test('fee rule-set lifecycle supports safe draft editing comparison approval act
   assert.match(routes,/status IN \('draft','approved'\)/);
   assert.match(routes,/activate a replacement to retire the active version/);
   assert.match(routes,/Rule-set name, authority\/reference and disclaimer are required/);
+  assert.match(ui,/Authority\/reference:/);assert.match(ui,/fee-rule-summary/);assert.match(styles,/fee-version-table td small\{display:block/);assert.match(styles,/#assumption-table>\.tool-note\{margin:0 0 12px/);
 });

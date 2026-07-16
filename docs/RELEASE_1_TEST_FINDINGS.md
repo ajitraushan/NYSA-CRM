@@ -495,6 +495,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     retired versions.
   - Keep the maintenance form closed by default. Open it only through Start new rule
     set, Edit draft or Create new version; Cancel and successful save must close it.
+  - Separate the rule-set name, authority/reference, rule description and placeholder
+    onto aligned lines; give the explanatory note and action buttons adequate spacing.
   - Maintain executable funding-method applicability: all funding, cash, bank finance,
     mixed finance, developer payment plan or other. A bank-finance-only fee must not
     calculate for a cash-funded purchase even if a mortgage amount happens to be present.
@@ -583,7 +585,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   quantity basis; support VAT, caps, payer, exact/range total treatment and executable
   transaction, funding-method, property and service-channel applicability; keep the
   maintenance form closed and saved versions read-only until an explicit start-new,
-  draft-edit or create-new-version action; and expose calculated results
+  draft-edit or create-new-version action; align the rule-set summary, authority,
+  placeholders, lifecycle note and actions; and expose calculated results
   and audit details through an approved placeholder catalogue. Extend that catalogue into a
   business-friendly proposal template designer with ordered sections, curated
   authoritative system-field mappings, agent input prompts, approved fixed content,
