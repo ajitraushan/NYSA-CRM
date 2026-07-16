@@ -647,8 +647,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   failed logo retry linked to the same saved draft; allow reasoned, audited permanent
   deletion only for unused drafts; and explain that Compare changes reviews differences
   from the immediately preceding version before approval.
-- Status: Revision 3 corrected locally and verified by 66 automated tests; CRM Test
-  hotfix deployment, user retest and explicit confirmation pending
+- Status: Revision 3 deployed to CRM Test and verified by 66 automated tests plus
+  authenticated comparison smoke test; activation, remaining user retest and explicit
+  confirmation pending
 - Retest condition: The R1-UAT-011 CRM Test retest condition passes, including creation
   without a logo, accurate partial-success handling for a rejected selected logo,
   same-draft retry, safe deletion of the five unused duplicate drafts and clear version

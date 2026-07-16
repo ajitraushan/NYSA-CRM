@@ -33,10 +33,16 @@
 - cPanel production deployment and TLS endpoint
 - Private Git source control with secrets and runtime data excluded
 - R1-AMD-001 through R1-AMD-012 are deployed to CRM Test as effective source
-  `ab0ee8e`. The corrected consolidated package is
-  `nysa-core-r1-uat-crm-test-ab0ee8e.zip`; package `b89b21e` is superseded.
-- The automated suite passes 62 assertions. CRM Test migrations 011 and 012 are
+  `3b49652`. The current consolidated package is
+  `nysa-core-r1-uat-crm-test-3b49652.zip`; all earlier CRM Test correction packages
+  through un-deployed `7705e0b` are superseded.
+- The automated suite passes 66 assertions. CRM Test migrations 011 and 012 are
   recorded, and health returns HTTP 200 with database ready.
+- R1-AMD-012 Revision 3 is deployed: oversized-logo validation occurs before profile
+  creation, failed-logo retry stays linked to the saved draft, unused drafts alone can
+  be reason-deleted, and version comparison is explained. Profile v5 is Approved with
+  logo evidence; v1-v4 are Retired protected history. Activation/user confirmation is
+  still pending.
 - R1-UAT-001 through R1-UAT-013 remain open at `Deployed to CRM Test`; none may
   close until authenticated retesting passes and the user explicitly confirms it.
 - Production is excluded from this correction cycle. The only authorized deployment

@@ -13,12 +13,14 @@ in Git.
 - Startup file: `src/server.js`
 - Initial consolidated source commit/package: `b89b21e`
 - Migration compatibility correction: `ab0ee8e`
-- Effective deployed source: `ab0ee8e`
-- Corrected consolidated package: `nysa-core-r1-uat-crm-test-ab0ee8e.zip`
+- Administration smoke corrections: `2d0dfd7` and `c28fa16`
+- Organization-profile retry/cleanup correction: `3b49652`
+- Effective deployed source: `3b49652`
+- Current consolidated package: `nysa-core-r1-uat-crm-test-3b49652.zip`
 - Corrected package SHA-256:
-  `5193dcaff03a3b785ce23cbc8da9240b16d1015560a9f421aeb2b741c3ae0af9`
-- The earlier `nysa-core-r1-uat-crm-test-b89b21e.zip` is superseded and must
-  not be used for a fresh deployment.
+  `948de5498e58194a063206cf4077b7b4247559a47720844ca6d863f11623dbf7`
+- Packages `b89b21e`, `ab0ee8e`, `2d0dfd7`, `c28fa16` and the un-deployed
+  `7705e0b` correction are superseded and must not be used for a fresh deployment.
 
 ### Backup and migration evidence
 
@@ -39,6 +41,13 @@ in Git.
   `2026-07-15 21:38:49+00`.
 - Security headers remained present.
 - The new Lead Qualification Versions frontend was confirmed from the deployed URL.
+- Consolidated source `3b49652` was hash-verified, extracted and syntax-checked with
+  the CloudLinux Node 24 runtime before restart. CRM Test returned HTTP 200 with the
+  expected security headers at `2026-07-16 09:45:38+00`.
+- Authenticated browser verification confirmed the Revision 3 explanation and
+  `Compare changes` UI. Company-profile v5 is Approved with private logo evidence;
+  comparison with v4 correctly identifies the approved-logo hash as the change.
+  Versions v1 through v4 are Retired and retained as protected history.
 - R1-UAT-001 through R1-UAT-013 and R1-AMD-001 through R1-AMD-012 are
   `Deployed to CRM Test`; none is closed. Authenticated workflow retesting and
   explicit user confirmation remain required.
