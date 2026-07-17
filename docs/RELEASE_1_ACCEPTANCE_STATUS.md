@@ -150,7 +150,7 @@ This ledger evaluates every bullet in the committed acceptance baseline. “Impl
 ## Verification recorded
 
 - JavaScript syntax: all repository `.js` files pass `node --check`.
-- Automated tests: 75 passed, including Release 1 administration governance, left-menu maintenance navigation, buyer-booklet configuration and limits, contextual fee-rule boundaries, fee-version lifecycle and scenario integration, migration contracts, repeat-SLA queue behavior, configurable proposal inputs, Admin Assistant boundaries, consolidated intake operations, organization-profile logo/retry/cleanup rules, dashboard contracts, scope/security assertions, and governed AI REST schema, redaction, evidence and completeness contracts.
+- Automated tests: 76 passed, including Release 1 administration governance, left-menu maintenance navigation, buyer-booklet configuration and limits, contextual fee-rule boundaries, fee-version lifecycle and scenario integration, migration contracts, repeat-SLA queue behavior, configurable proposal inputs, Admin Assistant boundaries, consolidated intake operations, organization-profile logo/retry/cleanup rules, dashboard contracts, scope/security assertions, governed AI REST schema, redaction, evidence and completeness contracts, and explicit editable review/apply browser controls.
 - Dependency audit: 0 vulnerabilities at high/critical production threshold.
 - Git patch integrity: `git diff --check` passes.
 - PDF output: rendered with Poppler and visually inspected for hierarchy, wrapping, footer, page numbering, and clipping.

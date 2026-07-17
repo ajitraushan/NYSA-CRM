@@ -6,6 +6,24 @@ The AI service provides advisory drafts. It never saves a customer requirement,
 changes deterministic property eligibility, selects proposal inventory, or corrects an
 authoritative record automatically. Every response requires human confirmation.
 
+## Browser review workflow
+
+The CRM browser uses these services only through review-first controls:
+
+- **Structured requirements** provides conversation notes, editable suggestion cards
+  and an explicit **Apply reviewed draft to form** action. Applying fills the normal
+  requirement form; the user must still review it and select **Save new version**.
+- **Customer proposal builder** provides **Draft match wording** for one selected
+  shortlisted property. Why-it-matches, trade-offs and customer summary remain editable;
+  **Apply reviewed wording to suitability** copies the reviewed text into the normal
+  proposal input without generating or saving a proposal.
+- **Check missing information** separates blocking gaps from recommended improvements,
+  names the authoritative source record and supplies editable follow-up questions. It
+  does not place incomplete-data notes into a customer proposal or update source data.
+
+Discard, dismiss and clear actions make it possible to reject any suggestion. The
+existing Save or Generate action is always a separate user decision.
+
 ## Server configuration
 
 Maintain these only as cPanel Node.js environment variables. Never place a real key in

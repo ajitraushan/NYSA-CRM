@@ -7,7 +7,7 @@ Production deployment is not authorized by this package.
 ## Scope
 
 This is one consolidated Release 1 correction candidate covering R1-UAT-001 through
-R1-UAT-014 and R1-AMD-001 through R1-AMD-013. All findings remain open until CRM Test
+R1-UAT-015 and R1-AMD-001 through R1-AMD-014 Revision 2. All findings remain open until CRM Test
 deployment, successful retest and explicit user confirmation.
 
 ## Required pre-deployment controls
@@ -39,6 +39,10 @@ deployment, successful retest and explicit user confirmation.
 - Proposal: governed company identity, template mappings, required/optional configured
   prompts, authoritative data validation, approved media/scenario selection and exact
   immutable PDF snapshot.
+- AI assistance: configured status without credential exposure; editable requirement
+  suggestions with separate Apply and Save actions; deterministic match wording with
+  separate Apply and Generate actions; missing-information source guidance; discard,
+  refusal, timeout, cross-scope denial, safe audit metadata and no automatic mutations.
 - Users: invite and direct pending creation, activation, multi-role/team assignment,
   Admin Assistant permissions, Viewer denial, Suspend/Reactivate/Revoke and session
   invalidation. External Broker remains interface identity only.

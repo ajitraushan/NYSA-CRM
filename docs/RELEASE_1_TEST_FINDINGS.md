@@ -557,8 +557,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Leads, structured requirements, inventory matching and proposal preparation
-- Status: Correction implemented locally; CRM Test configuration, deployment, live
-  provider retest and explicit user confirmation pending
+- Status: Revision 1 backend is deployed and configured on CRM Test; Revision 2
+  review-first browser controls are implemented locally. CRM Test deployment, live
+  functional retest and explicit user confirmation remain pending
 - Priority: High value-add
 - Related acceptance criteria: 80, 81, 126, 129, 135, 191, 192 and 193
 - Evidence: Requirement notes, deterministic inventory linking and proposal narratives
@@ -803,9 +804,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-014 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-014 Revision 1: Governed reusable AI assistance REST services
+### R1-AMD-014 Revision 2: Governed reusable AI assistance and review-first user controls
 
-- Amendment ID: R1-AMD-014 Revision 1
+- Amendment ID: R1-AMD-014 Revision 2
 - Related UAT finding: R1-UAT-015
 - Agreed requirement: Add reusable authenticated REST services for (1) converting
   conversation notes into draft structured lead requirements, (2) drafting customer-
@@ -815,11 +816,23 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   human confirmation. AI must not rank inventory, alter deterministic matching or save
   business records. Keep the provider key server-side, minimize/redact direct personal
   identifiers, store only safe run metadata, and fail without business-data mutation.
-- Status: Implemented locally and covered by automated service, redaction, deterministic
-  evidence, completeness, authentication and migration contract tests; CRM Test
-  provider configuration, deployment, live retest and explicit user confirmation pending
-- Retest condition: The R1-UAT-015 CRM Test retest condition passes for all three REST
-  functions and the user explicitly confirms the result.
+  Expose the services in their business context through review-first browser controls:
+  editable requirement suggestions that only populate the normal form after an explicit
+  apply action; editable match rationale/trade-offs that only populate suitability after
+  an explicit apply action; and a missing-information review that identifies the source
+  record and keeps incomplete-data notes out of customer output. Clear, discard and
+  dismiss must be available, and Save new version or Generate proposal must remain a
+  separate deliberate user action.
+- Status: Revision 1 backend is deployed and configured on CRM Test. Revision 2 browser
+  integration is implemented locally and covered by automated service, redaction,
+  deterministic evidence, completeness, authentication, migration and review-control
+  contract tests; CRM Test deployment, live retest and explicit confirmation pending
+- Retest condition: On CRM Test, generate and edit requirement suggestions, discard one,
+  apply another and verify nothing persists until Save new version; generate and edit
+  match wording for a selected shortlisted property, apply it and verify no proposal is
+  generated until the normal Generate action; check gaps and verify source-record
+  guidance and editable questions; then the R1-UAT-015 conditions pass and the user
+  explicitly confirms the result.
 
 ## Review discipline
 

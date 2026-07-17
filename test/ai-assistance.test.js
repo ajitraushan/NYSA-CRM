@@ -39,3 +39,11 @@ test('AI REST routes are authenticated, mounted and never expose an API key',()=
   const server=readFileSync(join(root,'src/server.js'),'utf8'),routes=readFileSync(join(root,'src/routes/ai.js'),'utf8'),migration=readFileSync(join(root,'src/migrations/016_ai_assistance_runs.sql'),'utf8');
   assert.match(server,/app\.mount\('\/api', aiRoutes\)/);assert.match(routes,/r\.use\(requireAuth/);assert.match(routes,/requirements-draft/);assert.match(routes,/match-explanation/);assert.match(routes,/missing-information/);assert.match(routes,/inputHash/);assert.doesNotMatch(routes,/process\.env\.OPENAI_API_KEY/);assert.match(migration,/ai_assistance_runs/);
 });
+
+test('AI browser assistance requires editable review and a separate apply action',()=>{
+  const app=readFileSync(join(root,'public/app.js'),'utf8'),html=readFileSync(join(root,'public/index.html'),'utf8');
+  assert.match(app,/AI-assisted requirement draft/);assert.match(app,/Apply reviewed draft to form/);assert.match(app,/Save new version/);
+  assert.match(app,/Draft match wording/);assert.match(app,/Apply reviewed wording to suitability/);assert.match(app,/Check missing information/);
+  assert.match(app,/It does not select, rank or save properties/);assert.match(app,/Copy reviewed questions/);
+  assert.match(html,/\.ai-review-box/);assert.match(html,/\.ai-advisory/);
+});
