@@ -76,6 +76,15 @@ test('existing customer selection ranks typed matches first and alphabetizes bot
   assert.match(crm,/ORDER BY LOWER\(c\.full_name\)/);
 });
 
+test('lead capture explains the original property link in business language',()=>{
+  const ui=read('public/app.js');
+  assert.match(ui,/Property that prompted this enquiry \(optional\)/);
+  assert.match(ui,/No specific property linked/);
+  assert.match(ui,/It does not restrict later inventory matching/);
+  assert.match(ui,/Original property enquiry/);
+  assert.doesNotMatch(ui,/Related listing \(optional\)/);
+});
+
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
   const app=read('public/app.js'),routes=read('src/routes/files-proposals.js');
   assert.match(app,/setupAdminWorkspace\(\)/);

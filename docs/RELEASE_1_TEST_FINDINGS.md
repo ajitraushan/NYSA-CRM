@@ -640,6 +640,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   clear the search and verify all permitted customers are alphabetical; verify a no-match
   search leaves all customers available; and obtain explicit user confirmation.
 
+### R1-UAT-019: Related-listing terminology does not explain its business purpose
+
+- Date raised: 2026-07-17
+- Area: New lead capture and lead summary
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Should
+- Related acceptance criterion: 81
+- Evidence: The label `Related listing` is system terminology and does not tell the user
+  whether the field records the customer's original property enquiry or limits later
+  matching.
+- Required correction: Label the field `Property that prompted this enquiry (optional)`,
+  use `No specific property linked` as the empty choice, explain that the link records a
+  particular property already enquired about without restricting later inventory matching,
+  and use `Original property enquiry` in the saved lead summary.
+- Retest condition: On CRM Test, create one lead with a specific originating property and
+  another without one; verify the labels and saved lead summaries are clear, and verify
+  later inventory matching remains available for both leads; then obtain explicit user
+  confirmation.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -931,6 +951,18 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Status: Implemented locally and verified by automated API-order and browser-contract
   tests; CRM Test deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-018 CRM Test retest condition passes and the user
+  explicitly confirms the result.
+
+### R1-AMD-018 Revision 1: Business-friendly originating-property terminology
+
+- Amendment ID: R1-AMD-018 Revision 1
+- Related UAT finding: R1-UAT-019
+- Agreed requirement: Replace `Related listing` with business language that records the
+  property which prompted the enquiry, clearly describes the optional empty state and
+  confirms that this reference does not restrict later inventory matching.
+- Status: Implemented locally and verified by automated browser-contract tests; CRM Test
+  deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-019 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
 ## Review discipline
