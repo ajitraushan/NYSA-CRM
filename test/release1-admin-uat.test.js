@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-2),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql']);
+  assert.deepEqual(migrations.slice(-3),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql']);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -72,8 +72,13 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(app,/Print \/ Save draft PDF/);
   assert.match(app,/DRAFT SAMPLE/);
   assert.match(app,/Save the draft, generate and review its sample, then approve and activate/);
+  assert.match(app,/CUSTOMER ADDRESS/);
+  assert.match(app,/proposal-timeline-step/);
+  assert.match(app,/Verify finance readiness/);
+  assert.match(app,/PROPERTY IMAGE 1/);
+  assert.match(routes,/'contact\.postal_address':recipient\.postalAddress/);
   assert.match(app,/organizationVersions\.find\(x=>x\.status==='active'\)/);
-  assert.match(app,/approved logo shown here will govern live proposals/);
+  assert.match(app,/approved logo/);
   assert.match(app,/proposal-preview-brand/);
   assert.match(app,/Create new version/);
   assert.match(routes,/proposal\.templateType==='Quick'.*listingIds\.length<1/);

@@ -213,11 +213,11 @@ r.post('/crm/contacts', async (req, res) => {
   const contact = await transaction(async client=>{
     const row=await one(`INSERT INTO contacts
       (id,full_name,email,phone,contact_type,company_name,company_id,preferred_channel,nationality,language,notes,owner_id,created_by,email_status,phone_status,public_profile_url,
-       preferred_contact_time,do_not_contact,contact_restriction_reason,source_first_seen)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
+      preferred_contact_time,do_not_contact,contact_restriction_reason,source_first_seen,postal_address)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
       [id,clean(b.fullName),identity.email,identity.phone,b.contactType||'buyer',clean(b.companyName),b.companyId||null,
        b.preferredChannel||null,clean(b.nationality),clean(b.language),clean(b.notes),ownerId,req.broker.id,identity.emailStatus,identity.phoneStatus,clean(b.publicProfileUrl),
-       clean(b.preferredContactTime),b.doNotContact?1:0,clean(b.contactRestrictionReason),clean(b.sourceFirstSeen)],client);
+       clean(b.preferredContactTime),b.doNotContact?1:0,clean(b.contactRestrictionReason),clean(b.sourceFirstSeen),clean(b.postalAddress)],client);
     for(const role of roles)await execute(`INSERT INTO contact_roles (id,contact_id,role_code,created_by) VALUES ($1,$2,$3,$4)`,[uuid(),id,role,req.broker.id],client);
     if(identity.email)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
       VALUES ($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),id,String(b.email).trim(),identity.email,identity.emailStatus,req.broker.id],client);
@@ -235,7 +235,7 @@ r.patch('/crm/contacts/:id', async (req, res) => {
   if (!canWriteCrm(req.broker) || (req.broker.role !== 'admin' && contact.ownerId !== req.broker.id))
     return res.status(403).json({ error: 'Only the contact owner or an admin can edit it' });
   const map = { fullName:'full_name',email:'email',phone:'phone',contactType:'contact_type',companyName:'company_name',companyId:'company_id',
-    preferredChannel:'preferred_channel',nationality:'nationality',language:'language',notes:'notes',ownerId:'owner_id',publicProfileUrl:'public_profile_url' };
+    preferredChannel:'preferred_channel',nationality:'nationality',language:'language',notes:'notes',ownerId:'owner_id',publicProfileUrl:'public_profile_url',postalAddress:'postal_address' };
   const enumError = invalidEnum(req.body.contactType, CONTACT_TYPES, 'contactType') ||
     invalidEnum(req.body.preferredChannel, CHANNELS, 'preferredChannel');
   if (enumError) return res.status(400).json({ error: enumError });
@@ -306,7 +306,7 @@ r.get('/crm/leads', async (req, res) => {
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
   if (req.query.q) { params.push(`%${req.query.q}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
-  const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
+  const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,
     (SELECT COUNT(*)::int FROM activities a WHERE a.lead_id=l.id) AS activity_count
     FROM leads l JOIN contacts c ON c.id=l.contact_id
@@ -318,7 +318,7 @@ r.get('/crm/leads', async (req, res) => {
 
 r.get('/crm/leads/:id', async (req, res) => {
   await refreshAssignmentStatuses();
-  const lead = await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
+  const lead = await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,
     c.preferred_channel,c.email_status,c.phone_status,c.public_profile_url,c.screening_notes,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,x.area AS listing_area,x.price AS listing_price
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to

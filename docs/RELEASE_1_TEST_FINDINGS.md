@@ -214,7 +214,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Revision 9 implemented locally and verified by automated tests; CRM Test
+- Status: Revision 10 implemented locally and verified by automated tests; CRM Test
   deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
@@ -255,6 +255,13 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     fields, ask only for the configured agent inputs or genuinely missing required data,
     allow property/media/scenario selection, show a preview, and identify mapped versus
     agent-entered content before immutable generation.
+  - Present customer name and postal address prominently. Maintain postal address on
+    the customer contact and expose it as a curated authoritative proposal mapping;
+    missing mandatory address data must direct the user back to that contact.
+  - Keep customer-facing output concise: do not show internal brand-version metadata;
+    use requirement chips, structured property facts, approved-media positions, a
+    conditional sequential icon timeline and three compact next actions instead of
+    long administrative paragraphs.
 - Retest condition: On CRM Test, an administrator creates a Quick template without
   editing JSON or raw database paths, maps lead requirement and selected-property
   fields from the approved catalogue, marks system and agent-input fields Mandatory or
@@ -599,9 +606,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 9: Reviewable branded draft proposal layout before approval
+### R1-AMD-006 Revision 10: Concise buyer-facing branded draft layout
 
-- Amendment ID: R1-AMD-006 Revision 9
+- Amendment ID: R1-AMD-006 Revision 10
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
@@ -625,7 +632,13 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Within the same draft workflow, allow an administrator to generate a visibly
   watermarked branded draft layout with sample data and print or save it as a draft PDF
   for review before approval; approval and activation remain separate later actions.
-- Status: Revision 9 implemented locally and verified by 70 automated tests; CRM Test
+  Show customer name and postal address, hide internal brand version, use compact
+  requirement chips and property facts, show approved-media positions, filter out
+  irrelevant ready/off-plan and cash/bank timeline stages, represent the applicable
+  journey sequentially with icons, reduce Next Steps to three actions and keep the
+  draft watermark fully within the page. Add customer postal address as an authoritative
+  contact field through additive migration `013_customer_proposal_address.sql`.
+- Status: Revision 10 implemented locally and verified by 70 automated tests; CRM Test
   deployment, authenticated proposal workflow retest and explicit user confirmation
   pending. Revision 6 fee-screen confirmation remains recorded separately.
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
