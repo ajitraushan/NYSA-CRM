@@ -178,14 +178,15 @@ export function calculateRoi(price, annualRent, annualCosts = 0) {
   return Math.round(((rent - costs) / p) * 10000) / 100;
 }
 
-const SENSITIVE_FACTOR_PATTERN=/(age|gender|sex|religion|ethnic|nationality|health|disability|social[_ -]?media|race|marital|politic)/i;
+const SENSITIVE_FACTOR_PATTERN=/\b(age|gender|sex|religion|religious|ethnic|ethnicity|nationality|health|disability|social\s+media|race|racial|marital|politic|political|politics)\b/i;
 export function validateQualificationFactors(factors){
   if(!Array.isArray(factors)||!factors.length)return 'At least one qualification factor is required';
   const codes=new Set();
   for(const f of factors){
     if(!f||!String(f.code||'').match(/^[a-z][a-z0-9_]{1,39}$/))return 'Every factor needs a stable lowercase code';
     if(codes.has(f.code))return `Duplicate factor code: ${f.code}`;codes.add(f.code);
-    if(SENSITIVE_FACTOR_PATTERN.test(`${f.code} ${f.label||''} ${f.question||''} ${f.inputSource||''}`))return `Sensitive or social factor is prohibited: ${f.code}`;
+    const factorText=`${f.code} ${f.label||''} ${f.question||''} ${f.inputSource||''}`.replace(/[_-]+/g,' '),sensitiveMatch=factorText.match(SENSITIVE_FACTOR_PATTERN);
+    if(sensitiveMatch)return `Qualification factor "${f.label||f.code}" cannot use the personal or social attribute "${sensitiveMatch[0]}"`;
     if(!Number.isFinite(Number(f.min))||!Number.isFinite(Number(f.max))||Number(f.max)<=Number(f.min)||!Number.isFinite(Number(f.weight))||Number(f.weight)<=0)
       return `Invalid range or weight for ${f.code}`;
     if(!['reject','zero','exclude'].includes(f.missingTreatment||'reject'))return `Invalid missing-input treatment for ${f.code}`;

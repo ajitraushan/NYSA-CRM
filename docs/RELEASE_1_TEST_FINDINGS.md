@@ -184,7 +184,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Status: Revision 1 deployed to CRM Test; usability retest failed. Business line remains
   free text, factor fields lack understandable structure/headings, active coverage is not
   visible and the Draft -> Test -> Approve -> Activate workflow is not explained. Revision
-  2 agreed; implementation, deployment and explicit confirmation pending
+  2 agreed. Retest also exposed a false sensitive-factor rejection because the validator
+  matched `age` inside the legitimate word `mortgage`; implementation, deployment and
+  explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 95, 97, 98, 101, 102 and 103
 - Evidence: The current section is named Qualification model versions and requires an
@@ -945,9 +947,12 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   starter factors rather than placing unrelated concepts across one unlabeled row. Make score
   bands and response guidance plain-language sections, show live total weight and coverage,
   and replace the operational error with a business message naming the lead business line and
-  the administrator action required.
-- Status: Agreed; implementation, automated verification, CRM Test deployment, retest and
-  explicit user confirmation pending
+  the administrator action required. Detect prohibited personal/social attributes as whole
+  terms, identify the offending attribute clearly and never reject legitimate real-estate
+  wording such as mortgage because it contains a matching text fragment.
+- Status: Sensitive-factor false-positive correction implemented locally with automated
+  tests; remaining guided-screen implementation, CRM Test deployment, retest and explicit
+  user confirmation pending
 - Retest condition: On CRM Test, an administrator sees whether Sale, Rental, Off-plan and
   Commercial have an active version; creates a draft using only governed business-line choices
   and clearly labelled factor cards; reorders, tests and approves it; activates it with visible

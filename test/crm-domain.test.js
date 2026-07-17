@@ -118,8 +118,9 @@ test('qualification thresholds and factor contributions are explainable at bound
 });
 
 test('qualification excludes prohibited sensitive and social-media factors',()=>{
-  assert.match(validateQualificationFactors([{code:'nationality',label:'Nationality',min:0,max:1,weight:1}]),/prohibited/);
-  assert.match(validateQualificationFactors([{code:'social_media_score',label:'Profile',min:0,max:1,weight:1}]),/prohibited/);
+  assert.match(validateQualificationFactors([{code:'nationality',label:'Nationality',min:0,max:1,weight:1}]),/personal or social attribute "nationality"/i);
+  assert.match(validateQualificationFactors([{code:'social_media_score',label:'Profile',min:0,max:1,weight:1}]),/personal or social attribute "social media"/i);
+  assert.equal(validateQualificationFactors([{code:'mortgage_readiness',label:'Mortgage readiness',question:'Is mortgage approval available?',min:0,max:10,weight:100,required:true,missingTreatment:'reject'}]),null);
 });
 
 test('qualification factors support maintained business question controls',()=>{

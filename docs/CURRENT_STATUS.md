@@ -100,6 +100,10 @@
   free-text Business line, unlabeled dense factor rows and no understandable activation path.
   The next revision will provide governed business-line choices, active coverage, labelled
   factor cards and a guided Draft -> Test -> Approve -> Activate lifecycle.
+- The generic sensitive-factor message was traced to substring matching: `age` incorrectly
+  matched the legitimate factor word `mortgage`. Whole-term matching and a message naming
+  the actual prohibited personal/social attribute are implemented locally and tested;
+  mortgage readiness remains permitted.
 
 ## Release 1 Deployed Implementation
 
