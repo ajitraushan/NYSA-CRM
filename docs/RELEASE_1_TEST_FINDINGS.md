@@ -1274,6 +1274,19 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-024 CRM Test retest condition passes and the user explicitly
   confirms the result.
 
+### R1-AMD-024 Revision 2: Full-width saved requirement summary
+
+- Amendment ID: R1-AMD-024 Revision 2
+- Related UAT finding: R1-UAT-024
+- Agreed requirement: Display every saved Structured Requirement version as a full-width,
+  readable summary card. Do not reuse the three-column activity-row layout, which places the
+  only content in its narrow marker column and causes words, dates and values to wrap vertically.
+- Status: Implemented locally and verified by automated layout-contract tests; CRM Test
+  deployment, visual retest and explicit user confirmation pending
+- Retest condition: On CRM Test, save and reopen a requirement and confirm its version,
+  business line, purpose, funding, timeline, date, areas and property types read horizontally
+  in a full-width card without overlap, clipping or narrow-column wrapping.
+
 ## Review discipline
 
 For every new test observation:

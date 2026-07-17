@@ -1114,6 +1114,7 @@ const openLeadRequirementsBeforeAiReview=openLeadRequirements;
 openLeadRequirements=async function(lead){
   await openLeadRequirementsBeforeAiReview(lead);
   const o=document.querySelector('.overlay:last-of-type'),form=$('#requirement-form',o);if(!o||!form)return;
+  o.querySelectorAll('.activity-row').forEach(row=>row.classList.replace('activity-row','requirement-version-card'));
   for(const name of ['budgetMin','budgetMax']){const input=form.elements[name];input.type='text';input.inputMode='decimal';input.removeAttribute('min');input.dataset.businessAmount='';input.placeholder=name==='budgetMin'?'e.g. 2 M':'e.g. 2.5 M';}installBusinessAmountInputs(form);
   const notesWrap=form.elements.notes.parentElement;
   for(const [name,label] of [['bedroomsMin','Bedrooms minimum'],['bedroomsMax','Bedrooms maximum']]){const d=document.createElement('div');d.innerHTML=`<label>${label}</label><input name="${name}" type="number" min="0">`;notesWrap.before(d);}

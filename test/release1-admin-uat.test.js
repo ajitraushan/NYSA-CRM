@@ -129,6 +129,7 @@ test('structured requirements use governed property choices and save blank bedro
   assert.match(ui,/Property types \(select one or more\)/);assert.match(ui,/name="propertyTypes" multiple/);
   assert.match(ui,/fd\.getAll\('propertyTypes'\)/);assert.match(ui,/Requirement not saved:/);
   assert.match(ui,/Suggestion not generated/);assert.match(ui,/details are shown in the panel/);
+  assert.match(ui,/requirement-version-card/);assert.match(read('public/index.html'),/\.requirement-version-card\{display:block;width:100%/);
   assert.match(routes,/REQUIREMENT_PROPERTY_TYPES/);assert.match(routes,/Select property types from the approved list/);
   assert.match(routes,/String\(b\[n\]\)\.trim\(\)===\x27\x27\?null/);
   assert.match(routes,/,bedroomsMin,bedroomsMax,/);assert.match(ai,/propertyTypeArray/);
