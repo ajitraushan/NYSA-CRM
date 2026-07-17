@@ -72,6 +72,10 @@
 - The automated suite passes 84 tests after the atomic lead-capture correction. Changed
   browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
   rollback and committed-success verification remain required.
+- R1-AMD-017 Revision 2 restores the existing-customer dropdown as a separately labelled,
+  always-visible alphabetical selector; search remains an optional ranking aid and does
+  not replace or hide the dropdown. This revision supersedes hotfix package `377f77e`
+  before deployment.
 
 ## Release 1 Deployed Implementation
 

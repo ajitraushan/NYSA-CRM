@@ -303,7 +303,8 @@ async function openNewLeadForm() {
   } catch (err) { return toast(err.message); }
   const o = overlay(`<div class="modal"><button class="close-x">×</button><h2>Capture new lead</h2>
     <form id="lead-form"><div class="form-grid">
-      <div class="span3"><label for="existing-customer-search">Select existing customer (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">Customers are listed alphabetically.</small><select name="contactId" aria-label="Existing customer"><option value="">Create a new customer below</option></select></div>
+      <div class="span2"><label for="existing-customer-search">Search existing customers (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">The customer dropdown remains available and alphabetically sorted.</small></div>
+      <div><label for="existing-customer-select">Select existing customer (optional)</label><select id="existing-customer-select" name="contactId"><option value="">Create a new customer below</option></select><small>Select a customer from the sorted dropdown, or leave this blank to create a new customer.</small></div>
       <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName"></div>
       <div class="new-contact"><label>Customer type</label><select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div>
       <div class="new-contact"><label>Email</label><input name="email" type="email"></div>

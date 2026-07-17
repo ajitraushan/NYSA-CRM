@@ -631,7 +631,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture and existing-customer selection
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 1 deployed to CRM Test; retest found the dropdown was no longer
+  visibly available. Revision 2 implemented locally; deployment, retest and explicit
+  user confirmation pending
 - Priority: Should
 - Related acceptance criteria: 27 and 30
 - Evidence: The existing-contact field is a static dropdown ordered by the most recently
@@ -1013,9 +1015,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   business-labelled customer selector that ranks case-insensitive name/email/phone
   matches first, alphabetizes matching and remaining customers, retains access scope,
   and preserves the selected customer while the search changes.
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Deployed to CRM Test; visible-dropdown retest failed and Revision 2 is required;
+  explicit user confirmation pending
 - Retest condition: The R1-UAT-018 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-017 Revision 2: Retain the visible alphabetically sorted customer dropdown
+
+- Amendment ID: R1-AMD-017 Revision 2
+- Related UAT finding: R1-UAT-018
+- Agreed requirement: Retain an always-visible, clearly labelled existing-customer
+  dropdown ordered alphabetically. Keep search as a separate optional aid that moves
+  matching permitted customers to the top without replacing or hiding the dropdown.
+- Status: Implemented locally with browser-contract coverage; CRM Test deployment,
+  retest and explicit user confirmation pending
+- Retest condition: Open New lead on CRM Test and confirm both Search existing customers
+  and Select existing customer are visible. With an empty search, the dropdown is fully
+  alphabetical; entering `ajit` moves matching customers first while all permitted
+  customers remain selectable; clearing search restores the full alphabetical order.
 
 ### R1-AMD-018 Revision 1: Business-friendly originating-property terminology
 

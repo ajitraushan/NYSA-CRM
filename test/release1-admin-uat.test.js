@@ -79,6 +79,8 @@ test('operational qualification is questionnaire-driven and not manually selecta
 test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js');
   assert.match(ui,/Select existing customer \(optional\)/);
+  assert.match(ui,/id="existing-customer-select" name="contactId"/);
+  assert.match(ui,/sorted dropdown/);
   assert.match(ui,/Type a name, email or phone, e\.g\. Ajit/);
   assert.match(ui,/rankCustomerChoices/);
   assert.match(ui,/shown first; names are alphabetical within each group/);
