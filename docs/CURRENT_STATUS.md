@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Date: 2026-07-16
+- Date: 2026-07-17
 - Production environment: Release 1 deployed with the NYSA CORE user-facing brand
 - URL: https://crm.nysarealty.com
 - Health endpoint: `GET /api/health`
@@ -61,6 +61,17 @@
   retesting passes and the user explicitly confirms it.
 - Production is excluded from this correction cycle. The only authorized deployment
   and manual-test target is `https://crm-test.nysarealty.com/`.
+- Lead-creation package source `60c9b82` and migrations `017` and `018` are deployed to
+  CRM Test. Health is database-ready and both migrations are recorded. User retest then
+  found lowercase budget-suffix handling and a split customer/lead save outcome: the
+  first lead request failed after its customer request committed, so retry detected the
+  retained email/phone as a duplicate. R1-AMD-016 Revision 2 and R1-AMD-020 Revision 1
+  are implemented locally: business amounts are normalized before submission and a new
+  customer, channels, role, lead, queue history and audit evidence commit atomically.
+  CRM Test deployment, retest and explicit user confirmation remain pending.
+- The automated suite passes 84 tests after the atomic lead-capture correction. Changed
+  browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
+  rollback and committed-success verification remain required.
 
 ## Release 1 Deployed Implementation
 

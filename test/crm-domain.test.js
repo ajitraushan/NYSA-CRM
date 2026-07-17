@@ -77,6 +77,17 @@ test('lead budget browser and intake routes use reviewed normalized business amo
   assert.match(crm,/normalizedBudget=validateBudget/);assert.match(intake,/budget\.min,budget\.max/);
 });
 
+test('new-customer lead capture is atomic and confirms only a committed lead',()=>{
+  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const crm=readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  assert.match(crm,/post\('\/crm\/leads\/capture'/);
+  assert.match(crm,/transaction\(async client=>[\s\S]*created_with_lead[\s\S]*insertCapturedLead/);
+  assert.match(app,/parseBusinessAmountInput\(f\.budgetMin\)/);
+  assert.match(app,/both M and m are accepted/);
+  assert.match(app,/Lead created successfully[\s\S]*assignment queue/);
+  assert.match(app,/Lead not created:/);
+});
+
 test('lead lifecycle rejects skipped and terminal transitions',()=>{
   assert.equal(validateLeadTransition('New','Contacted'),null);
   assert.match(validateLeadTransition('New','Won'),/cannot move/);

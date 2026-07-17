@@ -593,8 +593,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Lead maintenance and operational qualification assessment
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
 - Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
@@ -613,8 +612,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead and structured-requirement budget capture
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Revision 1 deployed to CRM Test; retest failed for lowercase `m`. Revision 2
+  implemented locally; deployment, retest and explicit user confirmation pending
 - Priority: Should
 - Related acceptance criterion: 80
 - Evidence: Numeric inputs require users to type every zero and reject a normal business
@@ -632,8 +631,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture and existing-customer selection
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Should
 - Related acceptance criteria: 27 and 30
 - Evidence: The existing-contact field is a static dropdown ordered by the most recently
@@ -652,8 +650,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture and lead summary
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Should
 - Related acceptance criterion: 81
 - Evidence: The label `Related listing` is system terminology and does not tell the user
@@ -672,8 +669,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture and structured requirements
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 80 and 81
 - Evidence: The initial Preferred areas field stores free text, while deterministic
@@ -687,6 +683,31 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   marina`; verify the lead stores two clean areas, Structured requirements opens with
   `Dubai Marina, Palm Jumeirah`, save the version and confirm both areas independently
   satisfy matching evidence; then obtain explicit user confirmation.
+
+### R1-UAT-021: Failed new-customer lead capture leaves an orphan customer and unclear outcome
+
+- Date raised: 2026-07-17
+- Area: New lead capture, duplicate review and save confirmation
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Must
+- Related acceptance criteria: 27, 30, 47 and 206
+- Evidence: The first save returned Internal Server Error without a committed-success
+  confirmation. The retry then reported a potential duplicate based on the same contact
+  information even though no lead had been created. The browser currently creates a new
+  customer and lead through separate requests, so a failed lead request can retain the
+  customer and produce a legitimate email/phone duplicate warning on retry.
+- Required correction: Create a new customer, its primary channels, role and the lead in
+  one database transaction. If any lead step fails, roll back the new customer and its
+  channel records. Explain that duplicate detection is based on matching email or phone,
+  not name alone. Disable repeat submission while saving, retain the form after failure,
+  identify clearly that no lead was created, and show a clear committed-success message
+  only after both records and queue history are saved.
+- Retest condition: On CRM Test, force a lead validation or database failure after entering
+  a new customer and verify that no customer, channel, lead, assignment or audit fragment
+  remains; correct the input and save once, verify exactly one customer and one lead exist,
+  and see a clear assignment-queue success message. Retry the same email or phone and verify
+  the duplicate message identifies the matching basis and requires reviewed confirmation.
 
 ## Agreed amendments
 
@@ -954,9 +975,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   render business questions and governed answer controls, calculate and explain the
   weighted result, restrict overrides to authorized users with a reason, and preserve
   reassessment history.
-- Status: Implemented locally and verified by automated question-control, calculation,
-  access, migration and browser-contract tests; CRM Test deployment, retest and explicit
-  user confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-016 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -967,10 +986,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Agreed requirement: Accept and preview common K/M/B, AED, comma-formatted and full
   amount entries in new-lead and structured-requirement budgets, normalize them to
   exact server-side numeric values, and preserve range validation for every intake path.
-- Status: Implemented locally and verified by automated domain, route and browser-
-  contract tests; CRM Test deployment, retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; lowercase `m` retest failed and Revision 2 is required;
+  explicit user confirmation pending
 - Retest condition: The R1-UAT-017 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-016 Revision 2: Case-insensitive budget shorthand and browser normalization
+
+- Amendment ID: R1-AMD-016 Revision 2
+- Related UAT finding: R1-UAT-017
+- Agreed requirement: Accept lowercase and uppercase `k`, `m` and `b` consistently,
+  preview their identical interpreted amount, validate the range before submission and
+  send the normalized numeric amount to the server.
+- Status: Implemented locally with automated lowercase/uppercase parsing, browser
+  normalization and route-contract tests; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Retest condition: Enter `2 M`, `2 m`, `2M`, `2m` and `2.5m` in Budget from/to on CRM
+  Test; each displays and stores the intended AED value, invalid/reversed input is rejected
+  before submission, and the user explicitly confirms the result.
 
 ### R1-AMD-017 Revision 1: Searchable alphabetical existing-customer selection
 
@@ -980,8 +1013,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   business-labelled customer selector that ranks case-insensitive name/email/phone
   matches first, alphabetizes matching and remaining customers, retains access scope,
   and preserves the selected customer while the search changes.
-- Status: Implemented locally and verified by automated API-order and browser-contract
-  tests; CRM Test deployment, retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-018 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -992,8 +1024,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Agreed requirement: Replace `Related listing` with business language that records the
   property which prompted the enquiry, clearly describes the optional empty state and
   confirms that this reference does not restrict later inventory matching.
-- Status: Implemented locally and verified by automated browser-contract tests; CRM Test
-  deployment, retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-019 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -1005,10 +1036,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   alternatives, remove case-insensitive duplicates, prefill the first Structured
   requirements version from lead capture, and keep saved structured versions
   authoritative for matching and proposals.
-- Status: Implemented locally and verified by automated normalization, route and browser-
-  contract tests; CRM Test deployment, retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-020 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-020 Revision 1: Atomic new-customer lead capture and explicit save outcome
+
+- Amendment ID: R1-AMD-020 Revision 1
+- Related UAT finding: R1-UAT-021
+- Agreed requirement: Commit the new customer, channels, role, lead, initial queue history
+  and audit evidence in one transaction; roll everything back on failure; explain
+  email/phone duplicate matching; prevent repeat submission; and distinguish committed
+  success from a failed creation attempt clearly.
+- Status: Implemented locally with automated transaction and browser confirmation
+  contracts; CRM Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-021 CRM Test retest condition passes and the user explicitly
+  confirms the result.
 
 ## Review discipline
 

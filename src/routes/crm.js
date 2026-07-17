@@ -348,6 +348,68 @@ r.get('/crm/leads/:id', async (req, res) => {
   res.json({ lead, activities, qualificationGuidance: QUALIFICATION_GUIDANCE[lead.temperature] });
 });
 
+async function insertCapturedLead(b, actorId, budget, client) {
+  const id=uuid();
+  const rule=await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
+    AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client);
+  const teamId=rule?.teamId||null,receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
+  const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
+    preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
+    sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NULL,$13,$13,$13,$14,$15,$16,$17,'unassigned',$18,$19) RETURNING *`,
+    [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budget.min,budget.max,
+     normalizeDelimitedValues(b.preferredAreas).join(', ')||null,clean(b.propertyRequirements),teamId,deadlines.acceptanceDueAt,
+     deadlines.firstContactDueAt,deadlines.policy?.id||null,b.nextFollowUpAt||null,actorId,b.listingId||null,receivedAt],client);
+  await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=received_at WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',row.id],client);
+  await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
+    VALUES($1,$2,1,$3,NULL,'queued',$4,$5)`,[uuid(),id,teamId,deadlines.acceptanceDueAt,actorId],client);
+  await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',actorId],client);
+  await audit('Lead',id,'created',actorId,{title:row.title,source:row.source,routingRuleId:rule?.id||null},client);
+  return row;
+}
+
+r.post('/crm/leads/capture', async (req,res)=>{
+  const b=req.body||{},contactBody=b.contact||{};
+  if(!canWriteCrm(req.broker))return res.status(403).json({error:'This role has read-only CRM access'});
+  for(const field of ['title','source','businessType'])if(!clean(b[field]))return res.status(400).json({error:`${field} is required`});
+  if(!clean(contactBody.fullName))return res.status(400).json({error:'Customer full name is required'});
+  const identity=validateContactIdentity(contactBody.email,contactBody.phone);
+  if(identity.error)return res.status(400).json({error:identity.error});
+  const contactEnumError=invalidEnum(contactBody.contactType||'buyer',CONTACT_TYPES,'contactType')||invalidEnum(contactBody.preferredChannel,CHANNELS,'preferredChannel');
+  if(contactEnumError)return res.status(400).json({error:contactEnumError});
+  const leadEnumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||invalidEnum(b.stage||'New',STAGES,'stage');
+  if(leadEnumError)return res.status(400).json({error:leadEnumError});
+  if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
+  if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
+  if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
+  if(contactBody.companyId&&!(await one('SELECT id FROM companies WHERE id=$1 AND archived_at IS NULL',[contactBody.companyId])))return res.status(400).json({error:'Invalid companyId'});
+  if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId])))return res.status(400).json({error:'Invalid listingId'});
+  const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
+  const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
+    JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+    ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
+  if(duplicates.length&&!b.duplicateReviewed)return res.status(409).json({error:'Possible duplicate customer requires review',duplicates});
+  const result=await transaction(async client=>{
+    const contactId=uuid(),ownerId=req.broker.id;
+    const contact=await one(`INSERT INTO contacts
+      (id,full_name,email,phone,contact_type,company_id,preferred_channel,owner_id,created_by,email_status,phone_status,public_profile_url,postal_address)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,$10,$11,$12) RETURNING *`,
+      [contactId,clean(contactBody.fullName),identity.email,identity.phone,contactBody.contactType||'buyer',contactBody.companyId||null,
+       contactBody.preferredChannel||null,ownerId,identity.emailStatus,identity.phoneStatus,clean(contactBody.publicProfileUrl),clean(contactBody.postalAddress)],client);
+    await execute(`INSERT INTO contact_roles (id,contact_id,role_code,created_by) VALUES ($1,$2,$3,$4)`,[uuid(),contactId,contactBody.contactType||'buyer',ownerId],client);
+    if(identity.email)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+      VALUES ($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),contactId,String(contactBody.email).trim(),identity.email,identity.emailStatus,ownerId],client);
+    if(identity.phone)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
+      VALUES ($1,$2,'Phone','Primary',$3,$4,$5,1,$6,$7)`,[uuid(),contactId,String(contactBody.phone).trim(),identity.phone,contactBody.whatsappEnabled||contactBody.preferredChannel==='WhatsApp'?1:0,identity.phoneStatus,ownerId],client);
+    if(contactBody.companyId)await execute(`INSERT INTO company_contacts (id,company_id,contact_id,relationship_role,is_primary,created_by)
+      VALUES ($1,$2,$3,'customer_contact',1,$4)`,[uuid(),contactBody.companyId,contactId,ownerId],client);
+    await audit('Contact',contactId,'created_with_lead',ownerId,{fullName:contact.fullName,duplicateReviewed:Boolean(b.duplicateReviewed)},client);
+    const lead=await insertCapturedLead({...b,contactId},ownerId,budget,client);
+    return {contact,lead};
+  });
+  res.status(201).json({...result,duplicateWarnings:duplicates});
+});
+
 r.post('/crm/leads', async (req, res) => {
   const b=req.body||{};
   if (!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
@@ -365,25 +427,7 @@ r.post('/crm/leads', async (req, res) => {
   const budget = validateBudget(b.budgetMin,b.budgetMax);
   if (budget.error) return res.status(400).json({error:budget.error});
   const budgetMin=budget.min,budgetMax=budget.max;
-  const id=uuid();
-  const lead=await transaction(async client=>{
-    const rule=await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
-      AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client);
-    const agentId=null,teamId=rule?.teamId||null;
-    const receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
-    const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
-      preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
-      sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
-      [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budgetMin,budgetMax,
-       normalizeDelimitedValues(b.preferredAreas).join(', ')||null,clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
-       b.nextFollowUpAt||null,req.broker.id,'unassigned',b.listingId||null,receivedAt],client);
-    await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=received_at WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',row.id],client);
-    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
-      VALUES($1,$2,1,$3,$4,'queued',$5,$6)`,[uuid(),id,teamId,agentId,deadlines.acceptanceDueAt,req.broker.id],client);
-    await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',req.broker.id],client);
-    await audit('Lead',id,'created',req.broker.id,{title:row.title,source:row.source,routingRuleId:rule?.id||null},client);return row;
-  });
+  const lead=await transaction(client=>insertCapturedLead({...b,budgetMin,budgetMax},req.broker.id,{min:budgetMin,max:budgetMax},client));
   res.status(201).json(lead);
 });
 

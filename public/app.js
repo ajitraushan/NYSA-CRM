@@ -39,7 +39,7 @@ async function api(path, opts = {}) {
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtPrice = (n, cur = 'AED') => esc(cur) + ' ' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
 const parseBusinessAmountInput=value=>{const text=String(value??'').trim().replace(/,/g,'').replace(/^AED\s*/i,'').replace(/\s*AED$/i,'').trim();if(!text)return null;const match=text.match(/^(\d+(?:\.\d+)?)\s*(K|M|B|THOUSAND|MILLION|BILLION)?$/i);if(!match)return NaN;const multiplier={K:1e3,THOUSAND:1e3,M:1e6,MILLION:1e6,B:1e9,BILLION:1e9}[String(match[2]||'').toUpperCase()]||1;return Number(match[1])*multiplier;};
-function installBusinessAmountInputs(root){root.querySelectorAll('[data-business-amount]').forEach(input=>{let preview=input.parentElement.querySelector('[data-amount-preview]');if(!preview){preview=document.createElement('small');preview.dataset.amountPreview='';input.after(preview);}const update=()=>{const amount=parseBusinessAmountInput(input.value);preview.textContent=input.value.trim()?(Number.isFinite(amount)?`Interpreted as ${fmtPrice(amount)}`:'Enter an amount such as 2 M, 2.5m, 750K or 2000000'):'Examples: 2 M, 2.5m, 750K or 2000000';preview.style.color=Number.isFinite(amount)||!input.value.trim()?'var(--muted)':'var(--red)';};input.addEventListener('input',update);input.addEventListener('blur',update);update();});}
+function installBusinessAmountInputs(root){root.querySelectorAll('[data-business-amount]').forEach(input=>{let preview=input.parentElement.querySelector('[data-amount-preview]');if(!preview){preview=document.createElement('small');preview.dataset.amountPreview='';input.after(preview);}const update=()=>{const amount=parseBusinessAmountInput(input.value);preview.textContent=input.value.trim()?(Number.isFinite(amount)?`Interpreted as ${fmtPrice(amount)}`:'Enter an amount such as 2 M, 2 m, 2.5m, 750K or 2000000'):'Examples: 2 M, 2 m, 2.5m, 750K or 2000000';preview.style.color=Number.isFinite(amount)||!input.value.trim()?'var(--muted)':'var(--red)';};input.addEventListener('input',update);input.addEventListener('blur',update);update();});}
 const customerSearchText=customer=>`${customer.fullName||''} ${customer.email||''} ${customer.phone||''}`.toLocaleLowerCase();
 function rankCustomerChoices(customers,search=''){const query=String(search).trim().toLocaleLowerCase();return [...customers].sort((a,b)=>{const aMatch=query&&customerSearchText(a).includes(query),bMatch=query&&customerSearchText(b).includes(query);if(aMatch!==bMatch)return aMatch?-1:1;return String(a.fullName||'').localeCompare(String(b.fullName||''),undefined,{sensitivity:'base'})||String(a.email||a.phone||'').localeCompare(String(b.email||b.phone||''),undefined,{sensitivity:'base'});});}
 const fmtDate = (s) => s ? new Date(s.includes('T') ? s : s + 'Z').toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
@@ -47,11 +47,11 @@ const canPost = () => ME && (ME.role === 'admin' || ME.role === 'internal_broker
 const canEditListing = (l) => ME && (ME.role === 'admin' || l.postedBy === ME.id);
 const isViewer = () => ME && ME.role === 'viewer';
 
-function toast(msg) {
+function toast(msg, duration = 3200) {
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
+  setTimeout(() => t.remove(), duration);
 }
 
 /* ============ AUTH VIEWS ============ */
@@ -336,23 +336,28 @@ async function openNewLeadForm() {
   $('#lead-cancel',o).addEventListener('click',()=>o.remove());
   $('#lead-form',o).addEventListener('submit',async e=>{
     e.preventDefault(); const f=Object.fromEntries(new FormData(e.target));
+    const budgetMin=parseBusinessAmountInput(f.budgetMin),budgetMax=parseBusinessAmountInput(f.budgetMax);
+    if((f.budgetMin&& !Number.isFinite(budgetMin))||(f.budgetMax&& !Number.isFinite(budgetMax))||(budgetMin!==null&&budgetMax!==null&&budgetMax<budgetMin))return toast('Enter a valid budget range; both M and m are accepted.');
+    const submit=$('button[type="submit"]',e.target);submit.disabled=true;submit.textContent='Creating lead...';
     try {
       let contactId=f.contactId;
+      const leadBody={title:f.title,source:f.source,businessType:f.businessType,stage:f.stage,
+        budgetMin,budgetMax,preferredAreas:f.preferredAreas,nextFollowUpAt:f.nextFollowUpAt||null,
+        propertyRequirements:f.propertyRequirements,listingId:f.listingId||null};
       if(!contactId){
         if(!f.fullName.trim()||(!f.email.trim()&&!f.phone.trim())) throw new Error('New contacts require a name and email or phone');
         const contactBody={fullName:f.fullName,email:f.email,phone:f.phone,postalAddress:f.postalAddress,contactType:f.contactType,preferredChannel:f.preferredChannel,
           whatsappEnabled:f.preferredChannel==='WhatsApp',companyId:f.companyId||null,publicProfileUrl:f.publicProfileUrl||null};
-        let contact;try{contact=await api('/crm/contacts',{method:'POST',body:contactBody});}
+        let captured;try{captured=await api('/crm/leads/capture',{method:'POST',body:{...leadBody,contact:contactBody}});}
         catch(error){if(error.status!==409||!error.data?.duplicates?.length)throw error;
-          const names=error.data.duplicates.map(x=>x.fullName).join(', ');if(!confirm(`Possible duplicate found: ${names}. Create a separate contact after review?`))return;
-          contact=await api('/crm/contacts',{method:'POST',body:{...contactBody,duplicateReviewed:true}});}
-        contactId=contact.id;
+          const names=error.data.duplicates.map(x=>x.fullName).join(', ');if(!confirm(`Possible duplicate found by matching email or phone: ${names}. Create a separate customer and lead after review?`))return;
+          captured=await api('/crm/leads/capture',{method:'POST',body:{...leadBody,contact:contactBody,duplicateReviewed:true}});}
+        toast(`Lead created successfully for ${f.fullName}. It is now in the assignment queue.`,6000);o.remove();loadCRMLeads();return;
       }
-      await api('/crm/leads',{method:'POST',body:{contactId,title:f.title,source:f.source,businessType:f.businessType,stage:f.stage,
-        budgetMin:f.budgetMin||null,budgetMax:f.budgetMax||null,preferredAreas:f.preferredAreas,
-        nextFollowUpAt:f.nextFollowUpAt||null,propertyRequirements:f.propertyRequirements,listingId:f.listingId||null}});
-      toast('Lead created'); o.remove(); loadCRMLeads();
-    } catch(err){ toast(err.message); }
+      await api('/crm/leads',{method:'POST',body:{...leadBody,contactId}});
+      toast('Lead created successfully for the selected customer. It is now in the assignment queue.',6000);o.remove();loadCRMLeads();
+    } catch(err){ toast(`Lead not created: ${err.message}`,6000); }
+    finally{if(o.isConnected){submit.disabled=false;submit.textContent='Create lead';}}
   });
 }
 
