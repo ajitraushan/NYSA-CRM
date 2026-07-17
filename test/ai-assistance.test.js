@@ -36,8 +36,8 @@ test('missing-information context identifies authoritative source gaps',()=>{
 });
 
 test('AI REST routes are authenticated, mounted and never expose an API key',()=>{
-  const server=readFileSync(join(root,'src/server.js'),'utf8'),routes=readFileSync(join(root,'src/routes/ai.js'),'utf8'),migration=readFileSync(join(root,'src/migrations/016_ai_assistance_runs.sql'),'utf8');
-  assert.match(server,/app\.mount\('\/api', aiRoutes\)/);assert.match(routes,/r\.use\(requireAuth/);assert.match(routes,/requirements-draft/);assert.match(routes,/match-explanation/);assert.match(routes,/missing-information/);assert.match(routes,/inputHash/);assert.doesNotMatch(routes,/process\.env\.OPENAI_API_KEY/);assert.match(migration,/ai_assistance_runs/);
+  const server=readFileSync(join(root,'src/server.js'),'utf8'),routes=readFileSync(join(root,'src/routes/ai.js'),'utf8'),migration=readFileSync(join(root,'src/migrations/016_ai_assistance_runs.sql'),'utf8'),auditMigration=readFileSync(join(root,'src/migrations/019_ai_assistance_audit_constraint.sql'),'utf8');
+  assert.match(server,/app\.mount\('\/api', aiRoutes\)/);assert.match(routes,/r\.use\(requireAuth/);assert.match(routes,/requirements-draft/);assert.match(routes,/match-explanation/);assert.match(routes,/missing-information/);assert.match(routes,/inputHash/);assert.doesNotMatch(routes,/process\.env\.OPENAI_API_KEY/);assert.match(migration,/ai_assistance_runs/);assert.match(auditMigration,/'AiAssistanceRun'/);
 });
 
 test('AI browser assistance requires editable review and a separate apply action',()=>{

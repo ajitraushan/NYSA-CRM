@@ -568,9 +568,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Leads, structured requirements, inventory matching and proposal preparation
-- Status: Revision 1 backend is deployed and configured on CRM Test; Revision 2
-  review-first browser controls are implemented locally. CRM Test deployment, live
-  functional retest and explicit user confirmation remain pending
+- Status: Revision 2 review-first controls are deployed on CRM Test. Live invocation
+  exposed an audit-constraint defect after the provider call; R1-AMD-014 Revision 3 is
+  implemented locally. CRM Test deployment, functional retest and explicit user
+  confirmation remain pending
 - Priority: High value-add
 - Related acceptance criteria: 80, 81, 126, 129, 135, 191, 192 and 193
 - Evidence: Requirement notes, deterministic inventory linking and proposal narratives
@@ -1075,6 +1076,21 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   generated until the normal Generate action; check gaps and verify source-record
   guidance and editable questions; then the R1-UAT-015 conditions pass and the user
   explicitly confirms the result.
+
+### R1-AMD-014 Revision 3: Complete AI runs with governed audit evidence
+
+- Amendment ID: R1-AMD-014 Revision 3
+- Related UAT finding: R1-UAT-015
+- Agreed requirement: Permit `AiAssistanceRun` in the governed audit entity constraint
+  so a schema-valid provider response can be recorded as completed with its safe audit
+  metadata. Retain the existing rule that raw prompts, generated output and credentials
+  are never written to the audit log.
+- Status: Implemented locally and verified by the complete automated test suite; CRM
+  Test deployment, live functional retest and explicit user confirmation remain pending.
+- Retest condition: On CRM Test, migration 019 is recorded; generating a structured-
+  requirement suggestion returns reviewable advisory output; its run is `completed` with
+  a provider response ID; an `AiAssistanceRun` completion audit exists without raw input
+  or output; and the user explicitly confirms the result.
 
 ### R1-AMD-015 Revision 1: Model-driven operational lead qualification
 
