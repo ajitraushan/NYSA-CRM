@@ -20,7 +20,7 @@ deployment, successful retest and explicit user confirmation.
    `011_organization_profile_governance.sql` and
    `012_release1_admin_uat_corrections.sql` and the additive
    `013_customer_proposal_address.sql`, `014_customer_kyc_summary.sql` and
-   `015_inventory_business_reference.sql` there first.
+   `015_inventory_business_reference.sql` and `016_ai_assistance_runs.sql` there first.
 4. Verify broker, team, lead, listing, proposal, audit and migration row counts before
    and after the isolated migration. Run application startup twice and confirm each
    migration is recorded once in `schema_migrations`.

@@ -553,6 +553,33 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Management includes its user records; no form, table or action is lost; and the user
   explicitly confirms the layout before closure.
 
+### R1-UAT-015: Property recommendation assistance lacks governed reusable AI services
+
+- Date raised: 2026-07-17
+- Area: Leads, structured requirements, inventory matching and proposal preparation
+- Status: Correction implemented locally; CRM Test configuration, deployment, live
+  provider retest and explicit user confirmation pending
+- Priority: High value-add
+- Related acceptance criteria: 80, 81, 126, 129, 135, 191, 192 and 193
+- Evidence: Requirement notes, deterministic inventory linking and proposal narratives
+  currently require separate manual interpretation. The user requested reusable AI REST
+  capability for three bounded functions: converting conversation notes into a draft
+  requirement structure, drafting match/trade-off wording from deterministic evidence,
+  and identifying missing customer or inventory information.
+- Required correction: Provide authenticated, record-scoped REST endpoints for the
+  three agreed functions. Keep all results advisory and require human confirmation;
+  never let AI rank inventory, change deterministic eligibility, update a lead or
+  listing, or generate unsupported facts. Use strict output schemas, a server-side API
+  key, minimized/redacted input, configurable model/version, safe timeouts and failure
+  handling, and audit metadata that excludes raw prompts, outputs and credentials.
+- Retest condition: On CRM Test, configure the provider credential only in cPanel and
+  confirm the status route reports configured without exposing it. Run all three
+  functions against an in-scope lead and verify schema-valid advisory output, preserved
+  deterministic failures, correct missing-record guidance and no automatic data change;
+  verify a cross-scope user is denied, audit records contain only safe metadata, and a
+  simulated provider refusal/timeout fails safely. Closure requires the user's explicit
+  confirmation.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -775,6 +802,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Test deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-014 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-014 Revision 1: Governed reusable AI assistance REST services
+
+- Amendment ID: R1-AMD-014 Revision 1
+- Related UAT finding: R1-UAT-015
+- Agreed requirement: Add reusable authenticated REST services for (1) converting
+  conversation notes into draft structured lead requirements, (2) drafting customer-
+  friendly match rationale and trade-off wording strictly from server-built
+  deterministic evidence, and (3) identifying missing customer, requirement or
+  inventory information. Responses remain advisory, schema-constrained and subject to
+  human confirmation. AI must not rank inventory, alter deterministic matching or save
+  business records. Keep the provider key server-side, minimize/redact direct personal
+  identifiers, store only safe run metadata, and fail without business-data mutation.
+- Status: Implemented locally and covered by automated service, redaction, deterministic
+  evidence, completeness, authentication and migration contract tests; CRM Test
+  provider configuration, deployment, live retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-015 CRM Test retest condition passes for all three REST
+  functions and the user explicitly confirms the result.
 
 ## Review discipline
 

@@ -23,6 +23,7 @@ describe.
 - [Requirements review log](REQUIREMENTS_REVIEW_LOG.md) - gaps found during field and label review
 - [Deployment runbook](DEPLOYMENT_RUNBOOK.md) - production release and recovery procedure
 - [Deployment history](DEPLOYMENT_HISTORY.md) - exact deployed commits, hotfixes, and verification evidence
+- [Governed AI assistance REST API](AI_ASSISTANCE_REST_API.md) - advisory requirement extraction, match explanation and missing-information contracts
 
 ## Working Agreement
 
