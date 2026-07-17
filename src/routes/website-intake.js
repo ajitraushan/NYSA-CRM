@@ -60,7 +60,7 @@ async function processEvent(event,b,identity,actor){
       assigned_team_id,assigned_to,assignment_status,received_at,external_source_id,campaign_code,source_page,source_form,assignment_due_at,
       original_acceptance_due_at,acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$19,$20,$21,$22) RETURNING *`,
-      [leadId,contact.id,clean(b.title)||`${b.businessType} website enquiry`,b.source||'Website',b.businessType,b.temperature||'Warm',budget.min,budget.max,
+      [leadId,contact.id,clean(b.title)||`${b.businessType} website enquiry`,b.source||'Website',b.businessType,'Unassessed',budget.min,budget.max,
        Array.isArray(b.requirement.areas)?b.requirement.areas.join(', '):null,clean(b.requirement.notes),rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,event.eventId,
        clean(b.campaign),clean(b.page),clean(b.form),deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,actor.id],client);
     await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',lead.id],client);

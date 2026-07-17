@@ -20,7 +20,8 @@ deployment, successful retest and explicit user confirmation.
    `011_organization_profile_governance.sql` and
    `012_release1_admin_uat_corrections.sql` and the additive
    `013_customer_proposal_address.sql`, `014_customer_kyc_summary.sql` and
-   `015_inventory_business_reference.sql` and `016_ai_assistance_runs.sql` there first.
+   `015_inventory_business_reference.sql`, `016_ai_assistance_runs.sql` and
+   `017_operational_qualification_questionnaire.sql` there first.
 4. Verify broker, team, lead, listing, proposal, audit and migration row counts before
    and after the isolated migration. Run application startup twice and confirm each
    migration is recorded once in `schema_migrations`.
@@ -36,6 +37,10 @@ deployment, successful retest and explicit user confirmation.
   SLA recycling with complete history.
 - Administration: consolidated intake operations, structured qualification versions,
   business-time SLA controls, structured fee calculations and dashboard targets.
+- Qualification: new leads start Unassessed; the inline Assess qualification popup uses
+  the active administrator-maintained business questions, answer controls, weights and
+  bands; routine manual status changes are rejected and authorized reasoned overrides
+  retain assessment history.
 - Proposal: governed company identity, template mappings, required/optional configured
   prompts, authoritative data validation, approved media/scenario selection and exact
   immutable PDF snapshot.

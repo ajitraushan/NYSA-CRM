@@ -1,7 +1,7 @@
 export const SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'];
 export const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
 export const STAGES = ['New','Contacted','Qualified','Viewing','Negotiation','Won','Lost'];
-export const TEMPERATURES = ['Hot','Warm','Cold'];
+export const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
 export const CONTACT_TYPES = ['buyer','seller','landlord','tenant','developer','investor','other'];
 export const CHANNELS = ['Phone','Email','WhatsApp','SMS'];
 export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
@@ -60,6 +60,11 @@ export function addBusinessMinutes(start, minutes, calendar = {}) {
 }
 
 export const QUALIFICATION_GUIDANCE = Object.freeze({
+  Unassessed: {
+    responseMinutes: 240,
+    cadence: 'Complete the approved qualification questions during the first substantive conversation',
+    strategy: 'Use the normal lead-response SLA and complete an assessment before relying on qualification priority.'
+  },
   Hot: {
     responseMinutes: 15,
     cadence: 'Same-day contact and daily follow-up while the requirement is active',
@@ -175,10 +180,16 @@ export function validateQualificationFactors(factors){
   for(const f of factors){
     if(!f||!String(f.code||'').match(/^[a-z][a-z0-9_]{1,39}$/))return 'Every factor needs a stable lowercase code';
     if(codes.has(f.code))return `Duplicate factor code: ${f.code}`;codes.add(f.code);
-    if(SENSITIVE_FACTOR_PATTERN.test(`${f.code} ${f.label||''} ${f.inputSource||''}`))return `Sensitive or social factor is prohibited: ${f.code}`;
+    if(SENSITIVE_FACTOR_PATTERN.test(`${f.code} ${f.label||''} ${f.question||''} ${f.inputSource||''}`))return `Sensitive or social factor is prohibited: ${f.code}`;
     if(!Number.isFinite(Number(f.min))||!Number.isFinite(Number(f.max))||Number(f.max)<=Number(f.min)||!Number.isFinite(Number(f.weight))||Number(f.weight)<=0)
       return `Invalid range or weight for ${f.code}`;
     if(!['reject','zero','exclude'].includes(f.missingTreatment||'reject'))return `Invalid missing-input treatment for ${f.code}`;
+    const answerType=f.answerType||'scale';if(!['scale','yes_no','single_select'].includes(answerType))return `Invalid answer type for ${f.code}`;
+    if(answerType==='yes_no'&&(Number(f.min)!==0||Number(f.max)!==1))return `Yes/No factor ${f.code} must use a 0 to 1 range`;
+    if(answerType==='single_select'){
+      if(!Array.isArray(f.answerOptions)||f.answerOptions.length<2)return `Select-list factor ${f.code} needs at least two answer options`;
+      for(const option of f.answerOptions)if(!String(option?.label||'').trim()||!Number.isFinite(Number(option?.value))||Number(option.value)<Number(f.min)||Number(option.value)>Number(f.max))return `Invalid answer option for ${f.code}`;
+    }
   }
   return null;
 }

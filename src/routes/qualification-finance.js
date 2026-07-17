@@ -37,6 +37,7 @@ r.post('/admin/qualification-models/:modelId/activate',async(req,res)=>{
 });
 
 r.get('/crm/leads/:id/qualification-assessments',async(req,res)=>{const lead=await leadFor(req,res);if(!lead)return;res.json({assessments:await many(`SELECT a.*,m.name AS model_name,m.model_code FROM qualification_assessments a JOIN qualification_models m ON m.id=a.model_id WHERE a.lead_id=$1 ORDER BY assessed_at DESC`,[lead.id])});});
+r.get('/crm/leads/:id/qualification-questionnaire',async(req,res)=>{const lead=await leadFor(req,res);if(!lead)return;const model=await one(`SELECT * FROM qualification_models WHERE status='active' AND (business_line IS NULL OR business_line=$1) ORDER BY effective_from DESC LIMIT 1`,[lead.businessType]);if(!model)return res.status(409).json({error:'No active qualification model applies to this lead'});res.json({model:{id:model.id,name:model.name,version:model.version,purpose:model.purpose,factors:model.factors.map(f=>({...f,question:f.question||f.description||f.label,answerType:f.answerType||'scale',answerOptions:f.answerOptions||[]})),thresholds:model.thresholds,guidance:model.guidance},canOverride:isManager(req.broker)});});
 r.post('/crm/leads/:id/qualification-assessments',async(req,res)=>{
   const lead=await leadFor(req,res,true);if(!lead||isCrmReadOnly(req.broker))return;const b=req.body||{};
   const model=await one(`SELECT * FROM qualification_models WHERE status='active' AND (business_line IS NULL OR business_line=$1) ORDER BY effective_from DESC LIMIT 1`,[lead.businessType]);

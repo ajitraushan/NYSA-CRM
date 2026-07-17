@@ -9,8 +9,9 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-6),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql']);
+  assert.deepEqual(migrations.slice(-7),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
+  assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -56,6 +57,13 @@ test('administration navigation consolidates read-only website intake into audit
   assert.match(ui,/Audit and Operations/);
   assert.match(ui,/WebsiteIntake/);
   assert.doesNotMatch(ui,/data-admin-section="website-intake"/);
+});
+
+test('operational qualification is questionnaire-driven and not manually selectable',()=>{
+  const ui=read('public/app.js'),api=read('src/routes/qualification-finance.js'),crm=read('src/routes/crm.js');
+  assert.match(ui,/Assess qualification/);assert.match(ui,/Question shown to agent/);assert.match(ui,/data-qualification-answer/);
+  assert.doesNotMatch(ui,/id="lead-temp"/);assert.doesNotMatch(ui,/id="lead-assessment"/);
+  assert.match(api,/qualification-questionnaire/);assert.match(crm,/New leads begin Unassessed/);assert.match(crm,/Qualification can be changed only through an approved model assessment/);
 });
 
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{

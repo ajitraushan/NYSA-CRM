@@ -99,6 +99,16 @@ test('qualification excludes prohibited sensitive and social-media factors',()=>
   assert.match(validateQualificationFactors([{code:'social_media_score',label:'Profile',min:0,max:1,weight:1}]),/prohibited/);
 });
 
+test('qualification factors support maintained business question controls',()=>{
+  const factors=[
+    {code:'finance_ready',label:'Finance ready',question:'Is finance approval ready?',answerType:'yes_no',min:0,max:1,weight:40,required:true,missingTreatment:'reject'},
+    {code:'purchase_timing',label:'Purchase timing',question:'When does the customer intend to purchase?',answerType:'single_select',answerOptions:[{label:'Within 30 days',value:10},{label:'More than 6 months',value:1}],min:0,max:10,weight:60,required:true,missingTreatment:'reject'}
+  ];
+  assert.equal(validateQualificationFactors(factors),null);
+  assert.match(validateQualificationFactors([{...factors[0],min:0,max:10}]),/0 to 1/);
+  assert.match(validateQualificationFactors([{...factors[1],answerOptions:[]}]),/at least two/);
+});
+
 test('qualification override requires authority and reason and model changes preserve prior results',()=>{
   const factors=[{code:'readiness',label:'Readiness',min:0,max:10,weight:1,required:true,missingTreatment:'reject'}];
   const prior=calculateQualification({factors,thresholds:{warmMin:40,hotMin:80}},{readiness:7});

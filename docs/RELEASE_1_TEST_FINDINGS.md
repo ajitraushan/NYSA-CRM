@@ -585,7 +585,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Lead maintenance and operational qualification assessment
-- Status: Requirement agreed during review; correction implementation pending
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
 - Priority: Must
 - Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
 - Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
@@ -881,7 +882,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   render business questions and governed answer controls, calculate and explain the
   weighted result, restrict overrides to authorized users with a reason, and preserve
   reassessment history.
-- Status: Agreed requirement; implementation and automated tests pending
+- Status: Implemented locally and verified by automated question-control, calculation,
+  access, migration and browser-contract tests; CRM Test deployment, retest and explicit
+  user confirmation pending
 - Retest condition: The R1-UAT-016 CRM Test retest condition passes and the user
   explicitly confirms the result.
 

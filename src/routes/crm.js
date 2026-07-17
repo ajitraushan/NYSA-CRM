@@ -353,8 +353,9 @@ r.post('/crm/leads', async (req, res) => {
   if (!canWriteCrm(req.broker)) return res.status(403).json({error:'This role has read-only CRM access'});
   for (const field of ['contactId','title','source','businessType']) if (!clean(b[field])) return res.status(400).json({ error:`${field} is required` });
   const enumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||
-    invalidEnum(b.stage||'New',STAGES,'stage')||invalidEnum(b.temperature||'Warm',TEMPERATURES,'temperature');
+    invalidEnum(b.stage||'New',STAGES,'stage')||invalidEnum(b.temperature||'Unassessed',TEMPERATURES,'temperature');
   if(enumError) return res.status(400).json({error:enumError});
+  if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
   if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
   if(!(await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params)))
@@ -381,7 +382,7 @@ r.post('/crm/leads', async (req, res) => {
       preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
       sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
-      [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Warm',budgetMin,budgetMax,
+      [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budgetMin,budgetMax,
        clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
        b.nextFollowUpAt||null,req.broker.id,agentId?'assigned':'unassigned',b.listingId||null,receivedAt],client);
     await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Manual assignment or company unassigned fallback',row.id],client);
@@ -398,6 +399,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if(!lead) return res.status(404).json({error:'Lead not found'});
   if(!canWriteLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your writable scope'});
   const b=req.body||{};
+  if(b.temperature!==undefined)return res.status(400).json({error:'Qualification can be changed only through an approved model assessment'});
   const enumError=invalidEnum(b.source,SOURCES,'source')||invalidEnum(b.businessType,BUSINESS_TYPES,'businessType')||
     invalidEnum(b.stage,STAGES,'stage')||invalidEnum(b.temperature,TEMPERATURES,'temperature');
   if(enumError) return res.status(400).json({error:enumError});
