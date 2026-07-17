@@ -1338,6 +1338,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   exact customer without creating a duplicate. Confirm related-lead documents appear in the
   same register and an unauthorized user cannot access a restricted document.
 
+### R1-AMD-021 Revision 4: Readable customer register layout
+
+- Amendment ID: R1-AMD-021 Revision 4
+- Related UAT finding: R1-UAT-022
+- Agreed requirement: Present every Customer-register row as clearly separated primary and
+  secondary information. Customer/address, email/phone/channel, role/company and KYC/expiry
+  must not run together. Keep stable column widths, readable spacing and horizontal scrolling
+  at narrower browser widths without compressing the action control.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
+  retest and explicit user confirmation pending
+- Retest condition: On CRM Test, open Customers at normal desktop zoom and confirm every
+  primary value and its secondary information render on separate lines with readable spacing;
+  narrow the browser and confirm the table scrolls without overlapping or clipping values.
+
 ### R1-AMD-022 Revision 1: Mandatory customer contact and lead requirement essentials
 
 - Amendment ID: R1-AMD-022 Revision 1

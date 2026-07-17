@@ -103,6 +103,7 @@ test('customers are a primary workspace and lead KYC links to the customer maste
   assert.match(ui,/Create lead for this customer/);assert.match(ui,/openNewLeadForm\(id\)/);assert.match(ui,/Open customer documents/);
   assert.match(files,/r\.get\('\/crm\/customers\/:id\/documents'/);assert.match(files,/d\.lead_id IN \(SELECT id FROM leads WHERE contact_id=\$1\)/);
   assert.match(ui,/contactId:customer\.id/);assert.match(ui,/Private customer document uploaded/);
+  const styles=read('public/index.html');assert.match(styles,/#customer-results td small\{display:block/);assert.match(styles,/#customer-results table\{min-width:1120px;table-layout:fixed/);
 });
 
 test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
