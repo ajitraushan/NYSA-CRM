@@ -69,6 +69,9 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(app,/max="2"/);
   assert.match(app,/Property information and display rules/);
   assert.match(app,/Preview with sample buyer data/);
+  assert.match(app,/organizationVersions\.find\(x=>x\.status==='active'\)/);
+  assert.match(app,/approved logo shown here will govern live proposals/);
+  assert.match(app,/proposal-preview-brand/);
   assert.match(app,/Create new version/);
   assert.match(routes,/proposal\.templateType==='Quick'.*listingIds\.length<1/);
   assert.match(routes,/requireAvailabilityCheck/);

@@ -214,7 +214,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Revision 7 implemented locally and verified by automated tests; CRM Test
+- Status: Revision 8 implemented locally and verified by automated tests; CRM Test
   deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
@@ -599,9 +599,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 7: Buyer-oriented Quick Proposal template maintenance
+### R1-AMD-006 Revision 8: Branded buyer-oriented Quick Proposal template maintenance
 
-- Amendment ID: R1-AMD-006 Revision 7
+- Amendment ID: R1-AMD-006 Revision 8
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
@@ -619,8 +619,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   developer, status, age/completion, rooms, bedrooms, bathrooms, parking, amenities,
   availability, match rationale, trade-offs and value proposition; and conditional,
   non-guaranteed end-to-end purchase timeline guidance. Enforce shortlist, approved
-  media and availability rules during proposal generation.
-- Status: Revision 7 implemented locally and verified by 70 automated tests; CRM Test
+  media and availability rules during proposal generation. The sample preview must use
+  the active NYSA company profile's approved logo, customer-facing name, brand version
+  and proposal footer, and must clearly identify when no active governed profile exists.
+- Status: Revision 8 implemented locally and verified by 70 automated tests; CRM Test
   deployment, authenticated proposal workflow retest and explicit user confirmation
   pending. Revision 6 fee-screen confirmation remains recorded separately.
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
