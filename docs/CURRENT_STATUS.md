@@ -69,7 +69,8 @@
   are implemented locally: business amounts are normalized before submission and a new
   customer, channels, role, lead, queue history and audit evidence commit atomically.
   CRM Test deployment, retest and explicit user confirmation remain pending.
-- The automated suite passes 84 tests after the atomic lead-capture correction. Changed
+- The automated suite passes 86 tests after the Customer/KYC workspace and guided
+  qualification-lifecycle corrections. Changed
   browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
   rollback and committed-success verification remain required.
 - R1-AMD-017 Revision 2 restores the existing-customer dropdown as a separately labelled,
@@ -86,7 +87,7 @@
   reachable only from a lead. The new workspace will make the customer authoritative across
   leads, proposals and related operations while retaining masked output and role-restricted
   private-document access. Implementation and CRM Test deployment have not started.
-- R1-AMD-021 Revision 2 clarifies the navigation direction: Customers is a primary CRM
+- R1-AMD-021 Revision 2 is implemented locally: Customers is a primary CRM
   workspace and owns verification/KYC maintenance; customer detail shows related leads.
   Lead detail becomes a consumer with a read-only summary and Open customer record action,
   rather than requiring users to open a lead before maintaining the customer.
@@ -95,7 +96,7 @@
   rollback, duplicate and exact-count evidence. R1-AMD-022 Revision 1 is implemented locally
   to require customer name/email/phone/preferred channel plus both lead budget limits and at
   least one preferred area, including direct API and incomplete-existing-customer guards.
-- R1-AMD-009 Revision 2 is agreed after qualification-maintenance usability retest failed.
+- R1-AMD-009 Revision 2 is implemented locally after qualification-maintenance usability retest failed.
   CRM Test has no active model applicable to the tested lead, while the current screen uses
   free-text Business line, unlabeled dense factor rows and no understandable activation path.
   The next revision will provide governed business-line choices, active coverage, labelled

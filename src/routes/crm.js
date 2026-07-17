@@ -191,6 +191,21 @@ r.get('/crm/contacts', async (req, res) => {
   res.json({ count: contacts.length, contacts });
 });
 
+r.get('/crm/customers/:id',async(req,res)=>{
+  const params=[req.params.id],scope=contactScopeSql('c',req.broker,params);
+  const customer=await one(`SELECT c.*,co.name AS company_name_resolved FROM contacts c LEFT JOIN companies co ON co.id=c.company_id WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
+  if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
+  const allLeads=await many(`SELECT id,title,business_type,stage,temperature,assigned_to,assigned_team_id,created_by,created_at FROM leads WHERE contact_id=$1 ORDER BY created_at DESC`,[customer.id]);
+  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id);
+  const [roles,channels,consent,documents]=await Promise.all([
+    many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
+    many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
+    one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='granted' AND effective_from<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
+    canMaintain?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([])
+  ]);
+  res.json({customer,roles,channels,leads,documents,canMaintain,effectiveConsent:Boolean(consent?.effectiveConsent),restricted:Boolean(customer.doNotContact)});
+});
+
 r.post('/crm/contacts', async (req, res) => {
   const b = req.body || {};
   if (!canWriteCrm(req.broker)) return res.status(403).json({ error:'This role has read-only CRM access' });

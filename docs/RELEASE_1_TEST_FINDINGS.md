@@ -181,12 +181,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Qualification model versions
-- Status: Revision 1 deployed to CRM Test; usability retest failed. Business line remains
-  free text, factor fields lack understandable structure/headings, active coverage is not
-  visible and the Draft -> Test -> Approve -> Activate workflow is not explained. Revision
-  2 agreed. Retest also exposed a false sensitive-factor rejection because the validator
-  matched `age` inside the legitimate word `mortgage`; implementation, deployment and
-  explicit confirmation pending
+- Status: Revision 2 implemented locally and verified by automated tests. Business line is
+  governed, factors are labelled cards, active coverage and Draft -> Test -> Approve ->
+  Activate are visible, and the false `age` inside `mortgage` sensitive-factor match is
+  corrected. Consolidated CRM Test deployment, retest and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 95, 97, 98, 101, 102 and 103
 - Evidence: The current section is named Qualification model versions and requires an
@@ -723,8 +721,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Customers, KYC, consent, channels and related records
-- Status: Agreed correction; implementation, CRM Test deployment, retest and explicit user
-  confirmation pending
+- Status: Revision 2 implemented locally and verified by automated tests with a primary
+  Customers workspace, authoritative Customer/KYC record and lead-to-customer navigation;
+  consolidated CRM Test deployment, retest and explicit user confirmation pending
 - Priority: Must
 - Related acceptance criteria: 27, 30, 31, 34, 35, 36, 41, 126, 143 and 191
 - Evidence: Customer and KYC data are stored against the reusable contact record, but the
@@ -950,9 +949,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the administrator action required. Detect prohibited personal/social attributes as whole
   terms, identify the offending attribute clearly and never reject legitimate real-estate
   wording such as mortgage because it contains a matching text fragment.
-- Status: Sensitive-factor false-positive correction implemented locally with automated
-  tests; remaining guided-screen implementation, CRM Test deployment, retest and explicit
-  user confirmation pending
+- Status: Implemented locally and verified by automated tests; consolidated CRM Test
+  deployment, retest and explicit user confirmation pending
 - Retest condition: On CRM Test, an administrator sees whether Sale, Rental, Off-plan and
   Commercial have an active version; creates a draft using only governed business-line choices
   and clearly labelled factor cards; reorders, tests and approves it; activates it with visible
@@ -1182,8 +1180,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   expiry, private linked documents, duplicate/merge governance, ownership, audit and related
   leads/requirements/activities/proposals/scenarios. Store KYC once against the customer and
   resolve it for every related workflow without copying it into individual leads.
-- Status: Agreed; implementation, automated verification, CRM Test deployment, retest and
-  explicit user confirmation pending
+- Status: Implemented locally and verified by automated tests; consolidated CRM Test
+  deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-022 CRM Test retest condition passes and the user explicitly
   confirms the result.
 

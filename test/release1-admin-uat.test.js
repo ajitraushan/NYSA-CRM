@@ -76,6 +76,27 @@ test('operational qualification is questionnaire-driven and not manually selecta
   assert.match(api,/qualification-questionnaire/);assert.match(crm,/New leads begin Unassessed/);assert.match(crm,/Qualification can be changed only through an approved model assessment/);
 });
 
+test('qualification maintenance guides business users through governed activation',()=>{
+  const ui=read('public/app.js'),styles=read('public/index.html'),api=read('src/routes/qualification-finance.js');
+  for(const label of ['All business lines','Draft','Test','Approve','Activate','Factor name','Question shown to agent','Answer format','Weight %','Move up','Move down','Active questionnaire coverage','No active version'])assert.match(ui,new RegExp(label));
+  assert.match(ui,/<select name="businessLine">/);assert.doesNotMatch(ui,/<input name="businessLine">/);
+  assert.match(ui,/qualification-model-form" class="form-grid hidden"/);
+  assert.match(styles,/qualification-factor-card/);assert.match(styles,/qualification-lifecycle/);
+  assert.match(api,/BUSINESS_TYPES\.includes\(clean\(b\.businessLine\)\)/);
+  assert.match(api,/ORDER BY \(business_line=\$1\) DESC/);
+  assert.match(api,/Ask an administrator to test, approve and activate a version/);
+});
+
+test('customers are a primary workspace and lead KYC links to the customer master',()=>{
+  const ui=read('public/app.js'),crm=read('src/routes/crm.js');
+  assert.match(ui,/data-tab="customers">Customers/);assert.match(ui,/renderCustomers\(\)/);
+  assert.match(ui,/Maintain customer identity, contact channels, consent and KYC once/);
+  assert.match(ui,/Open customer record/);assert.match(ui,/switchTab\('customers'\)/);
+  assert.doesNotMatch(ui,/id="lead-verify"/);assert.doesNotMatch(ui,/id="lead-governance"/);
+  assert.match(crm,/r\.get\('\/crm\/customers\/:id'/);assert.match(crm,/canReadLead/);
+  assert.match(ui,/Private linked documents/);assert.match(crm,/FROM documents WHERE contact_id=\$1 OR lead_id=ANY/);
+});
+
 test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js');
   assert.match(ui,/Select existing customer \(optional\)/);
