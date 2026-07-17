@@ -66,6 +66,16 @@ test('operational qualification is questionnaire-driven and not manually selecta
   assert.match(api,/qualification-questionnaire/);assert.match(crm,/New leads begin Unassessed/);assert.match(crm,/Qualification can be changed only through an approved model assessment/);
 });
 
+test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
+  const ui=read('public/app.js'),crm=read('src/routes/crm.js');
+  assert.match(ui,/Select existing customer \(optional\)/);
+  assert.match(ui,/Type a name, email or phone, e\.g\. Ajit/);
+  assert.match(ui,/rankCustomerChoices/);
+  assert.match(ui,/shown first; names are alphabetical within each group/);
+  assert.match(ui,/all customers remain available alphabetically/);
+  assert.match(crm,/ORDER BY LOWER\(c\.full_name\)/);
+});
+
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
   const app=read('public/app.js'),routes=read('src/routes/files-proposals.js');
   assert.match(app,/setupAdminWorkspace\(\)/);

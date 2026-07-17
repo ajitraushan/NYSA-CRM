@@ -40,6 +40,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const fmtPrice = (n, cur = 'AED') => esc(cur) + ' ' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
 const parseBusinessAmountInput=value=>{const text=String(value??'').trim().replace(/,/g,'').replace(/^AED\s*/i,'').replace(/\s*AED$/i,'').trim();if(!text)return null;const match=text.match(/^(\d+(?:\.\d+)?)\s*(K|M|B|THOUSAND|MILLION|BILLION)?$/i);if(!match)return NaN;const multiplier={K:1e3,THOUSAND:1e3,M:1e6,MILLION:1e6,B:1e9,BILLION:1e9}[String(match[2]||'').toUpperCase()]||1;return Number(match[1])*multiplier;};
 function installBusinessAmountInputs(root){root.querySelectorAll('[data-business-amount]').forEach(input=>{let preview=input.parentElement.querySelector('[data-amount-preview]');if(!preview){preview=document.createElement('small');preview.dataset.amountPreview='';input.after(preview);}const update=()=>{const amount=parseBusinessAmountInput(input.value);preview.textContent=input.value.trim()?(Number.isFinite(amount)?`Interpreted as ${fmtPrice(amount)}`:'Enter an amount such as 2 M, 2.5m, 750K or 2000000'):'Examples: 2 M, 2.5m, 750K or 2000000';preview.style.color=Number.isFinite(amount)||!input.value.trim()?'var(--muted)':'var(--red)';};input.addEventListener('input',update);input.addEventListener('blur',update);update();});}
+const customerSearchText=customer=>`${customer.fullName||''} ${customer.email||''} ${customer.phone||''}`.toLocaleLowerCase();
+function rankCustomerChoices(customers,search=''){const query=String(search).trim().toLocaleLowerCase();return [...customers].sort((a,b)=>{const aMatch=query&&customerSearchText(a).includes(query),bMatch=query&&customerSearchText(b).includes(query);if(aMatch!==bMatch)return aMatch?-1:1;return String(a.fullName||'').localeCompare(String(b.fullName||''),undefined,{sensitivity:'base'})||String(a.email||a.phone||'').localeCompare(String(b.email||b.phone||''),undefined,{sensitivity:'base'});});}
 const fmtDate = (s) => s ? new Date(s.includes('T') ? s : s + 'Z').toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 const canPost = () => ME && (ME.role === 'admin' || ME.role === 'internal_broker' || (ME.role === 'partner_broker' && ME.canPost === 1));
 const canEditListing = (l) => ME && (ME.role === 'admin' || l.postedBy === ME.id);
@@ -301,7 +303,7 @@ async function openNewLeadForm() {
   } catch (err) { return toast(err.message); }
   const o = overlay(`<div class="modal"><button class="close-x">×</button><h2>Capture new lead</h2>
     <form id="lead-form"><div class="form-grid">
-      <div class="span3"><label>Existing contact (optional)</label><select name="contactId"><option value="">Create a new contact below</option>${contacts.map(c => `<option value="${esc(c.id)}">${esc(c.fullName)} · ${esc(c.email || c.phone)}</option>`).join('')}</select></div>
+      <div class="span3"><label for="existing-customer-search">Select existing customer (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">Customers are listed alphabetically.</small><select name="contactId" aria-label="Existing customer"><option value="">Create a new customer below</option></select></div>
       <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName"></div>
       <div class="new-contact"><label>Customer type</label><select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div>
       <div class="new-contact"><label>Email</label><input name="email" type="email"></div>
@@ -326,6 +328,10 @@ async function openNewLeadForm() {
     </div><div class="modal-actions"><button type="button" class="btn" id="lead-cancel">Cancel</button><button class="btn btn-primary">Create lead</button></div></form></div>`);
   installBusinessAmountInputs(o);
   const contactSelect = $('[name="contactId"]',o);
+  const contactSearch = $('#existing-customer-search',o);
+  const contactSearchStatus = $('#existing-customer-search-status',o);
+  const renderCustomerChoices=()=>{const query=contactSearch.value.trim().toLocaleLowerCase(),selected=contactSelect.value,ranked=rankCustomerChoices(contacts,query),matching=query?contacts.filter(customer=>customerSearchText(customer).includes(query)).length:contacts.length;contactSelect.innerHTML=`<option value="">Create a new customer below</option>${ranked.map(c=>`<option value="${esc(c.id)}">${esc(c.fullName)} · ${esc(c.email||c.phone||'No email or phone')}</option>`).join('')}`;if(selected&&ranked.some(c=>String(c.id)===selected))contactSelect.value=selected;contactSearchStatus.textContent=query?(matching?`${matching} matching customer${matching===1?'':'s'} shown first; names are alphabetical within each group.`:'No matching customer found; all customers remain available alphabetically.'):`${contacts.length} customer${contacts.length===1?'':'s'} listed alphabetically.`;};
+  contactSearch.addEventListener('input',renderCustomerChoices);renderCustomerChoices();
   const toggleContact = () => o.querySelectorAll('.new-contact').forEach(x => x.classList.toggle('hidden', Boolean(contactSelect.value)));
   contactSelect.addEventListener('change',toggleContact); toggleContact();
   $('#lead-cancel',o).addEventListener('click',()=>o.remove());

@@ -620,6 +620,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   stored numeric value and proposal mapping; reject invalid, negative and reversed
   ranges; and obtain explicit user confirmation.
 
+### R1-UAT-018: Existing-customer selection is not searchable or alphabetical
+
+- Date raised: 2026-07-17
+- Area: New lead capture and existing-customer selection
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Should
+- Related acceptance criteria: 27 and 30
+- Evidence: The existing-contact field is a static dropdown ordered by the most recently
+  updated record. A user cannot type a name such as `Ajit` to bring matching customers
+  to the top, and scanning a large list is unnecessarily slow.
+- Required correction: Rename the field in business language, provide case-insensitive
+  name/email/phone search, show matching customers first in alphabetical order, keep
+  non-matching permitted customers available alphabetically, and preserve the selected
+  customer and existing scope controls.
+- Retest condition: On CRM Test, open new-lead capture, type `ajit`, verify every permitted
+  matching customer appears first in alphabetical order, select one and create the lead;
+  clear the search and verify all permitted customers are alphabetical; verify a no-match
+  search leaves all customers available; and obtain explicit user confirmation.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -898,6 +918,19 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Status: Implemented locally and verified by automated domain, route and browser-
   contract tests; CRM Test deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-017 CRM Test retest condition passes and the user
+  explicitly confirms the result.
+
+### R1-AMD-017 Revision 1: Searchable alphabetical existing-customer selection
+
+- Amendment ID: R1-AMD-017 Revision 1
+- Related UAT finding: R1-UAT-018
+- Agreed requirement: Replace the update-date-ordered existing-contact dropdown with a
+  business-labelled customer selector that ranks case-insensitive name/email/phone
+  matches first, alphabetizes matching and remaining customers, retains access scope,
+  and preserves the selected customer while the search changes.
+- Status: Implemented locally and verified by automated API-order and browser-contract
+  tests; CRM Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-018 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
 ## Review discipline

@@ -187,7 +187,7 @@ r.get('/crm/contacts', async (req, res) => {
   const contacts = await many(`SELECT c.*, b.name AS owner_name,co.name AS company_name_resolved,
     (SELECT COUNT(*)::int FROM leads l WHERE l.contact_id=c.id) AS lead_count
     FROM contacts c LEFT JOIN brokers b ON b.id=c.owner_id LEFT JOIN companies co ON co.id=c.company_id
-    WHERE ${where.join(' AND ')} ORDER BY c.updated_at DESC LIMIT 500`, params);
+    WHERE ${where.join(' AND ')} ORDER BY LOWER(c.full_name), LOWER(COALESCE(c.email,c.phone,'')), c.id LIMIT 500`, params);
   res.json({ count: contacts.length, contacts });
 });
 
