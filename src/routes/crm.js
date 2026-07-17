@@ -415,7 +415,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
     const transitionError = validateLeadTransition(lead.stage,b.stage);
     if (transitionError) return res.status(409).json({error:transitionError});
   }
-  if(b.budgetMin!==undefined||b.budgetMax!==undefined){const budget=validateBudget(b.budgetMin===undefined?lead.budgetMin:b.budgetMin,b.budgetMax===undefined?lead.budgetMax:b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});}
+  let normalizedBudget=null;if(b.budgetMin!==undefined||b.budgetMax!==undefined){normalizedBudget=validateBudget(b.budgetMin===undefined?lead.budgetMin:b.budgetMin,b.budgetMax===undefined?lead.budgetMax:b.budgetMax);if(normalizedBudget.error)return res.status(400).json({error:normalizedBudget.error});}
   if((b.assignedTo!==undefined||b.assignedTeamId!==undefined)&&!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can reassign this lead'});
   if(b.assignedTo&&!(await staffMember(b.assignedTo))) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
@@ -427,7 +427,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   let assignedToParam = null;
   let assignedTeamParam = null;
   for(const [field,column] of Object.entries(map)) if(b[field]!==undefined){
-    const value=['budgetMin','budgetMax'].includes(field)?numberOrNull(b[field]):clean(b[field]);
+    const value=field==='budgetMin'?normalizedBudget.min:field==='budgetMax'?normalizedBudget.max:clean(b[field]);
     params.push(value);sets.push(`${column}=$${params.length}`);changes[field]={from:lead[field],to:value};
     if (field === 'stage') stageParam = params.length;
     if (field === 'assignedTo') assignedToParam = params.length;

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QUALIFICATION_GUIDANCE, JOB_ROLES, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
+import { readFileSync } from 'node:fs';
+import { QUALIFICATION_GUIDANCE, JOB_ROLES, parseBusinessAmount, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
   validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue } from '../src/crm-domain.js';
 
 test('qualification guidance gives Hot leads the fastest response target', () => {
@@ -52,6 +53,22 @@ test('ROI and assignment deadline calculations are deterministic', () => {
   assert.equal(calculateRoi(2_000_000, 140_000, 20_000), 6);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'New' }, new Date('2026-01-02T00:00:00Z')), true);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'Won' }, new Date('2026-01-02T00:00:00Z')), false);
+});
+
+test('business amounts accept thousand million and billion shorthand',()=>{
+  assert.equal(parseBusinessAmount('2 M'),2000000);
+  assert.equal(parseBusinessAmount('2.5m'),2500000);
+  assert.equal(parseBusinessAmount('AED 750K'),750000);
+  assert.equal(parseBusinessAmount('2,000,000'),2000000);
+  assert.deepEqual(validateBudget('1.5 M','2.5 M'),{min:1500000,max:2500000});
+});
+
+test('lead budget browser and intake routes use reviewed normalized business amounts',()=>{
+  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const crm=readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  const intake=readFileSync(new URL('../src/routes/website-intake.js',import.meta.url),'utf8');
+  assert.match(app,/data-business-amount/);assert.match(app,/Interpreted as/);assert.match(app,/e\.g\. 2 M/);
+  assert.match(crm,/normalizedBudget=validateBudget/);assert.match(intake,/budget\.min,budget\.max/);
 });
 
 test('lead lifecycle rejects skipped and terminal transitions',()=>{

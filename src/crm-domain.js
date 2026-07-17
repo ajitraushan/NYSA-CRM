@@ -77,9 +77,20 @@ export const QUALIFICATION_GUIDANCE = Object.freeze({
   }
 });
 
+export function parseBusinessAmount(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+  const text=String(value).trim().replace(/,/g,'').replace(/^AED\s*/i,'').replace(/\s*AED$/i,'').trim();
+  const match=text.match(/^(\d+(?:\.\d+)?)\s*(K|M|B|THOUSAND|MILLION|BILLION)?$/i);
+  if(!match)return NaN;
+  const multiplier={K:1e3,THOUSAND:1e3,M:1e6,MILLION:1e6,B:1e9,BILLION:1e9}[String(match[2]||'').toUpperCase()]||1;
+  const amount=Number(match[1])*multiplier;
+  return Number.isFinite(amount)?amount:NaN;
+}
+
 export function validateBudget(minimum, maximum) {
-  const min = minimum === undefined || minimum === null || minimum === '' ? null : Number(minimum);
-  const max = maximum === undefined || maximum === null || maximum === '' ? null : Number(maximum);
+  const min = parseBusinessAmount(minimum);
+  const max = parseBusinessAmount(maximum);
   if ((min !== null && (!Number.isFinite(min) || min < 0)) || (max !== null && (!Number.isFinite(max) || max < 0)))
     return { error: 'Budget range is invalid' };
   if (min !== null && max !== null && max < min) return { error: 'Budget range is invalid' };

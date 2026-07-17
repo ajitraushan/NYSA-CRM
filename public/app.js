@@ -38,6 +38,8 @@ async function api(path, opts = {}) {
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtPrice = (n, cur = 'AED') => esc(cur) + ' ' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const parseBusinessAmountInput=value=>{const text=String(value??'').trim().replace(/,/g,'').replace(/^AED\s*/i,'').replace(/\s*AED$/i,'').trim();if(!text)return null;const match=text.match(/^(\d+(?:\.\d+)?)\s*(K|M|B|THOUSAND|MILLION|BILLION)?$/i);if(!match)return NaN;const multiplier={K:1e3,THOUSAND:1e3,M:1e6,MILLION:1e6,B:1e9,BILLION:1e9}[String(match[2]||'').toUpperCase()]||1;return Number(match[1])*multiplier;};
+function installBusinessAmountInputs(root){root.querySelectorAll('[data-business-amount]').forEach(input=>{let preview=input.parentElement.querySelector('[data-amount-preview]');if(!preview){preview=document.createElement('small');preview.dataset.amountPreview='';input.after(preview);}const update=()=>{const amount=parseBusinessAmountInput(input.value);preview.textContent=input.value.trim()?(Number.isFinite(amount)?`Interpreted as ${fmtPrice(amount)}`:'Enter an amount such as 2 M, 2.5m, 750K or 2000000'):'Examples: 2 M, 2.5m, 750K or 2000000';preview.style.color=Number.isFinite(amount)||!input.value.trim()?'var(--muted)':'var(--red)';};input.addEventListener('input',update);input.addEventListener('blur',update);update();});}
 const fmtDate = (s) => s ? new Date(s.includes('T') ? s : s + 'Z').toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 const canPost = () => ME && (ME.role === 'admin' || ME.role === 'internal_broker' || (ME.role === 'partner_broker' && ME.canPost === 1));
 const canEditListing = (l) => ME && (ME.role === 'admin' || l.postedBy === ME.id);
@@ -313,8 +315,8 @@ async function openNewLeadForm() {
       <div><label>Source *</label><select name="source">${opts(LEAD_SOURCES)}</select></div>
       <div><label>Business type *</label><select name="businessType">${opts(BUSINESS_TYPES)}</select></div>
       <div><label>Stage</label><select name="stage">${opts(LEAD_STAGES,'New')}</select></div>
-      <div><label>Budget from (AED)</label><input name="budgetMin" type="number" min="0"></div>
-      <div><label>Budget to (AED)</label><input name="budgetMax" type="number" min="0"></div>
+      <div><label>Budget from (AED)</label><input name="budgetMin" type="text" inputmode="decimal" data-business-amount placeholder="e.g. 2 M"></div>
+      <div><label>Budget to (AED)</label><input name="budgetMax" type="text" inputmode="decimal" data-business-amount placeholder="e.g. 2.5 M"></div>
       <div><label>Preferred areas</label><input name="preferredAreas"></div>
       <div><label>Assign team</label><select name="assignedTeamId"><option value="">Unassigned</option>${teams.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
       <div><label>Assign broker</label><select name="assignedTo"><option value="">Unassigned</option>${staff.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select></div>
@@ -322,6 +324,7 @@ async function openNewLeadForm() {
       <div class="span2"><label>Related listing (optional)</label><select name="listingId"><option value="">No listing selected</option>${listings.map(l=>`<option value="${esc(l.id)}">${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select></div>
       <div class="span3"><label>Property requirements / first conversation</label><textarea name="propertyRequirements" rows="3"></textarea></div>
     </div><div class="modal-actions"><button type="button" class="btn" id="lead-cancel">Cancel</button><button class="btn btn-primary">Create lead</button></div></form></div>`);
+  installBusinessAmountInputs(o);
   const contactSelect = $('[name="contactId"]',o);
   const toggleContact = () => o.querySelectorAll('.new-contact').forEach(x => x.classList.toggle('hidden', Boolean(contactSelect.value)));
   contactSelect.addEventListener('change',toggleContact); toggleContact();
@@ -1086,6 +1089,7 @@ const openLeadRequirementsBeforeAiReview=openLeadRequirements;
 openLeadRequirements=async function(lead){
   await openLeadRequirementsBeforeAiReview(lead);
   const o=document.querySelector('.overlay:last-of-type'),form=$('#requirement-form',o);if(!o||!form)return;
+  for(const name of ['budgetMin','budgetMax']){const input=form.elements[name];input.type='text';input.inputMode='decimal';input.removeAttribute('min');input.dataset.businessAmount='';input.placeholder=name==='budgetMin'?'e.g. 2 M':'e.g. 2.5 M';}installBusinessAmountInputs(form);
   const notesWrap=form.elements.notes.parentElement;
   for(const [name,label] of [['bedroomsMin','Bedrooms minimum'],['bedroomsMax','Bedrooms maximum']]){const d=document.createElement('div');d.innerHTML=`<label>${label}</label><input name="${name}" type="number" min="0">`;notesWrap.before(d);}
   const box=document.createElement('section');box.className='ai-review-box';box.innerHTML=`<h3>AI-assisted requirement draft <span class="ai-advisory">Review required</span></h3><p>Paste the business conversation notes. Direct contact and identity patterns are removed before processing. Nothing is saved until you review a suggestion, apply it to the normal form and click Save new version.</p><label>Conversation notes *</label><textarea id="ai-requirement-notes" rows="4">${esc(lead.propertyRequirements||'')}</textarea><div class="ai-review-actions"><button type="button" class="btn btn-primary btn-sm" id="ai-draft-requirement">Generate suggestions</button><button type="button" class="btn btn-sm" id="ai-clear-requirement">Clear suggestions</button></div><div id="ai-requirement-result"></div>`;form.before(box);

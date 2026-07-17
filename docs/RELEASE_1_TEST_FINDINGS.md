@@ -581,6 +581,44 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   simulated provider refusal/timeout fails safely. Closure requires the user's explicit
   confirmation.
 
+### R1-UAT-016: Lead qualification is manually selected instead of questionnaire-driven
+
+- Date raised: 2026-07-17
+- Area: Lead maintenance and operational qualification assessment
+- Status: Requirement agreed during review; correction implementation pending
+- Priority: Must
+- Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
+- Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
+  dropdowns, while the separate assessment screen expects technical JSON factor input.
+  This allows the displayed qualification to bypass the active approved model.
+- Required correction: New leads begin Unassessed. Render business questions and answer
+  controls from the active Lead Qualification Version, calculate score and Hot/Warm/Cold
+  from approved weights and bands, display factor contributions/guidance, and allow only
+  an authorized reasoned override. Reassessment creates immutable history.
+- Retest condition: On CRM Test, create an Unassessed lead, answer the active model's
+  business questions, verify score, contributions, band and response guidance; reject
+  missing mandatory answers; permit only a reasoned authorized override; retain prior
+  assessments after reassessment; and obtain explicit user confirmation.
+
+### R1-UAT-017: Lead budget fields do not accept common business amount shorthand
+
+- Date raised: 2026-07-17
+- Area: New lead and structured-requirement budget capture
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Should
+- Related acceptance criterion: 80
+- Evidence: Numeric inputs require users to type every zero and reject a normal business
+  entry such as `2 M` for AED 2,000,000.
+- Required correction: Accept case-insensitive K/M/B shorthand, optional spaces, AED and
+  comma-formatted/full amounts; show the interpreted AED amount before save; normalize
+  to the exact numeric value on the server; and retain negative, invalid and reversed-
+  range validation for browser and direct API submissions.
+- Retest condition: On CRM Test, enter `2 M`, `2.5m`, `750K`, `AED 1.5 M`, `2,000,000`
+  and a full number in new-lead and structured-requirement budgets; verify the preview,
+  stored numeric value and proposal mapping; reject invalid, negative and reversed
+  ranges; and obtain explicit user confirmation.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -832,6 +870,31 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   match wording for a selected shortlisted property, apply it and verify no proposal is
   generated until the normal Generate action; check gaps and verify source-record
   guidance and editable questions; then the R1-UAT-015 conditions pass and the user
+  explicitly confirms the result.
+
+### R1-AMD-015 Revision 1: Model-driven operational lead qualification
+
+- Amendment ID: R1-AMD-015 Revision 1
+- Related UAT finding: R1-UAT-016
+- Agreed requirement: Treat Hot/Warm/Cold as the output of the active approved Lead
+  Qualification Version rather than a routine manual input. Start leads as Unassessed,
+  render business questions and governed answer controls, calculate and explain the
+  weighted result, restrict overrides to authorized users with a reason, and preserve
+  reassessment history.
+- Status: Agreed requirement; implementation and automated tests pending
+- Retest condition: The R1-UAT-016 CRM Test retest condition passes and the user
+  explicitly confirms the result.
+
+### R1-AMD-016 Revision 1: Business shorthand for lead budget amounts
+
+- Amendment ID: R1-AMD-016 Revision 1
+- Related UAT finding: R1-UAT-017
+- Agreed requirement: Accept and preview common K/M/B, AED, comma-formatted and full
+  amount entries in new-lead and structured-requirement budgets, normalize them to
+  exact server-side numeric values, and preserve range validation for every intake path.
+- Status: Implemented locally and verified by automated domain, route and browser-
+  contract tests; CRM Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-017 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
 ## Review discipline
