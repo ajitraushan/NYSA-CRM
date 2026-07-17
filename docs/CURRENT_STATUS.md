@@ -69,8 +69,8 @@
   are implemented locally: business amounts are normalized before submission and a new
   customer, channels, role, lead, queue history and audit evidence commit atomically.
   CRM Test deployment, retest and explicit user confirmation remain pending.
-- The automated suite passes 86 tests after the Customer/KYC workspace and guided
-  qualification-lifecycle corrections. Changed
+- The automated suite passes 87 tests after the governed Structured Requirements save and
+  visible AI-failure corrections. Changed
   browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
   rollback and committed-success verification remain required.
 - R1-AMD-017 Revision 2 restores the existing-customer dropdown as a separately labelled,

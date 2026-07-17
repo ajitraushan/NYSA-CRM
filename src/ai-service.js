@@ -50,6 +50,7 @@ export async function requestStructuredOutput({name,instructions,input,schema,fe
 }
 
 const stringArray={type:'array',items:{type:'string'},maxItems:12};
+const propertyTypeArray={type:'array',items:{type:'string',enum:['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal']},maxItems:7};
 const nullableNumber={type:['number','null']};
 const nullableInteger={type:['integer','null']};
 const nullableString={type:['string','null']};
@@ -58,7 +59,7 @@ export const AI_SCHEMAS={
   requirements_draft:{type:'object',additionalProperties:false,required:['summary','requirementOptions','unansweredQuestions','confidence','warnings'],properties:{
     summary:{type:'string'},confidence:{type:'string',enum:['low','medium','high']},unansweredQuestions:stringArray,warnings:stringArray,
     requirementOptions:{type:'array',minItems:1,maxItems:3,items:{type:'object',additionalProperties:false,required:['optionLabel','businessLine','purpose','propertyTypes','areas','projects','developers','budgetMin','budgetMax','fundingMethod','bedroomsMin','bedroomsMax','timelineCode','mustHaves','preferences','exclusions'],properties:{
-      optionLabel:{type:'string'},businessLine:{type:'string'},purpose:{type:'string',enum:['own_use','investment','business','other']},propertyTypes:stringArray,areas:stringArray,projects:stringArray,developers:stringArray,budgetMin:nullableNumber,budgetMax:nullableNumber,fundingMethod:{type:'string',enum:['cash','mortgage','mixed','unknown']},bedroomsMin:nullableInteger,bedroomsMax:nullableInteger,timelineCode:nullableString,mustHaves:stringArray,preferences:stringArray,exclusions:stringArray
+      optionLabel:{type:'string'},businessLine:{type:'string',enum:['Sale','Rental','Off-plan','Commercial']},purpose:{type:'string',enum:['own_use','investment','business','other']},propertyTypes:propertyTypeArray,areas:stringArray,projects:stringArray,developers:stringArray,budgetMin:nullableNumber,budgetMax:nullableNumber,fundingMethod:{type:'string',enum:['cash','mortgage','mixed','unknown']},bedroomsMin:nullableInteger,bedroomsMax:nullableInteger,timelineCode:nullableString,mustHaves:stringArray,preferences:stringArray,exclusions:stringArray
     }}}
   }},
   match_explanation:{type:'object',additionalProperties:false,required:['headline','whyItMatches','tradeOffs','customerSummary','evidenceUsed','requiresAgentReview','warning'],properties:{headline:{type:'string'},whyItMatches:{...stringArray,maxItems:4},tradeOffs:{...stringArray,maxItems:4},customerSummary:{type:'string'},evidenceUsed:stringArray,requiresAgentReview:{type:'boolean'},warning:nullableString}},

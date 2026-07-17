@@ -772,6 +772,27 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   through the Customer record and then create one valid lead with both budget limits and
   multiple normalized areas.
 
+### R1-UAT-024: Structured requirements use free text, hide AI failures and fail to save blanks
+
+- Date raised: 2026-07-17
+- Area: Lead -> Structured requirements and AI-assisted requirement draft
+- Status: R1-AMD-024 Revision 1 implemented locally and verified by automated tests; CRM
+  Test deployment, live retest and explicit user confirmation pending
+- Priority: Must
+- Related acceptance criteria: 80, 81, 126, 191, 192 and 193
+- Evidence: Property type is free text rather than a governed inventory-compatible choice;
+  Generate suggestions can finish without persistent output or an actionable error; and Save
+  new version returns Internal server error when optional bedroom limits are left blank.
+- Required correction: Use governed business-line and property-type choices compatible with
+  inventory matching, support one or more property types, normalize blank optional numeric
+  limits to database null, validate direct API values, and show AI success or failure inside
+  the review panel with a safe run reference when available. Never save an AI suggestion until
+  the user applies and separately saves it.
+- Retest condition: On CRM Test, select one and multiple governed property types, save with
+  blank bedroom limits, and confirm a new version is created without an internal error. Generate
+  AI suggestions and confirm either editable options or a persistent actionable error appears;
+  apply a reviewed option and confirm it remains unsaved until Save new version is selected.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1237,6 +1258,21 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   result, change it to Cold with a reason without answering the questions again, and confirm
   history shows both the original calculated assessment and the audited override. Reject an
   override without authority, a different result or a reason.
+
+### R1-AMD-024 Revision 1: Governed and reliable Structured Requirements
+
+- Amendment ID: R1-AMD-024 Revision 1
+- Related UAT findings: R1-UAT-015 and R1-UAT-024
+- Agreed requirement: Replace free-text Property types with governed inventory-compatible
+  choices supporting one or more selections and govern Business line consistently. Normalize
+  empty optional bedroom limits to null before persistence so Save new version cannot produce
+  a database type error. Validate property choices server-side. Generate suggestions must
+  always produce either editable review cards or a persistent, actionable error with a safe
+  run reference; AI remains advisory and saving remains a separate explicit action.
+- Status: Implemented locally and verified by 87 automated tests; CRM Test deployment,
+  functional retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-024 CRM Test retest condition passes and the user explicitly
+  confirms the result.
 
 ## Review discipline
 

@@ -13,6 +13,7 @@ function internalOnly(req,res,next){
   next();
 }
 const text=v=>typeof v==='string'&&v.trim()?v.trim():null;
+const REQUIREMENT_PROPERTY_TYPES=['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'];
 const operationalAdmin=req=>req.broker.role==='admin'||req.broker.jobRole==='admin_assistant';
 const calendar=p=>({workDays:p.workDays,startMinute:p.workStartMinute,endMinute:p.workEndMinute,utcOffsetMinutes:p.utcOffsetMinutes});
 async function activePolicy(client){return one("SELECT * FROM sla_policies WHERE status='active'",[],client);}
@@ -179,15 +180,17 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
   if(!text(b.businessLine)||!['own_use','investment','business','other'].includes(b.purpose)||!['cash','mortgage','mixed','unknown'].includes(b.fundingMethod)||!text(b.timelineCode))
     return res.status(400).json({error:'businessLine, purpose, fundingMethod and timelineCode are required'});
   const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
-  for(const n of ['bedroomsMin','bedroomsMax'])if(b[n]!==undefined&&b[n]!==null&&(!Number.isInteger(Number(b[n]))||Number(b[n])<0))return res.status(400).json({error:`${n} must be a non-negative integer`});
-  if(b.bedroomsMin!==undefined&&b.bedroomsMax!==undefined&&Number(b.bedroomsMax)<Number(b.bedroomsMin))return res.status(400).json({error:'bedroomsMax cannot be below bedroomsMin'});
+  const propertyTypes=normalizeDelimitedValues(b.propertyTypes);if(propertyTypes.some(x=>!REQUIREMENT_PROPERTY_TYPES.includes(x)))return res.status(400).json({error:'Select property types from the approved list'});
+  const bedroomValue=n=>b[n]===undefined||b[n]===null||String(b[n]).trim()===''?null:Number(b[n]),bedroomsMin=bedroomValue('bedroomsMin'),bedroomsMax=bedroomValue('bedroomsMax');
+  for(const [name,value] of [['bedroomsMin',bedroomsMin],['bedroomsMax',bedroomsMax]])if(value!==null&&(!Number.isInteger(value)||value<0))return res.status(400).json({error:`${name} must be a non-negative integer`});
+  if(bedroomsMin!==null&&bedroomsMax!==null&&bedroomsMax<bedroomsMin)return res.status(400).json({error:'bedroomsMax cannot be below bedroomsMin'});
   const row=await transaction(async client=>{
     const current=await one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
     if(current)await execute('UPDATE lead_requirements SET superseded_at=NOW() WHERE id=$1',[current.id],client);
     const id=uuid(),version=(current?.versionNo||0)+1;
     const created=await one(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,funding_method,
       bedrooms_min,bedrooms_max,timeline_code,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-      [id,lead.id,version,text(b.businessLine),b.purpose,normalizeDelimitedValues(b.propertyTypes),normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,b.bedroomsMin??null,b.bedroomsMax??null,text(b.timelineCode),text(b.notes),req.broker.id],client);
+      [id,lead.id,version,text(b.businessLine),b.purpose,propertyTypes,normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,bedroomsMin,bedroomsMax,text(b.timelineCode),text(b.notes),req.broker.id],client);
     await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version},client);return created;
   });res.status(201).json(row);
 });

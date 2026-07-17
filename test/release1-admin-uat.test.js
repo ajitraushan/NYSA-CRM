@@ -124,6 +124,16 @@ test('lead capture explains the original property link in business language',()=
   assert.match(ui,/initialAreas=.*lead\.preferredAreas/);
 });
 
+test('structured requirements use governed property choices and save blank bedroom limits safely',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/lead-operations.js'),ai=read('src/ai-service.js');
+  assert.match(ui,/Property types \(select one or more\)/);assert.match(ui,/name="propertyTypes" multiple/);
+  assert.match(ui,/fd\.getAll\('propertyTypes'\)/);assert.match(ui,/Requirement not saved:/);
+  assert.match(ui,/Suggestion not generated/);assert.match(ui,/details are shown in the panel/);
+  assert.match(routes,/REQUIREMENT_PROPERTY_TYPES/);assert.match(routes,/Select property types from the approved list/);
+  assert.match(routes,/String\(b\[n\]\)\.trim\(\)===\x27\x27\?null/);
+  assert.match(routes,/,bedroomsMin,bedroomsMax,/);assert.match(ai,/propertyTypeArray/);
+});
+
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
   const app=read('public/app.js'),routes=read('src/routes/files-proposals.js');
   assert.match(app,/setupAdminWorkspace\(\)/);
