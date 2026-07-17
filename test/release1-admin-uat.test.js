@@ -74,6 +74,9 @@ test('operational qualification is questionnaire-driven and not manually selecta
   assert.match(ui,/Assess qualification/);assert.match(ui,/Question shown to agent/);assert.match(ui,/data-qualification-answer/);
   assert.doesNotMatch(ui,/id="lead-temp"/);assert.doesNotMatch(ui,/id="lead-assessment"/);
   assert.match(api,/qualification-questionnaire/);assert.match(crm,/New leads begin Unassessed/);assert.match(crm,/Qualification can be changed only through an approved model assessment/);
+  assert.match(ui,/Override this result/);assert.match(ui,/never asks for the answers again/);
+  assert.match(api,/qualification-assessments\/:assessmentId\/override/);
+  assert.match(api,/sourceAssessmentId/);assert.match(api,/manager_override/);
 });
 
 test('qualification maintenance guides business users through governed activation',()=>{

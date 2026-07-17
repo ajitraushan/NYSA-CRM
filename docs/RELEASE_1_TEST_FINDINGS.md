@@ -596,9 +596,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Lead maintenance and operational qualification assessment
-- Status: Deployed to CRM Test; operational retest blocked because no active qualification
-  version applies to the tested lead and the administration screen does not guide activation;
-  user retest and explicit confirmation pending
+- Status: Guided model activation deployed to CRM Test and qualification calculation passed.
+  Manager-override retest then found that the combined form wrongly required all customer
+  answers again. R1-AMD-023 Revision 1 is implemented locally; CRM Test deployment, retest
+  and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
 - Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
@@ -1216,6 +1217,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Test deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-023 CRM Test retest condition passes and the user explicitly
   confirms the result.
+
+### R1-AMD-023 Revision 1: Override an existing qualification without re-answering
+
+- Amendment ID: R1-AMD-023 Revision 1
+- Related UAT finding: R1-UAT-016
+- Agreed requirement: Separate calculation from manager override. Calculating a new
+  assessment requires the approved customer-level answers. An authorized manager or
+  Director instead selects Override this result from an existing assessment, chooses a
+  different final qualification and records the mandatory reason without re-entering any
+  factor answers. Preserve the original calculated score, temperature, inputs and
+  contributions; create a separate immutable audited override record and update the lead's
+  current qualification.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, retest
+  and explicit user confirmation pending
+- Retest condition: On CRM Test, calculate a Warm assessment once, select Override this
+  result, change it to Cold with a reason without answering the questions again, and confirm
+  history shows both the original calculated assessment and the audited override. Reject an
+  override without authority, a different result or a reason.
 
 ## Review discipline
 
