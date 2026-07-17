@@ -86,4 +86,36 @@ export function calculateFeeItems(items,input){
   return {context,values,details,total:feeRound(total),totalMinimum:feeRound(totalMinimum),totalMaximum:feeRound(totalMaximum)};
 }
 
-export function validateProposalConfiguration(configuration={}){const sections=configuration.sections;if(!Array.isArray(sections)||!sections.length)return 'At least one proposal section is required';const ids=new Set();for(const section of sections){if(stableCodeError(section?.code))return `Invalid section code: ${section?.code||''}`;if(ids.has(section.code))return `Duplicate section code: ${section.code}`;ids.add(section.code);if(!String(section.label||'').trim()||!['system','agent_input','approved_text','properties','media','financial'].includes(section.source))return `Section ${section.code} needs a label and valid source`;if(section.source==='system'&&!String(section.field||'').trim())return `System field mapping is required for ${section.code}`;}return null;}
+const proposalPropertyFields=new Set(['price','built_up_area','location','developer','property_status','building_age','rooms','bedrooms','bathrooms','parking','amenities','availability_date','value_proposition','match_rationale','trade_offs']);
+const proposalConditions=new Set(['always','ready_property','off_plan','cash_purchase','bank_finance']);
+export function validateProposalConfiguration(configuration={},templateType='Quick'){
+  const sections=configuration.sections;
+  if(!Array.isArray(sections)||!sections.length)return 'At least one proposal section is required';
+  const ids=new Set();
+  for(const section of sections){
+    if(stableCodeError(section?.code))return `Invalid section code: ${section?.code||''}`;
+    if(ids.has(section.code))return `Duplicate section code: ${section.code}`;
+    ids.add(section.code);
+    if(!String(section.label||'').trim()||!['system','agent_input','approved_text','properties','media','financial'].includes(section.source))return `Section ${section.code} needs a label and valid source`;
+    if(section.source==='system'&&!String(section.field||'').trim())return `System field mapping is required for ${section.code}`;
+  }
+  const booklet=configuration.buyerBooklet;
+  if(!booklet||typeof booklet!=='object')return 'Buyer booklet settings are required';
+  const maxProperties=Number(booklet.maxProperties),maxMedia=Number(booklet.maxMediaPerProperty),maxAmenities=Number(booklet.maxAmenities);
+  if(!Number.isInteger(maxProperties)||maxProperties<1||maxProperties>3)return 'Maximum matched properties must be between 1 and 3';
+  if(templateType==='Comparison'&&maxProperties<2)return 'A Comparison template must allow at least 2 properties';
+  if(!Number.isInteger(maxMedia)||maxMedia<0||maxMedia>2)return 'Approved media per property must be between 0 and 2';
+  if(!Number.isInteger(maxAmenities)||maxAmenities<1||maxAmenities>8)return 'Maximum amenities must be between 1 and 8';
+  if(!Array.isArray(booklet.propertyFields)||!booklet.propertyFields.length)return 'Select at least one property information field';
+  const fieldCodes=new Set();
+  for(const field of booklet.propertyFields){
+    if(!proposalPropertyFields.has(field?.code))return `Unsupported proposal property field: ${field?.code||''}`;
+    if(fieldCodes.has(field.code))return `Duplicate proposal property field: ${field.code}`;
+    fieldCodes.add(field.code);
+    if(!proposalConditions.has(field.condition||'always'))return `Invalid display condition for ${field.code}`;
+  }
+  for(const required of ['price','location','developer','property_status','value_proposition','match_rationale'])if(!fieldCodes.has(required))return `Property field ${required} is required for a buyer proposal`;
+  if(!Array.isArray(booklet.timelineStages)||!booklet.timelineStages.length)return 'Add at least one indicative purchase timeline stage';
+  for(const stage of booklet.timelineStages){if(stableCodeError(stage?.code)||!String(stage?.label||'').trim()||!String(stage?.guidance||'').trim())return 'Every timeline stage needs a stable code, label and guidance';if(!proposalConditions.has(stage.condition||'always'))return `Invalid timeline condition for ${stage.code}`;}
+  return null;
+}

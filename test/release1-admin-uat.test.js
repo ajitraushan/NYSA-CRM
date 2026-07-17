@@ -57,6 +57,25 @@ test('administration navigation consolidates read-only website intake into audit
   assert.doesNotMatch(ui,/data-admin-section="website-intake"/);
 });
 
+test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
+  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js');
+  assert.match(app,/setupAdminWorkspace\(\)/);
+  assert.match(app,/className='admin-workspace'/);
+  assert.match(app,/admin-maintenance-nav/);
+  assert.match(app,/\['users','User management'\]/);
+  assert.match(app,/Maximum matched properties/);
+  assert.match(app,/max="3"/);
+  assert.match(app,/Approved media per property/);
+  assert.match(app,/max="2"/);
+  assert.match(app,/Property information and display rules/);
+  assert.match(app,/Preview with sample buyer data/);
+  assert.match(app,/Create new version/);
+  assert.match(routes,/proposal\.templateType==='Quick'.*listingIds\.length<1/);
+  assert.match(routes,/requireAvailabilityCheck/);
+  assert.match(routes,/maxMediaPerProperty/);
+  assert.match(routes,/Only approved media from selected properties/);
+});
+
 test('organization profile copy action cannot silently clear an unsaved first profile',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Copy active profile into form/);

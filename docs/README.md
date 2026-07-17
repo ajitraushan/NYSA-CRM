@@ -33,3 +33,6 @@ describe.
 4. Applied database migrations are never edited. Add a new numbered migration.
 5. Credentials, customer data, identity documents, database dumps, generated
    customer proposals, logs, and temporary files never enter Git.
+6. Every agreed UAT correction records an Amendment ID, related finding, agreed
+   requirement, status and retest condition; no finding closes before CRM Test
+   deployment and explicit user confirmation.

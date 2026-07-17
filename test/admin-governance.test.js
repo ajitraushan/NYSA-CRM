@@ -48,10 +48,14 @@ test('business fee rules support thresholds bases VAT composite charges quantiti
   assert.match(validateFeeItems([{code:'valuation',label:'Valuation',calculationType:'estimate_range',calculationBasis:'none',minAmount:4000,maxAmount:3000}]),/minimum and maximum/);
 });
 
-test('proposal designer validates curated mapped and agent-input sections',()=>{
+test('proposal designer validates buyer booklet limits fields conditions and timeline',()=>{
   const sections=[{code:'customer_name',label:'Customer name',source:'system',field:'contact.full_name',mandatory:true},{code:'highlights',label:'Highlights',source:'agent_input',mandatory:true}];
-  assert.equal(validateProposalConfiguration({sections}),null);
-  assert.match(validateProposalConfiguration({sections:[{code:'customer_name',label:'Customer',source:'system'}]}),/mapping/);
+  const propertyFields=['price','location','developer','property_status','value_proposition','match_rationale'].map(code=>({code,mandatory:true,condition:'always'}));
+  const buyerBooklet={maxProperties:3,maxMediaPerProperty:2,maxAmenities:5,requireAvailabilityCheck:true,propertyFields,timelineStages:[{code:'confirm_requirements',label:'Confirm requirements',condition:'always',guidance:'Subject to complete information.'}]};
+  assert.equal(validateProposalConfiguration({sections,buyerBooklet}),null);
+  assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxProperties:4}}),/between 1 and 3/);
+  assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxMediaPerProperty:3}}),/between 0 and 2/);
+  assert.match(validateProposalConfiguration({sections:[{code:'customer_name',label:'Customer',source:'system'}],buyerBooklet}),/mapping/);
 });
 
 test('dashboard KPI catalogue owns units definitions and threshold direction',()=>{

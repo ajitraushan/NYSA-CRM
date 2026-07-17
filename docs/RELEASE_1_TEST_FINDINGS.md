@@ -214,7 +214,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 7 implemented locally and verified by automated tests; CRM Test
+  deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
 - Evidence: Administration maintains only template type, name, brand version, lines of
@@ -261,7 +262,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   adds approved Call to Action and Disclaimer content, previews sample output and
   activates the version. From a prepared lead, an agent starts Quick Proposal, sees the
   correct customer and requirement data prefilled, supplies only configured inputs,
-  selects one property and approved media, previews and generates a reviewed version
+  selects up to three matched properties and no more than two approved media items per
+  property, previews and generates a reviewed version
   within three minutes. Missing mandatory agent input blocks generation; missing
   mandatory system data identifies the authoritative record to correct; optional blank
   content is omitted cleanly. Missing required mappings are clear, and the generated
@@ -515,6 +517,28 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   placeholder; unknown placeholders are rejected; and the user explicitly confirms the
   result before closure.
 
+### R1-UAT-014: Administration maintenance is presented as one cumbersome long page
+
+- Date raised: 2026-07-17
+- Area: Administration workspace layout
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit
+  user confirmation pending
+- Priority: Must
+- Related acceptance criteria: 18, 67, 95, 112, 128, 163 and 181
+- Evidence: The user observed that every maintenance form and saved-version table is
+  rendered sequentially on one Administration page. Finding and operating one setting
+  requires excessive scrolling, and informational/user-record areas visually compete
+  with the maintenance currently being performed.
+- Required correction: Replace the long page with an Administration workspace that
+  has a persistent left maintenance menu and displays only the selected maintenance
+  area on the right. Keep User Management and User records under one menu selection;
+  keep Website Intake within Operations and Audit; preserve all existing permissions,
+  saved state, lifecycle actions and responsive access on smaller screens.
+- Retest condition: On CRM Test, an administrator can move between every maintenance
+  area through the left menu; only the selected area appears on the right; User
+  Management includes its user records; no form, table or action is lost; and the user
+  explicitly confirms the layout before closure.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -575,9 +599,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 6: Closed-state governed fee editing, funding applicability and proposal template design
+### R1-AMD-006 Revision 7: Buyer-oriented Quick Proposal template maintenance
 
-- Amendment ID: R1-AMD-006 Revision 6
+- Amendment ID: R1-AMD-006 Revision 7
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
@@ -587,16 +611,18 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   maintenance form closed and saved versions read-only until an explicit start-new,
   draft-edit or create-new-version action; align the rule-set summary, authority,
   placeholders, lifecycle note and actions; and expose calculated results
-  and audit details through an approved placeholder catalogue. Extend that catalogue into a
-  business-friendly proposal template designer with ordered sections, curated
-  authoritative system-field mappings, agent input prompts, approved fixed content,
-  media/scenario blocks, per-section and per-field Mandatory/Optional rules, preview,
-  validation and governed versions. Use the definition to drive a lead-based Quick
-  Proposal wizard requiring minimal re-entry, blocking incomplete mandatory data and
-  rejecting unknown placeholders.
-- Status: Revision 6 deployed to CRM Test and verified by 69 automated tests; the user
-  confirmed the closed-form edit/new-version workflow and aligned summary on 2026-07-16.
-  Funding calculation and proposal-output retests remain pending under R1-UAT-013.
+  and audit details through an approved placeholder catalogue. Extend that catalogue
+  into a buyer-oriented template designer with governed draft editing, new versions,
+  comparison and preview; a configurable one-to-three-property shortlist; a maximum of
+  two approved media items per property; mandatory/optional and ready/off-plan or
+  cash/bank-finance conditions; buyer requirements; price, built-up area, location,
+  developer, status, age/completion, rooms, bedrooms, bathrooms, parking, amenities,
+  availability, match rationale, trade-offs and value proposition; and conditional,
+  non-guaranteed end-to-end purchase timeline guidance. Enforce shortlist, approved
+  media and availability rules during proposal generation.
+- Status: Revision 7 implemented locally and verified by 70 automated tests; CRM Test
+  deployment, authenticated proposal workflow retest and explicit user confirmation
+  pending. Revision 6 fee-screen confirmation remains recorded separately.
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
   the user explicitly confirms both results.
 
@@ -691,6 +717,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   without a logo, accurate partial-success handling for a rejected selected logo,
   same-draft retry, safe deletion of the five unused duplicate drafts and clear version
   comparison, and the user explicitly confirms the result.
+
+### R1-AMD-013 Revision 1: Administration left-menu maintenance workspace
+
+- Amendment ID: R1-AMD-013 Revision 1
+- Related UAT finding: R1-UAT-014
+- Agreed requirement: Replace the single long Administration page with a responsive
+  two-column maintenance workspace: a persistent left menu and only the selected
+  maintenance area on the right. Group User Management and User records behind one
+  menu choice and retain Website Intake within Operations and Audit without changing
+  permissions or governed lifecycle behavior.
+- Status: Implemented locally and verified by automated layout-contract tests; CRM
+  Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-014 CRM Test retest condition passes and the user
+  explicitly confirms the result.
 
 ## Review discipline
 
