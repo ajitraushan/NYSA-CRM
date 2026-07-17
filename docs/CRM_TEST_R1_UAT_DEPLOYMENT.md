@@ -7,7 +7,7 @@ Production deployment is not authorized by this package.
 ## Scope
 
 This is one consolidated Release 1 correction candidate covering R1-UAT-001 through
-R1-UAT-019 and R1-AMD-001 through R1-AMD-018 Revision 1. All findings remain open until CRM Test
+R1-UAT-019 and R1-AMD-001 through R1-AMD-018, including R1-AMD-007 Revision 2. All findings remain open until CRM Test
 deployment, successful retest and explicit user confirmation.
 
 ## Required pre-deployment controls
@@ -21,7 +21,8 @@ deployment, successful retest and explicit user confirmation.
    `012_release1_admin_uat_corrections.sql` and the additive
    `013_customer_proposal_address.sql`, `014_customer_kyc_summary.sql` and
    `015_inventory_business_reference.sql`, `016_ai_assistance_runs.sql` and
-   `017_operational_qualification_questionnaire.sql` there first.
+   `017_operational_qualification_questionnaire.sql` and
+   `018_team_queue_only_lead_intake.sql` there first.
 4. Verify broker, team, lead, listing, proposal, audit and migration row counts before
    and after the isolated migration. Run application startup twice and confirm each
    migration is recorded once in `schema_migrations`.

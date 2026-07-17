@@ -61,14 +61,11 @@ async function processEvent(event,b,identity,actor){
       original_acceptance_due_at,acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19,$19,$20,$21,$22) RETURNING *`,
       [leadId,contact.id,clean(b.title)||`${b.businessType} website enquiry`,b.source||'Website',b.businessType,'Unassessed',budget.min,budget.max,
-       Array.isArray(b.requirement.areas)?b.requirement.areas.join(', '):null,clean(b.requirement.notes),rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,event.eventId,
+       Array.isArray(b.requirement.areas)?b.requirement.areas.join(', '):null,clean(b.requirement.notes),rule?.teamId||null,null,'unassigned',receivedAt,event.eventId,
        clean(b.campaign),clean(b.page),clean(b.form),deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,actor.id],client);
     await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',lead.id],client);
-    if(rule){
-      const status=rule.agentId?'offered':'queued';
-      await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,$5,$6,$7)`,
-        [uuid(),lead.id,rule.teamId,rule.agentId,status,deadlines.acceptanceDueAt,actor.id],client);
-    }
+    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,NULL,'queued',$4,$5)`,
+      [uuid(),lead.id,rule?.teamId||null,deadlines.acceptanceDueAt,actor.id],client);
     const reqId=uuid();await execute(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,funding_method,timeline_code,notes,created_by)
       VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,[reqId,lead.id,b.businessType,b.requirement.purpose,Array.isArray(b.requirement.propertyTypes)?b.requirement.propertyTypes:[],Array.isArray(b.requirement.areas)?b.requirement.areas:[],budget.min,budget.max,b.requirement.fundingMethod||'unknown',b.requirement.timelineCode,clean(b.requirement.notes),actor.id],client);
     await execute(`INSERT INTO consent_evidence(id,contact_id,evidence_type,status,statement_version,source_event_id,captured_at,evidence_hash)

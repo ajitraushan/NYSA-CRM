@@ -54,7 +54,7 @@ r.post('/admin/sla-policies/:id/activate',async(req,res)=>{
 
 r.get('/admin/routing-rules',async(req,res)=>{
   if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
-  res.json({rules:await many(`SELECT r.*,t.name AS team_name,b.name AS agent_name FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id LEFT JOIN brokers b ON b.id=r.agent_id ORDER BY priority,name`)});
+  res.json({rules:await many(`SELECT r.*,t.name AS team_name FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id ORDER BY priority,name`)});
 });
 
 r.post('/admin/routing-rules',async(req,res)=>{
@@ -62,10 +62,9 @@ r.post('/admin/routing-rules',async(req,res)=>{
   const b=req.body||{};
   if(!text(b.name))return res.status(400).json({error:'name is required'});
   if(b.teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.teamId])))return res.status(400).json({error:'Active team not found'});
-  if(!['named_agent','team_queue'].includes(b.assignmentMethod||'team_queue'))return res.status(400).json({error:'Invalid assignmentMethod'});
-  if(b.assignmentMethod==='named_agent'&&!b.agentId)return res.status(400).json({error:'agentId is required for named-agent routing'});
+  if(b.agentId||b.assignmentMethod&&b.assignmentMethod!=='team_queue')return res.status(400).json({error:'Routing rules may select only a team queue; broker assignment occurs afterward'});
   const id=uuid(),row=await one(`INSERT INTO routing_rules(id,name,priority,source,business_type,team_id,agent_id,assignment_method,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,[id,text(b.name),Number(b.priority??100),text(b.source),text(b.businessType),b.teamId,b.agentId||null,b.assignmentMethod||'team_queue',req.broker.id]);
+    VALUES($1,$2,$3,$4,$5,$6,NULL,'team_queue',$7) RETURNING *`,[id,text(b.name),Number(b.priority??100),text(b.source),text(b.businessType),b.teamId,req.broker.id]);
   await audit('RoutingRule',id,'created',req.broker.id);res.status(201).json(row);
 });
 
@@ -93,8 +92,9 @@ async function assignQueuedLead(req,res,selfClaim=false){
     const eligible=await one("SELECT b.id FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)",[agentId,teamId],client);
     if(!eligible)return {code:400,error:'Agent is not an eligible active member of the selected team'};
     const managed=req.broker.managedTeamIds||[];
+    if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
     if(selfClaim&&req.broker.teamId!==teamId)return {code:403,error:'Agents can claim only from their own team queue'};
-    if(!selfClaim&&req.broker.role!=='admin'&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Assignment is outside your permitted team scope'};
+    if(!selfClaim&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Only the responsible team lead or Director can assign this lead'};
     const policy=await activePolicy(client),now=new Date(),due=policy?addBusinessMinutes(now,policy.acceptanceMinutes,calendar(policy)):new Date(now.getTime()+30*60000),firstDue=policy?addBusinessMinutes(now,policy.firstContactMinutes,calendar(policy)):new Date(now.getTime()+120*60000);
     const current=await one('SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
     if(current)await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE id=$1",[current.id],client);
@@ -120,6 +120,7 @@ r.post('/crm/imports/leads',async(req,res)=>{
   if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required for imports'});
   const b=req.body||{},externalId=text(b.externalId),externalSystem=text(b.externalSystem);
   if(!externalId||!externalSystem||!b.contactId||!text(b.title)||!text(b.businessType))return res.status(400).json({error:'externalSystem, externalId, contactId, title and businessType are required'});
+  if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'Imported leads begin Unassessed; use the approved qualification questions to calculate a result'});
   const stableId=`${externalSystem}:${externalId}`;
   const receivedAt=b.receivedAt?new Date(b.receivedAt):new Date();
   if(Number.isNaN(receivedAt.valueOf()))return res.status(400).json({error:'Invalid receivedAt'});
@@ -132,10 +133,10 @@ r.post('/crm/imports/leads',async(req,res)=>{
     const lead=await one(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,assigned_team_id,assigned_to,assignment_status,received_at,
       external_source_id,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,sla_policy_id,created_by)
       VALUES($1,$2,$3,'Current CRM',$4,$5,$6,$7,$8,$9,$10,$11,$11,$11,$12,$13,$14) RETURNING *`,
-      [id,b.contactId,text(b.title),b.businessType,b.temperature||'Warm',rule?.teamId||null,rule?.agentId||null,rule?.agentId?'assigned':'unassigned',receivedAt,stableId,due.acceptanceDueAt,due.firstContactDueAt,due.policy?.id||null,req.broker.id],client);
+      [id,b.contactId,text(b.title),b.businessType,'Unassessed',rule?.teamId||null,null,'unassigned',receivedAt,stableId,due.acceptanceDueAt,due.firstContactDueAt,due.policy?.id||null,req.broker.id],client);
     await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',lead.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,$5,$6,$7)`,
-      [uuid(),id,rule?.teamId||null,rule?.agentId||null,rule?.agentId?'offered':'queued',due.acceptanceDueAt,req.broker.id],client);
+      [uuid(),id,rule?.teamId||null,null,'queued',due.acceptanceDueAt,req.broker.id],client);
     await execute(`INSERT INTO lead_stage_history(id,lead_id,to_stage,changed_by) VALUES($1,$2,'New',$3)`,[uuid(),id,req.broker.id],client);
     await audit('Lead',id,'imported',req.broker.id,{externalSystem,externalId,routingRuleId:rule?.id||null},client);return lead;
   });res.status(201).json(row);

@@ -103,6 +103,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   assignment. Routing matches only source and broad business type, so it cannot express
   the agreed Dubai Rental, Dubai Off-plan and Dubai Secondary Sales destinations.
 - Required correction:
+  - Every manual, website and imported lead must enter with no broker assigned. Routing
+    may select only the applicable team queue; it must never silently select a named
+    agent. Remove broker/team assignment controls from initial lead capture and reject
+    direct API attempts to assign during creation.
   - Add a visible Pending Assignment queue for each manager containing unassigned,
     queued, rejected, timed-out and reassignment-due leads in managed teams.
   - Allow the manager to assign a queued lead to an eligible active member of the
@@ -121,6 +125,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   - Add a company-wide Unassigned/Pending Assignment queue for Directors.
   - Permit a Director to assign a lead to any eligible active internal agent and team,
     as a specific intervention exception to the Director's routine read-only access.
+  - Initial broker assignment may be performed only by the responsible team lead or a
+    Director. Administrator access alone does not grant operational assignment authority.
   - Route Dubai Rental leads to the Dubai Rental team, Dubai Off-plan leads to the
     Dubai Off-plan team, and Dubai Secondary Sale leads to the Dubai Secondary Sales
     team.
@@ -130,8 +136,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     and time waiting in the queue.
 - Retest condition: On CRM Test, create controlled Dubai Rental, Dubai Off-plan, Dubai
   Secondary Sale and unmatched leads. Each matching lead appears in the correct team
-  manager's Pending Assignment queue and can be assigned only to an eligible member of
-  that team. The unmatched lead remains in the company Unassigned queue. A Director can
+  manager's Pending Assignment queue with no broker owner and can be assigned only by
+  that team lead to an eligible member of the team. Confirm manual capture, website
+  intake, imports and routing rules cannot preassign a broker. The unmatched lead remains
+  in the company Unassigned queue. A Director can
   see all four leads and assign any of them to an eligible active agent, while managers
   cannot see or assign leads outside their managed teams. Let an assignment-acceptance
   SLA expire and separately let an accepted lead pass its first-contact SLA without a
@@ -777,18 +785,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Inventory ID; and the R1-UAT-008 and R1-UAT-013 retest conditions pass. Closure still
   requires the user's explicit confirmation.
 
-### R1-AMD-007 Revision 1: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
+### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
-- Amendment ID: R1-AMD-007 Revision 1
+- Amendment ID: R1-AMD-007 Revision 2
 - Related UAT finding: R1-UAT-005
 - Agreed requirement: Provide scoped manager and company-wide Director assignment
-  queues; allow audited assignment within the stated role scope; apply the three Dubai
-  team defaults; leave unmatched leads in the company unassigned queue; return
+  queues; require every intake channel to create a broker-unassigned lead; restrict
+  routing rules to team queues; allow initial assignment only by the responsible team
+  lead or Director; apply the three Dubai team defaults; leave unmatched leads in the
+  company unassigned queue; return
   unattended leads to their routed team queue after assignment-acceptance or
   first-contact SLA breach; and allow eligible agents in that team to self-claim on a
   first-successful-claim basis, with repeat recycling and complete SLA/assignment
   history.
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 1 is deployed to CRM Test. Revision 2 is implemented locally with a
+  database constraint and verified by automated intake, access, queue, migration and
+  browser-contract tests; CRM Test deployment, retest and explicit confirmation pending
 - Retest condition: The R1-UAT-005 CRM Test retest condition passes and the user
   explicitly confirms the result.
 

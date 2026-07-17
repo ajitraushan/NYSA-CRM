@@ -43,7 +43,7 @@ test('directors have assignment intervention while routine writes remain restric
   assert.equal(canWriteLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,{...teamLead,assignedTeamId:'t2'}),false);
-  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),true);
+  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),false);
 });
 
 test('SQL scopes are parameterized and deny accountants',()=>{

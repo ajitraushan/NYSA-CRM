@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-7),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql']);
+  assert.deepEqual(migrations.slice(-8),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
@@ -18,12 +18,22 @@ test('Release 1 migrations remain sequential and include the administration corr
 });
 
 test('assignment queue supports scoped visibility atomic claim and repeat-cycle deadlines',()=>{
-  const source=read('src/routes/lead-operations.js');
+  const source=read('src/routes/lead-operations.js'),crm=read('src/routes/crm.js'),website=read('src/routes/website-intake.js'),ui=read('public/app.js'),migration=read('src/migrations/018_team_queue_only_lead_intake.sql');
   assert.match(source,/\/crm\/assignment-queue/);
   assert.match(source,/FOR UPDATE/);
   assert.match(source,/self_claimed/);
   assert.match(source,/queue_cycle_no=queue_cycle_no\+1/);
   assert.match(source,/first_contact_due_at=\$4,accepted_at=NULL,first_contact_at=NULL/);
+  assert.match(source,/self-claim is available only after SLA recycling/);
+  assert.match(crm,/New leads must enter an unassigned team queue/);
+  assert.doesNotMatch(crm,/rule\?\.agentId/);
+  assert.doesNotMatch(website,/rule\?\.agentId/);
+  assert.doesNotMatch(ui,/Assign broker/);
+  assert.doesNotMatch(ui,/Named agent \(optional\)/);
+  assert.doesNotMatch(crm,/\/crm\/leads\/:id\/claim/);
+  assert.match(ui,/A team lead or Director assigns the lead from the Pending Assignment Queue/);
+  assert.match(crm,/Broker must be an eligible active member of the selected team/);
+  assert.match(migration,/routing_rules_team_queue_only_ck/);
   for(const team of ['Dubai Rental Team','Dubai Off-plan Team','Dubai Secondary Sales Team'])assert.match(source,new RegExp(team));
 });
 

@@ -32,7 +32,7 @@ export function canAssignLead(broker, lead) {
   if (broker?.jobRole==='director'&&hasInternalCrmIdentity(broker))return true;
   if (!canWriteLead(broker, lead)) return false;
   const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
-  return broker.role === 'admin' || (broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId));
+  return broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId);
 }
 
 function bind(params, value) {

@@ -360,23 +360,16 @@ r.post('/crm/leads', async (req, res) => {
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
   if(!(await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params)))
     return res.status(400).json({error:'Invalid or inaccessible contactId'});
-  if((b.assignedTo||b.assignedTeamId)&&!isManager(req.broker)) return res.status(403).json({error:'Only managers or admins can assign a new lead'});
-  const assignee=b.assignedTo?await staffMember(b.assignedTo):null;
-  if(b.assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
-  if(b.assignedTeamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.assignedTeamId]))) return res.status(400).json({error:'Invalid assignedTeamId'});
-  const requestedTeam=b.assignedTeamId||assignee?.teamId||null;
-  if(req.broker.role!=='admin'&&requestedTeam&&!(req.broker.managedTeamIds||[]).includes(requestedTeam))return res.status(403).json({error:'Managers can assign only within their managed teams'});
+  if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
-  if(b.nextFollowUpAt===null&&!['Won','Lost'].includes(b.stage||lead.stage)&&!(await one("SELECT id FROM tasks WHERE lead_id=$1 AND status IN ('open','in_progress') LIMIT 1",[lead.id])))
-    return res.status(409).json({error:'Active leads require a next action or open task'});
   const budget = validateBudget(b.budgetMin,b.budgetMax);
   if (budget.error) return res.status(400).json({error:budget.error});
   const budgetMin=budget.min,budgetMax=budget.max;
   const id=uuid();
   const lead=await transaction(async client=>{
-    const rule=(!b.assignedTo&&!b.assignedTeamId)?await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
-      AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client):null;
-    const agentId=b.assignedTo||rule?.agentId||null,teamId=b.assignedTeamId||assignee?.teamId||rule?.teamId||null;
+    const rule=await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
+      AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client);
+    const agentId=null,teamId=rule?.teamId||null;
     const receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
     const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
       preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
@@ -384,10 +377,10 @@ r.post('/crm/leads', async (req, res) => {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
       [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budgetMin,budgetMax,
        clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
-       b.nextFollowUpAt||null,req.broker.id,agentId?'assigned':'unassigned',b.listingId||null,receivedAt],client);
-    await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=CASE WHEN assigned_to IS NULL THEN received_at ELSE NULL END WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Manual assignment or company unassigned fallback',row.id],client);
+       b.nextFollowUpAt||null,req.broker.id,'unassigned',b.listingId||null,receivedAt],client);
+    await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=received_at WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',row.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
-      VALUES($1,$2,1,$3,$4,$5,$6,$7)`,[uuid(),id,teamId,agentId,agentId?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
+      VALUES($1,$2,1,$3,$4,'queued',$5,$6)`,[uuid(),id,teamId,agentId,deadlines.acceptanceDueAt,req.broker.id],client);
     await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',req.broker.id],client);
     await audit('Lead',id,'created',req.broker.id,{title:row.title,source:row.source,routingRuleId:rule?.id||null},client);return row;
   });
@@ -418,7 +411,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
     if (transitionError) return res.status(409).json({error:transitionError});
   }
   let normalizedBudget=null;if(b.budgetMin!==undefined||b.budgetMax!==undefined){normalizedBudget=validateBudget(b.budgetMin===undefined?lead.budgetMin:b.budgetMin,b.budgetMax===undefined?lead.budgetMax:b.budgetMax);if(normalizedBudget.error)return res.status(400).json({error:normalizedBudget.error});}
-  if((b.assignedTo!==undefined||b.assignedTeamId!==undefined)&&!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can reassign this lead'});
+  if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'Use the governed assignment action; lead edits cannot change assignment'});
   if(b.assignedTo&&!(await staffMember(b.assignedTo))) return res.status(400).json({error:'Invalid assignedTo'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
   const map={title:'title',source:'source',businessType:'business_type',stage:'stage',temperature:'temperature',budgetMin:'budget_min',
@@ -474,42 +467,17 @@ r.get('/crm/reassignment-queue', async (req,res)=>{
   res.json({count:leads.length,leads});
 });
 
-r.post('/crm/leads/:id/claim', async (req,res)=>{
-  if(!isManager(req.broker)) return res.status(403).json({error:'Only a scoped manager or admin can claim queued leads'});
-  if(!req.body?.nextActionDue||Number.isNaN(new Date(req.body.nextActionDue).valueOf())) return res.status(400).json({error:'Valid nextActionDue is required when claiming a lead'});
-  await refreshAssignmentStatuses();
-  const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id]);
-  if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(req.broker.role!=='admin'&&lead.assignedTeamId&&!(req.broker.managedTeamIds||[]).includes(lead.assignedTeamId)) return res.status(403).json({error:'Lead belongs to another team'});
-  if(!['unassigned','reassignment_due'].includes(lead.assignmentStatus)) return res.status(409).json({error:'Lead is not available for reassignment'});
-  const updated=await transaction(async client=>{
-    await execute("UPDATE lead_assignments SET status=CASE WHEN status='queued' THEN 'reassigned' ELSE status END,superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
-    const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
-    const row=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=COALESCE($2,assigned_team_id),
-      assignment_status='assigned',accepted_at=NOW(),reassigned_at=NOW(),reassigned_by=$1,updated_at=NOW()
-      WHERE id=$3 AND assignment_status IN ('unassigned','reassignment_due') RETURNING *`,
-      [req.broker.id,req.broker.teamId||null,lead.id],client);
-    if(!row) throw new Error('Lead was claimed by someone else');
-    await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,offered_at,responded_at,acceptance_due_at,assigned_by)
-      VALUES($1,$2,$3,$4,$5,'accepted',NOW(),NOW(),$6,$5)`,[uuid(),lead.id,next.n,row.assignedTeamId,req.broker.id,row.assignmentDueAt],client);
-    await execute(`INSERT INTO tasks(id,lead_id,contact_id,subject,assignee_id,priority,due_at,created_by)
-      VALUES($1,$2,$3,$4,$5,'high',$6,$5)`,[uuid(),lead.id,lead.contactId,clean(req.body.nextActionSubject)||'Contact newly claimed lead',req.broker.id,req.body.nextActionDue],client);
-    await execute('UPDATE leads SET next_follow_up_at=$1 WHERE id=$2',[req.body.nextActionDue,lead.id],client);
-    await audit('Lead',lead.id,'claimed',req.broker.id,{previousAssigneeId:lead.assignedTo},client);return row;
-  });
-  res.json(updated);
-});
-
 r.post('/crm/leads/:id/assign', async (req,res)=>{
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the scoped manager or an admin can assign this lead'});
+  if(!canAssignLead(req.broker,lead)) return res.status(403).json({error:'Only the responsible team lead or Director can assign this lead'});
   const {assignedTo,assignedTeamId}=req.body||{};
   const assignee=assignedTo?await staffMember(assignedTo):null;
   if(assignedTo&&!assignee) return res.status(400).json({error:'Invalid assignedTo'});
   const teamId=assignedTeamId||assignee?.teamId||null;
   if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId]))) return res.status(400).json({error:'Invalid assignedTeamId'});
-  if(req.broker.role!=='admin'&&teamId&&!(req.broker.managedTeamIds||[]).includes(teamId))return res.status(403).json({error:'Managers can assign only within their managed teams'});
+  if(assignedTo&&!(await one("SELECT b.id FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)",[assignedTo,teamId])))return res.status(400).json({error:'Broker must be an eligible active member of the selected team'});
+  if(req.broker.jobRole==='manager'&&teamId&&!(req.broker.managedTeamIds||[]).includes(teamId))return res.status(403).json({error:'Team leads can assign only within their managed teams'});
   const updated=await transaction(async client=>{
     const deadlines=await calculateDeadlines(new Date(),client);
     await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
