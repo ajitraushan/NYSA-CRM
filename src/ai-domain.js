@@ -21,3 +21,21 @@ export function buildCompletenessContext(requirement,listings=[]){
   const propertyFields=['inventoryReference','project','developer','area','propertyType','bedrooms','sizeSqft','price','currency','status','availabilityConfirmedAt'];
   return{requiredForReliableMatching:{requirement:['businessLine','purpose','budgetMax','fundingMethod','timelineCode'],property:['inventoryReference','project','area','propertyType','price','status','availabilityConfirmedAt']},requiredForBuyerProposal:{requirement:['businessLine','purpose','areas','propertyTypes','budgetMin','budgetMax','fundingMethod','timelineCode'],property:['inventoryReference','project','developer','area','propertyType','bedrooms','sizeSqft','price','currency','status','availabilityConfirmedAt']},requirement:requirement?Object.fromEntries(requirementFields.map(k=>[k,requirement[k]??null])):null,properties:listings.map(x=>Object.fromEntries(propertyFields.map(k=>[k,x[k]??null]))),deterministicMissing:{requirement:requirementFields.filter(k=>!has(requirement?.[k])),properties:listings.map(x=>({inventoryReference:x.inventoryReference||null,fields:propertyFields.filter(k=>!has(x[k]))}))}};
 }
+
+export function rankInventoryMatches(requirement,listings=[]){
+  if(!requirement)return [];
+  const normalizedAreas=(requirement.areas||[]).map(norm),normalizedTypes=(requirement.propertyTypes||[]).map(norm);
+  const minBudget=requirement.budgetMin===null||requirement.budgetMin===undefined?null:Number(requirement.budgetMin),maxBudget=requirement.budgetMax===null||requirement.budgetMax===undefined?null:Number(requirement.budgetMax);
+  const minBedrooms=requirement.bedroomsMin===null||requirement.bedroomsMin===undefined?null:Number(requirement.bedroomsMin),maxBedrooms=requirement.bedroomsMax===null||requirement.bedroomsMax===undefined?null:Number(requirement.bedroomsMax);
+  return listings.filter(x=>x.status==='Available').map(listing=>{
+    const criteria=[];
+    const add=(code,label,weight,pass,expected,actual)=>criteria.push({code,label,weight,pass,expected,actual});
+    if(normalizedAreas.length)add('area','Preferred area',25,normalizedAreas.includes(norm(listing.area)),requirement.areas.join(', '),listing.area);
+    if(normalizedTypes.length)add('property_type','Property type',25,normalizedTypes.includes(norm(listing.propertyType)),requirement.propertyTypes.join(', '),listing.propertyType);
+    if(minBudget!==null||maxBudget!==null){const price=Number(listing.price),pass=(minBudget===null||price>=minBudget)&&(maxBudget===null||price<=maxBudget);add('budget','Budget range',25,pass,[minBudget,maxBudget].filter(x=>x!==null).join(' – '),price);}
+    if(minBedrooms!==null||maxBedrooms!==null){const bedrooms=bedroomNumber(listing.bedrooms),pass=Number.isFinite(bedrooms)&&(minBedrooms===null||bedrooms>=minBedrooms)&&(maxBedrooms===null||bedrooms<=maxBedrooms);add('bedrooms','Bedroom range',15,pass,[minBedrooms,maxBedrooms].filter(x=>x!==null).join(' – '),listing.bedrooms);}
+    add('availability_confirmation','Availability confirmation',10,Boolean(listing.availabilityConfirmedAt),'Recorded current confirmation',listing.availabilityConfirmedAt||'Not recorded');
+    const total=criteria.reduce((sum,x)=>sum+x.weight,0),earned=criteria.filter(x=>x.pass).reduce((sum,x)=>sum+x.weight,0),score=total?Math.round(earned/total*100):0;
+    return{listing,score,fit:score>=80?'Strong fit':score>=60?'Partial fit':'Outside key requirements',criteria,evidence:buildMatchEvidence(requirement,listing)};
+  }).sort((a,b)=>b.score-a.score||Number(Boolean(b.listing.availabilityConfirmedAt))-Number(Boolean(a.listing.availabilityConfirmedAt))||Number(a.listing.price)-Number(b.listing.price));
+}

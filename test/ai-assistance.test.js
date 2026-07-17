@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AI_SCHEMAS, requestStructuredOutput, redactSensitiveText, AiServiceError } from '../src/ai-service.js';
-import { buildMatchEvidence, buildCompletenessContext } from '../src/ai-domain.js';
+import { buildMatchEvidence, buildCompletenessContext,rankInventoryMatches } from '../src/ai-domain.js';
 
 const root=join(fileURLToPath(new URL('.',import.meta.url)),'..');
 
@@ -28,6 +28,16 @@ test('AI input redaction removes direct contact and identity identifiers without
 test('match explanation evidence is deterministic and exposes failures to the model',()=>{
   const evidence=buildMatchEvidence({businessLine:'Sale',purpose:'own_use',areas:['Dubai Marina'],propertyTypes:['Apartment'],budgetMin:2000000,budgetMax:2400000,fundingMethod:'mortgage',bedroomsMin:2,bedroomsMax:2,timelineCode:'0_3_months'},{inventoryReference:'NYSA-INV-000001',project:'Test',developer:'Dev',area:'Dubai Marina',propertyType:'Apartment',bedrooms:'2',sizeSqft:1200,price:2500000,currency:'AED',status:'Available',availabilityConfirmedAt:null});
   assert.ok(evidence.matched.some(x=>x.criterion==='Preferred area'));assert.ok(evidence.failed.some(x=>x.criterion==='Maximum budget'));assert.ok(evidence.failed.some(x=>x.criterion==='Availability confirmation'));
+});
+
+test('proposal shortlist ranking is deterministic transparent and excludes unavailable inventory',()=>{
+  const requirement={areas:['Dubai Marina'],propertyTypes:['Apartment'],budgetMin:2000000,budgetMax:2500000,bedroomsMin:2,bedroomsMax:2};
+  const ranked=rankInventoryMatches(requirement,[
+    {id:'best',status:'Available',area:'Dubai Marina',propertyType:'Apartment',price:2300000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'},
+    {id:'partial',status:'Available',area:'Downtown',propertyType:'Apartment',price:2400000,bedrooms:'2',availabilityConfirmedAt:null},
+    {id:'hidden',status:'Closed',area:'Dubai Marina',propertyType:'Apartment',price:2200000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'}
+  ]);
+  assert.deepEqual(ranked.map(x=>x.listing.id),['best','partial']);assert.equal(ranked[0].score,100);assert.equal(ranked[0].fit,'Strong fit');assert.ok(ranked[1].criteria.some(x=>x.code==='area'&&!x.pass));
 });
 
 test('missing-information context identifies authoritative source gaps',()=>{

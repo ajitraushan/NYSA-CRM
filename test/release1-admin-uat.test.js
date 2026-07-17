@@ -185,6 +185,33 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(routes,/Only approved media from selected properties/);
 });
 
+test('proposal builder guides shortlist media narrative and governed assumptions',()=>{
+  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js'),domain=read('src/ai-domain.js'),styles=read('public/index.html');
+  assert.match(routes,/proposal-builder-context/);
+  assert.match(routes,/rankInventoryMatches\(requirement,listings\)/);
+  assert.match(routes,/approval_status='approved'/);
+  assert.match(routes,/property-media\/:mediaId\/view/);
+  assert.match(routes,/Activate a \$\{b\.templateType\} proposal template before starting this proposal/);
+  assert.match(domain,/export function rankInventoryMatches/);
+  assert.match(domain,/Preferred area',25/);
+  assert.match(domain,/Property type',25/);
+  assert.match(domain,/Budget range',25/);
+  assert.match(domain,/Bedroom range',15/);
+  assert.match(domain,/Availability confirmation',10/);
+  assert.match(app,/Preparation required/);
+  assert.match(app,/Use top suggested matches/);
+  assert.match(app,/The score is a transparent comparison/);
+  assert.match(app,/Only approved media belonging to a selected property can be included/);
+  assert.match(app,/Upload it from Inventory/);
+  assert.match(app,/Draft highlights and suitability/);
+  assert.match(app,/It cannot select inventory, change the score or save the proposal/);
+  assert.match(app,/Customer-facing assumptions/);
+  assert.match(app,/it is not another calculation input/);
+  assert.match(app,/Generate immutable draft PDF/);
+  assert.match(styles,/\.proposal-builder-modal\{max-width:1100px/);
+  assert.match(styles,/\.proposal-media-choices/);
+});
+
 test('organization profile copy action cannot silently clear an unsaved first profile',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Copy active profile into form/);

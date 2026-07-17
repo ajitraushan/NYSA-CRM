@@ -113,6 +113,14 @@
   immutable register and separate consent-evidence action, and lead tasks are presented as an
   owned action plan. CRM Test deployment and explicit workflow/security confirmation remain
   pending; production remains excluded.
+- R1-AMD-006 Revision 13 and R1-AMD-014 Revision 4 are implemented in the current
+  local commit. Proposal builder now reports missing prerequisites, creates a
+  preparation shell only from an active template, presents a transparent governed
+  shortlist, groups approved media under its inventory property, drafts editable AI
+  highlights/suitability only after user selection, explains saved-scenario assumptions
+  and preserves separate immutable generation. All 93 automated tests pass. The
+  cumulative CRM Test package and script are prepared; deployment, authenticated retest
+  and explicit user confirmation remain pending, and no related finding is closed.
 
 ## Release 1 Deployed Implementation
 

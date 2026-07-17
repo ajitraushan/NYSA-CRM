@@ -225,7 +225,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Revision 12 implemented locally and verified by automated tests; CRM Test
+- Status: Revision 13 implemented locally and verified by automated tests; CRM Test
   deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
@@ -568,10 +568,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Leads, structured requirements, inventory matching and proposal preparation
-- Status: Revision 2 review-first controls are deployed on CRM Test. Live invocation
-  exposed an audit-constraint defect after the provider call; R1-AMD-014 Revision 3 is
-  implemented locally. CRM Test deployment, functional retest and explicit user
-  confirmation remain pending
+- Status: Revision 2 review-first controls are deployed on CRM Test. The audit fix is
+  deployed and requirement drafting passed. R1-AMD-014 Revision 4 proposal-builder
+  integration is implemented locally; CRM Test deployment, functional retest and
+  explicit user confirmation remain pending
 - Priority: High value-add
 - Related acceptance criteria: 80, 81, 126, 129, 135, 191, 192 and 193
 - Evidence: Requirement notes, deterministic inventory linking and proposal narratives
@@ -990,6 +990,33 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Inventory ID; and the R1-UAT-008 and R1-UAT-013 retest conditions pass. Closure still
   requires the user's explicit confirmation.
 
+### R1-AMD-006 Revision 13: Guided proposal preparation, shortlist and approved media
+
+- Amendment ID: R1-AMD-006 Revision 13
+- Related UAT findings: R1-UAT-008 and R1-UAT-015
+- Agreed requirement: Replace the unexplained empty proposal controls with one guided
+  preparation workflow. State which prerequisite is missing when no active proposal
+  template, company profile, structured requirement or available inventory exists.
+  Let the user start a proposal only from an active template. Suggest up to the
+  maintained shortlist maximum using transparent system criteria for preferred area,
+  property type, budget, bedroom range and recorded availability confirmation; display
+  each criterion and keep the user's selection deliberate. Group approved media under
+  its inventory property, show authenticated previews, explain that upload and approval
+  happen in Inventory, and enforce the template's media-per-property limit. Present
+  financial assumptions as an editable customer-facing explanation of the selected
+  immutable scenario and its governed fee-rule version, or explicitly say that no
+  financial calculation is included. Generate only after the user reviews properties,
+  media, narrative, assumptions and an approved disclaimer.
+- Status: Implemented locally and verified by automated domain and browser-contract
+  tests; CRM Test deployment, authenticated retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, open Proposal builder for a prepared lead and verify
+  that prerequisites are clear; start a proposal from an active template; review the
+  system-suggested matches and their visible criteria; select no more than the template
+  maximum; select only approved media under its matching inventory property and no more
+  than the maintained per-property limit; review the financial-scenario explanation or
+  the no-calculation statement; generate an immutable draft; and explicitly confirm the
+  result. Also verify an unprepared lead is blocked with the precise record to maintain.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2
@@ -1170,6 +1197,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   requirement suggestion returns reviewable advisory output; its run is `completed` with
   a provider response ID; an `AiAssistanceRun` completion audit exists without raw input
   or output; and the user explicitly confirms the result.
+
+### R1-AMD-014 Revision 4: Review-first proposal highlights and suitability drafting
+
+- Amendment ID: R1-AMD-014 Revision 4
+- Related UAT finding: R1-UAT-015
+- Agreed requirement: In Proposal builder, let the user first review and select a
+  deterministic system shortlist, then use the existing governed match-explanation
+  service to draft editable highlights, suitability, value rationale and material
+  trade-offs for those selected properties. AI must use only the recorded requirement
+  and inventory evidence; it must not rank or select properties, alter the transparent
+  match score, choose media, save proposal content or generate a proposal. Preserve the
+  separate missing-information check and require a distinct user Generate action after
+  all AI wording has been reviewed or amended.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment,
+  provider-backed retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, select a reviewed shortlist, generate highlights and
+  suitability, confirm the draft cites the selected Inventory IDs and contains no
+  unsupported facts, edit the wording, run the missing-information check, and confirm
+  no proposal record or version changes until the user deliberately generates the
+  immutable draft. Closure requires the user's explicit confirmation.
 
 ### R1-AMD-015 Revision 1: Model-driven operational lead qualification
 
