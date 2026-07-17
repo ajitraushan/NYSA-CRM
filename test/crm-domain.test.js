@@ -84,6 +84,8 @@ test('new-customer lead capture is atomic and confirms only a committed lead',()
   assert.match(crm,/transaction\(async client=>[\s\S]*created_with_lead[\s\S]*insertCapturedLead/);
   assert.match(app,/parseBusinessAmountInput\(f\.budgetMin\)/);
   assert.match(app,/both M and m are accepted/);
+  assert.match(app,/type="submit" class="btn btn-primary">Create lead/);
+  assert.match(app,/if\(!submit\)return toast\('Lead form is unavailable/);
   assert.match(app,/Lead created successfully[\s\S]*assignment queue/);
   assert.match(app,/Lead not created:/);
 });

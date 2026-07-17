@@ -76,6 +76,11 @@
   always-visible alphabetical selector; search remains an optional ranking aid and does
   not replace or hide the dropdown. This revision supersedes hotfix package `377f77e`
   before deployment.
+- CRM Test retest of hotfix `0da2d89` exposed a browser-only submit regression: Create lead
+  was implicitly a submit button, while the new save guard searched for an explicit
+  `type="submit"` and stopped before calling the API. R1-AMD-020 Revision 2 explicitly
+  identifies the control and adds a visible fallback; a superseding CRM Test hotfix is
+  required.
 
 ## Release 1 Deployed Implementation
 

@@ -325,7 +325,7 @@ async function openNewLeadForm() {
       <div><label>Next follow-up</label><input name="nextFollowUpAt" type="datetime-local"></div>
       <div class="span2"><label>Property that prompted this enquiry (optional)</label><select name="listingId"><option value="">No specific property linked</option>${listings.map(l=>`<option value="${esc(l.id)}">${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select><small>Select this only when the customer enquired about a particular property. It does not restrict later inventory matching.</small></div>
       <div class="span3"><label>Property requirements / first conversation</label><textarea name="propertyRequirements" rows="3"></textarea></div>
-    </div><div class="modal-actions"><button type="button" class="btn" id="lead-cancel">Cancel</button><button class="btn btn-primary">Create lead</button></div></form></div>`);
+    </div><div class="modal-actions"><button type="button" class="btn" id="lead-cancel">Cancel</button><button type="submit" class="btn btn-primary">Create lead</button></div></form></div>`);
   installBusinessAmountInputs(o);
   const contactSelect = $('[name="contactId"]',o);
   const contactSearch = $('#existing-customer-search',o);
@@ -339,7 +339,9 @@ async function openNewLeadForm() {
     e.preventDefault(); const f=Object.fromEntries(new FormData(e.target));
     const budgetMin=parseBusinessAmountInput(f.budgetMin),budgetMax=parseBusinessAmountInput(f.budgetMax);
     if((f.budgetMin&& !Number.isFinite(budgetMin))||(f.budgetMax&& !Number.isFinite(budgetMax))||(budgetMin!==null&&budgetMax!==null&&budgetMax<budgetMin))return toast('Enter a valid budget range; both M and m are accepted.');
-    const submit=$('button[type="submit"]',e.target);submit.disabled=true;submit.textContent='Creating lead...';
+    const submit=$('button[type="submit"]',e.target);
+    if(!submit)return toast('Lead form is unavailable. Refresh CRM Test and try again.',6000);
+    submit.disabled=true;submit.textContent='Creating lead...';
     try {
       let contactId=f.contactId;
       const leadBody={title:f.title,source:f.source,businessType:f.businessType,stage:f.stage,

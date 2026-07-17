@@ -690,7 +690,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture, duplicate review and save confirmation
-- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+- Status: Revision 1 deployed to CRM Test; retest failed because the browser save guard
+  could not locate the implicitly typed submit button and stopped before making the API
+  request. Revision 2 implemented locally; deployment, retest and explicit user
   confirmation pending
 - Priority: Must
 - Related acceptance criteria: 27, 30, 47 and 206
@@ -1065,10 +1067,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and audit evidence in one transaction; roll everything back on failure; explain
   email/phone duplicate matching; prevent repeat submission; and distinguish committed
   success from a failed creation attempt clearly.
-- Status: Implemented locally with automated transaction and browser confirmation
-  contracts; CRM Test deployment, retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; save-button retest failed and Revision 2 is required;
+  explicit user confirmation pending
 - Retest condition: The R1-UAT-021 CRM Test retest condition passes and the user explicitly
   confirms the result.
+
+### R1-AMD-020 Revision 2: Reliable lead-submit control and visible failure fallback
+
+- Amendment ID: R1-AMD-020 Revision 2
+- Related UAT finding: R1-UAT-021
+- Agreed requirement: Mark Create lead explicitly as the form submit button, bind the
+  repeat-submission guard to that control safely, and display a visible refresh/retry
+  message if the expected control is unavailable rather than failing silently before the
+  API request.
+- Status: Implemented locally with syntax and browser-contract tests; CRM Test deployment,
+  retest and explicit user confirmation pending
+- Retest condition: On CRM Test, submit a valid new lead once and verify the button changes
+  to Creating lead, exactly one request is made, the lead commits, the success message is
+  displayed and the assignment queue contains the lead. Confirm a failed request restores
+  the button and displays Lead not created with the server message.
 
 ## Review discipline
 
