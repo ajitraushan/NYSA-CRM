@@ -690,10 +690,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: New lead capture, duplicate review and save confirmation
-- Status: Revision 1 deployed to CRM Test; retest failed because the browser save guard
-  could not locate the implicitly typed submit button and stopped before making the API
-  request. Revision 2 implemented locally; deployment, retest and explicit user
-  confirmation pending
+- Status: Revision 2 deployed to CRM Test; valid new-customer lead creation succeeded on
+  user retest. Failure rollback, duplicate handling, exact queue count and explicit full
+  retest confirmation remain pending
 - Priority: Must
 - Related acceptance criteria: 27, 30, 47 and 206
 - Evidence: The first save returned Internal Server Error without a committed-success
@@ -741,6 +740,30 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Confirm related records are visible within role scope, proposals use only the masked ID
   reference, unauthorized users cannot view private KYC documents or verify KYC, expiry is
   flagged, and every material action is audited.
+
+### R1-UAT-023: Manual lead creation permits incomplete customer and requirement data
+
+- Date raised: 2026-07-17
+- Area: New lead capture and existing-customer completeness
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Must
+- Related acceptance criteria: 27, 31, 41 and 80
+- Evidence: New lead capture visibly requires only the customer name and opportunity title;
+  email, phone, preferred channel, both budget limits and preferred area can be omitted.
+  This produces customers that cannot be contacted and leads that cannot support reliable
+  qualification, matching or proposal preparation.
+- Required correction: For new-customer manual lead capture, require customer name, valid
+  email, valid international phone and preferred channel. For every manually created lead,
+  require Budget from, Budget to and at least one normalized preferred area. Enforce the
+  same rules in the API. When an existing customer is selected, block creation if its email,
+  phone or preferred channel is missing and direct the user to complete the authoritative
+  Customer record rather than entering a lead-specific copy.
+- Retest condition: On CRM Test, verify browser and direct API reject each missing mandatory
+  field separately with a business-readable message; verify invalid email/phone, invalid or
+  reversed budgets and blank/comma-only areas are rejected; complete an existing customer
+  through the Customer record and then create one valid lead with both budget limits and
+  multiple normalized areas.
 
 ## Agreed amendments
 
@@ -1109,8 +1132,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   repeat-submission guard to that control safely, and display a visible refresh/retry
   message if the expected control is unavailable rather than failing silently before the
   API request.
-- Status: Implemented locally with syntax and browser-contract tests; CRM Test deployment,
-  retest and explicit user confirmation pending
+- Status: Deployed to CRM Test; valid new-customer lead creation succeeded on user retest.
+  Remaining R1-UAT-021 rollback/duplicate/count evidence and explicit confirmation pending
 - Retest condition: On CRM Test, submit a valid new lead once and verify the button changes
   to Creating lead, exactly one request is made, the lead commits, the success message is
   displayed and the assignment queue contains the lead. Confirm a failed request restores
@@ -1147,6 +1170,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   lead, locate a customer and maintain verification/KYC there. Confirm that the customer
   displays all related leads, each lead links back through Open customer record, lead detail
   does not independently edit KYC, and two leads resolve the same current customer data.
+
+### R1-AMD-022 Revision 1: Mandatory customer contact and lead requirement essentials
+
+- Amendment ID: R1-AMD-022 Revision 1
+- Related UAT finding: R1-UAT-023
+- Agreed requirement: Require name, email, international phone and preferred channel when
+  creating a new customer from manual lead capture. Require Budget from, Budget to and at
+  least one preferred area for every manually created lead. Apply equivalent API validation;
+  for an incomplete existing customer, direct correction to the authoritative Customer
+  record rather than accepting lead-specific duplicate data.
+- Status: Implemented locally with browser, domain and route-contract verification; CRM
+  Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-023 CRM Test retest condition passes and the user explicitly
+  confirms the result.
 
 ## Review discipline
 

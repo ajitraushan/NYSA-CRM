@@ -88,6 +88,10 @@ test('new-customer lead capture is atomic and confirms only a committed lead',()
   assert.match(app,/if\(!submit\)return toast\('Lead form is unavailable/);
   assert.match(app,/Lead created successfully[\s\S]*assignment queue/);
   assert.match(app,/Lead not created:/);
+  assert.match(app,/New customers require name, email, phone and preferred channel/);
+  assert.match(crm,/Budget from and Budget to are required/);
+  assert.match(crm,/At least one preferred area is required/);
+  assert.match(crm,/Complete the existing customer email, phone and preferred channel/);
 });
 
 test('lead lifecycle rejects skipped and terminal transitions',()=>{

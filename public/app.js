@@ -305,11 +305,11 @@ async function openNewLeadForm() {
     <form id="lead-form"><div class="form-grid">
       <div class="span2"><label for="existing-customer-search">Search existing customers (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">The customer dropdown remains available and alphabetically sorted.</small></div>
       <div><label for="existing-customer-select">Select existing customer (optional)</label><select id="existing-customer-select" name="contactId"><option value="">Create a new customer below</option></select><small>Select a customer from the sorted dropdown, or leave this blank to create a new customer.</small></div>
-      <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName"></div>
+      <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName" data-new-customer-required></div>
       <div class="new-contact"><label>Customer type</label><select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div>
-      <div class="new-contact"><label>Email</label><input name="email" type="email"></div>
-      <div class="new-contact"><label>Phone</label><input name="phone" placeholder="+971..."></div>
-      <div class="new-contact"><label>Preferred channel</label><select name="preferredChannel"><option>WhatsApp</option><option>Phone</option><option>Email</option><option>SMS</option></select></div>
+      <div class="new-contact"><label>Email *</label><input name="email" type="email" data-new-customer-required></div>
+      <div class="new-contact"><label>Phone *</label><input name="phone" placeholder="+971..." data-new-customer-required></div>
+      <div class="new-contact"><label>Preferred channel *</label><select name="preferredChannel" data-new-customer-required><option>WhatsApp</option><option>Phone</option><option>Email</option><option>SMS</option></select></div>
       <div class="new-contact span2"><label>Customer postal address</label><input name="postalAddress" placeholder="Building, street, community, city, country"></div>
       <div class="new-contact"><label>Company</label><select name="companyId"><option value="">Individual</option>${companies.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>
       <div class="new-contact span2"><label>Public professional profile (optional)</label><input name="publicProfileUrl" type="url" placeholder="https://..."></div>
@@ -318,9 +318,9 @@ async function openNewLeadForm() {
       <div><label>Source *</label><select name="source">${opts(LEAD_SOURCES)}</select></div>
       <div><label>Business type *</label><select name="businessType">${opts(BUSINESS_TYPES)}</select></div>
       <div><label>Stage</label><select name="stage">${opts(LEAD_STAGES,'New')}</select></div>
-      <div><label>Budget from (AED)</label><input name="budgetMin" type="text" inputmode="decimal" data-business-amount placeholder="e.g. 2 M"></div>
-      <div><label>Budget to (AED)</label><input name="budgetMax" type="text" inputmode="decimal" data-business-amount placeholder="e.g. 2.5 M"></div>
-      <div><label>Preferred areas (comma-separated)</label><input name="preferredAreas" placeholder="e.g. Dubai Marina, Palm Jumeirah"><small>Each area is treated separately and will prefill Structured requirements.</small></div>
+      <div><label>Budget from (AED) *</label><input name="budgetMin" type="text" inputmode="decimal" data-business-amount required placeholder="e.g. 2 M"></div>
+      <div><label>Budget to (AED) *</label><input name="budgetMax" type="text" inputmode="decimal" data-business-amount required placeholder="e.g. 2.5 M"></div>
+      <div><label>Preferred areas (comma-separated) *</label><input name="preferredAreas" required placeholder="e.g. Dubai Marina, Palm Jumeirah"><small>Enter at least one area. Each area is treated separately and will prefill Structured requirements.</small></div>
       <div class="span2"><label>Assignment</label><input value="Unassigned — routed to the appropriate team queue after creation" readonly><small>A team lead or Director assigns the lead from the Pending Assignment Queue.</small></div>
       <div><label>Next follow-up</label><input name="nextFollowUpAt" type="datetime-local"></div>
       <div class="span2"><label>Property that prompted this enquiry (optional)</label><select name="listingId"><option value="">No specific property linked</option>${listings.map(l=>`<option value="${esc(l.id)}">${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select><small>Select this only when the customer enquired about a particular property. It does not restrict later inventory matching.</small></div>
@@ -332,7 +332,7 @@ async function openNewLeadForm() {
   const contactSearchStatus = $('#existing-customer-search-status',o);
   const renderCustomerChoices=()=>{const query=contactSearch.value.trim().toLocaleLowerCase(),selected=contactSelect.value,ranked=rankCustomerChoices(contacts,query),matching=query?contacts.filter(customer=>customerSearchText(customer).includes(query)).length:contacts.length;contactSelect.innerHTML=`<option value="">Create a new customer below</option>${ranked.map(c=>`<option value="${esc(c.id)}">${esc(c.fullName)} · ${esc(c.email||c.phone||'No email or phone')}</option>`).join('')}`;if(selected&&ranked.some(c=>String(c.id)===selected))contactSelect.value=selected;contactSearchStatus.textContent=query?(matching?`${matching} matching customer${matching===1?'':'s'} shown first; names are alphabetical within each group.`:'No matching customer found; all customers remain available alphabetically.'):`${contacts.length} customer${contacts.length===1?'':'s'} listed alphabetically.`;};
   contactSearch.addEventListener('input',renderCustomerChoices);renderCustomerChoices();
-  const toggleContact = () => o.querySelectorAll('.new-contact').forEach(x => x.classList.toggle('hidden', Boolean(contactSelect.value)));
+  const toggleContact = () => {const existing=Boolean(contactSelect.value);o.querySelectorAll('.new-contact').forEach(x=>x.classList.toggle('hidden',existing));o.querySelectorAll('[data-new-customer-required]').forEach(x=>{x.required=!existing;x.disabled=existing;});};
   contactSelect.addEventListener('change',toggleContact); toggleContact();
   $('#lead-cancel',o).addEventListener('click',()=>o.remove());
   $('#lead-form',o).addEventListener('submit',async e=>{
@@ -348,7 +348,7 @@ async function openNewLeadForm() {
         budgetMin,budgetMax,preferredAreas:f.preferredAreas,nextFollowUpAt:f.nextFollowUpAt||null,
         propertyRequirements:f.propertyRequirements,listingId:f.listingId||null};
       if(!contactId){
-        if(!f.fullName.trim()||(!f.email.trim()&&!f.phone.trim())) throw new Error('New contacts require a name and email or phone');
+        if(!f.fullName.trim()||!f.email.trim()||!f.phone.trim()||!f.preferredChannel)throw new Error('New customers require name, email, phone and preferred channel');
         const contactBody={fullName:f.fullName,email:f.email,phone:f.phone,postalAddress:f.postalAddress,contactType:f.contactType,preferredChannel:f.preferredChannel,
           whatsappEnabled:f.preferredChannel==='WhatsApp',companyId:f.companyId||null,publicProfileUrl:f.publicProfileUrl||null};
         let captured;try{captured=await api('/crm/leads/capture',{method:'POST',body:{...leadBody,contact:contactBody}});}

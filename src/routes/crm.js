@@ -373,6 +373,7 @@ r.post('/crm/leads/capture', async (req,res)=>{
   if(!canWriteCrm(req.broker))return res.status(403).json({error:'This role has read-only CRM access'});
   for(const field of ['title','source','businessType'])if(!clean(b[field]))return res.status(400).json({error:`${field} is required`});
   if(!clean(contactBody.fullName))return res.status(400).json({error:'Customer full name is required'});
+  if(!clean(contactBody.email)||!clean(contactBody.phone)||!clean(contactBody.preferredChannel))return res.status(400).json({error:'New customers require email, phone and preferred channel'});
   const identity=validateContactIdentity(contactBody.email,contactBody.phone);
   if(identity.error)return res.status(400).json({error:identity.error});
   const contactEnumError=invalidEnum(contactBody.contactType||'buyer',CONTACT_TYPES,'contactType')||invalidEnum(contactBody.preferredChannel,CHANNELS,'preferredChannel');
@@ -385,6 +386,8 @@ r.post('/crm/leads/capture', async (req,res)=>{
   if(contactBody.companyId&&!(await one('SELECT id FROM companies WHERE id=$1 AND archived_at IS NULL',[contactBody.companyId])))return res.status(400).json({error:'Invalid companyId'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId])))return res.status(400).json({error:'Invalid listingId'});
   const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
+  if(budget.min===null||budget.max===null)return res.status(400).json({error:'Budget from and Budget to are required'});
+  if(!normalizeDelimitedValues(b.preferredAreas).length)return res.status(400).json({error:'At least one preferred area is required'});
   const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
     JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
     ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
@@ -420,12 +423,16 @@ r.post('/crm/leads', async (req, res) => {
   if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
   if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
-  if(!(await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params)))
+  const contact=await one(`SELECT c.id,c.email,c.phone,c.preferred_channel FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params);
+  if(!contact)
     return res.status(400).json({error:'Invalid or inaccessible contactId'});
+  if(!contact.email||!contact.phone||!contact.preferredChannel)return res.status(409).json({error:'Complete the existing customer email, phone and preferred channel before creating a lead'});
   if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
   const budget = validateBudget(b.budgetMin,b.budgetMax);
   if (budget.error) return res.status(400).json({error:budget.error});
+  if(budget.min===null||budget.max===null)return res.status(400).json({error:'Budget from and Budget to are required'});
+  if(!normalizeDelimitedValues(b.preferredAreas).length)return res.status(400).json({error:'At least one preferred area is required'});
   const budgetMin=budget.min,budgetMax=budget.max;
   const lead=await transaction(client=>insertCapturedLead({...b,budgetMin,budgetMax},req.broker.id,{min:budgetMin,max:budgetMax},client));
   res.status(201).json(lead);

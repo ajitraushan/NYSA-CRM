@@ -90,6 +90,11 @@
   workspace and owns verification/KYC maintenance; customer detail shows related leads.
   Lead detail becomes a consumer with a read-only summary and Open customer record action,
   rather than requiring users to open a lead before maintaining the customer.
+- CRM Test now successfully created a new-customer lead after deployment of `82acac1`,
+  confirming the route and submit correction for a valid case; R1-UAT-021 remains open for
+  rollback, duplicate and exact-count evidence. R1-AMD-022 Revision 1 is implemented locally
+  to require customer name/email/phone/preferred channel plus both lead budget limits and at
+  least one preferred area, including direct API and incomplete-existing-customer guards.
 
 ## Release 1 Deployed Implementation
 
