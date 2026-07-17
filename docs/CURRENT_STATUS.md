@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Date: 2026-07-17
+- Date: 2026-07-18
 - Production environment: Release 1 deployed with the NYSA CORE user-facing brand
 - URL: https://crm.nysarealty.com
 - Health endpoint: `GET /api/health`
@@ -69,7 +69,7 @@
   are implemented locally: business amounts are normalized before submission and a new
   customer, channels, role, lead, queue history and audit evidence commit atomically.
   CRM Test deployment, retest and explicit user confirmation remain pending.
-- The automated suite passes 87 tests after the governed Structured Requirements save and
+- The automated suite passes 91 tests after the governed Structured Requirements save and
   visible AI-failure corrections. Changed
   browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
   rollback and committed-success verification remain required.
@@ -105,6 +105,14 @@
   matched the legitimate factor word `mortgage`. Whole-term matching and a message naming
   the actual prohibited personal/social attribute are implemented locally and tested;
   mortgage readiness remains permitted.
+- CRM Test typography hotfix `378b3a8` increased maintained interface font sizes by 15%; the
+  user explicitly confirmed on 2026-07-18 that the new size is working. R1-UAT-025 and
+  R1-AMD-025 Revision 1 are closed.
+- R1-AMD-026 through R1-AMD-028 are implemented locally: financial scenarios use separate
+  mortgage/investment business forms instead of JSON, private lead documents have a scoped
+  immutable register and separate consent-evidence action, and lead tasks are presented as an
+  owned action plan. CRM Test deployment and explicit workflow/security confirmation remain
+  pending; production remains excluded.
 
 ## Release 1 Deployed Implementation
 

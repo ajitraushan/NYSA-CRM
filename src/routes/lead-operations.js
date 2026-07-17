@@ -243,7 +243,7 @@ r.post('/crm/leads/:id/tasks',async(req,res)=>{
   if(!canWriteLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your writable scope'});
   const b=req.body||{};if(!text(b.subject)||!b.dueAt)return res.status(400).json({error:'subject and dueAt are required'});
   if(Number.isNaN(new Date(b.dueAt).valueOf())||!['low','normal','high','urgent'].includes(b.priority||'normal'))return res.status(400).json({error:'Valid dueAt and priority are required'});
-  const assignee=b.assigneeId||lead.assignedTo||req.broker.id;if(!(await one("SELECT id FROM brokers WHERE id=$1 AND status='active'",[assignee])))return res.status(400).json({error:'Active assignee not found'});
+  if(b.assigneeId&&!canAssignLead(req.broker,lead))return res.status(403).json({error:'Only a team lead or administrator can select another task owner'});const assignee=b.assigneeId||lead.assignedTo||req.broker.id;if(!(await one("SELECT id FROM brokers WHERE id=$1 AND status='active'",[assignee])))return res.status(400).json({error:'Active assignee not found'});
   const id=uuid(),row=await one(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,due_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [id,lead.id,lead.contactId,text(b.subject),text(b.details),assignee,b.priority||'normal',b.dueAt,req.broker.id]);
   await execute('UPDATE leads SET next_follow_up_at=$1,updated_at=NOW() WHERE id=$2 AND (next_follow_up_at IS NULL OR next_follow_up_at>$1)',[b.dueAt,lead.id]);
@@ -258,6 +258,7 @@ r.patch('/crm/tasks/:id',async(req,res)=>{
   const b=req.body||{},status=b.status||task.status;if(!['open','in_progress','completed','cancelled'].includes(status))return res.status(400).json({error:'Invalid task status'});
   if(b.dueAt&&Number.isNaN(new Date(b.dueAt).valueOf()))return res.status(400).json({error:'Invalid dueAt'});
   if(status==='completed'&&!text(b.outcome)&&!task.outcome)return res.status(400).json({error:'Completion outcome is required'});
+  if(status==='cancelled'&&!text(b.outcome)&&!task.outcome)return res.status(400).json({error:'Cancellation reason is required'});
   const row=await one(`UPDATE tasks SET status=$1,outcome=COALESCE($2,outcome),due_at=COALESCE($3,due_at),priority=COALESCE($4,priority),
     completed_at=CASE WHEN $1='completed' THEN COALESCE(completed_at,NOW()) ELSE NULL END,updated_at=NOW() WHERE id=$5 RETURNING *`,[status,text(b.outcome),b.dueAt||null,b.priority||null,task.id]);
   await audit('Task',task.id,'status_changed',req.broker.id,{from:task.status,to:status,dueAt:b.dueAt||task.dueAt});res.json(row);

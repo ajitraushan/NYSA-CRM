@@ -4,6 +4,21 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-18 — CRM Test AI audit and typography corrections
+
+- Environment: CRM Test only; production unchanged
+- URL: `https://crm-test.nysarealty.com`
+- Application root: `/home/nysareal/nysa-core-dashboard-dd6262a-stage`
+- AI audit correction commit: `874ed95`
+- Migration `019_ai_assistance_audit_constraint.sql` applied at
+  `2026-07-17 18:10:38.433739+00`; health returned database ready and AI requirement
+  notes generated successfully afterward.
+- Typography correction commit: `378b3a8`
+- Typography package: `nysa-core-r1-uat-typography-crm-test-378b3a8.zip`
+- The user explicitly confirmed on 2026-07-18 that the increased font size is working.
+- R1-UAT-025 is closed. Other AI, lead-tool and Release 1 findings remain open until
+  their complete CRM Test retests and explicit confirmations pass.
+
 ## 2026-07-16 — Release 1 administration corrections on CRM Test
 
 - Environment: CRM Test only

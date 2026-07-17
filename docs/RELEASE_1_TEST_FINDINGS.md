@@ -798,8 +798,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: CRM Test -> all browser workspaces
-- Status: R1-AMD-025 Revision 1 implemented locally and verified by automated tests;
-  CRM Test deployment, visual retest and explicit user confirmation pending
+- Status: Closed. R1-AMD-025 Revision 1 is deployed to CRM Test and the user explicitly
+  confirmed on 2026-07-18 that the increased font size is working.
 - Priority: Usability
 - Related acceptance criteria: 18, 67, 135 and 197
 - Evidence: During Structured Requirements and AI suggestion retesting, the user observed
@@ -811,6 +811,66 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: On CRM Test, review representative dashboard, lead, customer,
   administration, Structured Requirements, AI review and proposal-preview screens at 100%
   browser zoom and confirm text is materially easier to read without clipping or overlap.
+
+### R1-UAT-026: Saved financial scenarios expose technical JSON and an unclear layout
+
+- Date raised: 2026-07-18
+- Area: Lead -> Saved financial scenarios
+- Status: R1-AMD-026 Revision 1 implemented locally and verified by automated tests;
+  CRM Test deployment, functional retest and explicit user confirmation pending
+- Priority: Must
+- Related acceptance criteria: 112, 113, 114, 115, 116, 117 and 118
+- Evidence: The scenario form exposes `Inputs JSON` and places the saved table and technical
+  payload editor in one undifferentiated modal. An operational user cannot confidently enter,
+  review or explain a mortgage or investment scenario.
+- Required correction: Replace JSON with separate business-labelled mortgage and investment
+  forms, support business amount shorthand, prefill a linked property, display the calculated
+  headline and approved assumption version, require acknowledgement of the indicative nature,
+  and retain every saved scenario as an immutable snapshot for proposals.
+- Retest condition: On CRM Test, create one linked mortgage scenario and one investment-return
+  scenario using business-form inputs; confirm LTV/DBR or gross/net/cash returns, applicable fee
+  context, disclaimer and assumption version are readable; reopen both and verify the original
+  snapshots remain unchanged.
+
+### R1-UAT-027: Private lead documents lack a usable register and governed field behaviour
+
+- Date raised: 2026-07-18
+- Area: Lead -> Private documents
+- Status: R1-AMD-027 Revision 1 implemented locally and verified by automated tests;
+  CRM Test deployment, security/functional retest and explicit user confirmation pending
+- Priority: Must
+- Related acceptance criteria: 137, 145, 146, 147, 148, 149, 191, 192 and 193
+- Evidence: The lead exposes only a technical upload form; existing documents and versions are
+  not visible. Document Type is free text, Direction/Status/Classification lack business
+  guidance, Approved template is unexplained, and a generic checkbox can create marketing
+  consent without separately reviewing channels and effective dates.
+- Required correction: Provide a lead document register with version history, authenticated
+  download and revision actions; consume the active `document_type` controlled-value set with
+  safe operational fallbacks; govern Direction and Status combinations; make outbound recipient
+  conditional; enforce restricted-file scope; preserve immutable hashes; and move executed
+  Marketing Agreement evidence into a separate confirmed consent action.
+- Retest condition: On CRM Test, upload inbound, outbound and internal examples, verify invalid
+  direction/status combinations and sent-without-recipient are rejected, upload a new version
+  without overwriting history, verify restricted access with authorized and unauthorized users,
+  and record consent only from an approved signed Marketing Agreement version with explicitly
+  selected channels and dates.
+
+### R1-UAT-028: Lead tasks do not explain operational ownership or action status
+
+- Date raised: 2026-07-18
+- Area: Lead -> Tasks
+- Status: R1-AMD-028 Revision 1 implemented locally and verified by automated tests;
+  CRM Test deployment, functional retest and explicit user confirmation pending
+- Priority: Usability
+- Related acceptance criteria: 18, 67, 93, 119 and 120
+- Evidence: The Tasks popup does not explain its distinction from Activities and omits the
+  assignee, instructions, start and cancellation workflow from its compact table.
+- Required correction: Present tasks as the lead action plan, display owner/deadline/priority/
+  instructions/outcome, allow Open -> In progress -> Completed or Cancelled actions, require an
+  outcome or reason, and permit only an authorized leader to select another owner.
+- Retest condition: On CRM Test, create a task for the lead owner, create a leader-assigned task,
+  start and complete one with an outcome, cancel another with a reason, and verify due/overdue
+  dashboard indicators and unauthorized reassignment protection.
 
 ## Agreed amendments
 
@@ -1329,10 +1389,49 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   15% while retaining the existing information hierarchy, responsive layouts and workflow
   behavior. Validate dense tables, forms, modals, navigation, dashboards, AI review cards
   and proposal previews for clipping and overlap.
-- Status: Implemented locally and verified by automated tests; CRM Test deployment, visual
-  retest and explicit user confirmation pending.
+- Status: Deployed to CRM Test and explicitly confirmed by the user on 2026-07-18. Amendment
+  and related finding are closed.
 - Retest condition: The R1-UAT-025 CRM Test retest condition passes and the user explicitly
   confirms the typography before closure.
+
+### R1-AMD-026 Revision 1: Business-friendly immutable financial scenarios
+
+- Amendment ID: R1-AMD-026 Revision 1
+- Related UAT finding: R1-UAT-026
+- Agreed requirement: Replace raw JSON with distinct mortgage-affordability and investment-
+  return forms, linked-property prefilling, business amount shorthand, clear calculated results,
+  approved fee-rule/assumption evidence and an acknowledgement that outputs are indicative.
+  Preserve saved inputs and outputs as immutable proposal-ready snapshots.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, functional
+  retest and explicit user confirmation pending.
+- Retest condition: The R1-UAT-026 CRM Test retest condition passes and the user explicitly
+  confirms the result.
+
+### R1-AMD-027 Revision 1: Governed private lead document register
+
+- Amendment ID: R1-AMD-027 Revision 1
+- Related UAT finding: R1-UAT-027
+- Agreed requirement: Replace the upload-only popup with a scoped document register and
+  immutable version history; provide maintained document types and explained source/use,
+  classification, status, approved-template and recipient controls; enforce valid combinations
+  and restricted-file access; and separate signed Marketing Agreement upload from the deliberate
+  recording of consent channels and dates.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, security/
+  functional retest and explicit user confirmation pending.
+- Retest condition: The R1-UAT-027 CRM Test retest condition passes and the user explicitly
+  confirms the result.
+
+### R1-AMD-028 Revision 1: Business-friendly lead action plan
+
+- Amendment ID: R1-AMD-028 Revision 1
+- Related UAT finding: R1-UAT-028
+- Agreed requirement: Explain tasks as future work distinct from completed Activities; display
+  assignee, priority, deadline, instructions, status and outcome; support start, complete and
+  reasoned cancellation; and restrict selection of another owner to an authorized leader.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, functional
+  retest and explicit user confirmation pending.
+- Retest condition: The R1-UAT-028 CRM Test retest condition passes and the user explicitly
+  confirms the result.
 
 ## Review discipline
 
