@@ -10,6 +10,7 @@ NODE_BIN='/home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/bin/node'
 HEALTH_URL='https://crm-test.nysarealty.com/api/health'
 APP_JS_URL='https://crm-test.nysarealty.com/app.js'
 BACKUP_DIR='/home/nysareal/crm-backups'
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
 PACKAGE_PATH="${1:-}"
 EXPECTED_SHA256="${2:-}"
@@ -70,10 +71,17 @@ if find "$STAGE_DIR" -type f -iname '*defect*log*.xlsx' -print -quit | grep -q .
   exit 5
 fi
 
-while IFS= read -r -d '' js_file; do "$NODE_BIN" --check "$js_file" >/dev/null; done < <(find "$STAGE_DIR/public" "$STAGE_DIR/src" -type f -name '*.js' -print0)
+STAGED_JS_LIST="$STAGE_DIR/staged-js-files.list"
+find "$STAGE_DIR/public" "$STAGE_DIR/src" -type f -name '*.js' -print0 > "$STAGED_JS_LIST"
+while IFS= read -r -d '' js_file; do "$NODE_BIN" --check "$js_file" >/dev/null; done < "$STAGED_JS_LIST"
+rm -f -- "$STAGED_JS_LIST"
 
 cp -a "$STAGE_DIR/." "$APP_ROOT/"
-while IFS= read -r -d '' js_file; do "$NODE_BIN" --check "$js_file" >/dev/null; done < <(find "$APP_ROOT/public" "$APP_ROOT/src" -type f -name '*.js' -print0)
+cp "$SCRIPT_PATH" "$APP_ROOT/scripts/deploy-crm-test-lead-creation.sh"
+DEPLOYED_JS_LIST="$STAGE_DIR/deployed-js-files.list"
+find "$APP_ROOT/public" "$APP_ROOT/src" -type f -name '*.js' -print0 > "$DEPLOYED_JS_LIST"
+while IFS= read -r -d '' js_file; do "$NODE_BIN" --check "$js_file" >/dev/null; done < "$DEPLOYED_JS_LIST"
+rm -f -- "$DEPLOYED_JS_LIST"
 
 mkdir -p "$APP_ROOT/tmp"
 touch "$APP_ROOT/tmp/restart.txt"

@@ -42,6 +42,9 @@ then:
 7. verifies `/api/health`, migrations `017` and `018`, and the revised lead-creation
    browser marker.
 
+The script uses regular temporary file lists for JavaScript checks and does not depend
+on `/dev/fd`, which is unavailable in some cPanel CloudLinux shells.
+
 The successful final line is:
 
 ```text
