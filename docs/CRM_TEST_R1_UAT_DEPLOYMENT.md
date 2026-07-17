@@ -19,7 +19,7 @@ deployment, successful retest and explicit user confirmation.
 3. Restore that backup into an isolated verification database and apply migrations
    `011_organization_profile_governance.sql` and
    `012_release1_admin_uat_corrections.sql` and the additive
-   `013_customer_proposal_address.sql` there first.
+   `013_customer_proposal_address.sql` and `014_customer_kyc_summary.sql` there first.
 4. Verify broker, team, lead, listing, proposal, audit and migration row counts before
    and after the isolated migration. Run application startup twice and confirm each
    migration is recorded once in `schema_migrations`.

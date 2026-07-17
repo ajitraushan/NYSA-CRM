@@ -279,6 +279,23 @@ r.patch('/crm/contacts/:id', async (req, res) => {
   res.json(updated);
 });
 
+r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
+  const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
+  if(!contact)return res.status(404).json({error:'Contact not found'});
+  if(!canWriteCrm(req.broker)||(req.broker.role!=='admin'&&contact.ownerId!==req.broker.id))return res.status(403).json({error:'Only the contact owner or an administrator can maintain KYC details'});
+  const b=req.body||{},type=clean(b.idDocumentType)||null,last4=clean(b.idDocumentLast4)?.toUpperCase()||null,status=clean(b.kycStatus)||'unverified';
+  if(type&&!['passport','emirates_id'].includes(type))return res.status(400).json({error:'ID type must be Passport or Emirates ID'});
+  if(last4&&!/^[A-Z0-9]{4}$/.test(last4))return res.status(400).json({error:'Record only the final four letters or digits of the ID; never enter the full ID number'});
+  if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
+  if(status==='verified'&&!(req.broker.role==='admin'||isManager(req.broker)))return res.status(403).json({error:'Manager or administrator approval is required to mark KYC verified'});
+  if(['pending_review','verified'].includes(status)&&(!type||!last4||!b.idDocumentExpiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
+  const row=await one(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
+    kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5 ELSE NULL END,
+    kyc_notes=$6,updated_at=NOW() WHERE id=$7 RETURNING *`,[type,last4,b.idDocumentExpiry||null,status,req.broker.id,clean(b.kycNotes),contact.id]);
+  await audit('Contact',contact.id,'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry:b.idDocumentExpiry||null});
+  res.json(row);
+});
+
 r.patch('/crm/contacts/:id/verification', async (req,res)=>{
   const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
   if(!contact) return res.status(404).json({error:'Contact not found'});
@@ -306,7 +323,7 @@ r.get('/crm/leads', async (req, res) => {
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
   if (req.query.q) { params.push(`%${req.query.q}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
-  const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,
+  const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,
     (SELECT COUNT(*)::int FROM activities a WHERE a.lead_id=l.id) AS activity_count
     FROM leads l JOIN contacts c ON c.id=l.contact_id
@@ -318,7 +335,7 @@ r.get('/crm/leads', async (req, res) => {
 
 r.get('/crm/leads/:id', async (req, res) => {
   await refreshAssignmentStatuses();
-  const lead = await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,
+  const lead = await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,c.kyc_verified_at,c.kyc_notes,
     c.preferred_channel,c.email_status,c.phone_status,c.public_profile_url,c.screening_notes,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,x.area AS listing_area,x.price AS listing_price
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to

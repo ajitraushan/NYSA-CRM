@@ -214,7 +214,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Revision 10 implemented locally and verified by automated tests; CRM Test
+- Status: Revision 11 implemented locally and verified by automated tests; CRM Test
   deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
@@ -606,9 +606,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 10: Concise buyer-facing branded draft layout
+### R1-AMD-006 Revision 11: Customer identity and privacy-safe KYC summary
 
-- Amendment ID: R1-AMD-006 Revision 10
+- Amendment ID: R1-AMD-006 Revision 11
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
@@ -637,8 +637,14 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   irrelevant ready/off-plan and cash/bank timeline stages, represent the applicable
   journey sequentially with icons, reduce Next Steps to three actions and keep the
   draft watermark fully within the page. Add customer postal address as an authoritative
-  contact field through additive migration `013_customer_proposal_address.sql`.
-- Status: Revision 10 implemented locally and verified by 70 automated tests; CRM Test
+  contact field through additive migration `013_customer_proposal_address.sql`. Add the
+  maintained mobile number and a distinct Customer KYC Details section containing ID
+  type (Passport or Emirates ID), masked final four, expiry and verification status.
+  Never store a full identity number in the summary or print full identity numbers or
+  document images in a proposal; identity copies remain Restricted private documents.
+  Use additive migration `014_customer_kyc_summary.sql`, require manager/admin authority
+  to mark KYC verified and audit every KYC summary change.
+- Status: Revision 11 implemented locally and verified by 70 automated tests; CRM Test
   deployment, authenticated proposal workflow retest and explicit user confirmation
   pending. Revision 6 fee-screen confirmation remains recorded separately.
 - Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
