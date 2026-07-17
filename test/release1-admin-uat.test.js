@@ -68,7 +68,10 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(app,/Approved media per property/);
   assert.match(app,/max="2"/);
   assert.match(app,/Property information and display rules/);
-  assert.match(app,/Preview with sample buyer data/);
+  assert.match(app,/Generate branded draft sample/);
+  assert.match(app,/Print \/ Save draft PDF/);
+  assert.match(app,/DRAFT SAMPLE/);
+  assert.match(app,/Save the draft, generate and review its sample, then approve and activate/);
   assert.match(app,/organizationVersions\.find\(x=>x\.status==='active'\)/);
   assert.match(app,/approved logo shown here will govern live proposals/);
   assert.match(app,/proposal-preview-brand/);
