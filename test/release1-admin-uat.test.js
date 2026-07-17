@@ -92,13 +92,17 @@ test('qualification maintenance guides business users through governed activatio
 });
 
 test('customers are a primary workspace and lead KYC links to the customer master',()=>{
-  const ui=read('public/app.js'),crm=read('src/routes/crm.js');
+  const ui=read('public/app.js'),crm=read('src/routes/crm.js'),files=read('src/routes/files-proposals.js');
   assert.match(ui,/data-tab="customers">Customers/);assert.match(ui,/renderCustomers\(\)/);
   assert.match(ui,/Maintain customer identity, contact channels, consent and KYC once/);
   assert.match(ui,/Open customer record/);assert.match(ui,/switchTab\('customers'\)/);
   assert.doesNotMatch(ui,/id="lead-verify"/);assert.doesNotMatch(ui,/id="lead-governance"/);
   assert.match(crm,/r\.get\('\/crm\/customers\/:id'/);assert.match(crm,/canReadLead/);
   assert.match(ui,/Private linked documents/);assert.match(crm,/FROM documents WHERE contact_id=\$1 OR lead_id=ANY/);
+  assert.match(crm,/status='executed' AND effective_at<=NOW\(\)/);assert.doesNotMatch(crm,/status='granted' AND effective_from/);
+  assert.match(ui,/Create lead for this customer/);assert.match(ui,/openNewLeadForm\(id\)/);assert.match(ui,/Open customer documents/);
+  assert.match(files,/r\.get\('\/crm\/customers\/:id\/documents'/);assert.match(files,/d\.lead_id IN \(SELECT id FROM leads WHERE contact_id=\$1\)/);
+  assert.match(ui,/contactId:customer\.id/);assert.match(ui,/Private customer document uploaded/);
 });
 
 test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{

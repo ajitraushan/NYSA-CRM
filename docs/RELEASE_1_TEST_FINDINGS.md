@@ -723,8 +723,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Customers, KYC, consent, channels and related records
-- Status: Revision 2 implemented locally and verified by automated tests with a primary
-  Customers workspace, authoritative Customer/KYC record and lead-to-customer navigation;
+- Status: Revision 3 implemented locally and verified by automated tests with a primary
+  Customers workspace, authoritative Customer/KYC record, customer document register,
+  customer-originated lead creation and lead-to-customer navigation;
   consolidated CRM Test deployment, retest and explicit user confirmation pending
 - Priority: Must
 - Related acceptance criteria: 27, 30, 31, 34, 35, 36, 41, 126, 143 and 191
@@ -1318,6 +1319,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   lead, locate a customer and maintain verification/KYC there. Confirm that the customer
   displays all related leads, each lead links back through Open customer record, lead detail
   does not independently edit KYC, and two leads resolve the same current customer data.
+
+### R1-AMD-021 Revision 3: Reliable customer master and customer-originated lead/document flow
+
+- Amendment ID: R1-AMD-021 Revision 3
+- Related UAT finding: R1-UAT-022
+- Agreed requirement: Correct the Customer record failure against the governed consent
+  schema. Make the Customer master the operational starting point by allowing an authorized
+  user to create a lead with that customer preselected and to maintain one private immutable
+  document register containing direct customer documents and documents linked through the
+  customer's related leads. Preserve record scope, restricted-document access, authenticated
+  downloads, immutable versions and audit evidence.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
+  retest and explicit user confirmation pending
+- Retest condition: On CRM Test, open the newly created `ajitxxx` customer without an error,
+  confirm its KYC/contact/consent summary loads, upload and download an authorized customer
+  document, create a lead from the customer action and verify the lead form preselects that
+  exact customer without creating a duplicate. Confirm related-lead documents appear in the
+  same register and an unauthorized user cannot access a restricted document.
 
 ### R1-AMD-022 Revision 1: Mandatory customer contact and lead requirement essentials
 

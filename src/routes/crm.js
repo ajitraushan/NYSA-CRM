@@ -200,7 +200,7 @@ r.get('/crm/customers/:id',async(req,res)=>{
   const [roles,channels,consent,documents]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
-    one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='granted' AND effective_from<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
+    one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
     canMaintain?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([])
   ]);
   res.json({customer,roles,channels,leads,documents,canMaintain,effectiveConsent:Boolean(consent?.effectiveConsent),restricted:Boolean(customer.doNotContact)});

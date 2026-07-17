@@ -59,6 +59,21 @@ r.get('/crm/leads/:id/documents',async(req,res)=>{const found=await lead(req,res
     'sentAt',v.sent_at,'receivedAt',v.received_at
   ) ORDER BY v.version_number DESC) FROM document_versions v LEFT JOIN document_templates dt ON dt.id=v.template_id WHERE v.document_id=d.id),'[]') AS versions
   FROM documents d JOIN brokers b ON b.id=d.owner_id WHERE d.lead_id=$1 OR EXISTS(SELECT 1 FROM document_links dl WHERE dl.document_id=d.id AND dl.entity_type='Lead' AND dl.entity_id=$1) ORDER BY d.created_at DESC`,[found.id]);res.json({documents:documents.filter(d=>d.accessClassification!=='restricted'||d.ownerId===req.broker.id||isManager(req.broker))});});
+r.get('/crm/customers/:id/documents',async(req,res)=>{
+  const params=[req.params.id],scope=contactScopeSql('c',req.broker,params);
+  const customer=await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND (${scope.clause})`,scope.params);
+  if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
+  const documents=await many(`SELECT d.*,b.name AS owner_name,COALESCE((SELECT json_agg(json_build_object(
+    'id',v.id,'versionNumber',v.version_number,'fileName',v.file_name,'mediaType',v.media_type,'fileSizeBytes',v.file_size_bytes,
+    'fileHash',v.file_hash,'immutable',v.immutable,'recipient',v.recipient,'classification',v.classification,'status',v.status,
+    'templateId',v.template_id,'templateName',dt.name,'templateType',dt.template_type,'templateVersion',dt.version,'createdAt',v.created_at,
+    'sentAt',v.sent_at,'receivedAt',v.received_at
+  ) ORDER BY v.version_number DESC) FROM document_versions v LEFT JOIN document_templates dt ON dt.id=v.template_id WHERE v.document_id=d.id),'[]') AS versions
+  FROM documents d JOIN brokers b ON b.id=d.owner_id WHERE d.contact_id=$1 OR d.lead_id IN (SELECT id FROM leads WHERE contact_id=$1)
+    OR EXISTS(SELECT 1 FROM document_links dl WHERE dl.document_id=d.id AND ((dl.entity_type='Contact' AND dl.entity_id=$1)
+      OR (dl.entity_type='Lead' AND dl.entity_id IN (SELECT id FROM leads WHERE contact_id=$1)))) ORDER BY d.created_at DESC`,[customer.id]);
+  res.json({documents:documents.filter(d=>d.accessClassification!=='restricted'||d.ownerId===req.broker.id||isManager(req.broker))});
+});
 r.post('/crm/documents',async(req,res)=>{
   const b=req.body||{},linkError=await validateDocumentLink(req,b);if(linkError)return res.status(403).json({error:linkError});
   const existing=b.documentId?await one('SELECT * FROM documents WHERE id=$1',[b.documentId]):null;if(b.documentId&&!existing)return res.status(404).json({error:'Document not found'});if(existing&&existing.ownerId!==req.broker.id&&!isManager(req.broker))return res.status(403).json({error:'Document revision is outside your scope'});
