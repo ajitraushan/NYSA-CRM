@@ -9,7 +9,8 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-4),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql']);
+  assert.deepEqual(migrations.slice(-5),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql']);
+  assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -76,11 +77,17 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(app,/proposal-timeline-step/);
   assert.match(app,/Verify finance readiness/);
   assert.match(app,/PROPERTY IMAGE 1/);
-  assert.match(app,/Customer KYC details/);
+  assert.match(app,/Emirates ID:<\/b> ending 4821/);
+  assert.doesNotMatch(app,/class="proposal-kyc"/);
+  assert.match(app,/Recommended matches/);
+  assert.match(app,/NYSA-INV-000241/);
+  assert.match(app,/MATCH \$\{i\+1\} OF \$\{sampleCount\}/);
   assert.match(app,/Final four characters only/);
-  assert.match(app,/Emirates ID \*\*\*4821/);
   assert.match(routes,/'contact\.phone':recipient\.phone/);
   assert.match(routes,/'contact\.kyc_status':recipient\.kycStatus/);
+  assert.match(routes,/Inventory ID: \$\{p\.inventoryReference\}/);
+  assert.match(routes,/Identity reference: \$\{identityReference\}/);
+  assert.doesNotMatch(routes,/KYC summary: \$\{maskedKyc\}/);
   const crm=read('src/routes/crm.js');
   assert.match(crm,/never enter the full ID number/);
   assert.match(crm,/kyc_summary_updated/);

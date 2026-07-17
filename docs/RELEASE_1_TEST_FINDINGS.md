@@ -214,7 +214,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> NYSA proposal templates; Lead -> Customer proposal builder
-- Status: Revision 11 implemented locally and verified by automated tests; CRM Test
+- Status: Revision 12 implemented locally and verified by automated tests; CRM Test
   deployment, authenticated retest and explicit user confirmation pending
 - Priority: Must for Quick Proposal acceptance
 - Related acceptance criteria: 126, 128, 129, 130, 132, 134 and 135
@@ -262,6 +262,12 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     use requirement chips, structured property facts, approved-media positions, a
     conditional sequential icon timeline and three compact next actions instead of
     long administrative paragraphs.
+  - Keep KYC workflow status and expiry internal. Customer output may show only a
+    simple unhighlighted Passport or Emirates ID reference using the masked final four
+    characters.
+  - When the configured shortlist maximum is three, demonstrate three matches in the
+    draft sample. Render each selected match independently and show its unique stable
+    Inventory ID prominently in both preview and generated output.
 - Retest condition: On CRM Test, an administrator creates a Quick template without
   editing JSON or raw database paths, maps lead requirement and selected-property
   fields from the approved catalogue, marks system and agent-input fields Mandatory or
@@ -270,7 +276,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   activates the version. From a prepared lead, an agent starts Quick Proposal, sees the
   correct customer and requirement data prefilled, supplies only configured inputs,
   selects up to three matched properties and no more than two approved media items per
-  property, previews and generates a reviewed version
+  property, sees each selected property's stable Inventory ID, previews and generates
+  a reviewed version
   within three minutes. Missing mandatory agent input blocks generation; missing
   mandatory system data identifies the authoritative record to correct; optional blank
   content is omitted cleanly. Missing required mappings are clear, and the generated
@@ -606,9 +613,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-012 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
-### R1-AMD-006 Revision 11: Customer identity and privacy-safe KYC summary
+### R1-AMD-006 Revision 12: Concise identity reference and three-match inventory presentation
 
-- Amendment ID: R1-AMD-006 Revision 11
+- Amendment ID: R1-AMD-006 Revision 12
 - Related UAT findings: R1-UAT-008 and R1-UAT-013
 - Agreed requirement: Replace regulatory/fee JSON with individually maintainable
   percentage, fixed, conditional fixed, percentage-plus-fixed, quantity and estimate
@@ -627,8 +634,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   availability, match rationale, trade-offs and value proposition; and conditional,
   non-guaranteed end-to-end purchase timeline guidance. Enforce shortlist, approved
   media and availability rules during proposal generation. The sample preview must use
-  the active NYSA company profile's approved logo, customer-facing name, brand version
-  and proposal footer, and must clearly identify when no active governed profile exists.
+  the active NYSA company profile's approved logo, customer-facing name and proposal
+  footer, and must clearly identify when no active governed profile exists. Internal
+  brand-version metadata must not appear in customer-facing output.
   Within the same draft workflow, allow an administrator to generate a visibly
   watermarked branded draft layout with sample data and print or save it as a draft PDF
   for review before approval; approval and activation remain separate later actions.
@@ -638,17 +646,29 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   journey sequentially with icons, reduce Next Steps to three actions and keep the
   draft watermark fully within the page. Add customer postal address as an authoritative
   contact field through additive migration `013_customer_proposal_address.sql`. Add the
-  maintained mobile number and a distinct Customer KYC Details section containing ID
-  type (Passport or Emirates ID), masked final four, expiry and verification status.
-  Never store a full identity number in the summary or print full identity numbers or
-  document images in a proposal; identity copies remain Restricted private documents.
-  Use additive migration `014_customer_kyc_summary.sql`, require manager/admin authority
-  to mark KYC verified and audit every KYC summary change.
-- Status: Revision 11 implemented locally and verified by 70 automated tests; CRM Test
-  deployment, authenticated proposal workflow retest and explicit user confirmation
-  pending. Revision 6 fee-screen confirmation remains recorded separately.
-- Retest condition: The R1-UAT-008 and R1-UAT-013 CRM Test retest conditions pass and
-  the user explicitly confirms both results.
+  maintained mobile number and a simple, unhighlighted identity reference containing
+  only the identity type and masked final four characters. Do not print KYC workflow
+  status, expiry, a full identity number or document image in the customer proposal;
+  identity copies remain Restricted private documents. Use additive migration
+  `014_customer_kyc_summary.sql`, require manager/admin authority to mark internal KYC
+  verified and audit every internal KYC summary change. Keep the draft badge out of the
+  logo/header row so it cannot overlap the header or close control. Demonstrate all
+  configured matches in the sample (three when the template maximum is three), render
+  each match as a separate numbered property card and show a stable, customer-usable
+  Inventory ID on every selected property. Add migration
+  `015_inventory_business_reference.sql` to backfill and automatically allocate unique
+  sequential Inventory IDs to existing and new inventory.
+- Status: Revision 11 is deployed to CRM Test and the user screenshot confirms the
+  revised proposal is reachable, but the user identified remaining layout and content
+  defects. Revision 12 is implemented locally and all 70 automated tests pass; CRM Test
+  deployment/retest remain pending. Revision 6 fee-screen confirmation remains recorded
+  separately.
+- Retest condition: On CRM Test, the draft badge and close control do not overlap; the
+  proposal shows customer name, address and mobile plus only a simple masked identity
+  reference; a template configured for three matches previews and generates three
+  separately numbered property cards; every card and generated PDF shows its unique
+  Inventory ID; and the R1-UAT-008 and R1-UAT-013 retest conditions pass. Closure still
+  requires the user's explicit confirmation.
 
 ### R1-AMD-007 Revision 1: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
