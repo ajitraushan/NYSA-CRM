@@ -713,6 +713,35 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and see a clear assignment-queue success message. Retry the same email or phone and verify
   the duplicate message identifies the matching basis and requires reviewed confirmation.
 
+### R1-UAT-022: Customer and reusable KYC records lack a dedicated workspace
+
+- Date raised: 2026-07-17
+- Area: Customers, KYC, consent, channels and related records
+- Status: Agreed correction; implementation, CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Must
+- Related acceptance criteria: 27, 30, 31, 34, 35, 36, 41, 126, 143 and 191
+- Evidence: Customer and KYC data are stored against the reusable contact record, but the
+  browser exposes maintenance only contextually after opening a lead. There is no dedicated
+  Customer workspace where authorized users can find and maintain the master customer,
+  review KYC once and see its reuse across all related leads and downstream records.
+- Required correction: Add a role-scoped Customers workspace with an alphabetical/searchable
+  list and a dedicated customer record. Present identity and customer roles, normalized
+  contact channels, postal address, associated company, communication preferences,
+  documentary consent/restrictions, KYC summary and expiry, private linked documents,
+  duplicate/merge controls, ownership and audit history. Show related leads, requirements,
+  activities, proposals and financial scenarios without copying KYC into each lead. Keep the
+  customer/contact ID as the authoritative source; all consumers read the current permitted
+  KYC state and proposals expose only approved masked identity references. Restrict full
+  private documents and verification actions by role, record every review/change, and flag
+  expired or review-due KYC.
+- Retest condition: On CRM Test, locate a customer independently of a lead, maintain channels,
+  roles, address, consent and an authorized KYC review, then open two leads for that customer
+  and confirm both resolve the same current customer/KYC record without duplicate entry.
+  Confirm related records are visible within role scope, proposals use only the masked ID
+  reference, unauthorized users cannot view private KYC documents or verify KYC, expiry is
+  flagged, and every material action is audited.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1086,6 +1115,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   to Creating lead, exactly one request is made, the lead commits, the success message is
   displayed and the assignment queue contains the lead. Confirm a failed request restores
   the button and displays Lead not created with the server message.
+
+### R1-AMD-021 Revision 1: Dedicated Customer workspace with reusable governed KYC
+
+- Amendment ID: R1-AMD-021 Revision 1
+- Related UAT finding: R1-UAT-022
+- Agreed requirement: Provide a dedicated role-scoped Customer workspace for the master
+  customer profile, roles, channels, address, consent/restrictions, reusable KYC status and
+  expiry, private linked documents, duplicate/merge governance, ownership, audit and related
+  leads/requirements/activities/proposals/scenarios. Store KYC once against the customer and
+  resolve it for every related workflow without copying it into individual leads.
+- Status: Agreed; implementation, automated verification, CRM Test deployment, retest and
+  explicit user confirmation pending
+- Retest condition: The R1-UAT-022 CRM Test retest condition passes and the user explicitly
+  confirms the result.
 
 ## Review discipline
 

@@ -81,6 +81,11 @@
   `type="submit"` and stopped before calling the API. R1-AMD-020 Revision 2 explicitly
   identifies the control and adds a visible fallback; a superseding CRM Test hotfix is
   required.
+- R1-AMD-021 Revision 1 is agreed for a dedicated Customer workspace. Existing KYC is
+  already stored once against the reusable contact record, but its maintenance is currently
+  reachable only from a lead. The new workspace will make the customer authoritative across
+  leads, proposals and related operations while retaining masked output and role-restricted
+  private-document access. Implementation and CRM Test deployment have not started.
 
 ## Release 1 Deployed Implementation
 
