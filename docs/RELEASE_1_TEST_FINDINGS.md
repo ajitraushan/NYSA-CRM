@@ -1130,6 +1130,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-022 CRM Test retest condition passes and the user explicitly
   confirms the result.
 
+### R1-AMD-021 Revision 2: Customer-first navigation and lead relationship direction
+
+- Amendment ID: R1-AMD-021 Revision 2
+- Related UAT finding: R1-UAT-022
+- Agreed requirement: Make Customers a primary CRM navigation workspace. Customer detail
+  owns profile, roles, channels, address, consent/restrictions, verification, KYC, private
+  documents, duplicate/merge governance, related records and audit. Show all related leads
+  from the customer record. Lead detail must not be the entry point for maintaining KYC;
+  it shows a read-only customer/KYC summary and an explicit Open customer record action.
+  New-lead capture may perform only the minimum customer selection or quick creation needed
+  to link the lead, directing completion and verification to the authoritative customer.
+- Status: Agreed; implementation, automated verification, CRM Test deployment, retest and
+  explicit user confirmation pending
+- Retest condition: From primary CRM navigation, open Customers without first opening a
+  lead, locate a customer and maintain verification/KYC there. Confirm that the customer
+  displays all related leads, each lead links back through Open customer record, lead detail
+  does not independently edit KYC, and two leads resolve the same current customer data.
+
 ## Review discipline
 
 For every new test observation:

@@ -86,6 +86,10 @@
   reachable only from a lead. The new workspace will make the customer authoritative across
   leads, proposals and related operations while retaining masked output and role-restricted
   private-document access. Implementation and CRM Test deployment have not started.
+- R1-AMD-021 Revision 2 clarifies the navigation direction: Customers is a primary CRM
+  workspace and owns verification/KYC maintenance; customer detail shows related leads.
+  Lead detail becomes a consumer with a read-only summary and Open customer record action,
+  rather than requiring users to open a lead before maintaining the customer.
 
 ## Release 1 Deployed Implementation
 
