@@ -95,6 +95,11 @@
   rollback, duplicate and exact-count evidence. R1-AMD-022 Revision 1 is implemented locally
   to require customer name/email/phone/preferred channel plus both lead budget limits and at
   least one preferred area, including direct API and incomplete-existing-customer guards.
+- R1-AMD-009 Revision 2 is agreed after qualification-maintenance usability retest failed.
+  CRM Test has no active model applicable to the tested lead, while the current screen uses
+  free-text Business line, unlabeled dense factor rows and no understandable activation path.
+  The next revision will provide governed business-line choices, active coverage, labelled
+  factor cards and a guided Draft -> Test -> Approve -> Activate lifecycle.
 
 ## Release 1 Deployed Implementation
 

@@ -181,7 +181,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Administration -> Qualification model versions
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Revision 1 deployed to CRM Test; usability retest failed. Business line remains
+  free text, factor fields lack understandable structure/headings, active coverage is not
+  visible and the Draft -> Test -> Approve -> Activate workflow is not explained. Revision
+  2 agreed; implementation, deployment and explicit confirmation pending
 - Priority: High
 - Related acceptance criteria: 95, 97, 98, 101, 102 and 103
 - Evidence: The current section is named Qualification model versions and requires an
@@ -593,7 +596,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Lead maintenance and operational qualification assessment
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Deployed to CRM Test; operational retest blocked because no active qualification
+  version applies to the tested lead and the administration screen does not guide activation;
+  user retest and explicit confirmation pending
 - Priority: Must
 - Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
 - Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
@@ -921,9 +926,33 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Versions and replace JSON maintenance with a structured business screen for factor
   logic, weightage, score bands, response guidance, testing, approval and governed
   version history.
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Deployed to CRM Test; usability retest failed and Revision 2 is required;
+  explicit user confirmation pending
 - Retest condition: The R1-UAT-007 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-009 Revision 2: Guided qualification lifecycle and business-labelled factor design
+
+- Amendment ID: R1-AMD-009 Revision 2
+- Related UAT findings: R1-UAT-007 and R1-UAT-016
+- Agreed requirement: Replace Business line free text with governed choices for All business
+  lines, Sale, Rental, Off-plan and Commercial. Show active-version coverage for each business
+  line and explain that only an Active version can assess a lead. Separate the version list
+  from a closed-by-default draft editor and present Draft -> Test -> Approve -> Activate as a
+  guided sequence. Render each factor as a labelled card with Factor name, Question shown to
+  agent, Help text, Stable code, Answer type/choices, Source, score range, weight, required
+  rule and missing-answer treatment; provide reorder and remove controls. Supply coherent
+  starter factors rather than placing unrelated concepts across one unlabeled row. Make score
+  bands and response guidance plain-language sections, show live total weight and coverage,
+  and replace the operational error with a business message naming the lead business line and
+  the administrator action required.
+- Status: Agreed; implementation, automated verification, CRM Test deployment, retest and
+  explicit user confirmation pending
+- Retest condition: On CRM Test, an administrator sees whether Sale, Rental, Off-plan and
+  Commercial have an active version; creates a draft using only governed business-line choices
+  and clearly labelled factor cards; reorders, tests and approves it; activates it with visible
+  confirmation; and then successfully assesses a matching lead. A nonmatching/no-active case
+  identifies the business line and directs activation without technical wording.
 
 ### R1-AMD-010: Business-aware dashboard target and alert maintenance
 
