@@ -596,10 +596,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-17
 - Area: Lead maintenance and operational qualification assessment
-- Status: Guided model activation deployed to CRM Test and qualification calculation passed.
-  Manager-override retest then found that the combined form wrongly required all customer
-  answers again. R1-AMD-023 Revision 1 is implemented locally; CRM Test deployment, retest
-  and explicit confirmation pending
+- Status: Guided model activation and R1-AMD-023 Revision 1 are deployed to CRM Test.
+  Qualification calculation passed and the user explicitly confirmed that manager override
+  works without re-entering customer answers. Finding remains open pending confirmation of
+  retained assessment history and negative authorization/reason checks
 - Priority: Must
 - Related acceptance criteria: 95, 97, 98, 99, 100, 101 and 102
 - Evidence: New-lead capture and lead detail expose Hot/Warm/Cold as directly editable
@@ -1229,8 +1229,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   factor answers. Preserve the original calculated score, temperature, inputs and
   contributions; create a separate immutable audited override record and update the lead's
   current qualification.
-- Status: Implemented locally and verified by automated tests; CRM Test deployment, retest
-  and explicit user confirmation pending
+- Status: Deployed to CRM Test; the user explicitly confirmed that an existing calculated
+  result can be overridden with a reason without re-entering qualification answers. Retained
+  history and negative authorization/reason checks remain pending before the parent finding
+  can close
 - Retest condition: On CRM Test, calculate a Warm assessment once, select Override this
   result, change it to Cold with a reason without answering the questions again, and confirm
   history shows both the original calculated assessment and the audited override. Reject an
