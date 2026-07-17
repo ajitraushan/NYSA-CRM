@@ -226,3 +226,10 @@ test('fee rule-set lifecycle supports safe draft editing comparison approval act
   assert.match(routes,/Rule-set name, authority\/reference and disclaimer are required/);
   assert.match(ui,/Authority\/reference:/);assert.match(ui,/fee-rule-summary/);assert.match(styles,/fee-version-table td small\{display:block/);assert.match(styles,/#assumption-table>\.tool-note\{margin:0 0 12px/);
 });
+
+test('browser typography is increased consistently for operational readability',()=>{
+  const styles=read('public/index.html');
+  for(const contract of ['font-size:16.1px','font-size:14.95px','font-size:12.65px','font-size:13.8px','font-size:39.1px'])assert.match(styles,new RegExp(contract.replace('.','\\.')));
+  assert.match(styles,/\.ai-suggestion-meta\{font-size:12\.65px/);
+  assert.match(styles,/\.requirement-version-card small\{display:block;color:var\(--muted\);font-size:12\.65px/);
+});

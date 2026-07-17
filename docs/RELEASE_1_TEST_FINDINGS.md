@@ -794,6 +794,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   AI suggestions and confirm either editable options or a persistent actionable error appears;
   apply a reviewed option and confirm it remains unsaved until Save new version is selected.
 
+### R1-UAT-025: Interface typography is too small for comfortable operational use
+
+- Date raised: 2026-07-17
+- Area: CRM Test -> all browser workspaces
+- Status: R1-AMD-025 Revision 1 implemented locally and verified by automated tests;
+  CRM Test deployment, visual retest and explicit user confirmation pending
+- Priority: Usability
+- Related acceptance criteria: 18, 67, 135 and 197
+- Evidence: During Structured Requirements and AI suggestion retesting, the user observed
+  that the interface font appears too small and requested an approximately 15% increase
+  throughout the application.
+- Required correction: Increase every maintained browser font-size declaration by 15%,
+  including body text, labels, controls, buttons, tables, navigation, dashboards, modals,
+  review cards and responsive typography, without changing permissions or workflow behavior.
+- Retest condition: On CRM Test, review representative dashboard, lead, customer,
+  administration, Structured Requirements, AI review and proposal-preview screens at 100%
+  browser zoom and confirm text is materially easier to read without clipping or overlap.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1302,6 +1320,19 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: On CRM Test, save and reopen a requirement and confirm its version,
   business line, purpose, funding, timeline, date, areas and property types read horizontally
   in a full-width card without overlap, clipping or narrow-column wrapping.
+
+### R1-AMD-025 Revision 1: Increase interface typography by 15%
+
+- Amendment ID: R1-AMD-025 Revision 1
+- Related UAT finding: R1-UAT-025
+- Agreed requirement: Increase all maintained browser font-size declarations by exactly
+  15% while retaining the existing information hierarchy, responsive layouts and workflow
+  behavior. Validate dense tables, forms, modals, navigation, dashboards, AI review cards
+  and proposal previews for clipping and overlap.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, visual
+  retest and explicit user confirmation pending.
+- Retest condition: The R1-UAT-025 CRM Test retest condition passes and the user explicitly
+  confirms the typography before closure.
 
 ## Review discipline
 
