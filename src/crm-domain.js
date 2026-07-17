@@ -8,6 +8,11 @@ export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting'
 export const JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
 export const COMPANY_TYPES = ['developer','agency','corporate_client','landlord_company','vendor','other'];
 
+export function normalizeDelimitedValues(value) {
+  const entries=(Array.isArray(value)?value:String(value??'').split(',')).map(x=>String(x).trim()).filter(Boolean),seen=new Set();
+  return entries.filter(x=>{const key=x.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;});
+}
+
 export const LEAD_TRANSITIONS = Object.freeze({
   New: ['Contacted','Lost'],
   Contacted: ['Qualified','Lost'],

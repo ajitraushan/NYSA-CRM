@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { addBusinessMinutes, validateBudget } from '../crm-domain.js';
+import { addBusinessMinutes, validateBudget, normalizeDelimitedValues } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isManager, isCrmReadOnly, canReadLead, canWriteLead, canAssignLead, leadScopeSql } from '../crm-policy.js';
 
 const r = Router();
@@ -187,7 +187,7 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
     const id=uuid(),version=(current?.versionNo||0)+1;
     const created=await one(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,funding_method,
       bedrooms_min,bedrooms_max,timeline_code,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-      [id,lead.id,version,text(b.businessLine),b.purpose,Array.isArray(b.propertyTypes)?b.propertyTypes:[],Array.isArray(b.areas)?b.areas:[],budget.min,budget.max,b.fundingMethod,b.bedroomsMin??null,b.bedroomsMax??null,text(b.timelineCode),text(b.notes),req.broker.id],client);
+      [id,lead.id,version,text(b.businessLine),b.purpose,normalizeDelimitedValues(b.propertyTypes),normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,b.bedroomsMin??null,b.bedroomsMax??null,text(b.timelineCode),text(b.notes),req.broker.id],client);
     await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version},client);return created;
   });res.status(201).json(row);
 });

@@ -668,6 +668,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   later inventory matching remains available for both leads; then obtain explicit user
   confirmation.
 
+### R1-UAT-020: Initial preferred areas do not reliably flow into structured matching requirements
+
+- Date raised: 2026-07-17
+- Area: New lead capture and structured requirements
+- Status: Correction implemented locally; CRM Test deployment, retest and explicit user
+  confirmation pending
+- Priority: Must
+- Related acceptance criteria: 80 and 81
+- Evidence: The initial Preferred areas field stores free text, while deterministic
+  matching reads the separately saved structured requirement's area array. Comma-separated
+  areas entered during lead capture are not automatically presented in that later form.
+- Required correction: Label the initial field as comma-separated, trim values, remove
+  case-insensitive duplicates, preserve each area separately, and prefill Structured
+  requirements from the lead when no authoritative requirement version exists. Existing
+  requirement versions remain authoritative and prefill the next version for review.
+- Retest condition: On CRM Test, create a lead with `Dubai Marina, Palm Jumeirah, dubai
+  marina`; verify the lead stores two clean areas, Structured requirements opens with
+  `Dubai Marina, Palm Jumeirah`, save the version and confirm both areas independently
+  satisfy matching evidence; then obtain explicit user confirmation.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -975,6 +995,19 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Status: Implemented locally and verified by automated browser-contract tests; CRM Test
   deployment, retest and explicit user confirmation pending
 - Retest condition: The R1-UAT-019 CRM Test retest condition passes and the user
+  explicitly confirms the result.
+
+### R1-AMD-019 Revision 1: Preferred-area continuity into structured requirements
+
+- Amendment ID: R1-AMD-019 Revision 1
+- Related UAT finding: R1-UAT-020
+- Agreed requirement: Treat comma-separated preferred areas as distinct normalized
+  alternatives, remove case-insensitive duplicates, prefill the first Structured
+  requirements version from lead capture, and keep saved structured versions
+  authoritative for matching and proposals.
+- Status: Implemented locally and verified by automated normalization, route and browser-
+  contract tests; CRM Test deployment, retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-020 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
 ## Review discipline

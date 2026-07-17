@@ -93,6 +93,9 @@ test('lead capture explains the original property link in business language',()=
   assert.match(ui,/It does not restrict later inventory matching/);
   assert.match(ui,/Original property enquiry/);
   assert.doesNotMatch(ui,/Related listing \(optional\)/);
+  assert.match(ui,/Preferred areas \(comma-separated\)/);
+  assert.match(ui,/will prefill Structured requirements/);
+  assert.match(ui,/initialAreas=.*lead\.preferredAreas/);
 });
 
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{

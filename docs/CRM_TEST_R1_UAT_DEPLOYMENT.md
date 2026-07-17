@@ -7,7 +7,7 @@ Production deployment is not authorized by this package.
 ## Scope
 
 This is one consolidated Release 1 correction candidate covering R1-UAT-001 through
-R1-UAT-019 and R1-AMD-001 through R1-AMD-018, including R1-AMD-007 Revision 2. All findings remain open until CRM Test
+R1-UAT-020 and R1-AMD-001 through R1-AMD-019, including R1-AMD-007 Revision 2. All findings remain open until CRM Test
 deployment, successful retest and explicit user confirmation.
 
 ## Required pre-deployment controls

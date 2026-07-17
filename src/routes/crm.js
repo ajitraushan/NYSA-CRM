@@ -3,7 +3,7 @@ import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS, ACTIVITY_TYPES,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
-  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition } from '../crm-domain.js';
+  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canAssignLead, leadScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
@@ -376,7 +376,7 @@ r.post('/crm/leads', async (req, res) => {
       sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
       [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budgetMin,budgetMax,
-       clean(b.preferredAreas),clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
+       normalizeDelimitedValues(b.preferredAreas).join(', ')||null,clean(b.propertyRequirements),teamId,agentId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,deadlines.policy?.id||null,
        b.nextFollowUpAt||null,req.broker.id,'unassigned',b.listingId||null,receivedAt],client);
     await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=received_at WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',row.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
@@ -422,7 +422,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   let assignedToParam = null;
   let assignedTeamParam = null;
   for(const [field,column] of Object.entries(map)) if(b[field]!==undefined){
-    const value=field==='budgetMin'?normalizedBudget.min:field==='budgetMax'?normalizedBudget.max:clean(b[field]);
+    const value=field==='budgetMin'?normalizedBudget.min:field==='budgetMax'?normalizedBudget.max:field==='preferredAreas'?(normalizeDelimitedValues(b[field]).join(', ')||null):clean(b[field]);
     params.push(value);sets.push(`${column}=$${params.length}`);changes[field]={from:lead[field],to:value};
     if (field === 'stage') stageParam = params.length;
     if (field === 'assignedTo') assignedToParam = params.length;
