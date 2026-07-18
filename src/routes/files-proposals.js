@@ -155,6 +155,10 @@ r.post('/crm/proposals/:proposalId/versions',async(req,res)=>{
       await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES($1,$2,'Lead',$3,$4),($5,$2,'Proposal',$6,$4)`,[uuid(),doc.id,proposal.leadId,req.broker.id,uuid(),proposal.id],client);
       const pv=await one(`INSERT INTO proposal_versions(id,proposal_id,version_number,template_id,recipient_snapshot,requirement_snapshot,organization_snapshot,financial_snapshot,narrative_snapshot,disclaimer,data_snapshot,data_as_of,storage_key,file_name,file_hash,file_size_bytes,document_version_id,created_by)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,[versionId,proposal.id,version,template.id,JSON.stringify(recipient),JSON.stringify(requirement),JSON.stringify(organizationSnapshot),JSON.stringify(scenario),JSON.stringify(narrative),disclaimer,JSON.stringify({...snapshot,disclaimer}),asOf,key,dv.fileName,fileHash,pdf.length,dv.id,req.broker.id],client);
+      const completedCorrectionTasks=await many(`UPDATE tasks SET status='completed',outcome=$1,completed_at=NOW(),updated_at=NOW()
+        WHERE task_type='proposal_correction' AND proposal_id=$2 AND assignee_id=$3 AND status IN ('open','in_progress')
+        RETURNING id,proposal_version_id`,[`Corrected immutable proposal Version ${version} generated and resubmitted for approval`,proposal.id,req.broker.id],client);
+      for(const task of completedCorrectionTasks)await audit('Task',task.id,'completed_by_proposal_version',req.broker.id,{replacementProposalVersionId:pv.id,returnedProposalVersionId:task.proposalVersionId},client);
       for(let i=0;i<properties.length;i++)await execute('INSERT INTO proposal_properties(id,proposal_version_id,listing_id,display_order,property_snapshot) VALUES($1,$2,$3,$4,$5)',[uuid(),pv.id,properties[i].id,i+1,JSON.stringify(properties[i])],client);
       for(let i=0;i<media.length;i++)await execute('INSERT INTO proposal_media(id,proposal_version_id,property_media_id,display_order,caption,storage_key_snapshot,file_hash_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7)',[uuid(),pv.id,media[i].id,i+1,media[i].caption,media[i].storageKey,media[i].fileHash],client);
       await execute("UPDATE proposals SET status='generated',updated_at=NOW() WHERE id=$1",[proposal.id],client);await audit('ProposalVersion',pv.id,'generated',req.broker.id,{proposalId:proposal.id,version,fileHash},client);return pv;});res.status(201).json(result);}catch(error){await removePrivate(key);throw error;}
@@ -173,8 +177,8 @@ r.post('/crm/proposal-versions/:versionId/request-changes',async(req,res)=>{
     const returned=await one("UPDATE proposal_versions SET status='changes_requested',reviewed_by=$1,reviewed_at=NOW(),review_decision='changes_requested',review_comment=$2 WHERE id=$3 AND status='generated' RETURNING *",[req.broker.id,reason,current.id],client);
     if(!returned)return null;
     await execute("UPDATE proposals SET status='changes_requested',updated_at=NOW() WHERE id=$1",[returned.proposalId],client);
-    await execute(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,due_at,created_by)
-      VALUES($1,$2,$3,$4,$5,$6,'urgent',NOW()+INTERVAL '1 day',$7)`,[uuid(),current.leadId,current.contactId,`Revise ${current.proposalNumber} · Version ${current.versionNumber}`,reason,current.createdBy,req.broker.id],client);
+    await execute(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,due_at,created_by,task_type,proposal_id,proposal_version_id)
+      VALUES($1,$2,$3,$4,$5,$6,'urgent',NOW()+INTERVAL '1 day',$7,'proposal_correction',$8,$9)`,[uuid(),current.leadId,current.contactId,`Revise ${current.proposalNumber} · Version ${current.versionNumber}`,reason,current.createdBy,req.broker.id,current.proposalId,current.id],client);
     await audit('ProposalVersion',returned.id,'changes_requested',req.broker.id,{reason,returnedTo:current.createdBy,taskCreated:true},client);
     return returned;
   });

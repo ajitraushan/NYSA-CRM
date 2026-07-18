@@ -9,11 +9,12 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-12),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql']);
+  assert.deepEqual(migrations.slice(-13),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql','023_proposal_correction_tasks.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
   assert.match(read('src/migrations/020_proposal_business_numbers.sql'),/NYSA-PR-/);
+  assert.match(read('src/migrations/023_proposal_correction_tasks.sql'),/proposal_correction/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -266,14 +267,23 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(routes,/status='changes_requested'/);
   assert.match(routes,/A meaningful change-request reason/);
   assert.match(routes,/INSERT INTO tasks/);
+  assert.match(routes,/task_type.*proposal_id.*proposal_version_id/);
+  assert.match(routes,/completed_by_proposal_version/);
   assert.match(routes,/returnedTo:current\.createdBy/);
   assert.match(app,/My action requests/);
   assert.match(app,/Work returned to you appears here/);
   assert.match(app,/crm\/tasks\?mine=1&bucket=open/);
   assert.match(read('src/routes/lead-operations.js'),/req\.query\.mine==='1'/);
+  assert.match(read('src/routes/lead-operations.js'),/proposal correction completes automatically/);
   assert.match(app,/data-tab="tasks">Tasks/);
   assert.match(app,/PERSONAL WORK QUEUE/);
   assert.match(app,/Search my tasks/);
+  assert.match(app,/Proposal changes requested/);
+  assert.match(app,/Reviewer remarks/);
+  assert.match(app,/View returned PDF/);
+  assert.match(app,/Revise same proposal/);
+  assert.match(app,/Generate corrected immutable version/);
+  assert.match(app,/task completes automatically/);
   assert.match(read('public/dashboard-ui.js'),/id="dashboard-tasks">My tasks/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(http,/frame-src blob:/);

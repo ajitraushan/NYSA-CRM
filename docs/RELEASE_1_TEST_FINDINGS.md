@@ -1468,6 +1468,27 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   approvals tab and cannot call the approval or request-changes APIs. Explicit user confirmation is
   required before closure.
 
+### R1-AMD-006 Revision 32: Governed returned-proposal correction work item
+
+- Amendment ID: R1-AMD-006 Revision 32
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: A returned proposal must not appear as an ordinary task with generic
+  Complete and Cancel actions. Show the proposal number, returned immutable version, reviewer,
+  return timestamp and full reviewer remarks as a distinct Proposal changes requested work item.
+  Provide View returned PDF and Revise same proposal actions. Revision must open the same proposal,
+  preserve its business reference and explain that a new immutable version is required. Generating
+  that corrected version must automatically complete the correction work item and resubmit the new
+  version for manager review; users must not manually complete or cancel the correction task and
+  must not create a second proposal merely to respond to review remarks.
+- Status: Implemented locally with migration `023_proposal_correction_tasks.sql` and verified by
+  101 automated tests; CRM Test deployment, functional retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, return a generated proposal with a clear reason. Sign in as the
+  original requester and confirm My tasks shows the exact remarks and returned PDF with only View
+  returned PDF and Revise same proposal. Revise and generate the next immutable version; confirm
+  the correction task completes automatically, the proposal number is unchanged, the version
+  increments and the new version reappears in the authorized approval queue. Explicit user
+  confirmation is required before closure.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2

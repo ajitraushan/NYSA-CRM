@@ -236,8 +236,16 @@ r.get('/crm/tasks',async(req,res)=>{
   if(req.query.bucket==='upcoming')bucket="t.status IN ('open','in_progress') AND t.due_at>=CURRENT_DATE+INTERVAL '1 day'";
   if(req.query.bucket==='completed')bucket="t.status='completed'";
   if(req.query.mine==='1'){params.push(req.broker.id);bucket=`(${bucket}) AND t.assignee_id=$${params.length}`;}
-  res.json({tasks:await many(`SELECT t.*,l.title AS lead_title,c.full_name AS contact_name,b.name AS assignee_name FROM tasks t JOIN leads l ON l.id=t.lead_id
-    JOIN contacts c ON c.id=t.contact_id JOIN brokers b ON b.id=t.assignee_id WHERE (${scope.clause}) AND (${bucket}) ORDER BY t.due_at`,params)});
+  res.json({tasks:await many(`SELECT t.*,l.title AS lead_title,c.full_name AS contact_name,b.name AS assignee_name,
+    p.proposal_number,p.title AS proposal_title,pv.version_number AS returned_version_number,
+    pv.review_comment AS return_reason,pv.reviewed_at AS returned_at,pv.document_version_id,
+    reviewer.name AS returned_by_name
+    FROM tasks t JOIN leads l ON l.id=t.lead_id
+    JOIN contacts c ON c.id=t.contact_id JOIN brokers b ON b.id=t.assignee_id
+    LEFT JOIN proposals p ON p.id=t.proposal_id
+    LEFT JOIN proposal_versions pv ON pv.id=t.proposal_version_id
+    LEFT JOIN brokers reviewer ON reviewer.id=pv.reviewed_by
+    WHERE (${scope.clause}) AND (${bucket}) ORDER BY t.due_at`,params)});
 });
 
 r.post('/crm/leads/:id/tasks',async(req,res)=>{
@@ -258,6 +266,7 @@ r.patch('/crm/tasks/:id',async(req,res)=>{
   const lead={assignedTo:task.assignedTo,assignedTeamId:task.assignedTeamId,createdBy:task.leadCreatedBy};
   if(task.assigneeId!==req.broker.id&&!canAssignLead(req.broker,lead))return res.status(403).json({error:'Task is outside your permitted scope'});
   const b=req.body||{},status=b.status||task.status;if(!['open','in_progress','completed','cancelled'].includes(status))return res.status(400).json({error:'Invalid task status'});
+  if(task.taskType==='proposal_correction'&&!['open','in_progress'].includes(status))return res.status(409).json({error:'A proposal correction completes automatically when the corrected immutable version is generated'});
   if(b.dueAt&&Number.isNaN(new Date(b.dueAt).valueOf()))return res.status(400).json({error:'Invalid dueAt'});
   if(status==='completed'&&!text(b.outcome)&&!task.outcome)return res.status(400).json({error:'Completion outcome is required'});
   if(status==='cancelled'&&!text(b.outcome)&&!task.outcome)return res.status(400).json({error:'Cancellation reason is required'});
