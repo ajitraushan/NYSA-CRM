@@ -210,6 +210,7 @@ r.post('/crm/contacts', async (req, res) => {
   const b = req.body || {};
   if (!canWriteCrm(req.broker)) return res.status(403).json({ error:'This role has read-only CRM access' });
   if (!clean(b.fullName)) return res.status(400).json({ error: 'fullName is required' });
+  if (!clean(b.email) || !clean(b.phone) || !clean(b.preferredChannel)) return res.status(400).json({ error:'New customers require email, phone and preferred channel' });
   const identity=validateContactIdentity(b.email,b.phone);
   if(identity.error) return res.status(400).json({error:identity.error});
   const enumError = invalidEnum(b.contactType || 'buyer', CONTACT_TYPES, 'contactType') ||
@@ -305,7 +306,7 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   if(status==='verified'&&!(req.broker.role==='admin'||isManager(req.broker)))return res.status(403).json({error:'Manager or administrator approval is required to mark KYC verified'});
   if(['pending_review','verified'].includes(status)&&(!type||!last4||!b.idDocumentExpiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
   const row=await one(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
-    kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5 ELSE NULL END,
+    kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5::uuid ELSE NULL::uuid END,
     kyc_notes=$6,updated_at=NOW() WHERE id=$7 RETURNING *`,[type,last4,b.idDocumentExpiry||null,status,req.broker.id,clean(b.kycNotes),contact.id]);
   await audit('Contact',contact.id,'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry:b.idDocumentExpiry||null});
   res.json(row);

@@ -1399,6 +1399,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   primary value and its secondary information render on separate lines with readable spacing;
   narrow the browser and confirm the table scrolls without overlapping or clipping values.
 
+### R1-AMD-021 Revision 5: Standalone customer creation and reliable KYC approval
+
+- Amendment ID: R1-AMD-021 Revision 5
+- Related UAT finding: R1-UAT-022
+- Agreed requirement: Make Customer Master a genuine operational starting point by exposing
+  a prominent standalone Create customer action. Require name, email, international phone and
+  preferred channel, perform the existing duplicate review, open the saved customer record and
+  leave lead creation optional. Correct KYC persistence so an authorized manager or
+  administrator can save a verified review without a PostgreSQL UUID type error.
+- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
+  retest and explicit user confirmation pending
+- Retest condition: On CRM Test, create a customer without creating a lead, confirm duplicate
+  review and mandatory contact validation, open the saved customer, save pending and verified
+  KYC reviews, then optionally create a related lead. Confirm no duplicate customer is produced
+  and the KYC audit entry is retained.
+
 ### R1-AMD-022 Revision 1: Mandatory customer contact and lead requirement essentials
 
 - Amendment ID: R1-AMD-022 Revision 1
