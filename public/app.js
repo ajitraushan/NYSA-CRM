@@ -767,15 +767,16 @@ async function openDetail(id) {
         <button class="btn btn-sm" id="d-close">Mark closed…</button>` : `<button class="btn btn-sm" id="d-reopen">Reopen as Available</button>`}
       ${ME.role === 'admin' ? '<button class="btn btn-sm btn-danger" id="d-archive">Archive (soft delete)</button>' : ''}
     </div>` : ''}
-    <div class="comments">
-      <h3>Broker coordination notes</h3>
+    <details class="comments">
+      <summary>Internal coordination notes (optional)</summary>
+      <p class="tool-note">This optional staff conversation is separate from the inventory record. It is not required to edit the listing, change availability or maintain property media.</p>
       <div id="c-list">Loading…</div>
       ${!isViewer() ? `
       <div class="comment-form">
         <input id="c-input" placeholder="Add an internal coordination note, for example: Client interested; arranging a viewing">
         <button class="btn btn-primary btn-sm" id="c-post" style="white-space:nowrap">Add note</button>
       </div>` : ''}
-    </div>
+    </details>
   </div>`);
 
   $('#d-edit', o)?.addEventListener('click', () => { o.remove(); openListingForm(l); });

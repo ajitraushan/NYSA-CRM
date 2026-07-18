@@ -215,7 +215,8 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Upload for approval/);
   assert.match(app,/Original quality is retained; files are not recompressed/);
   assert.match(app,/validatePropertyMediaFile/);
-  assert.match(app,/Broker coordination notes/);
+  assert.match(app,/Internal coordination notes \(optional\)/);
+  assert.match(app,/It is not required to edit the listing, change availability or maintain property media/);
   assert.match(app,/Enter a broker coordination note before selecting Add note/);
   assert.match(app,/data-gap-listing/);
   assert.match(app,/Draft highlights and suitability/);

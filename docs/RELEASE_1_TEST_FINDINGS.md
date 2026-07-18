@@ -1072,6 +1072,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   over 5 MB, below the minimum dimensions, above 24 megapixels or 6000 pixels, and outside the
   1:2–2:1 aspect range. Confirm an allowed PDF floor plan remains uploadable.
 
+### R1-AMD-006 Revision 17: Optional inventory coordination notes
+
+- Amendment ID: R1-AMD-006 Revision 17
+- Related UAT finding: R1-UAT-015
+- Agreed requirement: Internal coordination notes are optional staff conversation and are not
+  an inventory-maintenance requirement. Present them in a collapsed optional section and state
+  clearly that they do not affect editing the listing, changing availability or maintaining
+  property media. A note body is required only when the user deliberately chooses Add note.
+- Status: Implemented locally and verified by all 95 automated tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending
+- Retest condition: On CRM Test, edit and save an inventory listing, change its availability
+  and maintain media without opening or completing Internal coordination notes. Expand the
+  optional section and confirm a completed note can still be added independently.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2
