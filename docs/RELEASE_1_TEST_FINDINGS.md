@@ -927,6 +927,29 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the reviewed and downloaded document-version hash is unchanged. Explicit user confirmation
   is required before closure.
 
+### R1-UAT-031: Proposal booklet wastes page space and the budget range escapes its box
+
+- Date raised: 2026-07-18
+- Environment: CRM Test (`https://crm-test.nysarealty.com/`)
+- Area: Lead -> Proposal builder -> generated immutable PDF
+- Status: R1-AMD-006 Revision 22 implemented and visually verified locally; CRM Test deployment,
+  fresh-version retest and explicit user confirmation pending
+- Priority: Customer-facing document readability and layout quality
+- Related acceptance criteria: 128, 130, 134 and 135
+- Evidence: The branded booklet uses a largely empty standalone purchase-journey page and leaves
+  excessive unused space on property pages. A full formatted budget range can exceed the fixed
+  requirement-chip width instead of remaining inside its border.
+- Required correction: Use a compact responsive requirement-chip layout, abbreviate large budget
+  values without changing their meaning, place the purchase journey and next steps in available
+  summary-page space, enlarge approved-media presentation and balance each property page with
+  aligned suitability, highlight and trade-off cards. Preserve the one-property-per-page hierarchy
+  and exact immutable proposal data.
+- Retest condition: On CRM Test, generate a fresh proposal with a budget range and three selected
+  properties. Confirm the complete budget range remains inside its box, the summary contains the
+  journey and next steps without clipping, there is no mostly empty journey-only page, and all
+  property pages remain balanced with media, facts and reviewed narrative. Explicit user
+  confirmation is required before closure.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1205,6 +1228,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   confirm the exact PDF renders inside the modal without a content-blocked message. Confirm an
   unauthenticated request is denied and a third-party page still cannot frame CRM Test. The
   manager confirmation must remain unavailable if PDF retrieval itself fails.
+
+### R1-AMD-006 Revision 22: Compact responsive proposal-booklet pagination
+
+- Amendment ID: R1-AMD-006 Revision 22
+- Related UAT finding: R1-UAT-031
+- Agreed requirement: Keep requirement values within responsive boxes, show large budget values in
+  a concise business format such as `AED 2m - AED 2.5m`, use the summary page for the indicative
+  journey and next steps instead of creating a sparse standalone page, enlarge approved-media
+  presentation and align the property suitability, highlights and trade-offs in balanced cards.
+  Support the governed maximum of three properties without overlap, clipping or data loss.
+- Status: Implemented locally. A four-page, three-property A4 fixture was rendered with Poppler and
+  every page was visually inspected; CRM Test deployment and explicit user confirmation pending.
+- Retest condition: The R1-UAT-031 CRM Test retest condition passes and the user explicitly confirms
+  the corrected format.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
