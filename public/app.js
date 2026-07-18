@@ -192,6 +192,7 @@ function renderShell() {
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess() ? '<button data-tab="crm">Leads</button>' : ''}
+    ${hasCrmAccess() ? '<button data-tab="tasks">Tasks</button>' : ''}
     ${hasCrmAccess() ? '<button data-tab="customers">Customers</button>' : ''}
     <button data-tab="listings">Inventory</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
@@ -202,7 +203,7 @@ function renderShell() {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : renderListings();
+     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'tasks' ? renderTasks() : currentTab === 'customers' ? renderCustomers() : renderListings();
    }));
   renderDashboard();
 }
@@ -261,7 +262,21 @@ async function renderDashboard() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : renderListings();
+  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'tasks' ? renderTasks() : tab === 'customers' ? renderCustomers() : renderListings();
+}
+
+async function renderTasks(){
+  $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / PERSONAL WORK QUEUE</div><h2>My tasks</h2><p>Actions assigned to you, including customer follow-ups and proposals returned for correction.</p></div></section><div class="filterbar"><div class="filter-grid"><div><label>Status</label><select id="task-bucket"><option value="open">Open and in progress</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div><div class="span2"><label>Search my tasks</label><input id="task-search" type="search" placeholder="Action, reason, customer or lead"></div></div><div class="filter-actions"><button class="btn btn-primary btn-sm" id="task-refresh">Refresh</button><span id="task-count" class="result-count"></span></div></div><div id="task-workspace"><div class="loading-state">Loading your tasks...</div></div>`;
+  let tasks=[];
+  const draw=()=>{const q=$('#task-search').value.trim().toLowerCase(),rows=tasks.filter(t=>!q||[t.subject,t.details,t.contactName,t.leadTitle,t.priority,t.status].some(x=>String(x||'').toLowerCase().includes(q)));$('#task-count').textContent=`${rows.length} task${rows.length===1?'':'s'}`;$('#task-workspace').innerHTML=`<div class="pipeline-table-wrap"><table><tr><th>Priority</th><th>Action required</th><th>Customer / lead</th><th>Status</th><th>Due</th><th>Actions</th></tr>${rows.map(t=>`<tr><td><span class="pill">${esc(t.priority)}</span></td><td><b>${esc(t.subject)}</b><small>${esc(t.details||'No additional instructions')}</small></td><td>${esc(t.contactName)}<small>${esc(t.leadTitle)}</small></td><td>${esc(t.status.replaceAll('_',' '))}</td><td>${fmtDate(t.dueAt)}</td><td><button class="btn btn-sm" data-my-task-lead="${t.leadId}">Open lead</button> ${t.status==='open'?`<button class="btn btn-sm" data-my-task-start="${t.id}">Start</button>`:''}${!['completed','cancelled'].includes(t.status)?`<button class="btn btn-primary btn-sm" data-my-task-complete="${t.id}">Complete</button> <button class="btn btn-sm" data-my-task-cancel="${t.id}">Cancel</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">No tasks match this view.</td></tr>'}</table></div>`;
+    document.querySelectorAll('[data-my-task-lead]').forEach(b=>b.addEventListener('click',()=>openLead(b.dataset.myTaskLead)));
+    document.querySelectorAll('[data-my-task-start]').forEach(b=>b.addEventListener('click',()=>change(b.dataset.myTaskStart,'in_progress')));
+    document.querySelectorAll('[data-my-task-complete]').forEach(b=>b.addEventListener('click',()=>change(b.dataset.myTaskComplete,'completed')));
+    document.querySelectorAll('[data-my-task-cancel]').forEach(b=>b.addEventListener('click',()=>change(b.dataset.myTaskCancel,'cancelled')));
+  };
+  const load=async()=>{try{({tasks}=await api(`/crm/tasks?mine=1&bucket=${encodeURIComponent($('#task-bucket').value)}`));draw();}catch(err){$('#task-workspace').textContent=err.message;}};
+  const change=async(id,status)=>{const outcome=status==='in_progress'?null:prompt(status==='completed'?'Completion outcome (required)':'Cancellation reason (required)');if(status!=='in_progress'&&!outcome)return;try{await api(`/crm/tasks/${id}`,{method:'PATCH',body:{status,outcome}});toast(status==='in_progress'?'Task started':status==='completed'?'Task completed':'Task cancelled');load();}catch(err){toast(err.message);}};
+  $('#task-refresh').addEventListener('click',load);$('#task-bucket').addEventListener('change',load);$('#task-search').addEventListener('input',draw);load();
 }
 
 /* ============ CUSTOMERS ============ */

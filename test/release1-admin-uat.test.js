@@ -271,6 +271,10 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Work returned to you appears here/);
   assert.match(app,/crm\/tasks\?mine=1&bucket=open/);
   assert.match(read('src/routes/lead-operations.js'),/req\.query\.mine==='1'/);
+  assert.match(app,/data-tab="tasks">Tasks/);
+  assert.match(app,/PERSONAL WORK QUEUE/);
+  assert.match(app,/Search my tasks/);
+  assert.match(read('public/dashboard-ui.js'),/id="dashboard-tasks">My tasks/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(http,/frame-src blob:/);
   assert.match(http,/frame-ancestors 'none'/);

@@ -2002,6 +2002,23 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-028 CRM Test retest condition passes and the user explicitly
   confirms the result.
 
+### R1-AMD-028 Revision 2: Visible personal task workspace
+
+- Amendment ID: R1-AMD-028 Revision 2
+- Related UAT finding: R1-UAT-028
+- Agreed requirement: Every internal CRM user with assigned work must have an obvious Tasks entry
+  in the primary navigation and a My tasks action on the role dashboard. The personal workspace must
+  show only tasks assigned to the signed-in user, support open, overdue, due-today, upcoming and
+  completed views, allow business-text search, and provide lead drill-down, Start, Complete and
+  reasoned Cancel actions. Dashboard task counts remain summaries and must not substitute for the
+  underlying actionable queue.
+- Status: Implemented locally and verified by 101 automated tests; CRM Test deployment, functional
+  retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, sign in separately as Agent, Team Manager, Managing Director and
+  Administrator. Confirm Tasks is visible, each user sees only personally assigned tasks, filters and
+  search work, and permitted status actions update the queue and lead action plan. Confirm another
+  user's task cannot be obtained or changed. Explicit user confirmation is required before closure.
+
 ### R1-AMD-029 Revision 1: Secure administrator-assisted password recovery
 
 - Amendment ID: R1-AMD-029 Revision 1
