@@ -956,7 +956,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
 - Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
-  Revisions 24 through 27 are implemented locally; CRM Test deployment, cross-role retest and explicit
+  Revisions 24 through 28 are implemented locally; CRM Test deployment, cross-role retest and explicit
   user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
@@ -983,6 +983,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   role-scoped server-side search with pagination.
   Assign every proposal an immutable monthly business number and expose it consistently in the
   builder, approval register, PDF and generated document reference.
+  Present the approval register in its own clearly labelled dashboard tab for Team Managers and
+  Managing Director/Administrator instead of repeating it among unrelated dashboard sections.
 - Retest condition: On CRM Test, generate proposals under two different teams. Confirm each Team
   Manager sees and can approve only the managed-team item; the Managing Director sees and can
   approve both; an Agent sees no approval queue and cannot call the approval API; approval removes
@@ -1365,6 +1367,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   submission date returns the expected scoped rows; a value outside the reviewer's scope returns none.
   Confirm the same number appears in the builder, approval register, PDF and Lead Document reference.
   Explicit user confirmation is required before closure.
+
+### R1-AMD-006 Revision 28: Dedicated proposal approvals dashboard tab
+
+- Amendment ID: R1-AMD-006 Revision 28
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Provide a dedicated `Proposal approvals` dashboard tab for Team Managers,
+  Managing Director and Administrator. Show the current pending count on the tab, render the
+  searchable approval register as the tab's primary content and remove the register from Team
+  performance, Executive, Sales, Inventory and Operations and Risk sections so it cannot be lost
+  among unrelated management information. Retain the same role scope, search, pagination,
+  newest-first order and review actions.
+- Status: Implemented locally with separate Manager/Executive view contracts and automated domain/
+  browser tests; CRM Test deployment, authenticated visual/functional retest and explicit user
+  confirmation pending.
+- Retest condition: On CRM Test, sign in as Team Manager and Managing Director. Confirm each sees a
+  dedicated `Proposal approvals (n)` tab, selecting it shows only the approval register without the
+  general KPI/panel collection, the register is absent from every other dashboard tab, and scope,
+  search, pagination, ordering, Open lead and Review on screen continue to work. Confirm an Agent
+  sees no approval tab. Explicit user confirmation is required before closure.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

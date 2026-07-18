@@ -125,6 +125,11 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   const proposals=fs.readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   assert.match(ui,/Proposal approvals/);
+  assert.match(ui,/data-dashboard-view/);
+  assert.match(ui,/data-approval-tab/);
+  assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
+  assert.match(ui,/data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
+  assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
   assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
   assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);
   assert.match(ui,/data-proposal-approval/);

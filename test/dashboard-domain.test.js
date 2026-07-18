@@ -42,6 +42,10 @@ test('managing director executive tabs have distinct content contracts',()=>{
   assert.ok(risk.panels.includes('integration_health'));
   assert.notDeepEqual(sales.panels,inventory.panels);
   assert.notDeepEqual(inventory.panels,risk.panels);
+  const approvals=buildRoleDashboardPresentation({...fixtureInput(),view:'Proposal approvals'});
+  assert.deepEqual(approvals.panels,['proposal_approvals']);
+  assert.deepEqual(approvals.kpis.map(x=>x.code),['proposal_workload']);
+  assert.equal(dashboardViewFor('manager','Proposal approvals'),'Proposal approvals');
 });
 
 function fixtureInput(){return {type:'executive',current:{leads:1},previous:{},targets:[],trend:[],tasks:{},exceptions:{},proposals:{},inventory:{},agents:[],dataAsOf:new Date('2026-07-15T00:00:00Z')};}
