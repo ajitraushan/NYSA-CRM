@@ -956,7 +956,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
 - Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
-  Revisions 24 through 28 are implemented locally; CRM Test deployment, cross-role retest and explicit
+  Revisions 24 through 30 are implemented locally; CRM Test deployment, cross-role retest and explicit
   user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
@@ -982,7 +982,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   precise minute/hour/day waiting duration, separate the values into readable lines, and provide
   role-scoped server-side search with pagination.
   Assign every proposal an immutable monthly business number and expose it consistently in the
-  builder, approval register, PDF and generated document reference.
+  builder, approval register, PDF and generated document reference. Let an authorized business
+  reviewer either approve or return the exact immutable version with a mandatory correction reason;
+  notify the requester through an assigned correction task and require a new version for resubmission.
   Present the approval register in its own clearly labelled dashboard tab for Team Managers and
   Managing Director/Administrator instead of repeating it among unrelated dashboard sections.
 - Retest condition: On CRM Test, generate proposals under two different teams. Confirm each Team
@@ -1426,6 +1428,27 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   access denied from both the approval queue and review APIs. Confirm Team Manager sees only managed-
   team requests, Managing Director sees the company queue and Agent has no approval access. Explicit
   user confirmation is required before closure.
+
+### R1-AMD-006 Revision 30: Return proposal to requester for correction
+
+- Amendment ID: R1-AMD-006 Revision 30
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: In the exact immutable PDF review, present two explicit business decisions:
+  Approve for external delivery or Request changes. Request changes requires a meaningful reason,
+  preserves the returned PDF and decision evidence, removes it from the pending approval queue,
+  changes the proposal state to Changes requested and creates an urgent correction task assigned to
+  the user who generated that version. The requester can see the reason in proposal history and must
+  generate a new immutable version for another approval attempt; the returned version is never edited
+  or overwritten.
+- Status: Implemented locally with migration `022_proposal_changes_requested.sql`, atomic decision/
+  task creation and browser/API regression tests; CRM Test deployment, cross-role workflow retest and
+  explicit user confirmation pending.
+- Retest condition: On CRM Test, review a generated version as Team Manager or Managing Director.
+  Confirm Request changes is blocked without a meaningful reason; submit a reason and verify the item
+  leaves the approval queue, the requester receives an urgent task containing that reason, and the
+  immutable returned PDF remains viewable. Generate Version 2 and confirm only Version 2 returns to
+  the approval queue while Version 1 retains its Changes requested decision. Approve Version 2 and
+  confirm it can proceed to recorded external delivery. Explicit user confirmation is required.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

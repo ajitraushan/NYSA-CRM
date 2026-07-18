@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-11),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql']);
+  assert.deepEqual(migrations.slice(-12),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
@@ -251,7 +251,9 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/it is not another calculation input/);
   assert.match(app,/Generate immutable draft PDF/);
   assert.match(app,/Review on screen/);
-  assert.match(app,/Confirm proposal approval/);
+  assert.match(app,/Approve for external delivery/);
+  assert.match(app,/Request changes/);
+  assert.match(app,/mandatory when requesting changes/);
   assert.match(app,/Record external delivery/);
   assert.match(app,/This does not send the PDF/);
   assert.match(app,/Open Lead Documents/);
@@ -260,6 +262,11 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(routes,/Content-Disposition',`inline;/);
   assert.match(routes,/reviewConfirmation!==true/);
   assert.match(routes,/reviewMethod:'onscreen_pdf'/);
+  assert.match(routes,/proposal-versions\/:versionId\/request-changes/);
+  assert.match(routes,/status='changes_requested'/);
+  assert.match(routes,/A meaningful change-request reason/);
+  assert.match(routes,/INSERT INTO tasks/);
+  assert.match(routes,/returnedTo:current\.createdBy/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(http,/frame-src blob:/);
   assert.match(http,/frame-ancestors 'none'/);
