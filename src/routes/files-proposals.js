@@ -4,7 +4,7 @@ import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { hasInternalCrmIdentity,isManager,canReadLead,canWriteLead,contactScopeSql } from '../crm-policy.js';
-import { decodeAndValidateFile,savePrivate,readPrivate,removePrivate } from '../private-files.js';
+import { decodeAndValidateFile,validatePropertyImage,PROPERTY_IMAGE_POLICY,savePrivate,readPrivate,removePrivate } from '../private-files.js';
 import { makeTextPdf } from '../simple-pdf.js';
 import { publicOrganization,formatOrganizationDate,organizationContactLines } from '../organization-domain.js';
 import { validateProposalConfiguration } from '../admin-governance.js';
@@ -23,7 +23,9 @@ r.get('/crm/listings/:id/media',async(req,res)=>{const listing=await one('SELECT
 r.post('/crm/listings/:id/media',async(req,res)=>{
   const listing=await listingUploadAllowed(req,req.params.id);if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Only the listing owner or administrator can upload media'});
   const b=req.body||{};if(!['image','floor_plan','brochure'].includes(b.mediaKind)||!clean(b.title)||!clean(b.source))return res.status(400).json({error:'mediaKind, title and source are required'});
-  const file=decodeAndValidateFile({...b,maxBytes:Number(process.env.MAX_MEDIA_BYTES||8388608),allowedTypes:imageTypes});if(file.error)return res.status(400).json({error:file.error});
+  const isImage=['image/jpeg','image/png','image/webp'].includes(b.mediaType),maxBytes=isImage?Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes):Number(process.env.MAX_MEDIA_BYTES||8388608);
+  const file=decodeAndValidateFile({...b,maxBytes,allowedTypes:imageTypes});if(file.error)return res.status(400).json({error:file.error});
+  if(isImage){const dimensions=validatePropertyImage(file.buffer,b.mediaType);if(dimensions.error)return res.status(400).json({error:dimensions.error});}
   const key=await savePrivate(file.buffer,path.extname(file.fileName));try{const id=uuid(),row=await one(`INSERT INTO property_media(id,listing_id,media_kind,title,caption,file_name,media_type,file_size_bytes,storage_key,file_hash,source,display_order,owner_id,created_by)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13) RETURNING *`,[id,listing.id,b.mediaKind,clean(b.title),clean(b.caption),file.fileName,b.mediaType,file.buffer.length,key,file.fileHash,clean(b.source),Number(b.displayOrder||0),req.broker.id]);await audit('PropertyMedia',id,'uploaded',req.broker.id,{listingId:listing.id,hash:file.fileHash});res.status(201).json(row);}catch(error){await removePrivate(key);throw error;}
 });

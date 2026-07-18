@@ -1054,6 +1054,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   coordination note is saved and immediately displayed. Confirm listing changes remain under
   Edit listing and do not depend on media upload or coordination notes.
 
+### R1-AMD-006 Revision 16: Balanced property-image quality and performance controls
+
+- Amendment ID: R1-AMD-006 Revision 16
+- Related UAT findings: R1-UAT-008 and R1-UAT-015
+- Agreed requirement: Keep property proposals fast without silently reducing image quality.
+  JPG/JPEG, PNG and WEBP property images must retain their original bytes but be limited to
+  5 MB, 24 megapixels and 6000 pixels on either edge. Images must have at least 1200 pixels on
+  the long edge and 720 pixels on the short edge, with an aspect ratio from 1:2 through 2:1.
+  Apply the same immediate browser guidance and authoritative server validation. PDFs used as
+  floor plans or brochures are exempt from image-dimension rules and retain the existing 8 MB
+  media limit.
+- Status: Implemented locally and verified by all 95 automated tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending
+- Retest condition: On CRM Test, confirm a compliant high-quality image uploads without
+  recompression and remains pending approval. Confirm clear rejection messages for an image
+  over 5 MB, below the minimum dimensions, above 24 megapixels or 6000 pixels, and outside the
+  1:2–2:1 aspect range. Confirm an allowed PDF floor plan remains uploadable.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2

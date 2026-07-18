@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { decodeAndValidateFile } from '../src/private-files.js';
+import { decodeAndValidateFile,imageDimensions,validatePropertyImage } from '../src/private-files.js';
 import { makeTextPdf } from '../src/simple-pdf.js';
 
 test('private upload validation checks type, magic, extension, size and hash',()=>{
@@ -18,6 +18,18 @@ test('private upload validation checks type, magic, extension, size and hash',()
 test('security test content is rejected before persistence',()=>{
   const eicar=Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
   assert.match(decodeAndValidateFile({base64:eicar.toString('base64'),mediaType:'text/plain',fileName:'test.txt',maxBytes:1024,allowedTypes:['text/plain']}).error,/security/);
+});
+
+test('property image policy balances proposal quality and delivery weight',()=>{
+  const png=(width,height)=>{const data=Buffer.alloc(24);Buffer.from([137,80,78,71,13,10,26,10]).copy(data);data.writeUInt32BE(width,16);data.writeUInt32BE(height,20);return data;};
+  const jpeg=(width,height)=>{const data=Buffer.from([0xff,0xd8,0xff,0xc0,0x00,0x11,0x08,0,0,0,0,0x03,1,0x11,0,2,0x11,0,3,0x11,0]);data.writeUInt16BE(height,7);data.writeUInt16BE(width,9);return data;};
+  assert.deepEqual(imageDimensions(png(1600,900),'image/png'),{width:1600,height:900});
+  assert.deepEqual(imageDimensions(jpeg(1920,1080),'image/jpeg'),{width:1920,height:1080});
+  assert.deepEqual(validatePropertyImage(jpeg(1920,1080),'image/jpeg'),{width:1920,height:1080});
+  assert.deepEqual(validatePropertyImage(png(1600,900),'image/png'),{width:1600,height:900});
+  assert.match(validatePropertyImage(png(640,480),'image/png').error,/too small/);
+  assert.match(validatePropertyImage(png(2400,800),'image/png').error,/aspect ratio/);
+  assert.match(validatePropertyImage(png(6001,4000),'image/png').error,/too large/);
 });
 
 test('proposal generator creates a structurally complete PDF byte stream',()=>{
