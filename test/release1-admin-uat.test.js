@@ -193,7 +193,7 @@ test('administration uses a left maintenance menu and proposal designer enforces
 });
 
 test('proposal builder guides shortlist media narrative and governed assumptions',()=>{
-  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js'),domain=read('src/ai-domain.js'),styles=read('public/index.html');
+  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js'),domain=read('src/ai-domain.js'),styles=read('public/index.html'),http=read('src/lib/http-kit.js');
   assert.match(routes,/proposal-builder-context/);
   assert.match(routes,/rankInventoryMatches\(requirement,listings\)/);
   assert.match(routes,/approval_status='approved'/);
@@ -239,6 +239,9 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(routes,/reviewConfirmation!==true/);
   assert.match(routes,/reviewMethod:'onscreen_pdf'/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
+  assert.match(http,/frame-src blob:/);
+  assert.match(http,/frame-ancestors 'none'/);
+  assert.match(http,/X-Frame-Options', 'DENY'/);
   assert.match(styles,/\.proposal-builder-modal\{max-width:1100px/);
   assert.match(styles,/\.proposal-media-choices/);
   assert.match(styles,/\.proposal-review-modal\{max-width:1180px/);
