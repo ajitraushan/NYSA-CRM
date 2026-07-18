@@ -899,6 +899,32 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   status, recipient and delivery time are visible under Open Lead Documents. Confirm an agent
   cannot perform manager approval.
 
+### R1-UAT-030: Generated proposal PDF does not use the approved booklet format
+
+- Date raised: 2026-07-18
+- Environment: CRM Test (`https://crm-test.nysarealty.com/`)
+- Area: Lead -> Proposal builder -> generated/downloaded immutable PDF
+- Status: R1-AMD-006 Revision 20 implemented locally; automated and visual PDF verification
+  completed, CRM Test deployment, authenticated retest and explicit user confirmation pending
+- Priority: Customer-facing document quality and template governance
+- Related acceptance criteria: 128, 130, 132, 134, 135, 137 and 139
+- Evidence: The downloaded proposal is a 6.3 KB, two-page, text-only PDF. It omits the
+  approved booklet composition, logo and selected property image and does not match the
+  branded draft sample reviewed in Administration. The server used a separate generic text
+  renderer instead of the active approved proposal-template layout.
+- Required correction: Generate the immutable reviewed/downloaded PDF from the active
+  approved booklet design and authoritative proposal snapshot. Include active organization
+  branding, masked customer reference, requirement summary, up to three separately identified
+  property matches, selected approved media, property facts, reviewed narrative and trade-offs,
+  applicable purchase journey, next steps, disclaimer, creator/date/version and page footer.
+  The on-screen review and downloaded file must be the same stored bytes and hash.
+- Retest condition: On CRM Test, generate a fresh proposal with the active organization logo,
+  one to three selected properties and approved images. Review it on screen and download it;
+  confirm both show the same branded booklet format, customer/requirement/property content,
+  selected images, timeline, next steps and disclaimer without clipping or overlap. Confirm
+  the reviewed and downloaded document-version hash is unchanged. Explicit user confirmation
+  is required before closure.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1143,6 +1169,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-029 CRM Test retest condition passes and the user explicitly
   confirms the workflow. Actual one-click customer transmission remains outside this
   correction until a delivery connector is separately approved and configured.
+
+### R1-AMD-006 Revision 20: Render the immutable PDF in the approved booklet format
+
+- Amendment ID: R1-AMD-006 Revision 20
+- Related UAT finding: R1-UAT-030
+- Agreed requirement: Remove the separate generic text-only proposal renderer. Build the
+  immutable PDF from the active organization profile, approved proposal-template rules and
+  authoritative proposal snapshot using the same customer-facing booklet hierarchy that is
+  reviewed in Administration. Render branding, customer and requirement summary, numbered
+  property pages, selected approved JPEG/PNG media, facts and reviewed narrative, applicable
+  purchase journey, next steps, disclaimer, creator/date/version and page footer. Preserve
+  one exact stored byte stream for on-screen review, download, approval and delivery evidence.
+- Status: Implemented locally; booklet fixture generated, rendered to PNG with Poppler and all
+  pages visually inspected for hierarchy, wrapping, image placement, footer and clipping.
+  Full automated verification, CRM Test deployment, authenticated retest and explicit user
+  confirmation remain pending.
+- Retest condition: The R1-UAT-030 CRM Test retest condition passes and the user explicitly
+  confirms the generated proposal format.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

@@ -47,7 +47,8 @@ test('proposal creation consumes administrator-defined prompts and snapshots the
   assert.match(api,/buildIndicativePurchaseTimeline/);
   assert.match(api,/approvedText\.purchase_timeline=indicativeTimeline\.text/);
   assert.match(api,/configuration:template\.configuration/);
-  assert.match(api,/configuredSections\.filter\(x=>x\.source==='agent_input'/);
+  assert.match(api,/inputs:agentInputs/);
+  assert.match(api,/makeProposalPdf/);
 });
 
 test('Admin Assistant can maintain routine teams settings and listings without approval authority',()=>{
@@ -147,7 +148,7 @@ test('structured requirements use governed property choices and save blank bedro
 });
 
 test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
-  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js');
+  const app=read('public/app.js'),routes=read('src/routes/files-proposals.js'),pdf=read('src/proposal-pdf.js');
   assert.match(app,/setupAdminWorkspace\(\)/);
   assert.match(app,/className='admin-workspace'/);
   assert.match(app,/admin-maintenance-nav/);
@@ -173,8 +174,9 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(app,/Final four characters only/);
   assert.match(routes,/'contact\.phone':recipient\.phone/);
   assert.match(routes,/'contact\.kyc_status':recipient\.kycStatus/);
-  assert.match(routes,/Inventory ID: \$\{p\.inventoryReference\}/);
-  assert.match(routes,/Identity reference: \$\{identityReference\}/);
+  assert.match(pdf,/p\.inventoryReference/);
+  assert.match(pdf,/IDENTITY REFERENCE/);
+  assert.match(pdf,/YOUR DUBAI PROPERTY SHORTLIST/);
   assert.doesNotMatch(routes,/KYC summary: \$\{maskedKyc\}/);
   const crm=read('src/routes/crm.js');
   assert.match(crm,/never enter the full ID number/);
