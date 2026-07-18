@@ -956,7 +956,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
 - Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
-  Revision 24 latest-version filtering is implemented locally; cross-role retest and explicit
+  Revisions 24 and 25 are implemented locally; CRM Test deployment, cross-role retest and explicit
   user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
@@ -967,11 +967,17 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   CRM Test follow-up evidence shows the new queue can surface an older pending immutable Version 1
   created before the branded renderer correction; the reviewer correctly sees the stored legacy
   bytes, but the queue must prefer a subsequently generated current version rather than retain both.
+  The visible queue also joins customer, lead, proposal, team and requester values without adequate
+  spacing, uses the ambiguous label "Less than 1 hour", omits the submitted timestamp and provides
+  no search facility for a growing approval register.
 - Required correction: Show a Proposal approvals queue on Team Manager and Managing Director
   dashboards. Display the customer, lead, proposal/template/version, team, requester and waiting
   age, with Open lead and Review on screen actions. Restrict Team Managers to their actively
   managed teams, give the Managing Director and Administrator company-wide approval scope, keep
   agents out of the queue and do not broaden Director access to routine lead editing.
+  Show only the latest generated version per proposal, display the exact submitted timestamp and a
+  precise minute/hour/day waiting duration, separate the values into readable lines, and provide
+  role-scoped server-side search with pagination.
 - Retest condition: On CRM Test, generate proposals under two different teams. Confirm each Team
   Manager sees and can approve only the managed-team item; the Managing Director sees and can
   approve both; an Agent sees no approval queue and cannot call the approval API; approval removes
@@ -1280,8 +1286,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   lead and Review on screen actions. Team Manager scope is limited to actively managed teams;
   Managing Director and Administrator scope is company-wide. Permit those roles to approve the
   exact reviewed version without granting the Managing Director general lead-edit capability.
-- Status: Implemented locally with policy, route and browser-contract tests; CRM Test deployment,
-  authenticated cross-role retest and explicit user confirmation pending.
+- Status: Deployed to CRM Test and the Team Manager queue is visible. Authenticated cross-role
+  scope retest and explicit user confirmation remain pending; the finding remains open.
 - Retest condition: The R1-UAT-032 CRM Test retest condition passes and the user explicitly confirms
   the operational approval workflow.
 
@@ -1298,6 +1304,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: On CRM Test, retain a pending legacy Version 1, generate a corrected Version 2
   and confirm the queue shows only Version 2. Review Version 2 and confirm the proposal disappears
   from the queue while both immutable versions remain accessible in proposal/document history.
+
+### R1-AMD-006 Revision 25: Searchable timestamped proposal approval register
+
+- Amendment ID: R1-AMD-006 Revision 25
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Present each pending approval as a readable operational record with distinct
+  customer/lead, proposal/version, team/requester and action columns. Replace "Less than 1 hour"
+  with the exact submitted date/time and a precise elapsed duration in minutes, hours or days.
+  Provide role-scoped server-side search across customer, lead, proposal, team, requester and version,
+  with pagination so a large queue remains usable. Apply Revision 24 latest-version filtering to the
+  same register.
+- Status: Implemented locally with parameterized server-side search, pagination, scope enforcement,
+  responsive layout and automated contract tests; CRM Test deployment, authenticated retest and
+  explicit user confirmation pending.
+- Retest condition: On CRM Test, create enough pending proposals to span more than one page. Confirm
+  each row shows a submitted timestamp and precise waiting duration, search finds matching customer,
+  lead, proposal, team, requester and version values only within the signed-in reviewer's scope,
+  Previous/Next navigate correctly, only the latest generated version of each proposal is present,
+  and Open lead/Review on screen still work. Explicit user confirmation is required before closure.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

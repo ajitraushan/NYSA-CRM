@@ -20,6 +20,19 @@ function filters(req,alias='l',dateColumn=`${alias}.created_at`){
 }
 function priorWhere(base,alias='l',dateColumn=`${alias}.created_at`){const days=Math.max(1,Math.ceil((base.end-base.start)/86400000)+1),end=new Date(base.start.getTime()-1),start=new Date(end.getTime()-(days-1)*86400000);const params=[],scope=leadScopeSql(alias,base.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(base.start));if(base.selected.source)add(`${alias}.source=?`,base.selected.source);if(base.selected.campaignCode)add(`${alias}.campaign_code=?`,base.selected.campaignCode);if(base.selected.teamId)add(`${alias}.assigned_team_id=?`,base.selected.teamId);if(base.selected.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,base.selected.managerId);if(base.selected.agentId)add(`${alias}.assigned_to=?`,base.selected.agentId);if(base.selected.businessType)add(`${alias}.business_type=?`,base.selected.businessType);if(base.selected.stage)add(`${alias}.stage=?`,base.selected.stage);return {where:where.join(' AND '),params,start,end};}
 
+async function loadProposalApprovalQueue(req,selected={},search='',page=1,pageSize=20){
+  if(!isProposalApprover(req.broker))return {rows:[],count:0,page:1,pageSize};
+  const params=[],scope=proposalApprovalScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`v.status='generated'`,`v.version_number=(SELECT MAX(latest.version_number) FROM proposal_versions latest WHERE latest.proposal_id=v.proposal_id)`],add=(sql,value)=>{params.push(value);where.push(sql.replace('?',`$${params.length}`));};
+  if(selected.teamId)add('l.assigned_team_id=?',selected.teamId);
+  if(selected.managerId)add('l.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)',selected.managerId);
+  if(selected.agentId)add('l.assigned_to=?',selected.agentId);
+  if(selected.businessType)add('l.business_type=?',selected.businessType);
+  if(search){params.push(`%${search}%`);const key=`$${params.length}`;where.push(`(c.full_name ILIKE ${key} OR l.title ILIKE ${key} OR p.title ILIKE ${key} OR COALESCE(t.name,'') ILIKE ${key} OR COALESCE(creator.name,'') ILIKE ${key} OR v.version_number::text ILIKE ${key})`);}
+  const from=`FROM proposal_versions v JOIN proposals p ON p.id=v.proposal_id JOIN leads l ON l.id=p.lead_id JOIN contacts c ON c.id=p.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers creator ON creator.id=v.created_by WHERE ${where.join(' AND ')}`;
+  const safePage=Math.max(1,Number(page)||1),safeSize=Math.max(10,Math.min(50,Number(pageSize)||20)),offset=(safePage-1)*safeSize,count=(await one(`SELECT COUNT(*)::int AS count ${from}`,params)).count,rowParams=[...params,safeSize,offset],rows=await many(`SELECT v.id AS version_id,v.version_number,v.document_version_id,v.created_at,p.id AS proposal_id,p.title AS proposal_title,p.template_type,l.id AS lead_id,l.title AS lead_title,l.business_type,c.full_name AS customer_name,t.name AS team_name,creator.name AS requested_by ${from} ORDER BY v.created_at ASC LIMIT $${params.length+1} OFFSET $${params.length+2}`,rowParams);
+  return {rows,count,page:safePage,pageSize:safeSize};
+}
+
 r.get('/crm/dashboard/filter-options',async(req,res)=>{
   const params=[],scope=leadScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`l.campaign_code IS NOT NULL`,`BTRIM(l.campaign_code)<>''`];
   if(req.query.source){params.push(req.query.source);where.push(`l.source=$${params.length}`);}
@@ -127,22 +140,14 @@ r.get('/crm/dashboard',async(req,res)=>{
   const taskSummary=Object.fromEntries(tasks.map(item=>[item.label,item.value]));
   const recentActivities=await many(`SELECT a.id,a.activity_type,a.subject,a.outcome,a.created_at,l.id AS lead_id,l.title,c.full_name AS contact_name,b.name AS owner_name FROM activities a
     JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 12`,f.params);
-  const approvalParams=[],approvalScope=proposalApprovalScopeSql('l',req.broker,approvalParams),approvalWhere=[`(${approvalScope.clause})`,`v.status='generated'`,`v.version_number=(SELECT MAX(latest.version_number) FROM proposal_versions latest WHERE latest.proposal_id=v.proposal_id)`],addApproval=(sql,value)=>{approvalParams.push(value);approvalWhere.push(sql.replace('?',`$${approvalParams.length}`));};
-  if(f.selected.teamId)addApproval('l.assigned_team_id=?',f.selected.teamId);
-  if(f.selected.managerId)addApproval('l.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)',f.selected.managerId);
-  if(f.selected.agentId)addApproval('l.assigned_to=?',f.selected.agentId);
-  if(f.selected.businessType)addApproval('l.business_type=?',f.selected.businessType);
-  const proposalApprovalQueue=isProposalApprover(req.broker)?await many(`SELECT v.id AS version_id,v.version_number,v.document_version_id,v.created_at,
-    p.id AS proposal_id,p.title AS proposal_title,p.template_type,l.id AS lead_id,l.title AS lead_title,l.business_type,
-    c.full_name AS customer_name,t.name AS team_name,creator.name AS requested_by,FLOOR(EXTRACT(EPOCH FROM (NOW()-v.created_at))/3600)::int AS waiting_hours
-    FROM proposal_versions v JOIN proposals p ON p.id=v.proposal_id JOIN leads l ON l.id=p.lead_id JOIN contacts c ON c.id=p.contact_id
-    LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers creator ON creator.id=v.created_by
-    WHERE ${approvalWhere.join(' AND ')} ORDER BY v.created_at ASC LIMIT 50`,approvalParams):[];
+  const approvalResult=await loadProposalApprovalQueue(req,f.selected);
   const dataAsOf=new Date(),presentation=buildRoleDashboardPresentation({type,view:req.query.view,current,previous,previousInventory,targets,trend,tasks:taskSummary,exceptions,previousExceptions,proposals,calls,inventory,agents,sources,priorSources,accountabilityRows,dataAsOf});
   res.json({dashboardType:type,view:presentation.view,dataAsOf,lastRefresh:dataAsOf,filters:f.selected,period:{current:{from:f.start,to:f.end},prior:{from:prior.start,to:prior.end}},
     calculationContext:'Role-scoped operational data; reassignment history is not rewritten. Counts use distinct accessible records.',...presentation,
-    qualification:{hot:current.hot,warm:current.warm},stages,sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue,calls,inventory,recentActivities,hierarchy});
+    qualification:{hot:current.hot,warm:current.warm},stages,sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue:approvalResult.rows,proposalApprovalQueueCount:approvalResult.count,proposalApprovalQueuePage:approvalResult.page,proposalApprovalQueuePageSize:approvalResult.pageSize,calls,inventory,recentActivities,hierarchy});
 });
+
+r.get('/crm/dashboard/proposal-approvals',async(req,res)=>{if(!isProposalApprover(req.broker))return res.status(403).json({error:'Proposal approval access requires Team Manager, Managing Director or Administrator'});const selected={teamId:clean(req.query.teamId),managerId:clean(req.query.managerId),agentId:clean(req.query.agentId),businessType:clean(req.query.businessType)},result=await loadProposalApprovalQueue(req,selected,clean(req.query.q)||'',req.query.page,req.query.pageSize);res.json({proposalApprovalQueue:result.rows,count:result.count,page:result.page,pageSize:result.pageSize});});
 
 r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_at');if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT a.id,a.created_at,a.direction,a.outcome,a.duration_seconds,a.details,a.follow_up_required,a.due_at,a.completed_at,
   a.lead_stage_snapshot,a.qualification_snapshot,l.id AS lead_id,l.title,c.id AS contact_id,c.full_name AS contact_name,x.project AS listing_project,b.name AS agent_name
