@@ -955,14 +955,18 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Date raised: 2026-07-18
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
-- Status: R1-AMD-006 Revision 23 implemented locally; CRM Test deployment, authenticated role
-  retest and explicit user confirmation pending
+- Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
+  Revision 24 latest-version filtering is implemented locally; cross-role retest and explicit
+  user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
 - Evidence: A proposal can require and record Manager approval, but no pending work item appears
   on the Team Manager or Managing Director dashboard. The reviewer must already know the lead and
   navigate into its Proposal Builder. The existing backend also excludes the Managing Director
   from proposal approval despite providing company-wide dashboard visibility.
+  CRM Test follow-up evidence shows the new queue can surface an older pending immutable Version 1
+  created before the branded renderer correction; the reviewer correctly sees the stored legacy
+  bytes, but the queue must prefer a subsequently generated current version rather than retain both.
 - Required correction: Show a Proposal approvals queue on Team Manager and Managing Director
   dashboards. Display the customer, lead, proposal/template/version, team, requester and waiting
   age, with Open lead and Review on screen actions. Restrict Team Managers to their actively
@@ -1280,6 +1284,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   authenticated cross-role retest and explicit user confirmation pending.
 - Retest condition: The R1-UAT-032 CRM Test retest condition passes and the user explicitly confirms
   the operational approval workflow.
+
+### R1-AMD-006 Revision 24: Show only the latest proposal version awaiting approval
+
+- Amendment ID: R1-AMD-006 Revision 24
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Preserve every immutable historical PDF, but show only the latest version of
+  each proposal in the operational approval queue. When a corrected Version 2 is generated, the
+  obsolete pending Version 1 must no longer remain as a separate approval item. Never regenerate
+  or overwrite Version 1 during review.
+- Status: Implemented locally with dashboard query and browser-contract tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, retain a pending legacy Version 1, generate a corrected Version 2
+  and confirm the queue shows only Version 2. Review Version 2 and confirm the proposal disappears
+  from the queue while both immutable versions remain accessible in proposal/document history.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

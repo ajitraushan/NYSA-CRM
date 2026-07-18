@@ -125,12 +125,13 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   const proposals=fs.readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   assert.match(ui,/Proposal approvals/);
-  assert.match(ui,/Generated proposals from your managed teams awaiting review/);
-  assert.match(ui,/Company-wide generated proposals awaiting review/);
+  assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
+  assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);
   assert.match(ui,/data-proposal-approval/);
   assert.match(ui,/window\.openProposalPdfReview/);
   assert.match(routes,/proposalApprovalQueue=isProposalApprover/);
   assert.match(routes,/v\.status='generated'/);
+  assert.match(routes,/MAX\(latest\.version_number\)/);
   assert.match(routes,/proposalApprovalScopeSql\('l',req\.broker,approvalParams\)/);
   assert.match(proposals,/canApproveProposal/);
   assert.match(app,/\['manager','director'\]\.includes\(ME\.jobRole\)/);

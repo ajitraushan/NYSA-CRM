@@ -127,7 +127,7 @@ r.get('/crm/dashboard',async(req,res)=>{
   const taskSummary=Object.fromEntries(tasks.map(item=>[item.label,item.value]));
   const recentActivities=await many(`SELECT a.id,a.activity_type,a.subject,a.outcome,a.created_at,l.id AS lead_id,l.title,c.full_name AS contact_name,b.name AS owner_name FROM activities a
     JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 12`,f.params);
-  const approvalParams=[],approvalScope=proposalApprovalScopeSql('l',req.broker,approvalParams),approvalWhere=[`(${approvalScope.clause})`,`v.status='generated'`],addApproval=(sql,value)=>{approvalParams.push(value);approvalWhere.push(sql.replace('?',`$${approvalParams.length}`));};
+  const approvalParams=[],approvalScope=proposalApprovalScopeSql('l',req.broker,approvalParams),approvalWhere=[`(${approvalScope.clause})`,`v.status='generated'`,`v.version_number=(SELECT MAX(latest.version_number) FROM proposal_versions latest WHERE latest.proposal_id=v.proposal_id)`],addApproval=(sql,value)=>{approvalParams.push(value);approvalWhere.push(sql.replace('?',`$${approvalParams.length}`));};
   if(f.selected.teamId)addApproval('l.assigned_team_id=?',f.selected.teamId);
   if(f.selected.managerId)addApproval('l.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)',f.selected.managerId);
   if(f.selected.agentId)addApproval('l.assigned_to=?',f.selected.agentId);
