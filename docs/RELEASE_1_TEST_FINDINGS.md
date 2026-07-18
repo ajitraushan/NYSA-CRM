@@ -1673,6 +1673,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   line manager with CORE Test Sales Team. Confirm that each list remains visible when the
   selected period contains no activity and that no role gains records outside its scope.
 
+### R1-AMD-011 Revision 8: Authoritative reporting lookup and upward manager line
+
+- Amendment ID: R1-AMD-011 Revision 8
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: Resolve an Agent's reporting team from the maintained broker team,
+  active primary role assignment or active team membership so the dashboard agrees with
+  User Management. Every active Team Manager automatically reports to the single active
+  Managing Director at company level, while the Manager also sees all reporting Agents.
+  A versioned browser/server reporting-context contract must identify a stale application
+  worker instead of incorrectly instructing the user to change valid maintenance data.
+  When maintenance is genuinely missing, name the exact Administration paths: CRM teams
+  and User Management.
+- Status: Implemented locally and verified by 104 automated tests; CRM Test deployment,
+  retest and explicit confirmation remain pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, Ajitr's dashboard agrees with User Management and shows
+  Aadiyya with CORE Test Sales Team. Aadiyya's Manager dashboard shows the active Managing
+  Director under `Reports to` and the Agents assigned to Aadiyya's managed teams under
+  `My reporting agents`. The Director sees the maintained managers with unit names. No
+  dashboard displays a false maintenance warning, and the user explicitly confirms.
+
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
 - Amendment ID: R1-AMD-012 Revision 3
