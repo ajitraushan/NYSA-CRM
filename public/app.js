@@ -192,7 +192,6 @@ function renderShell() {
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess() ? '<button data-tab="crm">Leads</button>' : ''}
-    ${hasCrmAccess() ? '<button data-tab="tasks">Tasks</button>' : ''}
     ${hasCrmAccess() ? '<button data-tab="customers">Customers</button>' : ''}
     <button data-tab="listings">Inventory</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
@@ -203,7 +202,7 @@ function renderShell() {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'tasks' ? renderTasks() : currentTab === 'customers' ? renderCustomers() : renderListings();
+     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : renderListings();
    }));
   renderDashboard();
 }
@@ -262,7 +261,7 @@ async function renderDashboard() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'tasks' ? renderTasks() : tab === 'customers' ? renderCustomers() : renderListings();
+  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : renderListings();
 }
 
 const isProposalCorrectionTask=t=>t.taskType==='proposal_correction'&&t.proposalId&&t.proposalVersionId;
@@ -275,12 +274,17 @@ async function bindTaskActions(root,tasks,reload){
   root.querySelectorAll('[data-task-pdf]').forEach(b=>b.addEventListener('click',()=>{const t=tasks.find(x=>x.id===b.dataset.taskPdf);if(t)openProposalPdfReview({id:t.proposalVersionId,versionNumber:t.returnedVersionNumber,documentVersionId:t.documentVersionId,status:'changes_requested',reviewComment:t.returnReason});}));
   root.querySelectorAll('[data-task-revise]').forEach(b=>b.addEventListener('click',async()=>{const t=tasks.find(x=>x.id===b.dataset.taskRevise);if(!t)return;try{if(t.status==='open')await api(`/crm/tasks/${t.id}`,{method:'PATCH',body:{status:'in_progress'}});const{lead}=await api(`/crm/leads/${t.leadId}`);openProposals(lead,null,t.proposalId);}catch(err){toast(`Proposal correction not opened: ${err.message}`,7000);}}));
 }
-async function renderTasks(){
-  $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / PERSONAL WORK QUEUE</div><h2>My tasks</h2><p>Actions assigned to you, including customer follow-ups and proposals returned for correction.</p></div></section><div class="filterbar"><div class="filter-grid"><div><label>Status</label><select id="task-bucket"><option value="open">Open and in progress</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div><div class="span2"><label>Search my tasks</label><input id="task-search" type="search" placeholder="Action, reason, customer or lead"></div></div><div class="filter-actions"><button class="btn btn-primary btn-sm" id="task-refresh">Refresh</button><span id="task-count" class="result-count"></span></div></div><div id="task-workspace"><div class="loading-state">Loading your tasks...</div></div>`;
+async function renderTaskWorkspace(target){
+  target.innerHTML=`<div class="filterbar embedded-task-filter"><div class="filter-grid"><div><label>Status</label><select id="task-bucket"><option value="open">Open and in progress</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div><div class="span2"><label>Search my tasks</label><input id="task-search" type="search" placeholder="Action, reason, customer or lead"></div></div><div class="filter-actions"><button class="btn btn-primary btn-sm" id="task-refresh">Refresh</button><span id="task-count" class="result-count"></span></div></div><div id="task-workspace"><div class="loading-state">Loading your tasks...</div></div>`;
   let tasks=[];
   const draw=()=>{const q=$('#task-search').value.trim().toLowerCase(),rows=tasks.filter(t=>!q||[t.subject,t.details,t.returnReason,t.proposalNumber,t.contactName,t.leadTitle,t.priority,t.status].some(x=>String(x||'').toLowerCase().includes(q)));$('#task-count').textContent=`${rows.length} task${rows.length===1?'':'s'}`;const target=$('#task-workspace');target.innerHTML=`<div class="pipeline-table-wrap"><table><tr><th>Priority</th><th>Action required</th><th>Customer / lead</th><th>Status</th><th>Due</th><th>Actions</th></tr>${rows.map(t=>`<tr class="${isProposalCorrectionTask(t)?'proposal-correction-row':''}"><td><span class="pill">${esc(t.priority)}</span></td><td>${taskDescription(t)}</td><td>${esc(t.contactName)}<small>${esc(t.leadTitle)}</small></td><td>${esc(t.status.replaceAll('_',' '))}</td><td>${fmtDate(t.dueAt)}</td><td class="task-workspace-actions">${taskActions(t)}</td></tr>`).join('')||'<tr><td colspan="6">No tasks match this view.</td></tr>'}</table></div>`;bindTaskActions(target,rows,load);};
   const load=async()=>{try{({tasks}=await api(`/crm/tasks?mine=1&bucket=${encodeURIComponent($('#task-bucket').value)}`));draw();}catch(err){$('#task-workspace').textContent=err.message;}};
   $('#task-refresh').addEventListener('click',load);$('#task-bucket').addEventListener('change',load);$('#task-search').addEventListener('input',draw);load();
+}
+window.renderTaskWorkspace=renderTaskWorkspace;
+async function renderTasks(){
+  $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / PERSONAL WORK QUEUE</div><h2>My tasks</h2><p>Actions assigned to you, including customer follow-ups and proposals returned for correction.</p></div></section><div id="standalone-task-workspace"></div>`;
+  renderTaskWorkspace($('#standalone-task-workspace'));
 }
 
 /* ============ CUSTOMERS ============ */

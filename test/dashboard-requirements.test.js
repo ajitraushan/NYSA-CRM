@@ -127,9 +127,9 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/Proposal approvals/);
   assert.match(ui,/data-dashboard-view/);
   assert.match(ui,/data-approval-tab/);
-  assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals'\]/);
+  assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals','My tasks'\]/);
   assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
-  assert.match(ui,/data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
+  assert.match(ui,/showingTasks\|\|data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
   assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
   assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
   assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);

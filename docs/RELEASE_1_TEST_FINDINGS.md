@@ -2040,6 +2040,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   search work, and permitted status actions update the queue and lead action plan. Confirm another
   user's task cannot be obtained or changed. Explicit user confirmation is required before closure.
 
+### R1-AMD-028 Revision 3: Keep My tasks inside the role dashboard
+
+- Amendment ID: R1-AMD-028 Revision 3
+- Related UAT finding: R1-UAT-028
+- Agreed requirement: Supersede the separate primary-navigation Tasks screen and the dashboard
+  shortcut that replaces the user's role context. Present My tasks as a dashboard tab alongside the
+  role's other dashboard tabs. Selecting it must retain the authenticated role header, dashboard
+  actions and tab strip while showing the same personally scoped, searchable status queue. Provide
+  My dashboard and My tasks tabs for Agents; Team performance, Proposal approvals and My tasks for
+  Team Managers; and the applicable executive tabs plus My tasks for Managing Directors and
+  Administrators. Do not give Administrators business-approval access through this layout change.
+- Status: Implemented locally and verified by 101 automated tests; CRM Test deployment, visual/
+  functional retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, sign in separately as Agent, Team Manager, Managing Director and
+  Administrator. Confirm My tasks appears in the role-dashboard tab strip, selecting it retains the
+  same named role dashboard header, and the standalone top-level Tasks tab and separate My tasks
+  shortcut are absent. Confirm task filters, search, returned-proposal actions and role scoping still
+  work. Explicit user confirmation is required before closure.
+
 ### R1-AMD-029 Revision 1: Secure administrator-assisted password recovery
 
 - Amendment ID: R1-AMD-029 Revision 1

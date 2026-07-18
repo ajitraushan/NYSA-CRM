@@ -275,7 +275,7 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/crm\/tasks\?mine=1&bucket=open/);
   assert.match(read('src/routes/lead-operations.js'),/req\.query\.mine==='1'/);
   assert.match(read('src/routes/lead-operations.js'),/proposal correction completes automatically/);
-  assert.match(app,/data-tab="tasks">Tasks/);
+  assert.doesNotMatch(app,/data-tab="tasks">Tasks/);
   assert.match(app,/PERSONAL WORK QUEUE/);
   assert.match(app,/Search my tasks/);
   assert.match(app,/Proposal changes requested/);
@@ -284,7 +284,10 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Revise same proposal/);
   assert.match(app,/Generate corrected immutable version/);
   assert.match(app,/task completes automatically/);
-  assert.match(read('public/dashboard-ui.js'),/id="dashboard-tasks">My tasks/);
+  assert.match(read('public/dashboard-ui.js'),/\['My dashboard','My tasks'\]/);
+  assert.match(read('public/dashboard-ui.js'),/id="dashboard-task-workspace"/);
+  assert.match(read('public/dashboard-ui.js'),/window\.renderTaskWorkspace/);
+  assert.doesNotMatch(read('public/dashboard-ui.js'),/id="dashboard-tasks"/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(http,/frame-src blob:/);
   assert.match(http,/frame-ancestors 'none'/);
