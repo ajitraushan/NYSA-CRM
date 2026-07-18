@@ -1450,6 +1450,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the approval queue while Version 1 retains its Changes requested decision. Approve Version 2 and
   confirm it can proceed to recorded external delivery. Explicit user confirmation is required.
 
+### R1-AMD-006 Revision 31: Administrator personal action-request queue
+
+- Amendment ID: R1-AMD-006 Revision 31
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Removing business-approval authority from Administrator must not hide work
+  returned to that Administrator as the original requester. Provide a prominent My action requests
+  queue in Administration showing only tasks assigned to the signed-in Administrator, including
+  returned-proposal reason, priority, deadline, customer and lead. Allow the requester to open the
+  lead, start the task and complete it with an outcome. Do not expose the proposal approval queue or
+  grant Administrator approval authority.
+- Status: Implemented locally and verified by 101 automated tests; CRM Test deployment, functional
+  retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, generate a proposal as Administrator and return it for changes as
+  Managing Director. Confirm the Administrator sees the urgent correction under My action requests,
+  can read the reason, open the correct lead, start and complete the action, but still has no Proposal
+  approvals tab and cannot call the approval or request-changes APIs. Explicit user confirmation is
+  required before closure.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2

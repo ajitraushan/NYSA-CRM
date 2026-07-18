@@ -267,6 +267,10 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(routes,/A meaningful change-request reason/);
   assert.match(routes,/INSERT INTO tasks/);
   assert.match(routes,/returnedTo:current\.createdBy/);
+  assert.match(app,/My action requests/);
+  assert.match(app,/Work returned to you appears here/);
+  assert.match(app,/crm\/tasks\?mine=1&bucket=open/);
+  assert.match(read('src/routes/lead-operations.js'),/req\.query\.mine==='1'/);
   assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(http,/frame-src blob:/);
   assert.match(http,/frame-ancestors 'none'/);

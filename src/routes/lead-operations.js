@@ -230,10 +230,12 @@ r.post('/crm/leads/:id/convert',async(req,res)=>{
 
 r.get('/crm/tasks',async(req,res)=>{
   const params=[],scope=leadScopeSql('l',req.broker,params);let bucket='TRUE';
+  if(req.query.bucket==='open')bucket="t.status IN ('open','in_progress')";
   if(req.query.bucket==='overdue')bucket="t.status IN ('open','in_progress') AND t.due_at<NOW()";
   if(req.query.bucket==='today')bucket="t.status IN ('open','in_progress') AND t.due_at>=CURRENT_DATE AND t.due_at<CURRENT_DATE+INTERVAL '1 day'";
   if(req.query.bucket==='upcoming')bucket="t.status IN ('open','in_progress') AND t.due_at>=CURRENT_DATE+INTERVAL '1 day'";
   if(req.query.bucket==='completed')bucket="t.status='completed'";
+  if(req.query.mine==='1'){params.push(req.broker.id);bucket=`(${bucket}) AND t.assignee_id=$${params.length}`;}
   res.json({tasks:await many(`SELECT t.*,l.title AS lead_title,c.full_name AS contact_name,b.name AS assignee_name FROM tasks t JOIN leads l ON l.id=t.lead_id
     JOIN contacts c ON c.id=t.contact_id JOIN brokers b ON b.id=t.assignee_id WHERE (${scope.clause}) AND (${bucket}) ORDER BY t.due_at`,params)});
 });
