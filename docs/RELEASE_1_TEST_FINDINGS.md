@@ -1377,8 +1377,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   document register containing direct customer documents and documents linked through the
   customer's related leads. Preserve record scope, restricted-document access, authenticated
   downloads, immutable versions and audit evidence.
-- Status: Deployed to CRM Test and explicitly confirmed by the user on 2026-07-18 for
-  standalone customer creation and KYC saving; broader R1-UAT-022 retest remains open
+- Status: Deployed to CRM Test; opening the customer record and loading the customer document
+  register were confirmed on 2026-07-18. Customer-originated lead, linked-document and
+  restricted-access retest evidence remains pending
 - Retest condition: On CRM Test, open the newly created `ajitxxx` customer without an error,
   confirm its KYC/contact/consent summary loads, upload and download an authorized customer
   document, create a lead from the customer action and verify the lead form preselects that
@@ -1393,8 +1394,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   secondary information. Customer/address, email/phone/channel, role/company and KYC/expiry
   must not run together. Keep stable column widths, readable spacing and horizontal scrolling
   at narrower browser widths without compressing the action control.
-- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
-  retest and explicit user confirmation pending
+- Status: Deployed to CRM Test and explicitly accepted by the user on 2026-07-18 for the
+  readable customer-register layout; broader R1-UAT-022 evidence remains open
 - Retest condition: On CRM Test, open Customers at normal desktop zoom and confirm every
   primary value and its secondary information render on separate lines with readable spacing;
   narrow the browser and confirm the table scrolls without overlapping or clipping values.
@@ -1408,8 +1409,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   preferred channel, perform the existing duplicate review, open the saved customer record and
   leave lead creation optional. Correct KYC persistence so an authorized manager or
   administrator can save a verified review without a PostgreSQL UUID type error.
-- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
-  retest and explicit user confirmation pending
+- Status: Deployed to CRM Test and explicitly confirmed by the user on 2026-07-18 for
+  standalone customer creation and KYC saving; broader R1-UAT-022 evidence remains open
 - Retest condition: On CRM Test, create a customer without creating a lead, confirm duplicate
   review and mandatory contact validation, open the saved customer, save pending and verified
   KYC reviews, then optionally create a related lead. Confirm no duplicate customer is produced
