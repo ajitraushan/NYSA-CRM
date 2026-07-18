@@ -13,7 +13,7 @@ export function isManager(broker) {
 }
 
 export function isProposalApprover(broker) {
-  return Boolean(hasInternalCrmIdentity(broker) && (broker.role === 'admin' || ['manager','director'].includes(broker.jobRole)));
+  return Boolean(hasInternalCrmIdentity(broker) && ['manager','director'].includes(broker.jobRole));
 }
 
 export function canApproveProposal(broker, lead) {

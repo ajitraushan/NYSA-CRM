@@ -976,8 +976,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Required correction: Show a Proposal approvals queue on Team Manager and Managing Director
   dashboards. Display the customer, lead, proposal/template/version, team, requester and waiting
   age, with Open lead and Review on screen actions. Restrict Team Managers to their actively
-  managed teams, give the Managing Director and Administrator company-wide approval scope, keep
-  agents out of the queue and do not broaden Director access to routine lead editing.
+  managed teams, give the Managing Director company-wide approval scope, keep Administrators and
+  agents out of the business-approval queue and do not broaden Director access to routine lead editing.
   Show only the latest generated version per proposal, display the exact submitted timestamp and a
   precise minute/hour/day waiting duration, separate the values into readable lines, and provide
   role-scoped server-side search with pagination.
@@ -1409,6 +1409,23 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   general KPI/panel collection, the register is absent from every other dashboard tab, and scope,
   search, pagination, ordering, Open lead and Review on screen continue to work. Confirm an Agent
   sees no approval tab. Explicit user confirmation is required before closure.
+
+### R1-AMD-006 Revision 29: Separate system administration from business approval
+
+- Amendment ID: R1-AMD-006 Revision 29
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Treat Administrator as a system-governance role, not a business approver.
+  Remove the Proposal approvals dashboard tab from Administrator, reject Administrator access to
+  the approval-register API and proposal-review action, and prevent a crafted dashboard view from
+  rendering the queue. Retain managed-team approval for Team Managers and company-wide approval for
+  Managing Directors. This restriction must not remove the Administrator's maintenance, security or
+  audit responsibilities.
+- Status: Implemented locally with policy, route, dashboard and regression tests; CRM Test deployment,
+  authenticated cross-role retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, confirm Administrator has no Proposal approvals tab and receives
+  access denied from both the approval queue and review APIs. Confirm Team Manager sees only managed-
+  team requests, Managing Director sees the company queue and Agent has no approval access. Explicit
+  user confirmation is required before closure.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

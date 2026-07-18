@@ -51,14 +51,16 @@ test('proposal approval is team-scoped for managers and company-wide for directo
   const otherLead={...managedLead,assignedTeamId:'t2'};
   assert.equal(isProposalApprover(manager),true);
   assert.equal(isProposalApprover(director),true);
+  assert.equal(isProposalApprover(admin),false);
   assert.equal(isProposalApprover(agent),false);
   assert.equal(canApproveProposal(manager,managedLead),true);
   assert.equal(canApproveProposal(manager,otherLead),false);
   assert.equal(canApproveProposal(director,otherLead),true);
-  assert.equal(canApproveProposal(admin,otherLead),true);
+  assert.equal(canApproveProposal(admin,otherLead),false);
   assert.equal(canApproveProposal(agent,managedLead),false);
   assert.match(proposalApprovalScopeSql('l',manager,[]).clause,/membership_role='manager'/);
   assert.equal(proposalApprovalScopeSql('l',director,[]).clause,'1=1');
+  assert.equal(proposalApprovalScopeSql('l',admin,[]).clause,'1=0');
   assert.equal(proposalApprovalScopeSql('l',agent,[]).clause,'1=0');
 });
 

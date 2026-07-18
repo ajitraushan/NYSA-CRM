@@ -127,6 +127,7 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/Proposal approvals/);
   assert.match(ui,/data-dashboard-view/);
   assert.match(ui,/data-approval-tab/);
+  assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals'\]/);
   assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
   assert.match(ui,/data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
   assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
@@ -150,6 +151,7 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(routes,/v\.status='generated'/);
   assert.match(routes,/MAX\(latest\.version_number\)/);
   assert.match(routes,/proposalApprovalScopeSql\('l',req\.broker,params\)/);
+  assert.match(routes,/canApproveProposals=isProposalApprover\(req\.broker\)/);
   assert.match(proposals,/canApproveProposal/);
   assert.match(proposals,/proposal_number_counters/);
   assert.match(proposals,/NYSA-PR-/);
