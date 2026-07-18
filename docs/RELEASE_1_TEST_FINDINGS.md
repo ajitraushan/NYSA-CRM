@@ -873,6 +873,32 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   start and complete one with an outcome, cancel another with a reason, and verify due/overdue
   dashboard indicators and unauthorized reassignment protection.
 
+### R1-UAT-029: Proposal approval downloads the PDF and delivery status is misleading
+
+- Date raised: 2026-07-18
+- Environment: CRM Test (`https://crm-test.nysarealty.com/`)
+- Area: Lead -> Proposal builder -> generated proposal review and delivery
+- Status: R1-AMD-006 Revision 19 implemented locally; automated verification, CRM Test
+  deployment, authenticated retest and explicit user confirmation pending
+- Priority: Workflow and audit integrity
+- Related acceptance criteria: 133, 135, 136, 137, 139, 143, 148, 149 and 193
+- Evidence: Selecting PDF downloads the file rather than presenting an on-screen manager
+  review. The Review action immediately changes status without confirming the exact rendered
+  version. `Record sent` does not transmit the document, does not explain that delivery must
+  already have occurred externally, and the retained proposal document is not visibly linked
+  from the proposal workflow to the lead document register.
+- Required correction: Present the exact private immutable PDF on screen before approval;
+  require an explicit manager confirmation; distinguish external delivery recording from
+  actual system transmission; retain recipient/channel/time audit evidence; and expose the
+  generated, reviewed and externally delivered version in Lead Documents. Do not claim live
+  email or WhatsApp delivery unless a separately approved connector is configured.
+- Retest condition: On CRM Test, generate a new proposal and confirm Review on screen renders
+  the exact PDF without downloading it. Confirm approval cannot occur without the checkbox,
+  approval records the manager against that version, the next action clearly says Record
+  external delivery and warns that it does not transmit the PDF, and the exact version, hash,
+  status, recipient and delivery time are visible under Open Lead Documents. Confirm an agent
+  cannot perform manager approval.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1101,6 +1127,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   `6-12 months`, generate a proposal without entering duplicate timeline text and confirm no
   mandatory-timeline error occurs. Confirm the PDF and immutable snapshot include the customer
   timing plus the applicable approved template stages and omit irrelevant stages.
+
+### R1-AMD-006 Revision 19: On-screen proposal review and honest delivery evidence
+
+- Amendment ID: R1-AMD-006 Revision 19
+- Related UAT finding: R1-UAT-029
+- Agreed requirement: Enforce the sequence Generate immutable PDF -> Review exact PDF on
+  screen -> Confirm manager approval -> deliver outside CRM -> Record external delivery.
+  Provide inline authenticated PDF review, explicit approval confirmation and optional audit
+  comments. Do not describe delivery recording as system transmission while no email or
+  WhatsApp connector exists. Automatically retain and expose the exact proposal document and
+  its generated/reviewed/sent status, hash, recipient and event time in Lead Documents.
+- Status: Implemented locally; automated verification, CRM Test deployment, authenticated
+  retest and explicit user confirmation pending
+- Retest condition: The R1-UAT-029 CRM Test retest condition passes and the user explicitly
+  confirms the workflow. Actual one-click customer transmission remains outside this
+  correction until a delivery connector is separately approved and configured.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

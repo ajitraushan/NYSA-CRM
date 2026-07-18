@@ -226,8 +226,20 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Customer-facing assumptions/);
   assert.match(app,/it is not another calculation input/);
   assert.match(app,/Generate immutable draft PDF/);
+  assert.match(app,/Review on screen/);
+  assert.match(app,/Confirm manager approval/);
+  assert.match(app,/Record external delivery/);
+  assert.match(app,/This does not send the PDF/);
+  assert.match(app,/Open Lead Documents/);
+  assert.match(app,/Generated customer proposals appear here automatically/);
+  assert.match(routes,/document-versions\/:versionId\/view/);
+  assert.match(routes,/Content-Disposition',`inline;/);
+  assert.match(routes,/reviewConfirmation!==true/);
+  assert.match(routes,/reviewMethod:'onscreen_pdf'/);
+  assert.match(routes,/UPDATE document_versions SET status='reviewed'/);
   assert.match(styles,/\.proposal-builder-modal\{max-width:1100px/);
   assert.match(styles,/\.proposal-media-choices/);
+  assert.match(styles,/\.proposal-review-modal\{max-width:1180px/);
 });
 
 test('organization profile copy action cannot silently clear an unsaved first profile',()=>{
