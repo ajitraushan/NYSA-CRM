@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stableCodeError,timeToMinutes,minutesToTime,DASHBOARD_METRICS,validateFeeItems,calculateFeeItems,validateProposalConfiguration } from '../src/admin-governance.js';
+import { stableCodeError,timeToMinutes,minutesToTime,DASHBOARD_METRICS,validateFeeItems,calculateFeeItems,validateProposalConfiguration,buildIndicativePurchaseTimeline } from '../src/admin-governance.js';
 
 test('controlled-value stable codes enforce lowercase snake_case',()=>{
   assert.equal(stableCodeError('loss_reason'),null);
@@ -56,6 +56,12 @@ test('proposal designer validates buyer booklet limits fields conditions and tim
   assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxProperties:4}}),/between 1 and 3/);
   assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxMediaPerProperty:3}}),/between 0 and 2/);
   assert.match(validateProposalConfiguration({sections:[{code:'customer_name',label:'Customer',source:'system'}],buyerBooklet}),/mapping/);
+});
+
+test('proposal timeline consumes saved customer timing and applicable approved stages',()=>{
+  const stages=[{code:'confirm',label:'Confirm shortlist',condition:'always',guidance:'1–2 business days'},{code:'view',label:'Viewing',condition:'ready_property',guidance:'Subject to access'},{code:'finance',label:'Finance and valuation',condition:'bank_finance',guidance:'Lender timeline'},{code:'developer',label:'Developer handover',condition:'off_plan',guidance:'Developer programme'}];
+  const result=buildIndicativePurchaseTimeline({businessLine:'Sale',fundingMethod:'mortgage',timelineCode:'6-12 months'},[{handoverDate:'Ready'}],stages);
+  assert.equal(result.customerTimeline,'6-12 months');assert.deepEqual(result.stages.map(x=>x.code),['confirm','view','finance']);assert.match(result.text,/Customer timing: 6-12 months/);assert.doesNotMatch(result.text,/Developer handover/);
 });
 
 test('dashboard KPI catalogue owns units definitions and threshold direction',()=>{

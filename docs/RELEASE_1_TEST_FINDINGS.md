@@ -1086,6 +1086,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and maintain media without opening or completing Internal coordination notes. Expand the
   optional section and confirm a completed note can still be added independently.
 
+### R1-AMD-006 Revision 18: Structured requirement to proposal-timeline mapping
+
+- Amendment ID: R1-AMD-006 Revision 18
+- Related UAT findings: R1-UAT-008 and R1-UAT-015
+- Agreed requirement: Do not request duplicate timeline content during proposal generation.
+  Automatically combine the current Structured Requirements timeline with the active proposal
+  template's maintained, conditionally applicable purchase-journey stages. Include ready-
+  property, off-plan, cash and bank-finance stages only when applicable. Store the resulting
+  approved text in the immutable proposal snapshot and print it in the generated PDF.
+- Status: Implemented locally and verified by all 96 automated tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending
+- Retest condition: On CRM Test, use a lead whose current Structured Requirements timeline is
+  `6-12 months`, generate a proposal without entering duplicate timeline text and confirm no
+  mandatory-timeline error occurs. Confirm the PDF and immutable snapshot include the customer
+  timing plus the applicable approved template stages and omit irrelevant stages.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2

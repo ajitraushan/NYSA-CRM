@@ -44,6 +44,8 @@ test('proposal creation consumes administrator-defined prompts and snapshots the
   assert.match(ui,/data-proposal-input/);
   assert.match(ui,/f\.inputs=Object\.fromEntries/);
   assert.match(api,/Mandatory proposal content is missing/);
+  assert.match(api,/buildIndicativePurchaseTimeline/);
+  assert.match(api,/approvedText\.purchase_timeline=indicativeTimeline\.text/);
   assert.match(api,/configuration:template\.configuration/);
   assert.match(api,/configuredSections\.filter\(x=>x\.source==='agent_input'/);
 });

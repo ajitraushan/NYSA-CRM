@@ -119,3 +119,10 @@ export function validateProposalConfiguration(configuration={},templateType='Qui
   for(const stage of booklet.timelineStages){if(stableCodeError(stage?.code)||!String(stage?.label||'').trim()||!String(stage?.guidance||'').trim())return 'Every timeline stage needs a stable code, label and guidance';if(!proposalConditions.has(stage.condition||'always'))return `Invalid timeline condition for ${stage.code}`;}
   return null;
 }
+
+export function buildIndicativePurchaseTimeline(requirement={},properties=[],stages=[]){
+  const handovers=properties.map(x=>String(x?.handoverDate||'').trim().toLowerCase()),offPlan=requirement.businessLine==='Off-plan'||handovers.some(x=>x&&!/ready|complete/.test(x)),readyProperty=handovers.some(x=>/ready|complete/.test(x))||!offPlan,funding=String(requirement.fundingMethod||'').toLowerCase();
+  const applies=condition=>condition==='always'||(condition==='ready_property'&&readyProperty)||(condition==='off_plan'&&offPlan)||(condition==='cash_purchase'&&funding==='cash')||(condition==='bank_finance'&&['mortgage','mixed'].includes(funding));
+  const applicableStages=(Array.isArray(stages)?stages:[]).filter(x=>applies(x.condition||'always')).map(x=>({code:x.code,label:String(x.label||'').trim(),guidance:String(x.guidance||'').trim(),condition:x.condition||'always'})).filter(x=>x.label&&x.guidance),customerTimeline=String(requirement.timelineCode||'').trim(),lines=[customerTimeline?`Customer timing: ${customerTimeline}`:null,...applicableStages.map(x=>`${x.label}: ${x.guidance}`)].filter(Boolean);
+  return{customerTimeline,stages:applicableStages,text:lines.join('\n')};
+}
