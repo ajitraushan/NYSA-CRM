@@ -956,7 +956,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
 - Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
-  Revisions 24 and 25 are implemented locally; CRM Test deployment, cross-role retest and explicit
+  Revisions 24 through 26 are implemented locally; CRM Test deployment, cross-role retest and explicit
   user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
@@ -1323,6 +1323,21 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   lead, proposal, team, requester and version values only within the signed-in reviewer's scope,
   Previous/Next navigate correctly, only the latest generated version of each proposal is present,
   and Open lead/Review on screen still work. Explicit user confirmation is required before closure.
+
+### R1-AMD-006 Revision 26: Newest approval requests first
+
+- Amendment ID: R1-AMD-006 Revision 26
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Sort the operational proposal approval register by submission timestamp in
+  descending order so the newest pending request is always shown first. Preserve this order across
+  server-side search and pagination, using a stable identifier as the tie-breaker for requests with
+  the same timestamp.
+- Status: Implemented locally with deterministic database ordering and an automated contract test;
+  CRM Test deployment, authenticated retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, submit at least three proposals at visibly different times and
+  confirm the newest request appears first, the oldest last, and the same descending order is
+  retained after searching and moving between pages. Explicit user confirmation is required before
+  closure.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

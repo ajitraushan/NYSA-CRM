@@ -137,6 +137,7 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(routes,/loadProposalApprovalQueue/);
   assert.match(routes,/r\.get\('\/crm\/dashboard\/proposal-approvals'/);
   assert.match(routes,/c\.full_name ILIKE/);
+  assert.match(routes,/ORDER BY v\.created_at DESC,v\.id DESC/);
   assert.match(routes,/v\.status='generated'/);
   assert.match(routes,/MAX\(latest\.version_number\)/);
   assert.match(routes,/proposalApprovalScopeSql\('l',req\.broker,params\)/);
