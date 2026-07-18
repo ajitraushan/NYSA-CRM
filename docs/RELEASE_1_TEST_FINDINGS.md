@@ -878,9 +878,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Date raised: 2026-07-18
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Lead -> Proposal builder -> generated proposal review and delivery
-- Status: R1-AMD-006 Revision 21 implemented locally after CRM Test exposed a blocked private
-  PDF frame; automated verification, corrected CRM Test deployment, authenticated retest and
-  explicit user confirmation pending
+- Status: R1-AMD-006 Revision 21 deployed to CRM Test; authenticated on-screen PDF rendering
+  explicitly confirmed by the user on 2026-07-18. Manager approval, external-delivery evidence,
+  Lead Documents reconciliation and negative role/frame tests remain pending before this parent
+  finding can close
 - Priority: Workflow and audit integrity
 - Related acceptance criteria: 133, 135, 136, 137, 139, 143, 148, 149 and 193
 - Evidence: Selecting PDF downloads the file rather than presenting an on-screen manager
@@ -905,8 +906,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Date raised: 2026-07-18
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Lead -> Proposal builder -> generated/downloaded immutable PDF
-- Status: R1-AMD-006 Revision 20 implemented locally; automated and visual PDF verification
-  completed, CRM Test deployment, authenticated retest and explicit user confirmation pending
+- Status: Closed. R1-AMD-006 Revision 20 was deployed to CRM Test and the user explicitly
+  confirmed the newly generated branded proposal format works on 2026-07-18
 - Priority: Customer-facing document quality and template governance
 - Related acceptance criteria: 128, 130, 132, 134, 135, 137 and 139
 - Evidence: The downloaded proposal is a 6.3 KB, two-page, text-only PDF. It omits the
@@ -1182,10 +1183,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   property pages, selected approved JPEG/PNG media, facts and reviewed narrative, applicable
   purchase journey, next steps, disclaimer, creator/date/version and page footer. Preserve
   one exact stored byte stream for on-screen review, download, approval and delivery evidence.
-- Status: Implemented locally; booklet fixture generated, rendered to PNG with Poppler and all
-  pages visually inspected for hierarchy, wrapping, image placement, footer and clipping.
-  Full automated verification, CRM Test deployment, authenticated retest and explicit user
-  confirmation remain pending.
+- Status: Closed. The booklet fixture was rendered to PNG with Poppler and visually inspected;
+  the correction was then deployed to CRM Test and the user explicitly confirmed the newly
+  generated branded proposal format works on 2026-07-18.
 - Retest condition: The R1-UAT-030 CRM Test retest condition passes and the user explicitly
   confirms the generated proposal format.
 
@@ -1198,9 +1198,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   `frame-ancestors 'none'` so an external site still cannot embed CRM Test. Do not permit
   arbitrary external frame origins, weaken document access checks or bypass the immutable
   document-version audit path.
-- Status: Implemented locally after the CRM Test browser reported "The content is blocked";
-  automated security-contract verification passes. CRM Test deployment, authenticated
-  on-screen review and explicit user confirmation remain pending.
+- Status: Deployed to CRM Test; the user explicitly confirmed authenticated on-screen PDF
+  rendering works on 2026-07-18. Unauthenticated access denial and third-party framing denial
+  remain pending before the broader R1-UAT-029 finding can close.
 - Retest condition: On CRM Test, open Review on screen for an authorized proposal version and
   confirm the exact PDF renders inside the modal without a content-blocked message. Confirm an
   unauthenticated request is denied and a third-party page still cannot frame CRM Test. The
