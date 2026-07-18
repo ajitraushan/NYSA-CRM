@@ -100,6 +100,20 @@ test('hierarchy navigation preserves manager breadcrumb and record breadcrumbs a
   assert.match(css,/\.record-breadcrumb\{display:block/);
 });
 
+test('manager hierarchy shows maintained teams and agents independently of period activity',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
+  assert.match(routes,/const organizationRows=type==='manager'/);
+  assert.match(routes,/t\.manager_id=\$1 OR EXISTS\(SELECT 1 FROM team_memberships/);
+  assert.match(routes,/user_role_assignments ur/);
+  assert.match(routes,/b\.status='active'/);
+  assert.match(routes,/businessLines:\[\],teams:\[\]/);
+  assert.match(ui,/Maintained teams and active agents remain visible even when the selected period has no leads/);
+  assert.match(ui,/No active managed team is assigned\. Check User Management and Team maintenance/);
+  assert.match(ui,/in selected period/);
+  assert.doesNotMatch(ui,/No hierarchy records in this period/);
+});
+
 test('dashboard tables explicitly map Won Overdue and Open columns to their named values',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   for(const key of ['won','overdue','open'])assert.match(ui,new RegExp(`valueKey:'${key}'`));

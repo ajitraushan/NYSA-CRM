@@ -1620,6 +1620,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   is rejected until the manager is deliberately replaced through Team maintenance, and
   the user explicitly confirms the result.
 
+### R1-AMD-011 Revision 5: Structure-first manager hierarchy
+
+- Amendment ID: R1-AMD-011 Revision 5
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: A Team Manager dashboard must show every active team the signed-in
+  manager is maintained to manage and every active Sales Agent or Listing Agent assigned
+  to those teams, even when the selected reporting period contains no leads. Organization
+  structure is not period activity. Display the maintained team, manager and agents first,
+  then show each agent's lead count for the selected period, including zero. Use a team-
+  assignment correction message only when the manager genuinely has no maintained team.
+- Status: Implemented locally and verified by 103 automated tests; CRM Test deployment,
+  retest and explicit confirmation remain pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, sign in as Aadi while Aadi is the maintained Manager of
+  CORE Test Sales Team and Ajitr is its active Sales Agent. With a period containing no
+  leads, the hierarchy still shows CORE Test Sales Team, Manager Aadi and Ajitr with zero
+  leads in the selected period. Selecting Ajitr narrows the manager workspace correctly.
+  The user explicitly confirms the result.
+
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
 - Amendment ID: R1-AMD-012 Revision 3
