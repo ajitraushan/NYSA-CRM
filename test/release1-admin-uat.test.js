@@ -205,7 +205,14 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Use top suggested matches/);
   assert.match(app,/The score is a transparent comparison/);
   assert.match(app,/Only approved media belonging to a selected property can be included/);
-  assert.match(app,/Upload it from Inventory/);
+  assert.match(app,/Add it to this Inventory record and obtain manager approval/);
+  assert.match(app,/Maintain structured requirements/);
+  assert.match(app,/Open Inventory maintenance/);
+  assert.match(app,/Add or approve property media/);
+  assert.match(app,/proposalGapLabels/);
+  assert.match(app,/Built-up area/);
+  assert.match(app,/Property media and approval/);
+  assert.match(app,/data-gap-listing/);
   assert.match(app,/Draft highlights and suitability/);
   assert.match(app,/It cannot select inventory, change the score or save the proposal/);
   assert.match(app,/Customer-facing assumptions/);

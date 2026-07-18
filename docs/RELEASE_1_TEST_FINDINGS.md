@@ -1017,6 +1017,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the no-calculation statement; generate an immutable draft; and explicitly confirm the
   result. Also verify an unprepared lead is blocked with the precise record to maintain.
 
+### R1-AMD-006 Revision 14: Actionable proposal readiness and authoritative maintenance
+
+- Amendment ID: R1-AMD-006 Revision 14
+- Related UAT findings: R1-UAT-008 and R1-UAT-015
+- Agreed requirement: Present missing proposal information with business labels instead of
+  technical field codes and route every correction to its authoritative record. Preferred
+  areas, funding method and bedroom range must open Structured requirements. Built-up area
+  and availability confirmation must open the exact Inventory record. Every suggested
+  property must provide direct Inventory and property-media actions; media is uploaded to the
+  listing and requires manager approval before proposal use. Do not duplicate these fields in
+  the proposal or allow AI to invent missing values.
+- Status: Implemented locally and verified by all 94 automated tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending
+- Retest condition: On CRM Test, run Check missing information with the reported requirement
+  and Inventory gaps. Confirm business labels are shown, each maintenance action opens the
+  correct source record, updated values are reflected after reopening the builder, property
+  media can be uploaded and approved from Inventory, and only approved media becomes
+  selectable against its matching property.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2
