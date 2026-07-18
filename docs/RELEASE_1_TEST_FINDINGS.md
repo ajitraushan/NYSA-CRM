@@ -1654,6 +1654,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   that team. It does not expose other agents or the Team -> Agent -> Lead manager
   hierarchy. The user explicitly confirms the result.
 
+### R1-AMD-011 Revision 7: Role-aware reporting structure
+
+- Amendment ID: R1-AMD-011 Revision 7
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: Display maintained reporting structure consistently at the top
+  right of each operational dashboard. A Managing Director sees every direct-report Team
+  Manager together with the maintained unit/team name. A Team Manager sees every active
+  reporting Sales Agent and Listing Agent together with the unit/team name. An Agent sees
+  the maintained line manager and unit/team name. Each role sees only its own reporting
+  scope; this context does not grant broader record access or expose manager drill-down
+  controls to Agents. Reporting relationships remain derived from Team maintenance.
+- Status: Implemented locally and verified by 104 automated tests; CRM Test deployment,
+  retest and explicit confirmation remain pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, confirm the top-right reporting panel independently as
+  Managing Director, Team Manager and Agent. The Director lists direct-report managers
+  with units, the Manager lists reporting agents with units, and Ajitr lists the maintained
+  line manager with CORE Test Sales Team. Confirm that each list remains visible when the
+  selected period contains no activity and that no role gains records outside its scope.
+
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
 - Amendment ID: R1-AMD-012 Revision 3

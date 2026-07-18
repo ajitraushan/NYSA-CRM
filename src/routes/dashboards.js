@@ -33,6 +33,19 @@ async function loadProposalApprovalQueue(req,selected={},search='',page=1,pageSi
   return {rows,count,page:safePage,pageSize:safeSize};
 }
 
+async function loadOrganizationContext(broker,type){
+  if(broker.jobRole==='director')return {kind:'director',title:'My direct reports',items:await many(`SELECT m.id AS person_id,m.name AS person_name,t.id AS unit_id,t.name AS unit_name
+    FROM teams t JOIN brokers m ON m.id=t.manager_id WHERE t.active=1 AND m.status='active' ORDER BY t.name,m.name`)};
+  if(type==='manager')return {kind:'manager',title:'My reporting agents',items:await many(`SELECT b.id AS person_id,b.name AS person_name,t.id AS unit_id,t.name AS unit_name
+    FROM teams t JOIN brokers b ON b.team_id=t.id AND b.status='active' AND b.role='internal_broker' AND b.job_role IN ('sales_agent','listing_agent')
+    WHERE t.active=1 AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL)
+      OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL))
+    ORDER BY t.name,b.name`,[broker.id])};
+  if(type==='agent'){const row=await one(`SELECT m.id AS person_id,m.name AS person_name,t.id AS unit_id,t.name AS unit_name
+    FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id WHERE b.id=$1`,[broker.id]);return {kind:'agent',title:'My reporting line',items:row?[row]:[]};}
+  return {kind:'governance',title:'Organization context',items:[]};
+}
+
 r.get('/crm/dashboard/filter-options',async(req,res)=>{
   const params=[],scope=leadScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`l.campaign_code IS NOT NULL`,`BTRIM(l.campaign_code)<>''`];
   if(req.query.source){params.push(req.query.source);where.push(`l.source=$${params.length}`);}
@@ -150,8 +163,7 @@ r.get('/crm/dashboard',async(req,res)=>{
   const recentActivities=await many(`SELECT a.id,a.activity_type,a.subject,a.outcome,a.created_at,l.id AS lead_id,l.title,c.full_name AS contact_name,b.name AS owner_name FROM activities a
     JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 12`,f.params);
   const approvalResult=await loadProposalApprovalQueue(req,f.selected);
-  const organizationContext=await one(`SELECT t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name
-    FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id WHERE b.id=$1`,[req.broker.id]);
+  const organizationContext=await loadOrganizationContext(req.broker,type);
   const canApproveProposals=isProposalApprover(req.broker),requestedView=!canApproveProposals&&req.query.view==='Proposal approvals'?null:req.query.view;
   const dataAsOf=new Date(),presentation=buildRoleDashboardPresentation({type,view:requestedView,current,previous,previousInventory,targets,trend,tasks:taskSummary,exceptions,previousExceptions,proposals,calls,inventory,agents,sources,priorSources,accountabilityRows,dataAsOf});
   res.json({dashboardType:type,view:presentation.view,canApproveProposals,dataAsOf,lastRefresh:dataAsOf,filters:f.selected,period:{current:{from:f.start,to:f.end},prior:{from:prior.start,to:prior.end}},
