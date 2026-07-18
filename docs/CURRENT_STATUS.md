@@ -69,7 +69,7 @@
   are implemented locally: business amounts are normalized before submission and a new
   customer, channels, role, lead, queue history and audit evidence commit atomically.
   CRM Test deployment, retest and explicit user confirmation remain pending.
-- The automated suite passes 91 tests after the governed Structured Requirements save and
+- The automated suite passes 94 tests after the governed Structured Requirements save and
   visible AI-failure corrections. Changed
   browser and route JavaScript pass syntax validation; PostgreSQL-backed CRM Test failure-
   rollback and committed-success verification remain required.
@@ -118,9 +118,16 @@
   preparation shell only from an active template, presents a transparent governed
   shortlist, groups approved media under its inventory property, drafts editable AI
   highlights/suitability only after user selection, explains saved-scenario assumptions
-  and preserves separate immutable generation. All 93 automated tests pass. The
+  and preserves separate immutable generation. The complete automated suite passes. The
   cumulative CRM Test package and script are prepared; deployment, authenticated retest
   and explicit user confirmation remain pending, and no related finding is closed.
+- CRM Test financial-scenario retest exposed that no Regulatory and Fee Assumption version
+  was active. The server correctly rejected persistence, but the screen accepted all inputs
+  before exposing that prerequisite and did not provide a calculation-only review. R1-AMD-026
+  Revision 2 now reports readiness first and separates Calculate and review from Save immutable
+  snapshot, with explicit EMI, LTV, DBR, repayment, interest and fee output bound to the exact
+  reviewed assumption version. All 94 automated tests pass; CRM Test deployment,
+  authenticated retest and explicit user confirmation remain required.
 
 ## Release 1 Deployed Implementation
 

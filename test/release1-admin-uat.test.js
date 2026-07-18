@@ -244,7 +244,7 @@ test('fee maintenance is business-labelled and drives contextual scenario calcul
   for(const label of ['Calculation formula','Calculated on','VAT added to this charge','Transaction applicability','Funding method applicability','Property type applicability','Service channel','Usually paid by','Official source/reference','Include in calculated total','Conditional amount bands'])assert.match(ui,new RegExp(label));
   for(const formula of ['conditional_fixed','percentage_plus_fixed','estimate_range','quantity'])assert.match(domain,new RegExp(formula));
   assert.match(domain,/mortgage_amount/);assert.match(domain,/bank_finance/);assert.match(domain,/totalMinimum/);assert.match(domain,/matchedBand/);
-  assert.match(routes,/regulatoryFeeDetails/);assert.match(routes,/regulatoryFeeTotalMinimum/);assert.match(routes,/fundingMethod:b\.inputs/);assert.match(routes,/propertyType:b\.inputs/);assert.match(routes,/serviceChannel:b\.inputs/);
+  assert.match(routes,/regulatoryFeeDetails/);assert.match(routes,/regulatoryFeeTotalMinimum/);assert.match(routes,/fundingMethod:inputs/);assert.match(routes,/propertyType:inputs/);assert.match(routes,/serviceChannel:inputs/);
 });
 
 test('fee rule-set lifecycle supports safe draft editing comparison approval activation and retirement',()=>{

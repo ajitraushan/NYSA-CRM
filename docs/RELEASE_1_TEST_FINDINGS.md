@@ -817,7 +817,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-18
 - Area: Lead -> Saved financial scenarios
-- Status: R1-AMD-026 Revision 1 implemented locally and verified by automated tests;
+- Status: R1-AMD-026 Revision 2 implemented locally and verified by automated tests;
   CRM Test deployment, functional retest and explicit user confirmation pending
 - Priority: Must
 - Related acceptance criteria: 112, 113, 114, 115, 116, 117 and 118
@@ -1486,6 +1486,27 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   retest and explicit user confirmation pending.
 - Retest condition: The R1-UAT-026 CRM Test retest condition passes and the user explicitly
   confirms the result.
+
+### R1-AMD-026 Revision 2: Fee-rule readiness and review-before-save calculations
+
+- Amendment ID: R1-AMD-026 Revision 2
+- Related UAT finding: R1-UAT-026
+- Agreed requirement: Before accepting financial inputs, show whether an approved Regulatory
+  and Fee Assumption version is active and identify the Administration maintenance action when
+  it is missing. Separate calculation from persistence: Calculate and review must show the
+  monthly EMI, loan amount, down payment, LTV, DBR when income is supplied, total interest,
+  total repayment, upfront cash and applicable fee estimate before Save immutable snapshot is
+  available. Investment scenarios must similarly preview gross yield, net yield, cash-on-cash
+  return, effective rent, net income and applicable fees. Bind the save to the exact assumption
+  version reviewed and require recalculation if that active version changes.
+- Status: Implemented locally and verified by automated calculation, route and browser-contract
+  tests; CRM Test deployment, authenticated retest and explicit user confirmation pending.
+- Retest condition: On CRM Test with no active assumption version, the form is blocked before
+  data entry and directs the administrator to approve and activate one. After activation, enter
+  the screenshot mortgage example, calculate without saving, verify EMI/LTV/DBR and fee output,
+  confirm the disclaimer, save once, reopen the scenario and verify the immutable values and
+  exact assumption version. Change an input and verify a fresh preview is required. Closure
+  requires the user's explicit confirmation.
 
 ### R1-AMD-027 Revision 1: Governed private lead document register
 

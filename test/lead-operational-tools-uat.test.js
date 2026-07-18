@@ -26,6 +26,18 @@ test('financial scenarios use business forms and preserve immutable governed sna
   assert.match(styles,/\.financial-scenario-card\{display:grid/);
 });
 
+test('financial scenarios require active fee readiness and preview EMI DBR before save',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
+  for(const contract of ['Financial calculation is not ready','Regulatory and Fee Assumptions','Calculate and review','Monthly EMI','Debt-burden ratio','Save immutable snapshot','The active Regulatory and Fee Assumption changed after preview'])assert.match(ui+routes,new RegExp(contract));
+  assert.match(routes,/financial-scenarios\/preview/);
+  assert.match(routes,/activeAssumption/);
+  assert.match(routes,/expectedAssumptionVersionId/);
+  assert.match(routes,/buildScenarioCalculation/);
+  assert.match(ui,/scenarioReviewHtml/);
+  assert.match(ui,/preview\.assumption\.id/);
+  assert.match(styles,/\.scenario-result-grid\{display:grid/);
+});
+
 test('private lead documents have a scoped register, immutable versions and separate consent evidence',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/files-proposals.js'),styles=read('public/index.html');
   for(const contract of ['Private lead document register','Document source / use','Access classification','Approved NYSA document template','Upload new version','Record executed marketing agreement','uploading a file alone never grants marketing consent'])assert.match(ui,new RegExp(contract));
