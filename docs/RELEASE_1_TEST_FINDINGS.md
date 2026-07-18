@@ -1377,8 +1377,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   document register containing direct customer documents and documents linked through the
   customer's related leads. Preserve record scope, restricted-document access, authenticated
   downloads, immutable versions and audit evidence.
-- Status: Implemented locally and verified by automated tests; CRM Test deployment, browser
-  retest and explicit user confirmation pending
+- Status: Deployed to CRM Test and explicitly confirmed by the user on 2026-07-18 for
+  standalone customer creation and KYC saving; broader R1-UAT-022 retest remains open
 - Retest condition: On CRM Test, open the newly created `ajitxxx` customer without an error,
   confirm its KYC/contact/consent summary loads, upload and download an authorized customer
   document, create a lead from the customer action and verify the lead form preselects that
