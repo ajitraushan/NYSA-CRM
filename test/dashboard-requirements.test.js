@@ -133,6 +133,20 @@ test('Agent dashboards remove hierarchy filters fixed by maintained identity',()
   assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
 });
 
+test('Agent dashboards show their maintained team and reporting manager without exposing hierarchy',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.match(routes,/const organizationContext=await one/);
+  assert.match(routes,/LEFT JOIN teams t ON t\.id=b\.team_id LEFT JOIN brokers m ON m\.id=t\.manager_id/);
+  assert.match(routes,/organizationContext,qualification/);
+  assert.match(ui,/id="dashboard-organization"/);
+  assert.match(ui,/data\.dashboardType==='agent'/);
+  assert.match(ui,/My team/);
+  assert.match(ui,/Reports to/);
+  assert.match(page,/\.dashboard-organization\{/);
+});
+
 test('manager and director dashboards expose a scoped proposal approval queue',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');

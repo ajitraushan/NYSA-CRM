@@ -1638,6 +1638,22 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   leads in the selected period. Selecting Ajitr narrows the manager workspace correctly.
   The user explicitly confirms the result.
 
+### R1-AMD-011 Revision 6: Agent reporting context
+
+- Amendment ID: R1-AMD-011 Revision 6
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: An Agent dashboard must identify the signed-in user's maintained
+  primary team and that team's maintained reporting manager. This is a compact personal
+  organization context, not a manager hierarchy: an Agent must not see other team members
+  or manager-only drill-down controls. The displayed reporting line is derived from Team
+  maintenance and is not separately editable on the Agent dashboard.
+- Status: Implemented locally and verified by 104 automated tests; CRM Test deployment,
+  retest and explicit confirmation remain pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, sign in as Ajitr. The Agent dashboard shows `My team:
+  CORE Test Sales Team` and `Reports to` with the manager currently maintained against
+  that team. It does not expose other agents or the Team -> Agent -> Lead manager
+  hierarchy. The user explicitly confirms the result.
+
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
 - Amendment ID: R1-AMD-012 Revision 3
