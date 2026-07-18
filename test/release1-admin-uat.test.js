@@ -212,6 +212,9 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/proposalGapLabels/);
   assert.match(app,/Built-up area/);
   assert.match(app,/Property media and approval/);
+  assert.match(app,/Upload for approval/);
+  assert.match(app,/Broker coordination notes/);
+  assert.match(app,/Enter a broker coordination note before selecting Add note/);
   assert.match(app,/data-gap-listing/);
   assert.match(app,/Draft highlights and suitability/);
   assert.match(app,/It cannot select inventory, change the score or save the proposal/);

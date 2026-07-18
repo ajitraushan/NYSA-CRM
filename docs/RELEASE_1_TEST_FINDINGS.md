@@ -1036,6 +1036,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   media can be uploaded and approved from Inventory, and only approved media becomes
   selectable against its matching property.
 
+### R1-AMD-006 Revision 15: Inventory media compatibility and clear coordination actions
+
+- Amendment ID: R1-AMD-006 Revision 15
+- Related UAT findings: R1-UAT-008 and R1-UAT-015
+- Agreed requirement: Inventory property media must accept valid JPEG files using either the
+  `.jpg` or `.jpeg` extension, including common WhatsApp image names, while retaining file
+  signature, size and type security validation. The media screen must explain that uploads
+  await manager approval. The listing-detail coordination action must be clearly identified as
+  an internal note rather than a listing-save action, reject an empty note with an explicit
+  message, confirm successful posting and report API failure.
+- Status: Implemented locally and verified by all 94 automated tests; CRM Test deployment,
+  authenticated retest and explicit user confirmation pending
+- Retest condition: On CRM Test, upload a valid `.jpeg` property image and confirm it is listed
+  as pending, approve it as a manager and confirm it becomes proposal-selectable. In the same
+  inventory record, confirm an empty Add note action explains what is required and a completed
+  coordination note is saved and immediately displayed. Confirm listing changes remain under
+  Edit listing and do not depend on media upload or coordination notes.
+
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 
 - Amendment ID: R1-AMD-007 Revision 2

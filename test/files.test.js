@@ -8,6 +8,8 @@ test('private upload validation checks type, magic, extension, size and hash',()
   const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),Buffer.from('safe image bytes')]);
   const file=decodeAndValidateFile({base64:png.toString('base64'),mediaType:'image/png',fileName:'floor-plan.png',maxBytes:1024,allowedTypes:['image/png']});
   assert.equal(file.error,undefined);assert.equal(file.buffer.length,png.length);assert.match(file.fileHash,/^[a-f0-9]{64}$/);
+  const jpeg=Buffer.concat([Buffer.from([0xff,0xd8,0xff]),Buffer.from('safe jpeg bytes')]);
+  assert.equal(decodeAndValidateFile({base64:jpeg.toString('base64'),mediaType:'image/jpeg',fileName:'WhatsApp Image.jpeg',maxBytes:1024,allowedTypes:['image/jpeg']}).error,undefined);
   assert.match(decodeAndValidateFile({base64:png.toString('base64'),mediaType:'image/png',fileName:'wrong.jpg',maxBytes:1024,allowedTypes:['image/png']}).error,/extension/);
   assert.match(decodeAndValidateFile({base64:Buffer.from('%PDF-bad').toString('base64'),mediaType:'image/png',fileName:'fake.png',maxBytes:1024,allowedTypes:['image/png']}).error,/content/);
   assert.match(decodeAndValidateFile({base64:'not base64!',mediaType:'image/png',fileName:'x.png',maxBytes:1024,allowedTypes:['image/png']}).error,/base64/);
