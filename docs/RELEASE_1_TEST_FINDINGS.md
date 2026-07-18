@@ -956,7 +956,7 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment: CRM Test (`https://crm-test.nysarealty.com/`)
 - Area: Proposal approval workflow and role dashboards
 - Status: R1-AMD-006 Revision 23 deployed to CRM Test and the Team Manager queue is visible.
-  Revisions 24 through 26 are implemented locally; CRM Test deployment, cross-role retest and explicit
+  Revisions 24 through 27 are implemented locally; CRM Test deployment, cross-role retest and explicit
   user confirmation pending
 - Priority: Operational workflow and approval control
 - Related acceptance criteria: 21, 135 and 137
@@ -970,6 +970,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   The visible queue also joins customer, lead, proposal, team and requester values without adequate
   spacing, uses the ambiguous label "Less than 1 hour", omits the submitted timestamp and provides
   no search facility for a growing approval register.
+  After the searchable register was deployed, entering the visible status "pending" returned zero
+  results because status was omitted from the searchable record. Proposals also have no stable,
+  business-friendly reference suitable for search, customer discussion and document traceability.
 - Required correction: Show a Proposal approvals queue on Team Manager and Managing Director
   dashboards. Display the customer, lead, proposal/template/version, team, requester and waiting
   age, with Open lead and Review on screen actions. Restrict Team Managers to their actively
@@ -978,6 +981,8 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Show only the latest generated version per proposal, display the exact submitted timestamp and a
   precise minute/hour/day waiting duration, separate the values into readable lines, and provide
   role-scoped server-side search with pagination.
+  Assign every proposal an immutable monthly business number and expose it consistently in the
+  builder, approval register, PDF and generated document reference.
 - Retest condition: On CRM Test, generate proposals under two different teams. Confirm each Team
   Manager sees and can approve only the managed-team item; the Managing Director sees and can
   approve both; an Agent sees no approval queue and cannot call the approval API; approval removes
@@ -1338,6 +1343,28 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   confirm the newest request appears first, the oldest last, and the same descending order is
   retained after searching and moving between pages. Explicit user confirmation is required before
   closure.
+
+### R1-AMD-006 Revision 27: Complete approval search and monthly proposal number
+
+- Amendment ID: R1-AMD-006 Revision 27
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Make approval search cover every business-facing value shown in the row,
+  including proposal number, title, template, version, pending/awaiting-review status, customer,
+  lead, team, requester and submitted date/time. Assign each proposal exactly one immutable reference
+  in the format `NYSA-PR-YYYYMM-######`, where the six-digit sequence restarts each Dubai business
+  month and is allocated transactionally. Existing proposals must be backfilled deterministically.
+  Show the reference in proposal history/selection, the approval register, generated PDF and the
+  linked document reference; proposal versions continue to use the same proposal number.
+- Status: Implemented locally with migration `020_proposal_business_numbers.sql`, concurrency-safe
+  monthly counters, parameterized search and automated migration/route/UI/PDF contract tests; CRM
+  Test deployment, migration verification, authenticated retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, verify migration `020` is recorded and existing proposals have unique
+  references. Create two new proposals and confirm consecutive current-month numbers. Generate more
+  than one version and confirm the proposal number does not change. Confirm search by `pending`, full
+  or partial proposal number, title, template, version, customer, lead, team, requester and visible
+  submission date returns the expected scoped rows; a value outside the reviewer's scope returns none.
+  Confirm the same number appears in the builder, approval register, PDF and Lead Document reference.
+  Explicit user confirmation is required before closure.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

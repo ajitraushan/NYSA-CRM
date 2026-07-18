@@ -65,7 +65,7 @@ export function makeProposalPdf(data){
   const total=1+Math.max(1,properties.length);
   {
     const d=canvas(),images={};if(logoImage)images.Logo=logoImage;header(d,organization,logoImage,1,total);
-    d.text('YOUR DUBAI PROPERTY SHORTLIST',PAGE.margin,108,{size:19,bold:true,fill:C.gold});d.text(`${clean(proposal.title)} - Version ${version}`,PAGE.margin,137,{size:8.5,fill:C.muted});
+    d.text('YOUR DUBAI PROPERTY SHORTLIST',PAGE.margin,108,{size:19,bold:true,fill:C.gold});d.text(clean(proposal.proposalNumber),PAGE.margin,135,{size:8.5,bold:true,fill:C.gold});d.paragraph(`${clean(proposal.title)} | Version ${version}`,PAGE.margin,148,511,{size:7.5,fill:C.muted,maxLines:1});
     d.rect(PAGE.margin,163,511,68,C.pale,C.line);const identity=recipient.idDocumentType&&recipient.idDocumentLast4?`${recipient.idDocumentType==='emirates_id'?'Emirates ID':'Passport'} ending ${recipient.idDocumentLast4}`:'Not recorded';
     [['PREPARED FOR',recipient.fullName],['CUSTOMER ADDRESS',recipient.postalAddress||'Not recorded'],['MOBILE',recipient.phone||'Not recorded']].forEach(([k,v],i)=>{const x=PAGE.margin+(i%2)*255,y=175+Math.floor(i/2)*31;d.text(k,x+12,y,{size:6,bold:true,fill:C.gold});d.text(v,x+12,y+12,{size:8.5,bold:true});});
     d.text(`Identity reference: ${identity}`,PAGE.margin,239,{size:7,fill:C.muted});d.text('YOUR REQUIREMENTS',PAGE.margin,265,{size:9.5,bold:true,fill:C.gold});

@@ -9,10 +9,11 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-9),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql']);
+  assert.deepEqual(migrations.slice(-10),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
+  assert.match(read('src/migrations/020_proposal_business_numbers.sql'),/NYSA-PR-/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -190,6 +191,18 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(routes,/requireAvailabilityCheck/);
   assert.match(routes,/maxMediaPerProperty/);
   assert.match(routes,/Only approved media from selected properties/);
+});
+
+test('proposals receive immutable monthly business references used across workflow and PDF',()=>{
+  const routes=read('src/routes/files-proposals.js'),ui=read('public/app.js'),pdf=read('src/proposal-pdf.js'),migration=read('src/migrations/020_proposal_business_numbers.sql');
+  assert.match(migration,/ROW_NUMBER\(\) OVER/);
+  assert.match(migration,/CREATE UNIQUE INDEX proposals_proposal_number_uq/);
+  assert.match(migration,/proposal_number_counters/);
+  assert.match(routes,/ON CONFLICT\(period_code\) DO UPDATE SET last_value=/);
+  assert.match(routes,/proposalNumber=`NYSA-PR-/);
+  assert.match(routes,/document_reference/);
+  assert.match(ui,/p\.proposalNumber/);
+  assert.match(pdf,/proposal\.proposalNumber/);
 });
 
 test('proposal builder guides shortlist media narrative and governed assumptions',()=>{

@@ -130,6 +130,8 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/data-proposal-approval/);
   assert.match(ui,/window\.openProposalPdfReview/);
   assert.match(ui,/id="proposal-approval-search"/);
+  assert.match(ui,/Proposal number \/ title/);
+  assert.match(ui,/Pending approval/);
   assert.match(ui,/Submitted \/ waiting/);
   assert.match(ui,/minute.*waiting/);
   assert.doesNotMatch(ui,/Less than 1 hour/);
@@ -137,11 +139,15 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(routes,/loadProposalApprovalQueue/);
   assert.match(routes,/r\.get\('\/crm\/dashboard\/proposal-approvals'/);
   assert.match(routes,/c\.full_name ILIKE/);
+  assert.match(routes,/p\.proposal_number ILIKE/);
+  assert.match(routes,/'pending approval' ILIKE/);
   assert.match(routes,/ORDER BY v\.created_at DESC,v\.id DESC/);
   assert.match(routes,/v\.status='generated'/);
   assert.match(routes,/MAX\(latest\.version_number\)/);
   assert.match(routes,/proposalApprovalScopeSql\('l',req\.broker,params\)/);
   assert.match(proposals,/canApproveProposal/);
+  assert.match(proposals,/proposal_number_counters/);
+  assert.match(proposals,/NYSA-PR-/);
   assert.match(app,/\['manager','director'\]\.includes\(ME\.jobRole\)/);
 });
 
