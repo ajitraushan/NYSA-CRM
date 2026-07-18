@@ -94,7 +94,24 @@ function renderLogin(mode = 'login', prefill = {}) {
         <div class="field"><label>Password</label><input name="password" type="password" required autocomplete="current-password"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:6px">Sign in</button>
       </form>
-      <div class="switch">Have an invitation code? <a id="to-register">Redeem it</a></div>
+      <div class="switch"><a id="to-reset-request">Forgot password?</a><br>Have an invitation code? <a id="to-register">Redeem it</a></div>
+    ` : mode === 'reset-request' ? `
+      <form id="reset-request-form">
+        <div class="info-msg">Enter your NYSA email. For privacy, the same confirmation is shown whether or not the account exists.</div>
+        <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="username" value="${esc(prefill.email||'')}"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px">Request password reset</button>
+      </form>
+      <div class="switch">Already have a reset code? <a id="to-reset-redeem">Set new password</a><br><a id="to-login">Back to sign in</a></div>
+    ` : mode === 'reset-redeem' ? `
+      <form id="reset-redeem-form">
+        <div class="info-msg">Enter the one-time code supplied privately by an Administrator. It expires 30 minutes after issue.</div>
+        <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="username" value="${esc(prefill.email||'')}"></div>
+        <div class="field"><label>One-time reset code</label><input name="code" required autocomplete="one-time-code" placeholder="NYSA-RST-XXXXXXXXXXXX"></div>
+        <div class="field"><label>New password (min 12 characters)</label><input name="password" type="password" required minlength="12" autocomplete="new-password"></div>
+        <div class="field"><label>Confirm new password</label><input name="confirmPassword" type="password" required minlength="12" autocomplete="new-password"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px">Change password</button>
+      </form>
+      <div class="switch"><a id="to-login">Back to sign in</a></div>
     ` : mode === 'redeem' ? `
       <form id="redeem-form">
         <div class="field"><label>Invitation code</label><input name="code" required placeholder="NYSA-XXXXXXXX" value="${esc(prefill.code || '')}"></div>
@@ -118,6 +135,11 @@ function renderLogin(mode = 'login', prefill = {}) {
   const showErr = (m) => $('#auth-msg').innerHTML = `<div class="error-msg">${esc(m)}</div>`;
   $('#to-register')?.addEventListener('click', () => renderLogin('redeem'));
   $('#to-login')?.addEventListener('click', () => renderLogin('login'));
+  $('#to-reset-request')?.addEventListener('click',()=>renderLogin('reset-request'));
+  $('#to-reset-redeem')?.addEventListener('click',()=>renderLogin('reset-redeem',{email:$('#reset-request-form input[name="email"]')?.value||''}));
+
+  $('#reset-request-form')?.addEventListener('submit',async e=>{e.preventDefault();const email=new FormData(e.target).get('email');try{const result=await api('/auth/password-reset-requests',{method:'POST',body:{email}});$('#auth-msg').innerHTML=`<div class="info-msg">${esc(result.message)}</div>`;}catch(err){showErr(err.message);}});
+  $('#reset-redeem-form')?.addEventListener('submit',async e=>{e.preventDefault();const body=Object.fromEntries(new FormData(e.target));try{const result=await api('/auth/password-resets/redeem',{method:'POST',body});renderLogin('login');$('#auth-msg').innerHTML=`<div class="info-msg">${esc(result.message)}</div>`;}catch(err){showErr(err.message);}});
 
   $('#login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -972,6 +994,7 @@ async function renderAdmin() {
       <button class="btn btn-primary btn-sm" id="inv-create" style="height:33px">Invite User</button>
     </div>
     <h3>Pending Invitations</h3><div id="inv-table">Loading…</div><h3>Add User</h3><form id="add-user-form" class="admin-toolbar"><div><label>Name *</label><input name="name" required></div><div><label>Email *</label><input name="email" type="email" required></div><div><label>Classification</label><select name="userClassification"><option value="internal_user">Internal User</option><option value="viewer">Viewer</option><option value="external_broker">External Broker (interface identity only)</option></select></div><div><label>Primary role</label><select name="jobRole">${Object.entries(JOB_ROLES).map(([k,v])=>`<option value="${k}" ${k==='sales_agent'?'selected':''}>${v}</option>`).join('')}</select></div><div><label>Team</label><select name="teamId" id="add-user-team"><option value="">Not applicable</option></select></div><button class="btn btn-primary btn-sm">Add pending user</button></form>
+    ${ME.role==='admin'?'<h3>Password reset requests</h3><p class="tool-note">Issue a short-lived one-time code and provide it to the named user through an approved private channel. The code is shown only once.</p><div id="password-reset-table">Loading…</div>':''}
   </div>
   <div class="admin-section"><h2>Users</h2><div id="broker-table">Loading…</div></div>
   <div class="admin-section">
@@ -998,7 +1021,7 @@ async function renderAdmin() {
   $('#dashboard-target-form').addEventListener('submit',createDashboardTarget);
   $('#routing-defaults').addEventListener('click',configureDubaiRoutingDefaults);$('#qualification-new').addEventListener('click',()=>{$('#qualification-model-form').classList.remove('hidden');$('#qualification-new').classList.add('hidden');$('#qualification-model-form').scrollIntoView({behavior:'smooth',block:'start'});});$('#qualification-cancel').addEventListener('click',closeQualificationForm);$('#add-qualification-factor').addEventListener('click',()=>addQualificationFactor());$('#add-fee-item').addEventListener('click',()=>addFeeItem());$('#assumption-new').addEventListener('click',()=>fillAssumptionForm());$('#assumption-clear').addEventListener('click',closeAssumptionForm);$('#proposal-new').addEventListener('click',()=>fillProposalTemplateForm());$('#proposal-cancel').addEventListener('click',closeProposalTemplateForm);$('#proposal-preview').addEventListener('click',previewProposalTemplate);$('#add-proposal-section').addEventListener('click',()=>addProposalSection());$('#add-proposal-timeline').addEventListener('click',()=>addProposalTimeline());$('#add-user-form').addEventListener('submit',addUser);
   [{code:'budget_readiness',label:'Budget readiness',question:'Is the customer budget confirmed and realistic?',description:'Consider the stated range and current market expectations.',weight:25},{code:'funding_readiness',label:'Funding readiness',question:'How ready is the customer funding or mortgage approval?',description:'Confirm cash availability or mortgage pre-approval progress.',weight:25},{code:'purchase_timeline',label:'Purchase timeline',question:'How soon does the customer intend to proceed?',description:'Use the customer-confirmed decision timeline.',weight:25},{code:'requirements_clarity',label:'Requirements clarity',question:'How clearly are location and property requirements confirmed?',description:'Consider area, property type and essential requirements.',weight:25}].forEach(f=>addQualificationFactor({...f,inputSource:'agent_confirmed',min:0,max:10,required:true,missingTreatment:'reject'}));addFeeItem({code:'dld_transfer_fee',label:'DLD transfer fee',calculationType:'percentage',calculationBasis:'purchase_price',ratePercent:4,transactionType:'purchase',payer:'contractual'});renderProposalPropertyFields();loadDashboardTargetSetup();
-  loadOrganization();loadValueSets();loadSlaPolicies();loadRoutingRules();loadIntakeEvents();loadQualificationModels();loadAssumptionVersions();loadProposalTemplateDesigner();loadDocumentTemplates();loadTeams(); loadInvites(); loadBrokers(); loadAudit();
+  loadOrganization();loadValueSets();loadSlaPolicies();loadRoutingRules();loadIntakeEvents();loadQualificationModels();loadAssumptionVersions();loadProposalTemplateDesigner();loadDocumentTemplates();loadTeams(); loadInvites(); loadBrokers(); loadPasswordResetRequests(); loadAudit();
 }
 
 const minutesFromTime=value=>{const[h,m]=String(value).split(':').map(Number);return h*60+m;},timeFromMinutes=value=>`${String(Math.floor(Number(value)/60)%24).padStart(2,'0')}:${String(Number(value)%60).padStart(2,'0')}`;
@@ -1141,6 +1164,14 @@ async function loadBrokers() {
     document.querySelectorAll('[data-team]').forEach(s => s.addEventListener('change', () => patch(s.dataset.team, { teamId: s.value || null })));
     const access=async(id,action)=>{const reason=prompt(`${action} reason (required)`);if(!reason)return;try{await api(`/admin/users/${id}/access`,{method:'POST',body:{action,reason}});loadBrokers();}catch(err){toast(err.message);}};document.querySelectorAll('[data-suspend]').forEach(b=>b.addEventListener('click',()=>access(b.dataset.suspend,'suspend')));document.querySelectorAll('[data-revoke]').forEach(b=>b.addEventListener('click',()=>access(b.dataset.revoke,'revoke')));document.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click',()=>access(b.dataset.restore,'reactivate')));document.querySelectorAll('[data-add-user-role]').forEach(b=>b.addEventListener('click',async()=>{const jobRole=prompt('Additional role code: '+Object.keys(JOB_ROLES).join(', ')),teamId=prompt('Team ID if scoped (leave blank if none)'),changeReason=prompt('Approval/change reason');if(!jobRole||!changeReason)return;try{await api(`/admin/users/${b.dataset.addUserRole}/roles`,{method:'POST',body:{jobRole,teamId:teamId||null,isPrimary:false,changeReason}});loadBrokers();}catch(err){toast(err.message);}}));
   } catch (err) { $('#broker-table').textContent = err.message; }
+}
+
+async function loadPasswordResetRequests(){
+  const target=$('#password-reset-table');if(!target)return;
+  try{const{requests}=await api('/admin/password-reset-requests');target.innerHTML=requests.length?`<table><tr><th>User</th><th>Requested</th><th>Status / expiry</th><th>Administrator action</th></tr>${requests.map(r=>`<tr><td><b>${esc(r.name)}</b><small>${esc(r.email)}</small></td><td>${fmtDate(r.requestedAt)}</td><td>${esc(r.status)}${r.expiresAt?`<small>Expires ${fmtDate(r.expiresAt)}</small>`:''}</td><td><button class="btn btn-primary btn-sm" data-issue-reset="${r.id}">${r.status==='issued'?'Issue replacement code':'Issue one-time code'}</button> <button class="btn btn-sm" data-cancel-reset="${r.id}">Cancel</button></td></tr>`).join('')}</table>`:'<div class="empty">No open password reset requests.</div>';
+    document.querySelectorAll('[data-issue-reset]').forEach(b=>b.addEventListener('click',async()=>{try{const result=await api(`/admin/password-reset-requests/${b.dataset.issueReset}/issue`,{method:'POST'});alert(`One-time reset code (shown only now):\n\n${result.code}\n\nExpires in ${result.expiresInMinutes} minutes. Provide it through an approved private channel.`);loadPasswordResetRequests();}catch(err){toast(err.message);}}));
+    document.querySelectorAll('[data-cancel-reset]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Cancel this password reset request?'))return;try{await api(`/admin/password-reset-requests/${b.dataset.cancelReset}`,{method:'DELETE'});loadPasswordResetRequests();}catch(err){toast(err.message);}}));
+  }catch(err){target.textContent=err.message;}
 }
 
 async function loadAudit() {

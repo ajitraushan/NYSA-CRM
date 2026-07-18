@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-10),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql']);
+  assert.deepEqual(migrations.slice(-11),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
@@ -17,6 +17,15 @@ test('Release 1 migrations remain sequential and include the administration corr
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
+});
+
+test('password recovery is private administrator-governed and revokes existing sessions',()=>{
+  const auth=read('src/routes/auth.js'),admin=read('src/routes/admin.js'),ui=read('public/app.js'),migration=read('src/migrations/021_password_reset_requests.sql');
+  assert.match(ui,/Forgot password\?/);assert.match(ui,/Confirm new password/);assert.match(ui,/Password reset requests/);
+  assert.match(auth,/RESET_RESPONSE/);assert.match(auth,/password-reset-requests/);assert.match(auth,/password-resets\/redeem/);
+  assert.match(auth,/DELETE FROM sessions WHERE broker_id=\$1/);assert.match(auth,/Reset code is invalid or expired/);
+  assert.match(admin,/Administrator access required/);assert.match(admin,/code_hash/);assert.match(admin,/INTERVAL '30 minutes'/);
+  assert.match(migration,/password_reset_requests_one_open_uq/);assert.match(migration,/code_hash CHAR\(64\)/);
 });
 
 test('assignment queue supports scoped visibility atomic claim and repeat-cycle deadlines',()=>{

@@ -50,6 +50,38 @@ r.get('/admin/brokers', async (req, res) => {
   res.json({ count:rows.length, brokers:rows.map(publicBroker) });
 });
 
+r.get('/admin/password-reset-requests',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  await execute("UPDATE password_reset_requests SET status='expired',code_hash=NULL WHERE status='issued' AND expires_at<=NOW()");
+  const requests=await many(`SELECT pr.id,pr.status,pr.requested_at,pr.issued_at,pr.expires_at,b.id AS broker_id,b.name,b.email,issuer.name AS issued_by_name
+    FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id LEFT JOIN brokers issuer ON issuer.id=pr.issued_by
+    WHERE pr.status IN ('pending','issued') ORDER BY pr.requested_at DESC`);
+  res.json({count:requests.length,requests});
+});
+
+r.post('/admin/password-reset-requests/:id/issue',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  const code=`NYSA-RST-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,codeHash=crypto.createHash('sha256').update(code).digest('hex');
+  const request=await transaction(async client=>{
+    const row=await one(`SELECT pr.*,b.status AS broker_status FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id
+      WHERE pr.id=$1 AND pr.status IN ('pending','issued') FOR UPDATE OF pr`,[req.params.id],client);
+    if(!row||row.brokerStatus!=='active')return null;
+    await execute("UPDATE password_reset_requests SET status='issued',issued_by=$1,code_hash=$2,issued_at=NOW(),expires_at=NOW()+INTERVAL '30 minutes' WHERE id=$3",[req.broker.id,codeHash,row.id],client);
+    await audit('Broker',row.brokerId,'password_reset_code_issued',req.broker.id,{resetRequestId:row.id,expiresInMinutes:30},client);
+    return row;
+  });
+  if(!request)return res.status(404).json({error:'Open password reset request not found'});
+  res.json({ok:true,code,expiresInMinutes:30});
+});
+
+r.delete('/admin/password-reset-requests/:id',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  const request=await one("UPDATE password_reset_requests SET status='cancelled',code_hash=NULL WHERE id=$1 AND status IN ('pending','issued') RETURNING *",[req.params.id]);
+  if(!request)return res.status(404).json({error:'Open password reset request not found'});
+  await audit('Broker',request.brokerId,'password_reset_cancelled',req.broker.id,{resetRequestId:request.id});
+  res.json({ok:true});
+});
+
 r.post('/admin/users',async(req,res)=>{
   const b=req.body||{},email=String(b.email||'').trim().toLowerCase(),classification=b.userClassification||'internal_user',assignments=Array.isArray(b.roleAssignments)?b.roleAssignments:[];
   if(!String(b.name||'').trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!['internal_user','viewer','external_broker'].includes(classification))return res.status(400).json({error:'Name, valid email and user classification are required'});

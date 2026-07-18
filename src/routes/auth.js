@@ -31,6 +31,9 @@ function checkRateLimit(key) {
   return item.count <= MAX_ATTEMPTS;
 }
 
+const resetCodeHash = code => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
+const RESET_RESPONSE = 'If this email belongs to an active NYSA user, the request is now available to an Administrator. Obtain the one-time reset code through an approved private channel.';
+
 function setSessionCookie(res, token) {
   res.setHeader('Set-Cookie', `nysa_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
 }
@@ -141,6 +144,44 @@ r.post('/auth/login', async (req, res) => {
   const token = await createSession(broker.id);
   setSessionCookie(res, token);
   res.json({ broker: publicBroker(broker) });
+});
+
+r.post('/auth/password-reset-requests', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const key = `password-reset-request:${clientIp(req)}:${email}`;
+  if (!checkRateLimit(key)) return res.status(429).json({ error: 'Too many attempts; try again later' });
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const broker = await one("SELECT id FROM brokers WHERE LOWER(email)=LOWER($1) AND status='active'", [email]);
+    if (broker) await transaction(async client => {
+      await execute("UPDATE password_reset_requests SET status=CASE WHEN status='issued' AND expires_at<=NOW() THEN 'expired' ELSE 'cancelled' END,code_hash=NULL WHERE broker_id=$1 AND status IN ('pending','issued')", [broker.id], client);
+      await execute('INSERT INTO password_reset_requests(id,broker_id,requested_ip) VALUES($1,$2,$3)', [uuid(),broker.id,clientIp(req)], client);
+    });
+  }
+  res.json({ ok:true, message:RESET_RESPONSE });
+});
+
+r.post('/auth/password-resets/redeem', async (req, res) => {
+  const email=String(req.body?.email||'').trim().toLowerCase(),code=String(req.body?.code||'').trim(),password=String(req.body?.password||''),confirmPassword=String(req.body?.confirmPassword||'');
+  const key=`password-reset-redeem:${clientIp(req)}:${email}`;
+  if(!checkRateLimit(key))return res.status(429).json({error:'Too many attempts; try again later'});
+  if(!email||!code||!password||!confirmPassword)return res.status(400).json({error:'Email, reset code, new password and confirmation are required'});
+  if(password!==confirmPassword)return res.status(400).json({error:'New password and confirmation do not match'});
+  if(password.length<12)return res.status(400).json({error:'Password must be at least 12 characters'});
+  const completed=await transaction(async client=>{
+    const request=await one(`SELECT pr.*,b.status AS broker_status FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id
+      WHERE LOWER(b.email)=LOWER($1) AND pr.status='issued' AND pr.code_hash=$2 AND pr.expires_at>NOW()
+      ORDER BY pr.issued_at DESC LIMIT 1 FOR UPDATE OF pr`,[email,resetCodeHash(code)],client);
+    if(!request||request.brokerStatus!=='active')return false;
+    await execute('UPDATE brokers SET password_hash=$1,updated_at=NOW() WHERE id=$2',[hashPassword(password),request.brokerId],client);
+    await execute('DELETE FROM sessions WHERE broker_id=$1',[request.brokerId],client);
+    await execute("UPDATE password_reset_requests SET status='used',used_at=NOW(),code_hash=NULL WHERE id=$1",[request.id],client);
+    await execute("UPDATE password_reset_requests SET status='cancelled',code_hash=NULL WHERE broker_id=$1 AND id<>$2 AND status IN ('pending','issued')",[request.brokerId,request.id],client);
+    await audit('Broker',request.brokerId,'password_reset_completed',request.brokerId,{resetRequestId:request.id},client);
+    return true;
+  });
+  if(!completed)return res.status(400).json({error:'Reset code is invalid or expired'});
+  clearSessionCookie(res);
+  res.json({ok:true,message:'Password changed. Sign in with your new password.'});
 });
 
 r.post('/auth/logout', requireAuth, async (req, res) => {

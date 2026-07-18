@@ -991,6 +991,29 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the exact version from the queue and retains reviewer/time/audit evidence. Explicit user
   confirmation is required before closure.
 
+### R1-UAT-033: Sign-in has no password recovery path
+
+- Date raised: 2026-07-18
+- Environment: CRM Test (`https://crm-test.nysarealty.com/`)
+- Area: Authentication and User Management
+- Status: R1-AMD-029 Revision 1 implemented locally; CRM Test deployment, security retest and
+  explicit user confirmation pending
+- Priority: Access continuity and account security
+- Related acceptance criteria: 19, 22 and 62
+- Evidence: After an invalid password, the sign-in screen offers only Sign in and invitation
+  redemption. An existing user cannot request a password reset or enter a new password.
+- Required correction: Add a privacy-preserving Forgot password workflow without claiming an email
+  delivery connector. Show the same response for registered and unregistered emails. Let only an
+  Administrator issue a short-lived, one-time reset code through User Management; store only its
+  hash, require new-password confirmation, expire or cancel unused codes, revoke existing sessions
+  after successful reset and retain audit evidence without storing the password or code.
+- Retest condition: On CRM Test, request resets for a registered and unregistered email and confirm
+  the public responses are indistinguishable. As Administrator, issue a code and confirm it is shown
+  only once and expires after 30 minutes. Confirm an Admin Assistant cannot list or issue codes.
+  Redeem a valid code with matching passwords of at least 12 characters; confirm the old password,
+  code reuse and prior sessions fail while the new password succeeds. Explicit user confirmation is
+  required before closure.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1920,6 +1943,23 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   retest and explicit user confirmation pending.
 - Retest condition: The R1-UAT-028 CRM Test retest condition passes and the user explicitly
   confirms the result.
+
+### R1-AMD-029 Revision 1: Secure administrator-assisted password recovery
+
+- Amendment ID: R1-AMD-029 Revision 1
+- Related UAT finding: R1-UAT-033
+- Agreed requirement: Provide Forgot password and Set new password paths on the sign-in screen.
+  Prevent account enumeration by returning an identical request response for every email. Because
+  Release 1 has no live email connector, place valid requests in Administrator-only User Management,
+  where an Administrator can issue a cryptographically random, 30-minute one-time code for private
+  out-of-band delivery. Store only the code hash; require password confirmation and the existing
+  minimum length; invalidate the code and all active sessions after use; audit issue, cancellation
+  and completion actions. Admin Assistant must not access reset codes or requests.
+- Status: Implemented locally with migration `021_password_reset_requests.sql`, API/browser contract
+  tests and session-revocation controls; CRM Test deployment, security retest and explicit user
+  confirmation pending.
+- Retest condition: The R1-UAT-033 CRM Test retest condition passes and the user explicitly confirms
+  the workflow before closure.
 
 ## Review discipline
 
