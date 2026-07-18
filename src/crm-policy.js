@@ -12,6 +12,17 @@ export function isManager(broker) {
   return Boolean(broker && (broker.role === 'admin' || broker.jobRole === 'manager'));
 }
 
+export function isProposalApprover(broker) {
+  return Boolean(hasInternalCrmIdentity(broker) && (broker.role === 'admin' || ['manager','director'].includes(broker.jobRole)));
+}
+
+export function canApproveProposal(broker, lead) {
+  if (!isProposalApprover(broker)) return false;
+  if (isCompanyReader(broker)) return true;
+  const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
+  return broker.jobRole === 'manager' && managedTeams.includes(lead?.assignedTeamId);
+}
+
 export function isCrmReadOnly(broker) {
   return Boolean(broker && ['director','accountant'].includes(broker.jobRole));
 }
@@ -50,6 +61,14 @@ export function leadScopeSql(alias, broker, params = []) {
         AND tm.membership_role='manager' AND tm.ends_at IS NULL))`, params };
   }
   return { clause:`(${alias}.assigned_to=${id} OR ${alias}.created_by=${id})`, params };
+}
+
+export function proposalApprovalScopeSql(alias, broker, params = []) {
+  if (isProposalApprover(broker) && isCompanyReader(broker)) return { clause:'1=1', params };
+  if (!isProposalApprover(broker) || broker.jobRole !== 'manager') return { clause:'1=0', params };
+  const id=bind(params,broker.id);
+  return { clause:`EXISTS (SELECT 1 FROM team_memberships tm WHERE tm.broker_id=${id} AND tm.team_id=${alias}.assigned_team_id
+    AND tm.membership_role='manager' AND tm.ends_at IS NULL)`, params };
 }
 
 export function teamScopeSql(alias,broker,params=[]){

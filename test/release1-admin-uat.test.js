@@ -229,7 +229,7 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/it is not another calculation input/);
   assert.match(app,/Generate immutable draft PDF/);
   assert.match(app,/Review on screen/);
-  assert.match(app,/Confirm manager approval/);
+  assert.match(app,/Confirm proposal approval/);
   assert.match(app,/Record external delivery/);
   assert.match(app,/This does not send the PDF/);
   assert.match(app,/Open Lead Documents/);

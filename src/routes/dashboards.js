@@ -1,7 +1,7 @@
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,isCompanyReader,leadScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,leadScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
 import { dashboardTypeFor,buildRoleDashboardPresentation } from '../dashboard-domain.js';
 import { DASHBOARD_METRICS } from '../admin-governance.js';
 
@@ -127,10 +127,21 @@ r.get('/crm/dashboard',async(req,res)=>{
   const taskSummary=Object.fromEntries(tasks.map(item=>[item.label,item.value]));
   const recentActivities=await many(`SELECT a.id,a.activity_type,a.subject,a.outcome,a.created_at,l.id AS lead_id,l.title,c.full_name AS contact_name,b.name AS owner_name FROM activities a
     JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 12`,f.params);
+  const approvalParams=[],approvalScope=proposalApprovalScopeSql('l',req.broker,approvalParams),approvalWhere=[`(${approvalScope.clause})`,`v.status='generated'`],addApproval=(sql,value)=>{approvalParams.push(value);approvalWhere.push(sql.replace('?',`$${approvalParams.length}`));};
+  if(f.selected.teamId)addApproval('l.assigned_team_id=?',f.selected.teamId);
+  if(f.selected.managerId)addApproval('l.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)',f.selected.managerId);
+  if(f.selected.agentId)addApproval('l.assigned_to=?',f.selected.agentId);
+  if(f.selected.businessType)addApproval('l.business_type=?',f.selected.businessType);
+  const proposalApprovalQueue=isProposalApprover(req.broker)?await many(`SELECT v.id AS version_id,v.version_number,v.document_version_id,v.created_at,
+    p.id AS proposal_id,p.title AS proposal_title,p.template_type,l.id AS lead_id,l.title AS lead_title,l.business_type,
+    c.full_name AS customer_name,t.name AS team_name,creator.name AS requested_by,FLOOR(EXTRACT(EPOCH FROM (NOW()-v.created_at))/3600)::int AS waiting_hours
+    FROM proposal_versions v JOIN proposals p ON p.id=v.proposal_id JOIN leads l ON l.id=p.lead_id JOIN contacts c ON c.id=p.contact_id
+    LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers creator ON creator.id=v.created_by
+    WHERE ${approvalWhere.join(' AND ')} ORDER BY v.created_at ASC LIMIT 50`,approvalParams):[];
   const dataAsOf=new Date(),presentation=buildRoleDashboardPresentation({type,view:req.query.view,current,previous,previousInventory,targets,trend,tasks:taskSummary,exceptions,previousExceptions,proposals,calls,inventory,agents,sources,priorSources,accountabilityRows,dataAsOf});
   res.json({dashboardType:type,view:presentation.view,dataAsOf,lastRefresh:dataAsOf,filters:f.selected,period:{current:{from:f.start,to:f.end},prior:{from:prior.start,to:prior.end}},
     calculationContext:'Role-scoped operational data; reassignment history is not rewritten. Counts use distinct accessible records.',...presentation,
-    qualification:{hot:current.hot,warm:current.warm},stages,sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,calls,inventory,recentActivities,hierarchy});
+    qualification:{hot:current.hot,warm:current.warm},stages,sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue,calls,inventory,recentActivities,hierarchy});
 });
 
 r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_at');if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT a.id,a.created_at,a.direction,a.outcome,a.duration_seconds,a.details,a.follow_up_required,a.due_at,a.completed_at,

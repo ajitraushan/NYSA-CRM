@@ -950,6 +950,30 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   property pages remain balanced with media, facts and reviewed narrative. Explicit user
   confirmation is required before closure.
 
+### R1-UAT-032: Generated proposals have no manager or director approval queue
+
+- Date raised: 2026-07-18
+- Environment: CRM Test (`https://crm-test.nysarealty.com/`)
+- Area: Proposal approval workflow and role dashboards
+- Status: R1-AMD-006 Revision 23 implemented locally; CRM Test deployment, authenticated role
+  retest and explicit user confirmation pending
+- Priority: Operational workflow and approval control
+- Related acceptance criteria: 21, 135 and 137
+- Evidence: A proposal can require and record Manager approval, but no pending work item appears
+  on the Team Manager or Managing Director dashboard. The reviewer must already know the lead and
+  navigate into its Proposal Builder. The existing backend also excludes the Managing Director
+  from proposal approval despite providing company-wide dashboard visibility.
+- Required correction: Show a Proposal approvals queue on Team Manager and Managing Director
+  dashboards. Display the customer, lead, proposal/template/version, team, requester and waiting
+  age, with Open lead and Review on screen actions. Restrict Team Managers to their actively
+  managed teams, give the Managing Director and Administrator company-wide approval scope, keep
+  agents out of the queue and do not broaden Director access to routine lead editing.
+- Retest condition: On CRM Test, generate proposals under two different teams. Confirm each Team
+  Manager sees and can approve only the managed-team item; the Managing Director sees and can
+  approve both; an Agent sees no approval queue and cannot call the approval API; approval removes
+  the exact version from the queue and retains reviewer/time/audit evidence. Explicit user
+  confirmation is required before closure.
+
 ## Agreed amendments
 
 ### R1-AMD-001: Controlled-values alignment and layout
@@ -1242,6 +1266,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   every page was visually inspected; CRM Test deployment and explicit user confirmation pending.
 - Retest condition: The R1-UAT-031 CRM Test retest condition passes and the user explicitly confirms
   the corrected format.
+
+### R1-AMD-006 Revision 23: Role-scoped proposal approval queue
+
+- Amendment ID: R1-AMD-006 Revision 23
+- Related UAT finding: R1-UAT-032
+- Agreed requirement: Add a visible Proposal approvals queue to Team Manager and Managing Director
+  dashboards with customer, lead, proposal, template/version, team, requester, waiting age, Open
+  lead and Review on screen actions. Team Manager scope is limited to actively managed teams;
+  Managing Director and Administrator scope is company-wide. Permit those roles to approve the
+  exact reviewed version without granting the Managing Director general lead-edit capability.
+- Status: Implemented locally with policy, route and browser-contract tests; CRM Test deployment,
+  authenticated cross-role retest and explicit user confirmation pending.
+- Retest condition: The R1-UAT-032 CRM Test retest condition passes and the user explicitly confirms
+  the operational approval workflow.
 
 ### R1-AMD-007 Revision 2: Operational pending-assignment queues, SLA recycling and Dubai routing defaults
 

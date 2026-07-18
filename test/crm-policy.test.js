@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasInternalCrmIdentity,isCompanyReader,isManager,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  leadScopeSql,teamScopeSql,contactScopeSql } from '../src/crm-policy.js';
+import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
+  leadScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -44,6 +44,22 @@ test('directors have assignment intervention while routine writes remain restric
   assert.equal(canAssignLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,{...teamLead,assignedTeamId:'t2'}),false);
   assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),false);
+});
+
+test('proposal approval is team-scoped for managers and company-wide for directors',()=>{
+  const managedLead={assignedTo:'agent',assignedTeamId:'t1',createdBy:'agent'};
+  const otherLead={...managedLead,assignedTeamId:'t2'};
+  assert.equal(isProposalApprover(manager),true);
+  assert.equal(isProposalApprover(director),true);
+  assert.equal(isProposalApprover(agent),false);
+  assert.equal(canApproveProposal(manager,managedLead),true);
+  assert.equal(canApproveProposal(manager,otherLead),false);
+  assert.equal(canApproveProposal(director,otherLead),true);
+  assert.equal(canApproveProposal(admin,otherLead),true);
+  assert.equal(canApproveProposal(agent,managedLead),false);
+  assert.match(proposalApprovalScopeSql('l',manager,[]).clause,/membership_role='manager'/);
+  assert.equal(proposalApprovalScopeSql('l',director,[]).clause,'1=1');
+  assert.equal(proposalApprovalScopeSql('l',agent,[]).clause,'1=0');
 });
 
 test('SQL scopes are parameterized and deny accountants',()=>{

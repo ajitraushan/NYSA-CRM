@@ -119,6 +119,23 @@ test('Agent dashboards remove hierarchy filters fixed by maintained identity',()
   assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
 });
 
+test('manager and director dashboards expose a scoped proposal approval queue',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
+  const proposals=fs.readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  assert.match(ui,/Proposal approvals/);
+  assert.match(ui,/Generated proposals from your managed teams awaiting review/);
+  assert.match(ui,/Company-wide generated proposals awaiting review/);
+  assert.match(ui,/data-proposal-approval/);
+  assert.match(ui,/window\.openProposalPdfReview/);
+  assert.match(routes,/proposalApprovalQueue=isProposalApprover/);
+  assert.match(routes,/v\.status='generated'/);
+  assert.match(routes,/proposalApprovalScopeSql\('l',req\.broker,approvalParams\)/);
+  assert.match(proposals,/canApproveProposal/);
+  assert.match(app,/\['manager','director'\]\.includes\(ME\.jobRole\)/);
+});
+
 test('dashboard period presets replace manual date entry for every role',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   for(const preset of ['last_week','last_month','last_quarter','last_6_months','older_than_6_months'])assert.match(ui,new RegExp(`'${preset}'`));
