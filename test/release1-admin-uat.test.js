@@ -175,7 +175,7 @@ test('administration uses a left maintenance menu and proposal designer enforces
   assert.match(routes,/'contact\.phone':recipient\.phone/);
   assert.match(routes,/'contact\.kyc_status':recipient\.kycStatus/);
   assert.match(pdf,/p\.inventoryReference/);
-  assert.match(pdf,/IDENTITY REFERENCE/);
+  assert.match(pdf,/Identity reference/);
   assert.match(pdf,/YOUR DUBAI PROPERTY SHORTLIST/);
   assert.doesNotMatch(routes,/KYC summary: \$\{maskedKyc\}/);
   const crm=read('src/routes/crm.js');
