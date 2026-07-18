@@ -33,7 +33,17 @@ function numberOrNull(value) {
 
 async function staffMember(id) {
   if (!id) return null;
-  return one("SELECT id, team_id FROM brokers WHERE id=$1 AND role IN ('admin','internal_broker') AND status='active'", [id]);
+  return one("SELECT id, team_id, job_role FROM brokers WHERE id=$1 AND role IN ('admin','internal_broker') AND status='active'", [id]);
+}
+
+async function eligibleTeamManager(id) {
+  if (!id) return null;
+  return one(`SELECT b.id,b.team_id,b.job_role FROM brokers b
+    WHERE b.id=$1 AND b.status='active' AND b.role IN ('admin','internal_broker')
+      AND (b.job_role='manager' OR EXISTS (
+        SELECT 1 FROM user_role_assignments r
+        WHERE r.broker_id=b.id AND r.job_role='manager' AND r.status='active' AND r.ends_at IS NULL
+      ))`, [id]);
 }
 
 function canWriteCrm(broker) {
@@ -79,7 +89,7 @@ r.get('/crm/overview', async (req, res) => {
 
 r.get('/crm/staff', async (req, res) => {
   const params=[];let scope='id=$1';params.push(req.broker.id);
-  if(isCompanyReader(req.broker)){scope="role IN ('admin','internal_broker')";params.length=0;}
+  if(isCompanyReader(req.broker)||req.broker.jobRole==='admin_assistant'){scope="role IN ('admin','internal_broker')";params.length=0;}
   else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships tm
     WHERE tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL AND tm.team_id=brokers.team_id))`;}
   const staff = await many(`SELECT id,name,email,team_id,job_title,job_role FROM brokers
@@ -88,7 +98,7 @@ r.get('/crm/staff', async (req, res) => {
 });
 
 r.get('/crm/teams', async (req, res) => {
-  const scope=teamScopeSql('t',req.broker,[]);
+  const scope=req.broker.jobRole==='admin_assistant'?{clause:'1=1',params:[]}:teamScopeSql('t',req.broker,[]);
   const teams = await many(`SELECT t.*, b.name AS manager_name,
     (SELECT COUNT(*)::int FROM brokers x WHERE x.team_id=t.id AND x.status='active') AS member_count
     FROM teams t LEFT JOIN brokers b ON b.id=t.manager_id WHERE t.active=1 AND ${scope.clause} ORDER BY t.name`,scope.params);
@@ -101,7 +111,7 @@ r.post('/crm/teams', async (req, res) => {
   if (!clean(name)) return res.status(400).json({ error: 'name is required' });
   if (!Number.isInteger(+leadResponseHours) || +leadResponseHours < 1 || +leadResponseHours > 168)
     return res.status(400).json({ error: 'leadResponseHours must be between 1 and 168' });
-  if (managerId && !(await staffMember(managerId))) return res.status(400).json({ error: 'Invalid managerId' });
+  if (managerId && !(await eligibleTeamManager(managerId))) return res.status(400).json({ error: 'Select an active user with a Manager role' });
   const id = uuid();
   const team = await transaction(async client=>{
     const row=await one(`INSERT INTO teams (id,name,manager_id,lead_response_hours)
@@ -118,7 +128,7 @@ r.patch('/crm/teams/:id', async (req, res) => {
   const team = await one('SELECT * FROM teams WHERE id=$1', [req.params.id]);
   if (!team) return res.status(404).json({ error: 'Team not found' });
   const { name, managerId, leadResponseHours, active } = req.body || {};
-  if (managerId && !(await staffMember(managerId))) return res.status(400).json({ error: 'Invalid managerId' });
+  if (managerId && !(await eligibleTeamManager(managerId))) return res.status(400).json({ error: 'Select an active user with a Manager role' });
   if (leadResponseHours !== undefined && (!Number.isInteger(+leadResponseHours) || +leadResponseHours < 1 || +leadResponseHours > 168))
     return res.status(400).json({ error: 'leadResponseHours must be between 1 and 168' });
   if(active!==undefined&&![0,1,true,false].includes(active))return res.status(400).json({error:'active must be boolean'});

@@ -402,6 +402,14 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
     sessions, blocks login, requires a reason and preserves the user, assignments and
     audit history; users are not hard-deleted.
   - Preserve immediate session invalidation when access is revoked.
+  - Treat the Manager maintained against a Team as the authoritative reporting manager
+    for every active user assigned to that team. Do not require a second manager field
+    against each agent.
+  - Show the derived reporting line in User Management as `Reports to`, and show the
+    corresponding team against the manager as `Manages`.
+  - When an approved Manager role is assigned to an unmanaged team, establish that
+    user as the team manager. Prevent a second manager from silently replacing the
+    incumbent; intentional replacement must use Team maintenance.
 - Retest condition: On CRM Test, an administrator opens User Management, directly adds
   one internal user and separately invites another with an approved role and required
   team. The directly added user exists before activation and securely sets their own
@@ -414,7 +422,11 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   compatible scoped roles to one user, confirm the primary-role dashboard and alternate
   workspace, then expire one role and verify its permissions end without changing
   history. External Broker remains an interface classification only and cannot
-  authenticate or access CRM records in Release 1.
+  authenticate or access CRM records in Release 1. Assign Addi as Manager of Core Sales
+  Team and Ajitr as Sales Agent in that team; User Management shows `Addi — Manages:
+  Core Sales Team` and `Ajitr — Reports to: Addi`. Move Ajitr to another team and verify
+  the reporting line changes automatically. Attempt to assign a second Manager to Core
+  Sales Team and verify that the system requires an explicit Team-maintenance change.
 
 ### R1-UAT-011: Organization settings do not provide governed business maintenance or complete proposal defaults
 
@@ -1585,6 +1597,28 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Status: Deployed to CRM Test; user retest and explicit confirmation pending
 - Retest condition: The R1-UAT-010 CRM Test retest condition passes and the user
   explicitly confirms the result.
+
+### R1-AMD-011 Revision 4: Team-derived reporting manager
+
+- Amendment ID: R1-AMD-011 Revision 4
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: The Manager maintained against a Team is the single authoritative
+  reporting manager for all active users assigned to that team. User Management derives
+  and displays `Reports to` for team members and `Manages` for the manager; it does not
+  duplicate the relationship with a separately editable agent-manager field. Assigning
+  a Manager role to an unmanaged team establishes the team manager, while a conflicting
+  second Manager is blocked and must be handled as an intentional replacement in Team
+  maintenance. Existing unambiguous team/Manager assignments are reconciled without
+  arbitrarily selecting among conflicting records.
+- Status: Implemented locally with migration `024_team_reporting_lines.sql` and verified
+  by 102 automated tests; CRM Test deployment, retest and explicit confirmation remain
+  pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, Addi is the maintained Manager of Core Sales Team and
+  Ajitr is a Sales Agent in that team. User Management shows that Addi manages Core
+  Sales Team and Ajitr reports to Addi without a separate per-agent mapping. Moving
+  Ajitr to another team changes the derived reporting line. A second Manager assignment
+  is rejected until the manager is deliberately replaced through Team maintenance, and
+  the user explicitly confirms the result.
 
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 

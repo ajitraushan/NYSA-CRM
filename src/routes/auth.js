@@ -117,6 +117,11 @@ r.post('/auth/register', async (req, res) => {
       RETURNING id`, [inv.id], client);
     if (!consumed) throw new Error('Invitation is no longer available');
     const jobRole=inv.jobRole || (inv.role === 'admin' ? 'admin' : inv.role === 'internal_broker' ? 'sales_agent' : null);
+    if(jobRole==='manager'&&inv.teamId){
+      const team=await one('SELECT id,name,manager_id FROM teams WHERE id=$1 AND active=1 FOR UPDATE',[inv.teamId],client);
+      if(!team)throw new Error('The invitation team is no longer active');
+      if(team.managerId&&team.managerId!==id)throw new Error(`${team.name} already has a Manager. Ask an administrator to issue a corrected invitation.`);
+    }
     if(inv.pendingBrokerId)await execute(`UPDATE brokers SET name=$1,email=$2,phone=$3,brokerage=$4,password_hash=$5,status='active',updated_at=NOW() WHERE id=$6 AND status='pending_activation'`,[name.trim(),email.trim(),phone||null,brokerage||null,hashPassword(password),id],client);
     else {await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role,team_id,can_post, password_hash, invited_by,user_classification)
                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'internal_user')`,
@@ -124,6 +129,7 @@ r.post('/auth/register', async (req, res) => {
       if(jobRole)await execute(`INSERT INTO user_role_assignments(id,broker_id,job_role,team_id,is_primary,status,approved_by,change_reason) VALUES($1,$2,$3,$4,1,'active',$5,'Invitation-approved primary role')`,[uuid(),id,jobRole,inv.teamId||null,inv.issuedBy],client);
       if(inv.teamId)await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5)`,[uuid(),inv.teamId,id,jobRole==='manager'?'manager':'member',inv.issuedBy],client);
     }
+    if(jobRole==='manager'&&inv.teamId)await execute('UPDATE teams SET manager_id=$1 WHERE id=$2',[id,inv.teamId],client);
     await audit('Broker', id, 'registered', id, { via_invitation: inv.id }, client);
   });
 
