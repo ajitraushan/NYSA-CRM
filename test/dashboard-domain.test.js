@@ -7,6 +7,7 @@ test('authenticated staff receive the role-appropriate dashboard',()=>{
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'director'}),'executive');
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'manager'}),'manager');
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'sales_agent'}),'agent');
+  assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'listing_agent'}),'listing');
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'accountant'}),'accounting');
 });
 

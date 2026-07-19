@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 and 1.1 migrations remain sequential and include governed inventory and area controls',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-18),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql','023_proposal_correction_tasks.sql','024_team_reporting_lines.sql','025_manager_director_reporting.sql','026_routing_rule_governance.sql','027_inventory_commercial_readiness.sql','028_governed_areas_and_routing.sql']);
+  assert.deepEqual(migrations.slice(-19),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql','023_proposal_correction_tasks.sql','024_team_reporting_lines.sql','025_manager_director_reporting.sql','026_routing_rule_governance.sql','027_inventory_commercial_readiness.sql','028_governed_areas_and_routing.sql','029_listing_executive_workflow.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
@@ -20,6 +20,7 @@ test('Release 1 and 1.1 migrations remain sequential and include governed invent
   assert.match(read('src/migrations/026_routing_rule_governance.sql'),/routing_rules_active_match_uq/);
   assert.match(read('src/migrations/027_inventory_commercial_readiness.sql'),/handover_status/);
   assert.match(read('src/migrations/028_governed_areas_and_routing.sql'),/primary_routing_area_id/);
+  assert.match(read('src/migrations/029_listing_executive_workflow.sql'),/workflow_status/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));

@@ -1,6 +1,7 @@
 export function dashboardTypeFor(broker){
   if(broker?.role==='admin'||broker?.jobRole==='director')return 'executive';
   if(broker?.jobRole==='manager')return 'manager';
+  if(broker?.jobRole==='listing_agent')return 'listing';
   if(broker?.jobRole==='accountant')return 'accounting';
   return 'agent';
 }

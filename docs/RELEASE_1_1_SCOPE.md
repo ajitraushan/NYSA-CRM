@@ -43,6 +43,39 @@ record enters a reviewable draft workflow before it can become approved inventor
 - Availability confirmation and aging controls
 - Manager/admin approval where required by policy
 
+#### Listing Executive workspace and manual review lifecycle
+
+- Amendment ID: R1.1-AMD-003
+- Related UAT finding: R1.1-UAT-002 (pre-implementation listing-workspace and lifecycle review)
+- Agreed requirement: A maintained `listing_agent` must be presented as a Listing
+  Executive and land on a dedicated, own-record inventory workspace rather than the
+  lead-centric Sales Agent dashboard. The workspace must provide a clear manual-draft
+  action, reconciled workload counts and actionable queues for drafts, returned
+  records, approval, availability, verification, permit, media and readiness attention.
+  A new manual listing is saved as a resumable Draft and cannot enter operational
+  availability until its readiness evidence is complete, the Listing Executive submits
+  it and the responsible Manager or Administrator approves it. A reviewer may return
+  the exact record with mandatory correction instructions, block it with a reason or
+  restore a blocked record to Draft. Material owner edits to an approved listing require
+  a new review. Existing inventory is preserved as approved during migration. Sales
+  Agents can read approved inventory but cannot create manual drafts without a future
+  separately governed grant. Non-approved drafts remain limited to their owner,
+  responsible management scope and authorized administration. Every transition records
+  actor, timestamp, prior/new state and reason in immutable audit history.
+- Status: Implemented locally and verified by the 126-test automated suite. CRM Test
+  deployment, authenticated role/scope retest and explicit user confirmation remain
+  pending.
+- Retest condition: On CRM Test, sign in as a Listing Executive and confirm the
+  dedicated title, own-record KPIs/queues and manual Draft action. Save and resume an
+  incomplete draft; confirm it cannot be submitted until readiness blockers are
+  resolved. Submit it, confirm it appears in the responsible Manager's Inventory
+  `Awaiting review` filter, request changes with instructions, correct and resubmit the
+  same record, then approve it. Confirm availability changes are blocked before
+  approval and enabled afterward. Confirm a Sales Agent cannot create a draft or read
+  another user's non-approved draft, an unrelated Manager cannot review it, existing
+  inventory remains approved, and the full workflow history is visible. Explicit user
+  confirmation is required before closure.
+
 ### Listing information
 
 The guided capture flow groups fields by purpose:

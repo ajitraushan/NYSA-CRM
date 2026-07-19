@@ -19,7 +19,8 @@ const LEAD_SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social medi
 const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
 const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
 const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
-const JOB_ROLES = { admin:'Administrator', admin_assistant:'Admin Assistant', sales_agent:'Sales Agent', listing_agent:'Listing Agent', manager:'Manager', director:'Director', accountant:'Accountant' };
+const JOB_ROLES = { admin:'Administrator', admin_assistant:'Admin Assistant', sales_agent:'Sales Agent', listing_agent:'Listing Executive', manager:'Manager', director:'Director', accountant:'Accountant' };
+const LISTING_WORKFLOW_LABELS={draft:'Draft',in_review:'Awaiting review',approved:'Approved',changes_requested:'Changes requested',blocked:'Blocked'};
 const COMPANY_TYPES = { developer:'Developer', agency:'Agency', corporate_client:'Corporate Client', landlord_company:'Landlord Company', vendor:'Vendor', other:'Other' };
 const hasCrmAccess = () => ME && ['admin','internal_broker'].includes(ME.role);
 const isCrmLeader = () => ME && (ME.role === 'admin' || ME.jobRole === 'manager');
@@ -49,7 +50,8 @@ const fmtDate = (s) => s ? new Date(s.includes('T') ? s : s + 'Z').toLocaleStrin
 const fmtDateOnly=s=>{if(!s)return '—';const [y,m,d]=String(s).slice(0,10).split('-');return y&&m&&d?`${d}-${m}-${y}`:'—';};
 const handoverLabel=l=>l.handoverStatus==='ready'||l.handoverDate==='Ready'?'Ready':l.handoverStatus==='expected'||/^\d{4}-\d{2}-\d{2}$/.test(String(l.handoverDate||''))?`Expected ${fmtDateOnly(l.handoverExpectedDate||l.handoverDate)}`:'To be confirmed';
 const canPost = () => ME && (ME.role === 'admin' || ME.role === 'internal_broker' || (ME.role === 'partner_broker' && ME.canPost === 1));
-const canEditListing = (l) => ME && (ME.role === 'admin' || l.postedBy === ME.id);
+const canCreateListing = () => canPost() && (ME.role==='admin'||['listing_agent','admin_assistant','manager'].includes(ME.jobRole));
+const canEditListing = (l) => ME && (ME.role === 'admin' || ME.jobRole==='admin_assistant' || l.postedBy === ME.id);
 const isViewer = () => ME && ME.role === 'viewer';
 
 function toast(msg, duration = 3200) {
@@ -212,6 +214,7 @@ function renderShell() {
 }
 
 async function renderDashboard() {
+  if(ME?.jobRole==='listing_agent')return renderListingExecutiveDashboard();
   if(hasCrmAccess())return renderCrmDashboard();
   $('#view').innerHTML = `
     <section class="dashboard-head">
@@ -222,7 +225,7 @@ async function renderDashboard() {
       </div>
       <div class="dashboard-actions">
         ${hasCrmAccess() ? '<button class="btn btn-primary btn-sm" id="dash-add-lead">+ Add lead</button>' : ''}
-        ${canPost() ? '<button class="btn btn-primary btn-sm" id="dash-add">+ Add listing</button>' : ''}
+        ${canCreateListing() ? '<button class="btn btn-primary btn-sm" id="dash-add">+ Add listing</button>' : ''}
         <button class="btn btn-sm" id="dash-inventory">Open inventory</button>
       </div>
     </section>
@@ -266,6 +269,18 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
   tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : renderListings();
+}
+
+async function renderListingExecutiveDashboard(){
+  $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / LISTING EXECUTIVE WORKSPACE</div><h2>${esc(ME.name.split(' ')[0])} inventory workspace</h2><p>Create, complete and maintain your governed property inventory.</p></div><div class="dashboard-actions"><button class="btn btn-primary btn-sm" id="lx-new">Create manual listing draft</button><button class="btn btn-sm" id="lx-inventory">Open inventory</button></div></section><section id="lx-stats" class="stat-grid"><div class="loading-state">Loading inventory workload...</div></section><section class="dashboard-panel"><div class="panel-head"><div><div class="eyebrow">MY LISTING QUEUES</div><h3>Records requiring action</h3></div></div><div id="lx-queue" class="recent-list"><div class="loading-state">Loading queues...</div></div></section>`;
+  $('#lx-new').addEventListener('click',()=>openListingForm());$('#lx-inventory').addEventListener('click',()=>switchTab('listings'));
+  try{
+    const {counts,listings}=await api('/listings-workspace');
+    $('#lx-stats').innerHTML=[['Active approved',counts.active,'Available operational inventory'],['Drafts',counts.drafts,'Complete and submit'],['Awaiting review',counts.awaitingReview,'With Manager or Administrator'],['Changes requested',counts.changesRequested,'Returned for correction'],['Availability refresh',counts.availabilityRefresh,'Older than seven days'],['Verification pending',counts.pendingVerification,'Evidence needs attention'],['Media incomplete',counts.incompleteMedia,'No approved image'],['Readiness blocks',counts.readinessBlocks,'Not ready for customer use']].map(([label,value,note])=>`<div class="stat-card"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
+    const action=listings.filter(l=>!['ready','closed'].includes(l.queue));
+    $('#lx-queue').innerHTML=action.map(l=>`<button class="recent-row" data-id="${esc(l.id)}"><span class="recent-main"><b>${esc(l.project)}</b><small>${esc(l.area)} · ${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus)} · ${esc(String(l.queue).replaceAll('_',' '))}</small></span><span class="recent-tag">${fmtDate(l.updatedAt)}</span></button>`).join('')||'<div class="empty compact">No listing actions are pending.</div>';
+    $('#lx-queue').querySelectorAll('[data-id]').forEach(row=>row.addEventListener('click',()=>openDetail(row.dataset.id)));
+  }catch(err){$('#lx-stats').textContent=err.message;$('#lx-queue').textContent=err.message;}
 }
 
 const isProposalCorrectionTask=t=>t.taskType==='proposal_correction'&&t.proposalId&&t.proposalVersionId;
@@ -686,6 +701,7 @@ function renderListings() {
       <div><label>Max budget (AED)</label><input id="f-max" type="number" min="0" placeholder="Any"></div>
       <div><label>Payment plan</label><select id="f-plan"><option value="">Any</option>${opts(PAYMENT_PLANS)}</select></div>
       <div><label>Status</label><select id="f-status"><option value="">Any</option>${opts(STATUSES, 'Available')}</select></div>
+      ${(ME.role==='admin'||ME.jobRole==='manager')?`<div><label>Workflow</label><select id="f-workflow"><option value="">Any</option>${Object.entries(LISTING_WORKFLOW_LABELS).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></div>`:''}
       <div><label>Exclusivity</label><select id="f-tier"><option value="">Any</option>${opts(TIERS)}</select></div>
       <div><label>Developer</label><input id="f-dev" placeholder="e.g. Emaar"></div>
       <div><label>Handover before</label><input id="f-hb" type="date"></div>
@@ -701,7 +717,7 @@ function renderListings() {
         <option value="discount">Biggest discount vs reference</option>
         <option value="handover">Nearest handover</option>
       </select>
-      ${canPost() ? '<button class="btn btn-primary btn-sm" id="add-listing-btn">+ Add listing</button>' : ''}
+      ${canCreateListing() ? '<button class="btn btn-primary btn-sm" id="add-listing-btn">+ Add listing</button>' : ''}
       <span class="result-count" id="f-count"></span>
     </div>
   </div>
@@ -724,6 +740,7 @@ async function loadListings() {
   set('propertyType', $('#f-type').value); set('bedrooms', $('#f-beds').value);
   set('minPrice', $('#f-min').value); set('maxPrice', $('#f-max').value);
   set('paymentPlanType', $('#f-plan').value); set('status', $('#f-status').value);
+  set('workflowStatus',$('#f-workflow')?.value);
   set('exclusivityTier', $('#f-tier').value); set('developer', $('#f-dev').value.trim());
   set('handoverBefore', $('#f-hb').value); set('handoverAfter', $('#f-ha').value);
   set('sort', $('#f-sort').value);
@@ -754,6 +771,7 @@ function cardHTML(l) {
     <div class="badges">
       <span class="badge status-${esc(l.status.replace(' ', '.'))}">${esc(l.status)}${l.closedReason ? ' · ' + esc(l.closedReason) : ''}</span>
       <span class="badge tier">${esc(l.exclusivityTier)}</span>
+      <span class="badge">${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus||'Approved')}</span>
       ${l.paymentPlanType ? `<span class="badge">${esc(l.paymentPlanType)}</span>` : ''}
     </div>
     <div class="comment-ct"><span>${l.commentCount || 0} comments</span><span>Listed by ${esc(l.postedByName)}</span><b>View details →</b></div>
@@ -797,6 +815,7 @@ async function openDetail(id) {
       <span class="badge status-${esc(l.status.replace(' ', '.'))}">${esc(l.status)}${l.closedReason ? ' · ' + esc(l.closedReason) : ''}</span>
       <span class="badge tier">${esc(l.exclusivityTier)}</span>
     </div>
+      <span class="badge">${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus||'Approved')}</span>
     <div class="kv-grid">
       <div><b>Type</b>${esc(l.propertyType)}</div>
       <div><b>Bedrooms</b>${esc(l.bedrooms || '—')}</div>
@@ -808,6 +827,7 @@ async function openDetail(id) {
       <div><b>Listed</b>${fmtDate(l.createdAt)}</div>
     </div>
     <div class="proposal-readiness ${l.publicationReadiness?.ready?'ready':'blocked'}"><b>Listing publication readiness: ${l.publicationReadiness?.ready?'Ready':'Blocked'}</b><span>${l.publicationReadiness?.ready?'Required listing information, current availability, verification and approved media are present.':esc((l.publicationReadiness?.blockers||[]).map(x=>x.label).join(' · ')||'Readiness evidence is incomplete.')}</span><small>Calculated by NYSA CORE. Portal publication is not available in Release 1.1.</small></div>
+    ${l.reviewComment?`<div class="proposal-readiness ${['changes_requested','blocked'].includes(l.workflowStatus)?'blocked':''}"><b>Latest workflow review</b><span>${esc(l.reviewComment)}</span><small>${l.reviewedAt?fmtDate(l.reviewedAt):''}</small></div>`:''}
     ${l.notes ? `<div class="notes-block">${esc(l.notes)}</div>` : ''}
     ${hasCrmAccess()?'<button class="btn btn-sm" id="d-media">Property media and approval</button>':''}
     ${canEditListing(l) ? `
@@ -820,6 +840,12 @@ async function openDetail(id) {
         <button class="btn btn-sm" id="d-close">Mark closed…</button>` : `<button class="btn btn-sm" id="d-reopen">Reopen as Available</button>`}
       ${ME.role === 'admin' ? '<button class="btn btn-sm btn-danger" id="d-archive">Archive (soft delete)</button>' : ''}
     </div>` : ''}
+    <div class="modal-actions" data-listing-workflow>
+      ${l.postedBy===ME.id&&['draft','changes_requested'].includes(l.workflowStatus)?'<button class="btn btn-primary btn-sm" data-workflow="submit">Submit for review</button>':''}
+      ${(ME.role==='admin'||ME.jobRole==='manager')&&l.workflowStatus==='in_review'?'<button class="btn btn-primary btn-sm" data-workflow="approve">Approve listing</button><button class="btn btn-sm" data-workflow="request_changes">Request changes</button><button class="btn btn-sm btn-danger" data-workflow="block">Block listing</button>':''}
+      ${(ME.role==='admin'||ME.jobRole==='manager')&&l.workflowStatus==='blocked'?'<button class="btn btn-sm" data-workflow="restore">Restore to draft</button>':''}
+    </div>
+    ${l.workflowHistory?.length?`<details><summary>Workflow history (${l.workflowHistory.length})</summary>${l.workflowHistory.map(h=>`<div class="activity-row"><div><b>${esc(String(h.action).replace('workflow_','').replaceAll('_',' '))}</b><small>${esc(h.performedByName)} · ${fmtDate(h.timestamp)}</small><p>${esc(h.details?.reason||'No reason recorded')}</p></div></div>`).join('')}</details>`:''}
     <details class="comments">
       <summary>Internal coordination notes (optional)</summary>
       <p class="tool-note">This optional staff conversation is separate from the inventory record. It is not required to edit the listing, change availability or maintain property media.</p>
@@ -833,6 +859,7 @@ async function openDetail(id) {
   </div>`);
 
   $('#d-edit', o)?.addEventListener('click', () => { o.remove(); openListingForm(l); });
+  o.querySelectorAll('[data-workflow]').forEach(button=>button.addEventListener('click',async()=>{const action=button.dataset.workflow,needsReason=['request_changes','block','restore'].includes(action),reason=needsReason?prompt(action==='request_changes'?'Required correction instructions':'Required review reason'):'';if(needsReason&&!reason)return;try{await api(`/listings/${l.id}/workflow`,{method:'PATCH',body:{action,reason}});toast(action==='submit'?'Listing submitted for review':action==='approve'?'Listing approved':action==='request_changes'?'Listing returned for correction':'Listing workflow updated');o.remove();ME.jobRole==='listing_agent'&&currentTab==='dashboard'?renderListingExecutiveDashboard():loadListings();}catch(err){toast(err.message);}}));
   $('#d-media',o)?.addEventListener('click',()=>openPropertyMedia(l));
   $('#d-status', o)?.addEventListener('change', async (e) => {
     try { await api(`/listings/${l.id}/status`, { method: 'PATCH', body: { status: e.target.value } }); toast('Status updated'); o.remove(); loadListings(); }
@@ -904,7 +931,7 @@ function openListingForm(l = null) {
   const o = overlay(`
   <div class="modal">
     <button class="close-x">✕</button>
-    <h2>${l ? 'Edit listing' : 'Add pocket listing'}</h2>
+    <h2>${l ? 'Edit listing' : 'Create manual listing draft'}</h2>
     <form id="listing-form">
       <div class="form-grid">
         <div class="span2"><label>Project *</label><input name="project" required value="${v('project')}"></div>
@@ -935,7 +962,7 @@ function openListingForm(l = null) {
       </div>
       <div class="modal-actions">
         <button type="button" class="btn" id="lf-cancel">Cancel</button>
-        <button class="btn btn-primary">${l ? 'Save changes' : 'Post listing'}</button>
+        <button class="btn btn-primary">${l ? 'Save changes' : 'Save draft'}</button>
       </div>
     </form>
   </div>`);
@@ -952,8 +979,8 @@ function openListingForm(l = null) {
     try {
       if (l) await api('/listings/' + l.id, { method: 'PATCH', body: f });
       else await api('/listings', { method: 'POST', body: f });
-      toast(l ? 'Listing updated' : 'Listing posted');
-      o.remove(); loadListings();
+      toast(l ? 'Listing updated' : 'Listing draft saved');
+      o.remove(); currentTab==='dashboard'&&ME.jobRole==='listing_agent'?renderListingExecutiveDashboard():loadListings();
     } catch (err) { toast(err.message); }
   });
 }
