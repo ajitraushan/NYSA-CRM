@@ -58,23 +58,42 @@ r.get('/admin/routing-rules',async(req,res)=>{
   res.json({rules:await many(`SELECT r.*,t.name AS team_name FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id ORDER BY priority,name`)});
 });
 
+async function validateRoutingRuleInput(body,excludeId=null){
+  const b=body||{},name=text(b.name),source=text(b.source),businessType=text(b.businessType),teamId=b.teamId||null,priority=Number(b.priority);
+  if(!name)return {error:'Rule name is required'};
+  if(!Number.isInteger(priority)||priority<0)return {error:'Priority must be a whole number of zero or more'};
+  if(source&&!['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'].includes(source))return {error:'Select a valid source'};
+  if(businessType&&!['Sale','Rental','Off-plan','Commercial'].includes(businessType))return {error:'Select a valid business type'};
+  if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId])))return {error:'Active destination team not found'};
+  if(!source&&!businessType&&teamId)return {error:'Any source / Any business is reserved for the Company Unassigned Queue'};
+  const params=[source,businessType];let exclusion='';if(excludeId){params.push(excludeId);exclusion=`AND id<>$${params.length}`;}
+  const duplicate=await one(`SELECT id,name FROM routing_rules WHERE active=1 AND COALESCE(source,'')=COALESCE($1::text,'') AND COALESCE(business_type,'')=COALESCE($2::text,'') ${exclusion} LIMIT 1`,params);
+  if(duplicate)return {error:`An active rule already covers this source and business combination: ${duplicate.name}`};
+  return {value:{name,priority,source,businessType,teamId}};
+}
+
 r.post('/admin/routing-rules',async(req,res)=>{
   if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
-  const b=req.body||{};
-  if(!text(b.name))return res.status(400).json({error:'name is required'});
-  if(b.teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[b.teamId])))return res.status(400).json({error:'Active team not found'});
+  const b=req.body||{},checked=await validateRoutingRuleInput(b);if(checked.error)return res.status(400).json({error:checked.error});
   if(b.agentId||b.assignmentMethod&&b.assignmentMethod!=='team_queue')return res.status(400).json({error:'Routing rules may select only a team queue; broker assignment occurs afterward'});
+  const v=checked.value;
   const id=uuid(),row=await one(`INSERT INTO routing_rules(id,name,priority,source,business_type,team_id,agent_id,assignment_method,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,NULL,'team_queue',$7) RETURNING *`,[id,text(b.name),Number(b.priority??100),text(b.source),text(b.businessType),b.teamId,req.broker.id]);
+    VALUES($1,$2,$3,$4,$5,$6,NULL,'team_queue',$7) RETURNING *`,[id,v.name,v.priority,v.source,v.businessType,v.teamId,req.broker.id]);
   await audit('RoutingRule',id,'created',req.broker.id);res.status(201).json(row);
 });
 
 r.patch('/admin/routing-rules/:id',async(req,res)=>{
   if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
-  const active=req.body?.active;
-  if(typeof active!=='boolean')return res.status(400).json({error:'active boolean is required'});
-  const row=await one('UPDATE routing_rules SET active=$1,updated_at=NOW() WHERE id=$2 RETURNING *',[active?1:0,req.params.id]);
-  if(!row)return res.status(404).json({error:'Routing rule not found'});await audit('RoutingRule',row.id,active?'activated':'retired',req.broker.id);res.json(row);
+  const b=req.body||{},existing=await one('SELECT * FROM routing_rules WHERE id=$1',[req.params.id]);if(!existing)return res.status(404).json({error:'Routing rule not found'});
+  if(typeof b.active==='boolean'){
+    const reason=text(b.reason);if(!reason)return res.status(400).json({error:`Reason is required to ${b.active?'reactivate':'retire'} a routing rule`});
+    if(b.active){const checked=await validateRoutingRuleInput({name:existing.name,priority:existing.priority,source:existing.source,businessType:existing.businessType,teamId:existing.teamId},existing.id);if(checked.error)return res.status(409).json({error:checked.error});}
+    const row=await one('UPDATE routing_rules SET active=$1,updated_at=NOW() WHERE id=$2 RETURNING *',[b.active?1:0,existing.id]);await audit('RoutingRule',row.id,b.active?'reactivated':'retired',req.broker.id,{reason});return res.json(row);
+  }
+  const reason=text(b.reason);if(!reason)return res.status(400).json({error:'Reason is required to edit a routing rule'});
+  const checked=await validateRoutingRuleInput(b,existing.id);if(checked.error)return res.status(400).json({error:checked.error});const v=checked.value;
+  const row=await one(`UPDATE routing_rules SET name=$1,priority=$2,source=$3,business_type=$4,team_id=$5,agent_id=NULL,assignment_method='team_queue',updated_at=NOW() WHERE id=$6 RETURNING *`,[v.name,v.priority,v.source,v.businessType,v.teamId,existing.id]);
+  await audit('RoutingRule',row.id,'edited',req.broker.id,{reason,before:{name:existing.name,priority:existing.priority,source:existing.source,businessType:existing.businessType,teamId:existing.teamId},after:v});res.json(row);
 });
 
 r.post('/admin/routing-rules/dubai-defaults',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});const expected=[['Dubai Rental Team','Rental',10],['Dubai Off-plan Team','Off-plan',20],['Dubai Secondary Sales Team','Sale',30]],teams=await many('SELECT id,name FROM teams WHERE active=1 AND name=ANY($1::text[])',[expected.map(x=>x[0])]);const missing=expected.filter(x=>!teams.some(t=>t.name===x[0])).map(x=>x[0]);if(missing.length)return res.status(409).json({error:`Create these active teams first: ${missing.join(', ')}`});await transaction(async client=>{for(const [name,type,priority] of expected){const team=teams.find(t=>t.name===name);await execute(`INSERT INTO routing_rules(id,name,priority,business_type,team_id,assignment_method,created_by) SELECT $1,$2,$3,$4,$5,'team_queue',$6 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND business_type=$4 AND team_id=$5)`,[uuid(),`${name} default`,priority,type,team.id,req.broker.id],client);}await execute(`INSERT INTO routing_rules(id,name,priority,team_id,assignment_method,created_by) SELECT $1,'Company Unassigned fallback',9999,NULL,'team_queue',$2 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND source IS NULL AND business_type IS NULL AND team_id IS NULL)`,[uuid(),req.broker.id],client);await audit('RoutingRule',uuid(),'dubai_defaults_configured',req.broker.id,{teams:expected.map(x=>x[0])},client);});res.json({ok:true});});

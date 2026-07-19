@@ -3,7 +3,7 @@ const password=process.env.DASHBOARD_TEST_PASSWORD||'';
 if(!database.endsWith('_r1test'))throw new Error('REFUSED: dashboard test identities may only be created in a database ending _r1test');
 if(process.env.ALLOW_DASHBOARD_TEST_DATA!=='YES')throw new Error('REFUSED: set ALLOW_DASHBOARD_TEST_DATA=YES to confirm isolated test-data creation');
 if(password.length<12)throw new Error('DASHBOARD_TEST_PASSWORD must contain at least 12 characters');
-const [{transaction,closeDatabase},{hashPassword}]=await Promise.all([import('../src/db.js'),import('../src/auth.js')]);
+const [{transaction,closeDatabase},{hashPassword},{randomUUID}]=await Promise.all([import('../src/db.js'),import('../src/auth.js'),import('node:crypto')]);
 
 const ids={director:'d1000000-0000-4000-8000-000000000001',managerA:'d1000000-0000-4000-8000-000000000002',agentA1:'d1000000-0000-4000-8000-000000000003',agentA2:'d1000000-0000-4000-8000-000000000004',managerB:'d1000000-0000-4000-8000-000000000005',agentB1:'d1000000-0000-4000-8000-000000000006',teamA:'d2000000-0000-4000-8000-000000000001',teamB:'d2000000-0000-4000-8000-000000000002'};
 const people=[
@@ -36,7 +36,7 @@ await transaction(async client=>{
     VALUES($1,$2,$3,'NYSA Realty','internal_broker',1,'active',$4,$5,'English','Asia/Dubai') ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,password_hash=EXCLUDED.password_hash,job_role=EXCLUDED.job_role,status='active'`,[id,name,email,passwordHash,jobRole]);
   await client.query(`INSERT INTO teams(id,name,manager_id,lead_response_hours,active) VALUES($1,'CORE Test Sales Team',$2,4,1) ON CONFLICT(id) DO UPDATE SET manager_id=EXCLUDED.manager_id,active=1`,[ids.teamA,ids.managerA]);
   await client.query(`INSERT INTO teams(id,name,manager_id,lead_response_hours,active) VALUES($1,'CORE Test Leasing Team',$2,4,1) ON CONFLICT(id) DO UPDATE SET manager_id=EXCLUDED.manager_id,active=1`,[ids.teamB,ids.managerB]);
-  for(const [id,,,jobRole,teamId] of people)if(teamId){await client.query('UPDATE brokers SET team_id=$1 WHERE id=$2',[teamId,id]);await client.query(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($2,$1,$2,$3,$4) ON CONFLICT(team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role=EXCLUDED.membership_role`,[teamId,id,jobRole==='manager'?'manager':'member',ids.director]);}
+  for(const [id,,,jobRole,teamId] of people)if(teamId){await client.query('UPDATE brokers SET team_id=$1 WHERE id=$2',[teamId,id]);await client.query(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role=EXCLUDED.membership_role`,[randomUUID(),teamId,id,jobRole==='manager'?'manager':'member',ids.director]);}
   for(let index=0;index<leads.length;index++){
     const [leadId,title,source,business,stage,temp,teamId,agentId,createdOffset,acceptOffset,contactOffset,nextOffset,campaignCode]=leads[index],contactId=`d3000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`;
     await client.query(`INSERT INTO contacts(id,full_name,email,contact_type,owner_id,created_by,source_first_seen) VALUES($1,$2,$3,'buyer',$4,$5,'Dashboard test fixture') ON CONFLICT(id) DO UPDATE SET full_name=EXCLUDED.full_name`,[contactId,`Test Customer ${index+1}`,`core.test.customer.${index+1}@example.invalid`,agentId,ids.director]);

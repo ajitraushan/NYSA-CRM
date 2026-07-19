@@ -1520,6 +1520,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-005 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
+### R1-AMD-007 Revision 3: Governed routing-rule maintenance
+
+- Amendment ID: R1-AMD-007 Revision 3
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: Administrators must be able to edit an active routing rule and
+  retire or reactivate a rule without deleting its history. Every edit and lifecycle
+  action requires a reason and an audit entry. An active source/business combination
+  must be unique, and an Any source / Any business fallback may route only to the
+  Company Unassigned Queue so that a named team cannot unintentionally capture every
+  unmatched lead.
+- Status: Implemented locally with migration `026_routing_rule_governance.sql`; CRM
+  Test deployment, functional retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, edit a specific routing rule and confirm its changed
+  values are saved only after entering a reason. Retire it, confirm it no longer routes
+  new leads, then reactivate it with a reason. Confirm a duplicate active match and an
+  Any source / Any business rule pointing to a named team are both rejected. Confirm
+  the Company Unassigned fallback remains valid and audit history records every action.
+  Explicit user confirmation is required before closure.
+
 ### R1-AMD-008: Consolidate website intake information into Audit/Operations
 
 - Amendment ID: R1-AMD-008
