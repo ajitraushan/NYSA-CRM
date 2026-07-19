@@ -1693,6 +1693,25 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   `My reporting agents`. The Director sees the maintained managers with unit names. No
   dashboard displays a false maintenance warning, and the user explicitly confirms.
 
+### R1-AMD-011 Revision 9: Explicit Manager-to-Director reporting
+
+- Amendment ID: R1-AMD-011 Revision 9
+- Related UAT finding: R1-UAT-010
+- Agreed requirement: Manager and Director remain permission roles, while `Reports to`
+  is an explicit governed organization relationship. User Management provides each active
+  Manager with a `Reports to Director` selector restricted to active Managing Directors.
+  Director dashboards show only Managers explicitly assigned to that Director; Manager
+  dashboards show the maintained Director upward and team-derived Agents downward. When
+  exactly one active Managing Director exists, migration `025` safely backfills all active
+  Managers; it must not guess when the Director is ambiguous.
+- Status: Implemented locally and verified by 105 automated tests; CRM Test deployment,
+  migration, retest and explicit confirmation remain pending. R1-UAT-010 remains open.
+- Retest condition: On CRM Test, User Management shows Aadiyya's `Reports to Director`
+  selector set to Sunita Sinha. Aadiyya's dashboard shows Sunita under `Reports to`, and
+  Sunita's dashboard shows Aadiyya with every unit Aadiyya manages. Changing the selector
+  updates both dashboards without changing Manager or Director permissions. The user
+  explicitly confirms the result.
+
 ### R1-AMD-012 Revision 3: Governed NYSA company profile, safe logo retry and draft cleanup
 
 - Amendment ID: R1-AMD-012 Revision 3

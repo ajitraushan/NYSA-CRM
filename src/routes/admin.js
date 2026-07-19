@@ -51,10 +51,10 @@ r.delete('/admin/invitations/:id', async (req, res) => {
 });
 
 r.get('/admin/brokers', async (req, res) => {
-  const rows = await many(`SELECT b.*,t.manager_id AS reporting_manager_id,m.name AS reporting_manager_name,(SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
+  const rows = await many(`SELECT b.*,t.manager_id AS reporting_manager_id,m.name AS reporting_manager_name,d.name AS direct_supervisor_name,(SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
     'id',r.id,'jobRole',r.job_role,'teamId',r.team_id,'isPrimary',r.is_primary=1,
     'status',r.status,'startsAt',r.starts_at,'endsAt',r.ends_at,'changeReason',r.change_reason
-  ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id ORDER BY b.joined_at DESC`);
+  ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers d ON d.id=b.reports_to_id ORDER BY b.joined_at DESC`);
   res.json({ count:rows.length, brokers:rows.map(publicBroker) });
 });
 
@@ -130,13 +130,15 @@ r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
   if (!broker) return res.status(404).json({ error:'Broker not found' });
-  const { role, status, canPost, teamId, jobTitle, jobRole } = req.body || {};
+  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId } = req.body || {};
   if (role !== undefined && !ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   if (jobRole !== undefined && jobRole !== null && !JOB_ROLES.includes(jobRole)) return res.status(400).json({ error:'Invalid jobRole' });
   if (status !== undefined && !['pending_activation','active','suspended','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
   if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Admin Assistant cannot alter privileged roles or access status' });
   if (teamId && !(await one('SELECT id FROM teams WHERE id=$1 AND active=1', [teamId]))) return res.status(400).json({ error:'Invalid teamId' });
   const nextJobRole=jobRole===undefined?broker.jobRole:jobRole||null,nextTeamId=teamId===undefined?broker.teamId:teamId||null;
+  if(reportsToId!==undefined&&nextJobRole!=='manager')return res.status(400).json({error:'Only a Manager can have a maintained Director reporting line'});
+  if(reportsToId&&!(await one("SELECT id FROM brokers WHERE id=$1 AND role='internal_broker' AND job_role='director' AND status='active'",[reportsToId])))return res.status(400).json({error:'Select an active Managing Director'});
   if(nextJobRole==='manager'&&!nextTeamId)return res.status(400).json({error:'Team is required for a Manager'});
   if(nextJobRole==='manager'){const team=await teamManager(nextTeamId);if(team?.managerId&&team.managerId!==broker.id)return res.status(409).json({error:`${team.name} is already managed by ${team.managerName}. Change its manager deliberately in Team maintenance.`});}
   if (broker.id === req.broker.id && role !== undefined && role !== 'admin') return res.status(400).json({ error:'You cannot demote yourself' });
@@ -172,6 +174,8 @@ r.patch('/admin/brokers/:id', async (req, res) => {
       changes.jobRole = { from:broker.jobRole, to:jobRole||null };
       await execute('UPDATE brokers SET job_role=$1 WHERE id=$2', [jobRole||null,broker.id], client);
     }
+    if(reportsToId!==undefined&&(reportsToId||null)!==broker.reportsToId){changes.reportsToId={from:broker.reportsToId,to:reportsToId||null};await execute('UPDATE brokers SET reports_to_id=$1 WHERE id=$2',[reportsToId||null,broker.id],client);}
+    if(nextJobRole!=='manager'&&broker.reportsToId)await execute('UPDATE brokers SET reports_to_id=NULL WHERE id=$1',[broker.id],client);
     if(teamId!==undefined||jobRole!==undefined)await execute(`UPDATE user_role_assignments SET job_role=$1,team_id=$2 WHERE broker_id=$3 AND is_primary=1 AND status='active'`,[nextJobRole,nextTeamId,broker.id],client);
     await execute(`UPDATE teams t SET manager_id=NULL WHERE t.manager_id=$1 AND (t.id<>$2 OR $3 IS DISTINCT FROM 'manager') AND NOT EXISTS(
       SELECT 1 FROM user_role_assignments r WHERE r.broker_id=$1 AND r.team_id=t.id AND r.job_role='manager' AND r.is_primary=0 AND r.status='active' AND r.ends_at IS NULL)`,[broker.id,nextTeamId,nextJobRole],client);

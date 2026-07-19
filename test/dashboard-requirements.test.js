@@ -138,9 +138,9 @@ test('Role dashboards show the maintained reporting structure at the top without
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
   const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   assert.match(routes,/async function loadOrganizationContext/);
-  assert.match(routes,/contextVersion:2,kind:'director',supervisors:\[\],reports:/);
-  assert.match(routes,/contextVersion:2,kind:'manager',supervisors:directors,reports/);
-  assert.match(routes,/contextVersion:2,kind:'agent',supervisors:row\?\[row\]:\[\],reports:\[\]/);
+  assert.match(routes,/contextVersion:3,kind:'director',supervisors:\[\],reports:/);
+  assert.match(routes,/contextVersion:3,kind:'manager',supervisors:directors,reports/);
+  assert.match(routes,/contextVersion:3,kind:'agent',supervisors:row\?\[row\]:\[\],reports:\[\]/);
   assert.match(routes,/job_role='director'/);
   assert.match(routes,/b\.job_role IN \('sales_agent','listing_agent'\)/);
   assert.match(routes,/LEFT JOIN LATERAL/);
@@ -149,7 +149,7 @@ test('Role dashboards show the maintained reporting structure at the top without
   assert.match(routes,/const organizationContext=await loadOrganizationContext\(req\.broker,type\)/);
   assert.match(routes,/organizationContext,qualification/);
   assert.match(ui,/id="dashboard-organization"/);
-  assert.match(ui,/org\.contextVersion!==2/);
+  assert.match(ui,/org\.contextVersion!==3/);
   assert.match(ui,/Dashboard service restart required/);
   assert.match(ui,/org\.supervisors/);
   assert.match(ui,/org\.reports/);

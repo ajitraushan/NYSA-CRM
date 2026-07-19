@@ -34,21 +34,21 @@ async function loadProposalApprovalQueue(req,selected={},search='',page=1,pageSi
 }
 
 async function loadOrganizationContext(broker,type){
-  if(broker.jobRole==='director')return {contextVersion:2,kind:'director',supervisors:[],reports:await many(`SELECT m.id AS person_id,m.name AS person_name,t.id AS unit_id,t.name AS unit_name
-    FROM teams t JOIN brokers m ON m.id=t.manager_id WHERE t.active=1 AND m.status='active' ORDER BY t.name,m.name`)};
-  if(type==='manager'){const [directors,reports]=await Promise.all([many(`SELECT id AS person_id,name AS person_name,NULL::uuid AS unit_id,'NYSA CORE' AS unit_name
-      FROM brokers WHERE status='active' AND role='internal_broker' AND job_role='director' ORDER BY name`),many(`SELECT b.id AS person_id,b.name AS person_name,t.id AS unit_id,t.name AS unit_name
+  if(broker.jobRole==='director')return {contextVersion:3,kind:'director',supervisors:[],reports:await many(`SELECT m.id AS person_id,m.name AS person_name,t.id AS unit_id,t.name AS unit_name
+    FROM brokers m LEFT JOIN teams t ON t.manager_id=m.id AND t.active=1 WHERE m.reports_to_id=$1 AND m.status='active' AND m.job_role='manager' ORDER BY t.name,m.name`,[broker.id])};
+  if(type==='manager'){const [directors,reports]=await Promise.all([many(`SELECT director.id AS person_id,director.name AS person_name,NULL::uuid AS unit_id,'NYSA CORE' AS unit_name
+      FROM brokers manager JOIN brokers director ON director.id=manager.reports_to_id WHERE manager.id=$1 AND director.status='active' AND director.job_role='director'`,[broker.id]),many(`SELECT b.id AS person_id,b.name AS person_name,t.id AS unit_id,t.name AS unit_name
     FROM teams t JOIN brokers b ON b.team_id=t.id AND b.status='active' AND b.role='internal_broker' AND b.job_role IN ('sales_agent','listing_agent')
     WHERE t.active=1 AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL)
       OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL))
-    ORDER BY t.name,b.name`,[broker.id])]);return {contextVersion:2,kind:'manager',supervisors:directors,reports};}
+    ORDER BY t.name,b.name`,[broker.id])]);return {contextVersion:3,kind:'manager',supervisors:directors,reports};}
   if(type==='agent'){const row=await one(`SELECT m.id AS person_id,m.name AS person_name,t.id AS unit_id,t.name AS unit_name
     FROM brokers b
     LEFT JOIN LATERAL (SELECT team.id,team.name,team.manager_id FROM teams team WHERE team.active=1 AND team.id=COALESCE(b.team_id,
       (SELECT ur.team_id FROM user_role_assignments ur WHERE ur.broker_id=b.id AND ur.is_primary=1 AND ur.status='active' AND ur.ends_at IS NULL AND ur.team_id IS NOT NULL ORDER BY ur.starts_at DESC LIMIT 1),
       (SELECT tm.team_id FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.ends_at IS NULL ORDER BY tm.created_at DESC LIMIT 1)) LIMIT 1) t ON TRUE
-    LEFT JOIN brokers m ON m.id=t.manager_id WHERE b.id=$1`,[broker.id]);return {contextVersion:2,kind:'agent',supervisors:row?[row]:[],reports:[]};}
-  return {contextVersion:2,kind:'governance',supervisors:[],reports:[]};
+    LEFT JOIN brokers m ON m.id=t.manager_id WHERE b.id=$1`,[broker.id]);return {contextVersion:3,kind:'agent',supervisors:row?[row]:[],reports:[]};}
+  return {contextVersion:3,kind:'governance',supervisors:[],reports:[]};
 }
 
 r.get('/crm/dashboard/filter-options',async(req,res)=>{

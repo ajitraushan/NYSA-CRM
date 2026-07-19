@@ -9,13 +9,14 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 1 migrations remain sequential and include the administration corrections',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.deepEqual(migrations.slice(-14),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql','023_proposal_correction_tasks.sql','024_team_reporting_lines.sql']);
+  assert.deepEqual(migrations.slice(-15),['011_organization_profile_governance.sql','012_release1_admin_uat_corrections.sql','013_customer_proposal_address.sql','014_customer_kyc_summary.sql','015_inventory_business_reference.sql','016_ai_assistance_runs.sql','017_operational_qualification_questionnaire.sql','018_team_queue_only_lead_intake.sql','019_ai_assistance_audit_constraint.sql','020_proposal_business_numbers.sql','021_password_reset_requests.sql','022_proposal_changes_requested.sql','023_proposal_correction_tasks.sql','024_team_reporting_lines.sql','025_manager_director_reporting.sql']);
   assert.match(read('src/migrations/015_inventory_business_reference.sql'),/inventory_reference/);
   assert.match(read('src/migrations/017_operational_qualification_questionnaire.sql'),/Unassessed/);
   assert.match(read('src/migrations/019_ai_assistance_audit_constraint.sql'),/'AiAssistanceRun'/);
   assert.match(read('src/migrations/020_proposal_business_numbers.sql'),/NYSA-PR-/);
   assert.match(read('src/migrations/023_proposal_correction_tasks.sql'),/proposal_correction/);
   assert.match(read('src/migrations/024_team_reporting_lines.sql'),/team_memberships_one_active_manager_uq/);
+  assert.match(read('src/migrations/025_manager_director_reporting.sql'),/reports_to_id/);
   const sql=read('src/migrations/012_release1_admin_uat_corrections.sql');
   for(const contract of ['controlled_value_consumers','queue_cycle_no','user_role_assignments','pending_activation','admin_assistant','approval_reason'])assert.match(sql,new RegExp(contract));
   for(const column of ['exception_threshold','threshold_direction','benchmark_source'])assert.match(sql,new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
@@ -88,6 +89,14 @@ test('team manager is the authoritative reporting line shown in user management'
   assert.match(ui,/Team \/ reporting line/);assert.match(ui,/Reports to:/);assert.match(ui,/Manages:/);
   assert.match(ui,/Reporting manager not assigned/);assert.match(ui,/s\.jobRole==='manager'/);
   assert.match(migration,/HAVING COUNT\(\*\)=1/);assert.match(migration,/membership_role='member'/);
+});
+
+test('manager to director reporting is explicit governed maintenance',()=>{
+  const admin=read('src/routes/admin.js'),ui=read('public/app.js'),dashboard=read('src/routes/dashboards.js'),migration=read('src/migrations/025_manager_director_reporting.sql');
+  assert.match(admin,/reportsToId/);assert.match(admin,/Select an active Managing Director/);assert.match(admin,/direct_supervisor_name/);
+  assert.match(ui,/Reports to Director/);assert.match(ui,/data-reports-to/);
+  assert.match(dashboard,/manager\.reports_to_id/);assert.match(dashboard,/m\.reports_to_id=\$1/);
+  assert.match(migration,/HAVING COUNT\(\*\)=1/);assert.match(migration,/brokers_reports_to_not_self_ck/);
 });
 
 test('administration navigation consolidates read-only website intake into audit operations',()=>{
