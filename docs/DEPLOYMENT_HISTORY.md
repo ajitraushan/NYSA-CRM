@@ -4,6 +4,18 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-19 — Production administration alignment hotfix
+
+- Environment: Production
+- Amendment: R1-AMD-030 Revision 1
+- Related finding: R1-UAT-034
+- Accepted source: `d25910d` (`33d5ef4` runtime correction)
+- Package: `nysa-core-r1-admin-alignment-production-d25910d.zip`
+- Package SHA-256: `6e8f39b9d2d1c5470be6c69a13d71764cb8bc35543b1fc4b33eac8b144dd3037`
+- Scope: `public/app.js` and `public/index.html` only; no migration or database change
+- Verification: production `GET /api/health` returned database ready and the live
+  `app.js` contained `admin-entry-form admin-values-form` after restart.
+
 ## 2026-07-19 — CRM Test administration alignment correction
 
 - Environment: CRM Test only; production unchanged

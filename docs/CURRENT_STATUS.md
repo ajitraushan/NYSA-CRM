@@ -18,8 +18,9 @@
   026 are recorded, runtime syntax passed, the production worker is running and health
   is database-ready. Initial smoke testing raised R1-UAT-034 for alignment of selected
   administration entry forms. R1-AMD-030 Revision 1 passed 107 automated tests, was
-  deployed to CRM Test and was explicitly accepted by the user on 2026-07-19. A
-  separate production presentation hotfix remains pending.
+  deployed to CRM Test and was explicitly accepted by the user on 2026-07-19. The
+  separate production presentation hotfix was then deployed from `d25910d`; production
+  health returned database ready and the accepted browser marker was verified live.
 
 ## Snapshot
 
