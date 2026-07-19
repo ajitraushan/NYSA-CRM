@@ -151,6 +151,28 @@ Approved source or import
   Company Unassigned fallback, duplicate prevention, no direct agent assignment and
   complete audit history. Explicit user confirmation is required before closure.
 
+#### Area-maintenance bulk upload and layout
+
+- Amendment ID: R1.1-AMD-001 Revision 1
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: Correct the Area maintenance layout so the customer-facing label
+  and stable code are displayed as separate, readable values with consistently aligned
+  controls and actions. Provide an approved Excel template and a governed upload tool
+  for larger area lists. The import is create-only, accepts no more than 500 rows and
+  must validate the exact columns, lowercase snake_case codes, UAE Emirate, whole-number
+  display order, duplicate codes and duplicate active labels before saving. Users must
+  preview row-level results and explicitly confirm the import. The transaction is
+  all-or-none and every created area retains its actor, import reason and source-row
+  audit evidence.
+- Status: Implemented locally and verified by the 120-test automated suite. CRM Test
+  deployment, functional retest and explicit user confirmation remain pending.
+- Retest condition: Download the template from Area maintenance; confirm its Emirates
+  dropdown and display-order validation. Upload valid, malformed, duplicate, oversized
+  and mixed-validity workbooks. Confirm invalid rows are explained without saving any
+  area, a fully valid preview imports exactly once after a reason is recorded, and the
+  resulting area table keeps labels, codes, statuses and actions visibly separated.
+  Explicit user confirmation is required before closure.
+
 ### Permissions and audit
 
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,

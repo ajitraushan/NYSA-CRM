@@ -9,7 +9,9 @@
   buyer budgets, governed currency, separate handover status/date, derived publication
   readiness, and explicit funding-method/payment-plan compatibility. Migration 027
   introduces the commercial-readiness fields.
-- The complete local automated suite passes 116 tests. CRM Test deployment, authenticated
+- R1.1-AMD-001 Revision 1 corrects Area maintenance alignment and adds a governed,
+  create-only Excel template with row-level preview and an audited all-or-none import.
+- The complete local automated suite passes 120 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; neither finding is
   closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and

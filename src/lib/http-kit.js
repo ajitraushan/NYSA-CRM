@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
 
 function compile(pattern) {
   const keys = [];
