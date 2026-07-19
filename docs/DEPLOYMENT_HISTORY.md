@@ -4,6 +4,32 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-19 — CRM Test governed routing and assignment verification
+
+- Environment: CRM Test only; production unchanged
+- URL: `https://crm-test.nysarealty.com`
+- Application root: `/home/nysareal/nysa-core-dashboard-dd6262a-stage`
+- Governed routing maintenance commit: `9f8e7d7`
+- Routing-register browser hotfix: `b6ab9bf`
+- New-lead self-claim denial hotfix: `af25465`
+- Migration `026_routing_rule_governance.sql` is recorded once in CRM Test.
+- CRM Test worker PID `1231168` started at `2026-07-19 08:48:17` after the final
+  backend hotfix, and health returned `{"ok":true,"database":"ready"}`.
+- Maintained active defaults route Rental, Off-plan and Sale to their agreed Dubai
+  team queues and use priority `9999` for the Company Unassigned fallback. The unsafe
+  prior Any source / Any business named-team rule is Retired and retained historically.
+- The authenticated synthetic routing suite passed 30/30 scenarios covering role
+  login, queue-only intake, all four routing outcomes, manager/Director scope,
+  assignment, acceptance, rejection, first-successful claim and assignment history.
+- Package SHA-256 values: `9f8e7d7` routing package
+  `a2d3ab71b3e75725942a825c6bd7247fa931d6d74481f08c1469d7beaf22e08f`;
+  `b6ab9bf` browser hotfix
+  `a546079697ba18b14463bd8438e7b22e12db1cccf2f0c64ec215bc44b06f88e9`;
+  `af25465` backend hotfix
+  `1d092a5833521ef71309c306d8921c7cf9e258d42acb408e4ffc62a765128945`.
+- R1-UAT-005 remains open pending elapsed-SLA/repeat-recycling functional evidence
+  and explicit user confirmation.
+
 ## 2026-07-18 — CRM Test AI audit and typography corrections
 
 - Environment: CRM Test only; production unchanged

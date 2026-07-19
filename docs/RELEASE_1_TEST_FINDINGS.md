@@ -94,7 +94,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 
 - Date raised: 2026-07-15
 - Area: Leads -> Routing, queues and assignment
-- Status: Deployed to CRM Test; user retest and explicit confirmation pending
+- Status: Deployed to CRM Test. The authenticated synthetic routing suite passed
+  30/30 scenarios on 2026-07-19; elapsed-SLA/repeat-recycling functional retest and
+  explicit user confirmation remain pending.
 - Priority: Must
 - Related acceptance criteria: 47, 48, 49, 50, 51, 69, 70 and 71
 - Evidence: Managers can assign only after locating and opening an individual lead;
@@ -1514,9 +1516,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   first-contact SLA breach; and allow eligible agents in that team to self-claim on a
   first-successful-claim basis, with repeat recycling and complete SLA/assignment
   history.
-- Status: Revision 1 is deployed to CRM Test. Revision 2 is implemented locally with a
-  database constraint and verified by automated intake, access, queue, migration and
-  browser-contract tests; CRM Test deployment, retest and explicit confirmation pending
+- Status: Revisions 1 and 2 are deployed to CRM Test. The authenticated synthetic
+  routing suite passed 30/30 intake, routing, access, queue, assignment, rejection,
+  atomic claim and history scenarios on 2026-07-19. Elapsed-SLA/repeat-recycling
+  functional retest and explicit user confirmation remain pending.
 - Retest condition: The R1-UAT-005 CRM Test retest condition passes and the user
   explicitly confirms the result.
 
@@ -1530,8 +1533,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   must be unique, and an Any source / Any business fallback may route only to the
   Company Unassigned Queue so that a named team cannot unintentionally capture every
   unmatched lead.
-- Status: Implemented locally with migration `026_routing_rule_governance.sql`; CRM
-  Test deployment, functional retest and explicit user confirmation pending.
+- Status: Deployed to CRM Test with migration `026_routing_rule_governance.sql`.
+  Business routing and company fallback passed the 30/30 authenticated live suite;
+  lifecycle/audit functional retest and explicit user confirmation remain pending.
 - Retest condition: On CRM Test, edit a specific routing rule and confirm its changed
   values are saved only after entering a reason. Retire it, confirm it no longer routes
   new leads, then reactivate it with a reason. Confirm a duplicate active match and an
@@ -1548,8 +1552,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   source-specific or business-specific rule has no destination team selected, require
   explicit confirmation before saving it to the Company Unassigned Queue so an omitted
   destination is not silently accepted.
-- Status: Implemented locally; CRM Test deployment, functional retest and explicit
-  user confirmation pending.
+- Status: Deployed to CRM Test. Live browser evidence confirms the routing register,
+  Actions column and maintained rules render without the prior helper error; destination
+  warning retest and explicit user confirmation remain pending.
 - Retest condition: On CRM Test, create a rule and confirm it appears immediately with
   Edit and Retire actions and no browser error. Attempt to save a specific matching
   rule without selecting a team and confirm the Company Unassigned warning appears.
@@ -1565,9 +1570,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   receive the governed access denial before team-eligibility validation. Self-claim
   remains available only after an SLA or rejection cycle returns the lead to its
   responsible team queue.
-- Status: Implemented locally after the live CRM Test routing suite passed 29 of 30
-  scenarios; automated regression, CRM Test deployment, live retest and explicit user
-  confirmation pending.
+- Status: Deployed to CRM Test as `af25465`; 106/106 local automated tests and the
+  authenticated 30/30 live routing suite pass. Explicit user confirmation remains
+  pending.
 - Retest condition: On CRM Test, attempt agent self-claim against a new team-routed lead
   and a new Company Unassigned lead; both must return the controlled after-SLA-recycling
   denial without assigning the lead. Complete an authorized assignment and rejection or
