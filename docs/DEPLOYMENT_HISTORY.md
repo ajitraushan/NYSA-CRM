@@ -4,6 +4,19 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-19 — CRM Test administration alignment correction
+
+- Environment: CRM Test only; production unchanged
+- Amendment: R1-AMD-030 Revision 1
+- Related finding: R1-UAT-034
+- Source commit: `33d5ef4`
+- Package: `nysa-core-r1-uat-admin-alignment-crm-test-33d5ef4.zip`
+- Package SHA-256: `2bad49210d9519ea727f573406f8297b0e2002d7f251c24405ab6b2d63d87009`
+- Scope: `public/app.js` and `public/index.html` only; no migration or database change
+- Verification: syntax passed and 107 automated tests passed before packaging.
+- Acceptance: user explicitly confirmed on 2026-07-19 that CRM Test is fine.
+- Production state: the production presentation hotfix remains pending.
+
 ## 2026-07-19 — Release 1 production promotion
 
 - Environment: Production

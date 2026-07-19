@@ -2276,8 +2276,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Environment observed: `https://crm.nysarealty.com/`
 - Area: Administration -> Controlled Values, Business Hours & SLA, Lead Routing &
   Queues, and CRM Teams
-- Status: R1-AMD-030 Revision 1 implemented locally; automated and CRM Test visual
-  retest pending
+- Status: Closed on CRM Test. The alignment package based on commit `33d5ef4` was
+  deployed and the user explicitly confirmed on 2026-07-19 that CRM Test is fine.
+  Production promotion remains a separate deployment action.
 - Priority: High presentation correction; no database or business-rule change
 - Evidence: Production smoke-test screenshots show labels, inputs, contextual help and
   action buttons using different vertical baselines. Help text changes the height of
@@ -2302,8 +2303,9 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   baseline, keep help text under the related field, align primary action groups with
   the control row, and place Configure Dubai defaults on its own clearly identified
   secondary row. Preserve all existing validation, APIs, governance and data.
-- Status: Implemented locally; automated verification and CRM Test deployment/retest
-  pending
+- Status: Implemented; 107 automated tests passed, CRM Test deployment completed and
+  the user explicitly accepted the visual retest on 2026-07-19. Production promotion
+  remains pending.
 - Retest condition: The R1-UAT-034 CRM Test retest condition passes and the user
   explicitly confirms the alignment before production promotion.
 
