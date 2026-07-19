@@ -6,6 +6,15 @@ Started: 2026-07-15
 
 Owner: NYSA Release 1 acceptance
 
+## Release-level disposition
+
+On 2026-07-19 the NYSA owner explicitly accepted Release 1 for controlled
+production promotion. This release decision does not silently close individual
+findings or manufacture missing evidence. Finding statuses below remain the durable
+record of what was deployed and retested on CRM Test. Any residual item not separately
+closed is accepted for this release and must either be monitored in production or
+scheduled through the amendment protocol in Release 1.1.
+
 This is the authoritative register for findings raised during manual Release 1
 acceptance. A finding is not closed merely because code is changed. Closure requires
 deployment to CRM Test, user retest, recorded evidence, and an explicit pass.

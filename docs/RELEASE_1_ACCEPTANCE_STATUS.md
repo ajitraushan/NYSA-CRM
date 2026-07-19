@@ -1,5 +1,24 @@
 # Release 1 Acceptance Status
 
+## Release decision — accepted for production promotion
+
+- Business/UAT acceptance: **Accepted by the NYSA owner on 2026-07-19**
+- Accepted source branch: `agent/release-1-completion`
+- Production state: **Not yet deployed; controlled production promotion pending**
+- Production data rule: CRM Test fixtures, synthetic users, test records, generated
+  proposals, uploads, logs, reports, credentials and database contents must not be
+  included in or copied by the production release.
+- Release 1.1 boundary: area-based routing and the agreed inventory-maintenance
+  refinements remain governed by `docs/RELEASE_1_1_SCOPE.md` and are not conditions
+  of this Release 1 acceptance.
+
+This is the owner's explicit release-level acceptance of the Release 1 state tested
+on CRM Test. It authorizes preparation and controlled promotion of one consolidated
+production package. It does not claim that production deployment has occurred, and
+it does not rewrite an individual finding's historical evidence or mark an
+unperformed retest as performed. Remaining finding-level evidence is accepted as a
+known release risk unless separately scheduled as a Release 1.1 correction.
+
 Baseline: `3ccbcc78edefb338c3e0d9742c0cdb6b563b537a`  
 Assessment date: 2026-07-14  
 Branch: `agent/release-1-completion`

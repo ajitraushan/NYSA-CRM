@@ -1,5 +1,20 @@
 # NYSA CORE Current Status
 
+## Release 1 production-promotion decision — 2026-07-19
+
+- The NYSA owner explicitly accepted Release 1 on 2026-07-19.
+- The accepted application has passed all 106 local automated tests.
+- The CRM Test routing suite passed 30/30 authenticated scenarios; the user then
+  confirmed the maintained routing rules are ready.
+- Production promotion is authorized but has not yet occurred.
+- Promotion will use one consolidated source package and migrations 011 through 026,
+  rehearsed first against an isolated restore of the production database.
+- No CRM Test database, synthetic users, fixture records, seed scripts, test output,
+  private uploads, generated proposals, logs, backups, credentials or `.env` files may
+  enter production.
+- Release 1.1 inventory and area-routing refinements remain outside this Release 1
+  production package.
+
 ## Snapshot
 
 - Date: 2026-07-18
