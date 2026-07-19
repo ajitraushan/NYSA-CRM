@@ -193,6 +193,21 @@ Approved source or import
   are created and audit history identifies every newly imported area. Explicit user
   confirmation is required before closure.
 
+#### Business-facing area list
+
+- Amendment ID: R1.1-AMD-001 Revision 3
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: Keep the stable area code as governed internal system identity
+  for creation, Excel import, routing references and audit history, but do not display
+  it in the routine Area maintenance list. The list must show only the customer-facing
+  area name, Emirate, display order, lifecycle status and permitted actions.
+- Status: Implemented locally. CRM Test deployment, functional retest and explicit
+  user confirmation remain pending.
+- Retest condition: On CRM Test, confirm stable code remains required during manual
+  creation and present in the approved Excel template, but is absent from the saved
+  Area maintenance list. Confirm editing, retirement, routing and audit behavior are
+  unaffected. Explicit user confirmation is required before closure.
+
 ### Permissions and audit
 
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,

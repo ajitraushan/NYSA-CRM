@@ -57,11 +57,8 @@ test('area Excel upload is previewed and committed atomically with audit evidenc
   assert.match(app,/Nothing has been imported/);
 });
 
-test('area maintenance displays the business label and stable code on separate lines',()=>{
+test('area maintenance list displays the business label without exposing its internal stable code',()=>{
   const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   assert.match(app,/class="area-name"/);
-  assert.match(app,/class="mono area-code"/);
-  assert.match(html,/\.area-code\{display:block/);
-  assert.match(html,/\.area-maintenance-table table\{table-layout:fixed\}/);
+  assert.doesNotMatch(app,/class="mono area-code"/);
 });

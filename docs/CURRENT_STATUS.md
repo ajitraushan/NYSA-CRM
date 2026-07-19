@@ -13,6 +13,8 @@
   create-only Excel template with row-level preview and an audited all-or-none import.
 - R1.1-AMD-001 Revision 2 automatically skips existing areas and exact repeated Excel
   rows while continuing to block genuine stable-code conflicts.
+- R1.1-AMD-001 Revision 3 keeps the stable code in governed system controls but removes
+  it from the routine business-facing Area maintenance list.
 - The complete local automated suite passes 122 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; neither finding is
   closed.
