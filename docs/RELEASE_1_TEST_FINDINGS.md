@@ -1539,6 +1539,23 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   the Company Unassigned fallback remains valid and audit history records every action.
   Explicit user confirmation is required before closure.
 
+### R1-AMD-007 Revision 4: Routing-table rendering and destination confirmation
+
+- Amendment ID: R1-AMD-007 Revision 4
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: The routing-rule register must render immediately after a rule
+  is created or changed and must not depend on an undefined browser helper. When a
+  source-specific or business-specific rule has no destination team selected, require
+  explicit confirmation before saving it to the Company Unassigned Queue so an omitted
+  destination is not silently accepted.
+- Status: Implemented locally; CRM Test deployment, functional retest and explicit
+  user confirmation pending.
+- Retest condition: On CRM Test, create a rule and confirm it appears immediately with
+  Edit and Retire actions and no browser error. Attempt to save a specific matching
+  rule without selecting a team and confirm the Company Unassigned warning appears.
+  Cancel once and confirm nothing is saved; confirm once and verify the saved queue.
+  Explicit user confirmation is required before closure.
+
 ### R1-AMD-008: Consolidate website intake information into Audit/Operations
 
 - Amendment ID: R1-AMD-008

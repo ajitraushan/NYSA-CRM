@@ -384,4 +384,6 @@ test('routing maintenance supports audited edit retirement and a safe company fa
   assert.match(routes,/await audit\('RoutingRule',row\.id,'edited'/);
   assert.match(migration,/routing_rules_active_fallback_ck/);
   assert.match(migration,/routing_rules_active_match_uq/);
+  assert.doesNotMatch(ui,/\$\$\(/);
+  assert.match(ui,/No destination team queue is selected/);
 });
