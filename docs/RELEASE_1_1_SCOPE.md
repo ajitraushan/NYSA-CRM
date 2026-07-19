@@ -97,8 +97,8 @@ release explicitly approves private video-file storage.
   Release 4. Buyer Funding Method and inventory Payment Plan remain distinct business
   concepts but must use governed values, aligned layout and an explicit compatibility
   mapping for matching and proposals rather than unrelated labels.
-- Status: Approved for Release 1.1 scope; implementation, automated verification, CRM
-  Test deployment, functional retest and explicit user confirmation pending.
+- Status: Implemented locally and verified by the 116-test automated suite. CRM Test
+  deployment, functional retest and explicit user confirmation remain pending.
 - Retest condition: On CRM Test, enter every supported amount notation in Asking Price,
   Reference Price and buyer Minimum / Maximum Budget and confirm identical normalized
   values and previews. Confirm invalid, negative and reversed values are rejected.
@@ -142,8 +142,8 @@ Approved source or import
   preferred areas without one confirmed as primary, follows the applicable `All areas`
   rule and ultimately the Company Unassigned Queue. Duplicate or ambiguous active
   source/business/area combinations are prohibited and all changes are audited.
-- Status: Approved for Release 1.1 scope; implementation, automated verification, CRM
-  Test deployment, functional retest and explicit user confirmation pending.
+- Status: Implemented locally and verified by the 116-test automated suite. CRM Test
+  deployment, functional retest and explicit user confirmation remain pending.
 - Retest condition: Maintain active and retired areas, create area-specific and
   `All areas` routing rules, and submit leads for each supported business line with a
   matching area, a different area, no area and multiple preferred areas without a

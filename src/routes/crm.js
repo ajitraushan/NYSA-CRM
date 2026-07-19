@@ -7,6 +7,7 @@ import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS,
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canAssignLead, leadScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
+import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.js';
 
 const r = Router();
 r.use(requireAuth, requireCrmAccess);
@@ -376,21 +377,21 @@ r.get('/crm/leads/:id', async (req, res) => {
 
 async function insertCapturedLead(b, actorId, budget, client) {
   const id=uuid();
-  const rule=await one(`SELECT * FROM routing_rules WHERE active=1 AND (source IS NULL OR source=$1)
-    AND (business_type IS NULL OR business_type=$2) ORDER BY priority,id LIMIT 1`,[b.source,b.businessType],client);
+  const primary=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.preferredAreas,client);if(primary.error)throw Object.assign(new Error(primary.error),{statusCode:400});
+  const rule=await selectRoutingRule({source:b.source,businessType:b.businessType,primaryAreaId:primary.areaId},client);
   const teamId=rule?.teamId||null,receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
   const row=await one(`INSERT INTO leads (id,contact_id,title,source,business_type,stage,temperature,budget_min,budget_max,
-    preferred_areas,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
+    preferred_areas,primary_routing_area_id,property_requirements,assigned_team_id,assigned_to,assignment_due_at,original_acceptance_due_at,acceptance_due_at,first_contact_due_at,
     sla_policy_id,next_follow_up_at,created_by,assignment_status,listing_id,received_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NULL,$13,$13,$13,$14,$15,$16,$17,'unassigned',$18,$19) RETURNING *`,
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NULL,$14,$14,$14,$15,$16,$17,$18,'unassigned',$19,$20) RETURNING *`,
     [id,b.contactId,clean(b.title),b.source,b.businessType,b.stage||'New',b.temperature||'Unassessed',budget.min,budget.max,
-     normalizeDelimitedValues(b.preferredAreas).join(', ')||null,clean(b.propertyRequirements),teamId,deadlines.acceptanceDueAt,
+     normalizeDelimitedValues(b.preferredAreas).join(', ')||null,primary.areaId,clean(b.propertyRequirements),teamId,deadlines.acceptanceDueAt,
      deadlines.firstContactDueAt,deadlines.policy?.id||null,b.nextFollowUpAt||null,actorId,b.listingId||null,receivedAt],client);
   await execute('UPDATE leads SET routing_reason=$1,last_queue_entered_at=received_at WHERE id=$2',[rule?`Matched routing rule: ${rule.name}`:'Company unassigned fallback',row.id],client);
   await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
     VALUES($1,$2,1,$3,NULL,'queued',$4,$5)`,[uuid(),id,teamId,deadlines.acceptanceDueAt,actorId],client);
   await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,changed_by) VALUES($1,$2,NULL,$3,$4)`,[uuid(),id,b.stage||'New',actorId],client);
-  await audit('Lead',id,'created',actorId,{title:row.title,source:row.source,routingRuleId:rule?.id||null},client);
+  await audit('Lead',id,'created',actorId,{title:row.title,source:row.source,routingRuleId:rule?.id||null,primaryRoutingAreaId:primary.areaId},client);
   return row;
 }
 
@@ -414,6 +415,7 @@ r.post('/crm/leads/capture', async (req,res)=>{
   const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
   if(budget.min===null||budget.max===null)return res.status(400).json({error:'Budget from and Budget to are required'});
   if(!normalizeDelimitedValues(b.preferredAreas).length)return res.status(400).json({error:'At least one preferred area is required'});
+  const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.preferredAreas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});
   const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
     JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
     ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
@@ -459,6 +461,7 @@ r.post('/crm/leads', async (req, res) => {
   if (budget.error) return res.status(400).json({error:budget.error});
   if(budget.min===null||budget.max===null)return res.status(400).json({error:'Budget from and Budget to are required'});
   if(!normalizeDelimitedValues(b.preferredAreas).length)return res.status(400).json({error:'At least one preferred area is required'});
+  const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.preferredAreas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});
   const budgetMin=budget.min,budgetMax=budget.max;
   const lead=await transaction(client=>insertCapturedLead({...b,budgetMin,budgetMax},req.broker.id,{min:budgetMin,max:budgetMax},client));
   res.status(201).json(lead);

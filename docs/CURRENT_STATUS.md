@@ -1,5 +1,20 @@
 # NYSA CORE Current Status
 
+## Release 1.1 local implementation checkpoint — 2026-07-19
+
+- R1.1-AMD-001 / R1-UAT-005 implements governed Area maintenance and deterministic,
+  priority-based area-aware routing to team queues. Migration 028 introduces governed
+  areas and preserves historical routing references.
+- R1.1-AMD-002 / R1.1-UAT-001 implements business amount inputs for listing prices and
+  buyer budgets, governed currency, separate handover status/date, derived publication
+  readiness, and explicit funding-method/payment-plan compatibility. Migration 027
+  introduces the commercial-readiness fields.
+- The complete local automated suite passes 116 tests. CRM Test deployment, authenticated
+  functional retesting and explicit user confirmation remain pending; neither finding is
+  closed.
+- Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and
+  must not be deployed to production before acceptance.
+
 ## Release 1 production-promotion decision — 2026-07-19
 
 - The NYSA owner explicitly accepted Release 1 on 2026-07-19.

@@ -1,3 +1,5 @@
+import { fundingPaymentCompatibility } from './inventory-domain.js';
+
 const norm=value=>String(value??'').trim().toLowerCase();
 const has=value=>value!==null&&value!==undefined&&value!==''&&(!Array.isArray(value)||value.length>0);
 const bedroomNumber=value=>norm(value)==='studio'?0:Number.parseInt(value,10);
@@ -13,6 +15,7 @@ export function buildMatchEvidence(requirement,listing){
   if(requirement.bedroomsMax!==null&&requirement.bedroomsMax!==undefined)compare('Maximum bedrooms',Number(requirement.bedroomsMax),listing.bedrooms,Number.isFinite(bedrooms)&&bedrooms<=Number(requirement.bedroomsMax));
   compare('Inventory availability','Available',listing.status,listing.status==='Available');
   if(listing.availabilityConfirmedAt)matched.push({criterion:'Availability confirmation',expected:'Current recorded confirmation',actual:listing.availabilityConfirmedAt});else failed.push({criterion:'Availability confirmation',expected:'Current recorded confirmation',actual:'Not recorded'});
+  const compatibility=fundingPaymentCompatibility(requirement.fundingMethod,listing.paymentPlanType);if(compatibility.code==='compatible')matched.push({criterion:'Funding / payment plan',expected:requirement.fundingMethod,actual:listing.paymentPlanType});else if(compatibility.code==='incompatible')failed.push({criterion:'Funding / payment plan',expected:requirement.fundingMethod,actual:listing.paymentPlanType});else notAssessed.push('Funding / payment plan compatibility not assessed');
   return{requirement:{businessLine:requirement.businessLine,purpose:requirement.purpose,areas:requirement.areas||[],propertyTypes:requirement.propertyTypes||[],budgetMin:requirement.budgetMin,budgetMax:requirement.budgetMax,fundingMethod:requirement.fundingMethod,bedroomsMin:requirement.bedroomsMin,bedroomsMax:requirement.bedroomsMax,timelineCode:requirement.timelineCode},property:{inventoryReference:listing.inventoryReference,project:listing.project,developer:listing.developer,area:listing.area,propertyType:listing.propertyType,bedrooms:listing.bedrooms,sizeSqft:listing.sizeSqft,price:listing.price,currency:listing.currency,status:listing.status,availabilityConfirmedAt:listing.availabilityConfirmedAt},matched,failed,notAssessed,eligibleForNarrative:failed.every(x=>!['Inventory availability'].includes(x.criterion))};
 }
 
@@ -34,6 +37,7 @@ export function rankInventoryMatches(requirement,listings=[]){
     if(normalizedTypes.length)add('property_type','Property type',25,normalizedTypes.includes(norm(listing.propertyType)),requirement.propertyTypes.join(', '),listing.propertyType);
     if(minBudget!==null||maxBudget!==null){const price=Number(listing.price),pass=(minBudget===null||price>=minBudget)&&(maxBudget===null||price<=maxBudget);add('budget','Budget range',25,pass,[minBudget,maxBudget].filter(x=>x!==null).join(' – '),price);}
     if(minBedrooms!==null||maxBedrooms!==null){const bedrooms=bedroomNumber(listing.bedrooms),pass=Number.isFinite(bedrooms)&&(minBedrooms===null||bedrooms>=minBedrooms)&&(maxBedrooms===null||bedrooms<=maxBedrooms);add('bedrooms','Bedroom range',15,pass,[minBedrooms,maxBedrooms].filter(x=>x!==null).join(' – '),listing.bedrooms);}
+    const compatibility=fundingPaymentCompatibility(requirement.fundingMethod,listing.paymentPlanType);if(compatibility.code!=='not_assessed')add('funding_payment_plan','Funding / payment plan',15,compatibility.compatible,requirement.fundingMethod,listing.paymentPlanType);
     add('availability_confirmation','Availability confirmation',10,Boolean(listing.availabilityConfirmedAt),'Recorded current confirmation',listing.availabilityConfirmedAt||'Not recorded');
     const total=criteria.reduce((sum,x)=>sum+x.weight,0),earned=criteria.filter(x=>x.pass).reduce((sum,x)=>sum+x.weight,0),score=total?Math.round(earned/total*100):0;
     return{listing,score,fit:score>=80?'Strong fit':score>=60?'Partial fit':'Outside key requirements',criteria,evidence:buildMatchEvidence(requirement,listing)};
