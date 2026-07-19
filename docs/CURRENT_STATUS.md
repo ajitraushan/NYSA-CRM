@@ -11,7 +11,9 @@
   introduces the commercial-readiness fields.
 - R1.1-AMD-001 Revision 1 corrects Area maintenance alignment and adds a governed,
   create-only Excel template with row-level preview and an audited all-or-none import.
-- The complete local automated suite passes 120 tests. CRM Test deployment, authenticated
+- R1.1-AMD-001 Revision 2 automatically skips existing areas and exact repeated Excel
+  rows while continuing to block genuine stable-code conflicts.
+- The complete local automated suite passes 122 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; neither finding is
   closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and
@@ -268,3 +270,12 @@ Use:
 > Read `docs/README.md`, `docs/CURRENT_STATUS.md`, `docs/DECISIONS.md`, and the
 > latest Git history. Reconcile them with the current code before making changes,
 > then continue the named NYSA CRM workstream.
+## Release 1.1 area-import duplicate handling
+
+- `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
+  NYSA CORE and exact repeated Excel rows are automatically skipped during bulk
+  upload, while valid new areas remain eligible for import. Genuine stable-code
+  conflicts still block the transaction.
+- The complete automated suite passes: 122 tests.
+- CRM Test deployment, functional retest and explicit user confirmation remain
+  pending.

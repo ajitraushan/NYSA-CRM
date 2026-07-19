@@ -20,10 +20,11 @@ export const UAE_EMIRATES=Object.freeze([
 const cellText=value=>value===null||value===undefined?'':String(value).trim();
 const normalizedHeader=value=>cellText(value).toLowerCase().replace(/[\s-]+/g,'_');
 
-export function validateAreaImportRows(sourceRows,{existingCodes=[],existingLabels=[]}={}){
-  const codes=new Set(existingCodes.map(x=>String(x).toLowerCase()));
-  const labels=new Set(existingLabels.map(x=>String(x).toLowerCase()));
-  const workbookCodes=new Set(),workbookLabels=new Set();
+export function validateAreaImportRows(sourceRows,{existingCodes=[],existingLabels=[],existingAreas=[]}={}){
+  const records=existingAreas.length?existingAreas:existingCodes.map((stableCode,index)=>({stableCode,businessLabel:existingLabels[index]||'',emirate:''}));
+  const areasByCode=new Map(records.map(area=>[cellText(area.stableCode).toLowerCase(),area]));
+  const areasByLabel=new Map(records.map(area=>[`${cellText(area.businessLabel).toLowerCase()}|${cellText(area.emirate).toLowerCase()}`,area]));
+  const workbookCodes=new Map(),workbookLabels=new Map();
   return sourceRows.map((source,index)=>{
     const rowNumber=Number(source.rowNumber||index+2),stableCode=cellText(source.stableCode).toLowerCase(),businessLabel=cellText(source.businessLabel),emirate=cellText(source.emirate),displayOrder=Number(source.displayOrder),errors=[];
     if(!stableCode)errors.push('Stable area code is required');
@@ -31,14 +32,21 @@ export function validateAreaImportRows(sourceRows,{existingCodes=[],existingLabe
     if(!businessLabel)errors.push('Customer-facing area is required');
     if(!UAE_EMIRATES.includes(emirate))errors.push('Select one of the seven maintained UAE Emirates');
     if(!Number.isInteger(displayOrder)||displayOrder<0||displayOrder>9999)errors.push('Display order must be a whole number from 0 to 9999');
-    const codeKey=stableCode.toLowerCase(),labelKey=businessLabel.toLowerCase();
-    if(stableCode&&codes.has(codeKey))errors.push('Stable area code already exists');
-    if(businessLabel&&labels.has(labelKey))errors.push('An active customer-facing area with this name already exists');
-    if(stableCode&&workbookCodes.has(codeKey))errors.push('Stable area code is duplicated in this workbook');
-    if(businessLabel&&workbookLabels.has(labelKey))errors.push('Customer-facing area is duplicated in this workbook');
-    if(stableCode)workbookCodes.add(codeKey);
-    if(businessLabel)workbookLabels.add(labelKey);
-    return {rowNumber,stableCode,businessLabel,emirate,displayOrder:Number.isFinite(displayOrder)?displayOrder:null,errors};
+    const codeKey=stableCode.toLowerCase(),labelKey=`${businessLabel.toLowerCase()}|${emirate.toLowerCase()}`,codeMatch=areasByCode.get(codeKey),labelMatch=areasByLabel.get(labelKey),workbookCodeMatch=workbookCodes.get(codeKey),workbookLabelMatch=workbookLabels.get(labelKey);
+    let skipReason='';
+    if(codeMatch){
+      const sameArea=cellText(codeMatch.businessLabel).toLowerCase()===businessLabel.toLowerCase()&&(!cellText(codeMatch.emirate)||cellText(codeMatch.emirate).toLowerCase()===emirate.toLowerCase());
+      if(sameArea)skipReason='Already exists — skipped automatically';
+      else errors.push('Stable area code is already mapped to a different maintained area');
+    }else if(labelMatch)skipReason='Customer-facing area already exists — skipped automatically';
+    if(!skipReason&&workbookCodeMatch){
+      if(workbookCodeMatch.businessLabel.toLowerCase()===businessLabel.toLowerCase()&&workbookCodeMatch.emirate.toLowerCase()===emirate.toLowerCase())skipReason=`Duplicate of Excel row ${workbookCodeMatch.rowNumber} — skipped automatically`;
+      else errors.push(`Stable area code conflicts with Excel row ${workbookCodeMatch.rowNumber}`);
+    }else if(!skipReason&&workbookLabelMatch)skipReason=`Duplicate of Excel row ${workbookLabelMatch.rowNumber} — skipped automatically`;
+    const workbookRecord={rowNumber,stableCode,businessLabel,emirate};
+    if(stableCode&&!workbookCodes.has(codeKey))workbookCodes.set(codeKey,workbookRecord);
+    if(businessLabel&&!workbookLabels.has(labelKey))workbookLabels.set(labelKey,workbookRecord);
+    return {rowNumber,stableCode,businessLabel,emirate,displayOrder:Number.isFinite(displayOrder)?displayOrder:null,errors,skipped:Boolean(skipReason)&&!errors.length,skipReason:errors.length?'':skipReason};
   });
 }
 

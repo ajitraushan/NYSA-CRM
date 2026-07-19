@@ -173,6 +173,26 @@ Approved source or import
   resulting area table keeps labels, codes, statuses and actions visibly separated.
   Explicit user confirmation is required before closure.
 
+#### Existing-area handling during bulk upload
+
+- Amendment ID: R1.1-AMD-001 Revision 2
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: An area already maintained in NYSA CORE must be rejected from
+  the incoming create set automatically and shown as `Already exists — skipped`.
+  Existing duplicates must not require the administrator to edit and upload the Excel
+  workbook again, and must not prevent other valid new rows from being imported.
+  Malformed rows and genuine governance conflicts, including reuse of an existing
+  stable code for a different area, continue to block the all-or-none creation of the
+  remaining new rows.
+- Status: Implemented locally. CRM Test deployment, functional retest and explicit
+  user confirmation remain pending.
+- Retest condition: Upload a workbook containing one existing area, valid new areas,
+  an exact duplicate row and a stable-code conflict. Confirm existing and exact
+  duplicates are visibly skipped without workbook correction, valid new areas can be
+  imported once, the stable-code conflict blocks creation, no duplicate database rows
+  are created and audit history identifies every newly imported area. Explicit user
+  confirmation is required before closure.
+
 ### Permissions and audit
 
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,
