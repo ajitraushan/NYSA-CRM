@@ -40,6 +40,7 @@ test('assignment queue supports scoped visibility atomic claim and repeat-cycle 
   assert.match(source,/queue_cycle_no=queue_cycle_no\+1/);
   assert.match(source,/first_contact_due_at=\$4,accepted_at=NULL,first_contact_at=NULL/);
   assert.match(source,/self-claim is available only after SLA recycling/);
+  assert.ok(source.indexOf("selfClaim&&lead.assignmentStatus!=='reassignment_due'")<source.indexOf("if(!agentId||!teamId)"),'new-lead self-claim denial must precede team eligibility validation');
   assert.match(crm,/New leads must enter an unassigned team queue/);
   assert.doesNotMatch(crm,/rule\?\.agentId/);
   assert.doesNotMatch(website,/rule\?\.agentId/);

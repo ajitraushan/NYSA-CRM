@@ -107,12 +107,12 @@ async function assignQueuedLead(req,res,selfClaim=false){
     const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id],client);
     if(!lead)return {code:404,error:'Lead not found'};
     if(lead.assignedTo||!['unassigned','reassignment_due'].includes(lead.assignmentStatus))return {code:409,error:'Lead is no longer available in the assignment queue'};
+    if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
     const agentId=selfClaim?req.broker.id:req.body?.agentId,teamId=req.body?.teamId||lead.assignedTeamId;
     if(!agentId||!teamId)return {code:400,error:'An eligible team and agent are required'};
     const eligible=await one("SELECT b.id FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)",[agentId,teamId],client);
     if(!eligible)return {code:400,error:'Agent is not an eligible active member of the selected team'};
     const managed=req.broker.managedTeamIds||[];
-    if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
     if(selfClaim&&req.broker.teamId!==teamId)return {code:403,error:'Agents can claim only from their own team queue'};
     if(!selfClaim&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Only the responsible team lead or Director can assign this lead'};
     const policy=await activePolicy(client),now=new Date(),due=policy?addBusinessMinutes(now,policy.acceptanceMinutes,calendar(policy)):new Date(now.getTime()+30*60000),firstDue=policy?addBusinessMinutes(now,policy.firstContactMinutes,calendar(policy)):new Date(now.getTime()+120*60000);

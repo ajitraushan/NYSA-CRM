@@ -1556,6 +1556,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   Cancel once and confirm nothing is saved; confirm once and verify the saved queue.
   Explicit user confirmation is required before closure.
 
+### R1-AMD-007 Revision 5: Correct new-lead self-claim denial
+
+- Amendment ID: R1-AMD-007 Revision 5
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: An agent attempting to self-claim any brand-new unassigned lead,
+  including a lead in the Company Unassigned Queue with no responsible team yet, must
+  receive the governed access denial before team-eligibility validation. Self-claim
+  remains available only after an SLA or rejection cycle returns the lead to its
+  responsible team queue.
+- Status: Implemented locally after the live CRM Test routing suite passed 29 of 30
+  scenarios; automated regression, CRM Test deployment, live retest and explicit user
+  confirmation pending.
+- Retest condition: On CRM Test, attempt agent self-claim against a new team-routed lead
+  and a new Company Unassigned lead; both must return the controlled after-SLA-recycling
+  denial without assigning the lead. Complete an authorized assignment and rejection or
+  SLA recycle, then confirm exactly one eligible team agent can self-claim successfully.
+  Explicit user confirmation is required before closure.
+
 ### R1-AMD-008: Consolidate website intake information into Audit/Operations
 
 - Amendment ID: R1-AMD-008
