@@ -86,6 +86,8 @@ exact-commit deployment, and production smoke testing.
 - Manager/admin review and approval controls
 - Governed Area maintenance and area-specific lead routing with an `All areas`
   fallback under R1.1-AMD-001
+- Business-friendly inventory amounts, structured handover, calculated publication
+  readiness and governed Payment Plan/Funding compatibility under R1.1-AMD-002
 
 The detailed boundary and acceptance criteria are in `RELEASE_1_1_SCOPE.md`.
 Live Property Finder, Bayut/dubizzle and other publication connectors remain

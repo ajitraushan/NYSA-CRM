@@ -79,6 +79,36 @@ new production value.
 Video and virtual-tour content is stored as an approved governed link unless a later
 release explicitly approves private video-file storage.
 
+### Business-friendly inventory commercial controls
+
+- Amendment ID: R1.1-AMD-002
+- Related UAT finding: R1.1-UAT-001 (pre-implementation inventory review)
+- Agreed requirement: Asking Price and optional Reference / Market Price must be
+  business-amount inputs, not dropdowns or number-only controls. They and buyer
+  Minimum / Maximum Budget must accept equivalent forms such as `1m`, `1M`, `1.5 m`,
+  `750k`, `1,000,000` and `1000000`, show the interpreted currency amount before save,
+  and persist one validated numeric value. Currency remains a governed dropdown.
+  Handover must use separate status and date controls: Ready, Expected on a maintained
+  date, or To be confirmed. Dates are stored unambiguously and displayed to users as
+  `DD-MM-YYYY`. Replace the opaque editable Portal readiness dropdown with an explained,
+  system-derived Listing publication readiness result based on completeness,
+  availability, verification/permit and approved-media requirements. `Published` must
+  not be manually selectable in Release 1.1 because live portal publication remains
+  Release 4. Buyer Funding Method and inventory Payment Plan remain distinct business
+  concepts but must use governed values, aligned layout and an explicit compatibility
+  mapping for matching and proposals rather than unrelated labels.
+- Status: Approved for Release 1.1 scope; implementation, automated verification, CRM
+  Test deployment, functional retest and explicit user confirmation pending.
+- Retest condition: On CRM Test, enter every supported amount notation in Asking Price,
+  Reference Price and buyer Minimum / Maximum Budget and confirm identical normalized
+  values and previews. Confirm invalid, negative and reversed values are rejected.
+  Maintain Ready, dated and To-be-confirmed handovers and verify `DD-MM-YYYY` display.
+  Resolve and introduce publication-readiness blockers and confirm the calculated
+  status and explanations change without manual Published selection. Test every
+  approved Funding Method against applicable and incompatible Payment Plans and verify
+  deterministic shortlist and proposal behaviour. Explicit user confirmation is
+  required before closure.
+
 ### Integration intake
 
 ```text
