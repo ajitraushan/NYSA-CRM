@@ -38,6 +38,7 @@
 | D-032 | Restricted External Broker access is brought into Release 1 under R1-AMD-011 Revision 2; customer access remains excluded. | External collaboration was considered during User Management review. | Withdrawn 2026-07-15; superseded by D-033 |
 | D-033 | External Broker remains an interface identity classification only; external authentication and CRM access stay outside Release 1. | The classification is useful for interface identification, but no external-user workspace or data-access scope is currently required. | Approved 2026-07-15 |
 | D-034 | The active governed NYSA company-profile version is the authoritative source for proposal legal/contact/regional/brand defaults; proposals retain a safe immutable snapshot of that version and its logo hash. | Company identity must be maintainable by administrators without silent live changes, applied consistently to customer output, and reproducible without exposing private file-storage keys. | Approved and implemented locally 2026-07-15 under R1-AMD-012; CRM Test acceptance pending |
+| D-035 | Release 1.1 adds governed Area maintenance and area-specific team-queue routing with an `All areas` fallback under R1.1-AMD-001. | NYSA requires location-aware routing as operations expand beyond one default geography, while unmatched or ambiguous areas must still fail safely to the company queue. | Approved 2026-07-19; implementation pending |
 
 ## Recommended Defaults Awaiting Approval
 

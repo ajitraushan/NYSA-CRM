@@ -84,6 +84,8 @@ exact-commit deployment, and production smoke testing.
 - Own/team/company inventory permissions and complete audit history
 - Availability, expiry, completeness, duplicate, media and intake-exception queues
 - Manager/admin review and approval controls
+- Governed Area maintenance and area-specific lead routing with an `All areas`
+  fallback under R1.1-AMD-001
 
 The detailed boundary and acceptance criteria are in `RELEASE_1_1_SCOPE.md`.
 Live Property Finder, Bayut/dubizzle and other publication connectors remain

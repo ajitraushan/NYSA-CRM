@@ -99,6 +99,28 @@ Approved source or import
   a review item and preserve prior values.
 - Credentials and full sensitive payloads remain outside browser code, logs and Git.
 
+### Area-controlled lead routing and queues
+
+- Amendment ID: R1.1-AMD-001
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: Add governed Area maintenance and allow a routing rule to select
+  either one maintained area or `All areas`. Area records must carry a stable code,
+  business label, Emirate, display order and active/retired lifecycle without deleting
+  historical references. Routing continues to select only a team queue, never an
+  individual broker. An area-specific rule may override an `All areas` rule through
+  its maintained priority. A lead with no confirmed primary routing area, or multiple
+  preferred areas without one confirmed as primary, follows the applicable `All areas`
+  rule and ultimately the Company Unassigned Queue. Duplicate or ambiguous active
+  source/business/area combinations are prohibited and all changes are audited.
+- Status: Approved for Release 1.1 scope; implementation, automated verification, CRM
+  Test deployment, functional retest and explicit user confirmation pending.
+- Retest condition: Maintain active and retired areas, create area-specific and
+  `All areas` routing rules, and submit leads for each supported business line with a
+  matching area, a different area, no area and multiple preferred areas without a
+  primary selection. Confirm deterministic queue selection, priority handling,
+  Company Unassigned fallback, duplicate prevention, no direct agent assignment and
+  complete audit history. Explicit user confirmation is required before closure.
+
 ### Permissions and audit
 
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,
