@@ -4,6 +4,36 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-19 — Release 1 production promotion
+
+- Environment: Production
+- URL: `https://crm.nysarealty.com`
+- Application root: `/home/nysareal/nysa-crm`
+- Database: `nysareal_nysacrm`
+- Startup file: `app.cjs`
+- Accepted/deployed source commit: `42a8c42`
+- Consolidated package: `nysa-core-release-1-production-42a8c42.zip`
+- Package SHA-256:
+  `ca17b16f851c1f2d469b552990c9cb9c3e41be777cdd11a31ad3bb8849f07ca0`
+- Verified pre-release database backup:
+  `~/crm-backups/nysacrm-before-r1-42a8c42.dump` (192 KiB)
+- Verified pre-release application backup:
+  `~/crm-backups/nysa-crm-before-r1-42a8c42.tar.gz` (184 KiB)
+- All 16 Release 1 migrations, `011` through `026`, are recorded at
+  `2026-07-19 14:01:24+00`.
+- Operational note: the CloudLinux production Node wrapper overrode the requested
+  rehearsal database environment, so the first migration invocation connected to
+  production. All migrations completed and were recorded; no CRM Test database or
+  records were restored or copied. The guarded follow-up detected the production
+  connection and stopped before executing again. The consolidated code was then
+  promoted forward to match the schema.
+- Runtime syntax checks passed, production worker PID `1895805` started at
+  `2026-07-19 14:18:52`, and health returned
+  `{"ok":true,"database":"ready"}`.
+- Initial Administrator smoke testing found responsive alignment defects in selected
+  maintenance entry forms. They are governed as R1-UAT-034/R1-AMD-030 Revision 1 and
+  will be corrected on CRM Test before any production hotfix.
+
 ## 2026-07-19 — CRM Test governed routing and assignment verification
 
 - Environment: CRM Test only; production unchanged

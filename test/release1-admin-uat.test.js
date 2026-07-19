@@ -388,3 +388,14 @@ test('routing maintenance supports audited edit retirement and a safe company fa
   assert.doesNotMatch(ui,/\$\$\(/);
   assert.match(ui,/No destination team queue is selected/);
 });
+
+test('administration entry forms keep labels controls help and actions aligned',()=>{
+  const ui=read('public/app.js'),styles=read('public/index.html');
+  for(const contract of ['admin-values-form','admin-sla-form','admin-routing-form','admin-team-form','admin-entry-actions','admin-secondary-actions'])assert.match(ui,new RegExp(contract));
+  assert.match(styles,/\.admin-entry-form\{display:grid/);
+  assert.match(styles,/\.admin-entry-form>div>label\{display:block;min-height:22px/);
+  assert.match(styles,/\.admin-entry-actions\{display:flex;gap:8px;align-items:center;margin-top:27px/);
+  assert.match(styles,/\.admin-routing-form\{grid-template-columns:/);
+  assert.match(styles,/@media\(max-width:800px\)\{\.admin-entry-form/);
+  assert.doesNotMatch(ui,/id="team-create" style=/);
+});

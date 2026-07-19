@@ -2270,6 +2270,43 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-033 CRM Test retest condition passes and the user explicitly confirms
   the workflow before closure.
 
+### R1-UAT-034: Administration entry-form alignment after production promotion
+
+- Date raised: 2026-07-19
+- Environment observed: `https://crm.nysarealty.com/`
+- Area: Administration -> Controlled Values, Business Hours & SLA, Lead Routing &
+  Queues, and CRM Teams
+- Status: R1-AMD-030 Revision 1 implemented locally; automated and CRM Test visual
+  retest pending
+- Priority: High presentation correction; no database or business-rule change
+- Evidence: Production smoke-test screenshots show labels, inputs, contextual help and
+  action buttons using different vertical baselines. Help text changes the height of
+  individual flex items, routing secondary actions wrap into an ambiguous row, and
+  team/SLA actions do not consistently align with their related controls.
+- Required correction: Use explicit responsive grids for these four entry forms,
+  preserve equal label/control baselines, group primary actions with the form, keep
+  routing defaults as a distinct secondary action, and collapse to an unambiguous
+  single-column layout on narrow screens.
+- Retest condition: On CRM Test at desktop and narrow widths, open all four maintenance
+  areas and confirm labels and controls align, help text stays below its own control,
+  primary actions remain clearly associated with the form, and no control or action
+  overlaps, clips or wraps into an unexplained position. Explicit user confirmation is
+  required before closure and before any production hotfix.
+
+### R1-AMD-030 Revision 1: Align administration entry forms
+
+- Amendment ID: R1-AMD-030 Revision 1
+- Related UAT finding: R1-UAT-034
+- Agreed requirement: Present Controlled Values, Business Hours & SLA, Lead Routing
+  and CRM Teams entry controls in dedicated responsive grids. Give labels a common
+  baseline, keep help text under the related field, align primary action groups with
+  the control row, and place Configure Dubai defaults on its own clearly identified
+  secondary row. Preserve all existing validation, APIs, governance and data.
+- Status: Implemented locally; automated verification and CRM Test deployment/retest
+  pending
+- Retest condition: The R1-UAT-034 CRM Test retest condition passes and the user
+  explicitly confirms the alignment before production promotion.
+
 ## Review discipline
 
 For every new test observation:
