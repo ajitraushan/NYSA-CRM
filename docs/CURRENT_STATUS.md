@@ -66,6 +66,11 @@
   The safe default remains Required; when set to Not required, compliant uploads are
   approved immediately with an explicit policy audit record. Existing pending media
   is not silently changed.
+- R1.1-AMD-004 Revision 4 is implemented locally. A Manager dashboard now has a
+  dedicated, searchable `Media approvals` queue scoped to the teams for which that
+  Manager is maintained. Pending media shows its listing, uploader, rights, submission
+  timestamp and authenticated preview/download, with approve and reasoned-reject
+  actions that refresh the queue after decision.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

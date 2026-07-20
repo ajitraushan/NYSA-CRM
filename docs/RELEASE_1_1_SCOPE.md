@@ -298,6 +298,32 @@ release explicitly approves private video-file storage.
   media is unchanged and an Admin Assistant cannot edit the policy. Explicit user
   confirmation is required before closure.
 
+#### Responsible-Manager property-media approval queue
+
+- Amendment ID: R1.1-AMD-004 Revision 4
+- Related UAT finding: R1.1-UAT-010 (pending media absent from the responsible
+  Manager dashboard)
+- Agreed requirement: When approval is required, each compliant Pending media item
+  must appear in a dedicated `Media approvals` tab on the dashboard of the active
+  Manager maintained against the listing owner's team. The queue must not appear in
+  an unrelated Manager's scope. It must identify the inventory record, property,
+  media title and file, team, uploader, source, usage-rights basis and exact submission
+  time; provide authenticated preview and download; and support Approve or Reject
+  with a mandatory rejection reason. A completed decision must refresh the count and
+  remove the item from the Pending queue while retaining the existing audit record.
+  `My tasks` and `Proposal approvals` remain separate workflows.
+- Status: Implemented locally; CRM Test deployment, business retest and explicit
+  NYSA owner confirmation remain pending.
+- Retest condition: With the Administrator policy set to `Required`, sign in as a
+  Listing Executive whose maintained team Manager is Aadivya and upload a compliant
+  image. Confirm Aadivya's `Media approvals` count and queue show the record, preview
+  and download work, and an unrelated Manager cannot see or decide it. Approve one
+  item and reject another with a reason; confirm each disappears from the Pending
+  queue, the listing media screen shows the resulting status/reason and audit history
+  identifies Aadivya. With policy set to `Not required`, confirm new valid media is
+  auto-approved and does not enter the queue. Explicit user confirmation is required
+  before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

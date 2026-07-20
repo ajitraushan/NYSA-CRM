@@ -48,6 +48,7 @@ test('property media routes govern duplicates rights cover ordering and review',
   const routes=readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
   const domain=readFileSync(new URL('../src/media-governance.js',import.meta.url),'utf8');
   const ui=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const dashboardUi=readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const migration=readFileSync(new URL('../src/migrations/030_property_media_governance.sql',import.meta.url),'utf8');
   const reconciliation=readFileSync(new URL('../src/migrations/031_orphaned_property_media_approval.sql',import.meta.url),'utf8');
   const policyMigration=readFileSync(new URL('../src/migrations/033_property_media_approval_policy.sql',import.meta.url),'utf8');
@@ -60,4 +61,6 @@ test('property media routes govern duplicates rights cover ordering and review',
   assert.match(policyMigration,/manager_approval_required BOOLEAN NOT NULL DEFAULT TRUE/);
   for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos','Property media approval policy','future uploads only'])assert.match(ui,new RegExp(marker));
   for(const marker of ['propertyMediaApprovalPolicy','auto_approved_by_policy','approval_policy_disabled'])assert.match(routes,new RegExp(marker));
+  for(const marker of ["/crm/property-media/approval-queue","t.manager_id=\\$1","approval_previewed","/crm/property-media/:mediaId/review"])assert.match(routes,new RegExp(marker));
+  for(const marker of ['Media approvals','Property media approvals','media-approval-search','data-media-approve','data-media-reject','Property media rejected and returned'])assert.match(dashboardUi,new RegExp(marker));
 });
