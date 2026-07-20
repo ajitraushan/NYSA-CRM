@@ -324,6 +324,25 @@ release explicitly approves private video-file storage.
   auto-approved and does not enter the queue. Explicit user confirmation is required
   before closure.
 
+#### Ten-photo governed batch
+
+- Amendment ID: R1.1-AMD-004 Revision 5
+- Related UAT finding: R1.1-UAT-011 (five-photo batch limit is insufficient for a
+  normal property presentation)
+- Agreed requirement: A Listing Executive may select and submit up to 10 property
+  photographs in one governed batch. The existing 20 MB total batch limit remains in
+  place, together with every per-image content, format, dimension, aspect-ratio and
+  size check, duplicate detection, atomic all-or-none persistence, usage-rights
+  confirmation and the maintained approval policy. Eleven or more selected files
+  must be rejected before upload.
+- Status: Implemented locally; CRM Test deployment, business retest and explicit
+  NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, select 10 compliant photographs whose combined size
+  is no more than 20 MB and confirm all 10 are reviewed and saved in one submission.
+  Confirm 11 photographs are blocked before upload, a batch over 20 MB is blocked,
+  and one invalid or duplicate image still prevents every file in that batch from
+  being committed. Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

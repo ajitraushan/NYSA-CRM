@@ -38,7 +38,8 @@ test('administrator policy can make manager approval optional for future media',
 
 test('property photos are validated as one bounded duplicate-free batch',()=>{
   assert.match(validateMediaBatch([]),/at least one/);
-  assert.match(validateMediaBatch(Array.from({length:6},(_,i)=>({buffer:Buffer.alloc(1),fileHash:String(i)}))),/no more than 5/);
+  assert.equal(validateMediaBatch(Array.from({length:10},(_,i)=>({buffer:Buffer.alloc(1),fileHash:String(i)}))),null);
+  assert.match(validateMediaBatch(Array.from({length:11},(_,i)=>({buffer:Buffer.alloc(1),fileHash:String(i)}))),/no more than 10/);
   assert.match(validateMediaBatch([{buffer:Buffer.alloc(1),fileHash:'same'},{buffer:Buffer.alloc(1),fileHash:'same'}]),/same file/);
   assert.match(validateMediaBatch([{buffer:Buffer.alloc(11),fileHash:'a'}],{maxFiles:5,maxTotalBytes:10}),/exceeds/);
   assert.equal(validateMediaBatch([{buffer:Buffer.alloc(1),fileHash:'a'},{buffer:Buffer.alloc(1),fileHash:'b'}]),null);

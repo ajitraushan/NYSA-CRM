@@ -71,6 +71,9 @@
   Manager is maintained. Pending media shows its listing, uploader, rights, submission
   timestamp and authenticated preview/download, with approve and reasoned-reject
   actions that refresh the queue after decision.
+- R1.1-AMD-004 Revision 5 raises the governed property-photo batch from five to 10
+  photographs while retaining the 20 MB aggregate limit, per-image quality and
+  content checks, duplicate controls and atomic all-or-none persistence.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

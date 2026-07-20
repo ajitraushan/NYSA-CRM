@@ -6,7 +6,7 @@ export const MEDIA_RIGHTS_BASES=Object.freeze([
   'legacy_approved'
 ]);
 
-export const PROPERTY_MEDIA_BATCH_POLICY=Object.freeze({maxFiles:5,maxTotalBytes:20*1024*1024});
+export const PROPERTY_MEDIA_BATCH_POLICY=Object.freeze({maxFiles:10,maxTotalBytes:20*1024*1024});
 
 const text=value=>typeof value==='string'?value.trim():'';
 
