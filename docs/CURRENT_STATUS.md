@@ -11,6 +11,11 @@
   references with property-specific type, bedrooms where applicable, size and asking
   price; ordinary single-property listings remain unchanged. Migration 032 introduces
   relational `listing_units` records.
+- R1.1-AMD-006 Revision 1 aligns every property row, formats business shorthand on
+  blur and removes duplicate parent price entry. The package price is derived from the
+  validated child-property asking prices while single-property pricing is unchanged.
+  The complete 131-test automated suite passes; CRM Test deployment and explicit user
+  confirmation remain pending.
 - Both amendments are implemented locally and the complete 131-test automated suite
   passes. CRM Test deployment, authenticated functional retest and explicit user
   confirmation remain pending; neither finding is closed.

@@ -51,7 +51,8 @@ test('inventory browser and API enforce the governed commercial workflow',()=>{
   assert.match(ui,/name="price" data-business-amount/);assert.match(ui,/name="referencePrice" data-business-amount/);
   assert.match(ui,/Handover status/);assert.match(ui,/Expected handover date/);assert.match(ui,/Listing publication readiness/);
   assert.match(ui,/Select from Area Maintenance/);assert.match(ui,/name="community"/);assert.match(ui,/Bulk deal property schedule/);
+  assert.match(ui,/Calculated Bulk Deal total/);assert.match(ui,/data-single-commercial/);assert.match(ui,/toLocaleString\('en-US'/);
   assert.doesNotMatch(ui,/name="portalStatus"/);assert.match(ui,/Buyer funding is maintained separately/);
-  assert.match(routes,/normalizeInventoryAmount/);assert.match(routes,/normalizeBulkUnits/);assert.match(routes,/replaceBulkUnits/);assert.match(routes,/Portal readiness is calculated by the system/);
+  assert.match(routes,/normalizeInventoryAmount/);assert.match(routes,/normalizeBulkUnits/);assert.match(routes,/replaceBulkUnits/);assert.match(routes,/b\.price=bulk\.units\.reduce/);assert.match(routes,/Portal readiness is calculated by the system/);
   assert.match(media,/refreshListingReadiness/);
 });

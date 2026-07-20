@@ -174,12 +174,12 @@ r.get('/listings/:id', async (req, res) => {
 r.post('/listings', requirePostRights, async (req, res) => {
   if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive, Manager or Administrator'});
   const b = {...(req.body || {})};
-  for (const field of ['project','areaId','propertyType','price']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
+  for (const field of ['project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
   const area=await governedArea(b.areaId);if(!area)return res.status(400).json({error:'Select an active Area from Area Maintenance'});b.area=area.businessLabel;b.community=String(b.community||'').trim()||null;
   if (!PROPERTY_TYPES.includes(b.propertyType)) return res.status(400).json({ error: 'Invalid propertyType' });
   if (b.bedrooms && !BEDROOMS.includes(b.bedrooms)) return res.status(400).json({ error: 'Invalid bedrooms' });
   const bulk=normalizeBulkUnits(b.propertyType,b.bulkUnits);if(bulk.error)return res.status(400).json({error:bulk.error});
-  if(b.propertyType==='Bulk deal'){b.bedrooms=null;b.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);}else if(Array.isArray(b.bulkUnits)&&b.bulkUnits.length)return res.status(400).json({error:'Property rows are available only when Property type is Bulk deal'});
+  if(b.propertyType==='Bulk deal'){b.bedrooms=null;b.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);b.price=bulk.units.reduce((sum,item)=>sum+item.price,0);b.referencePrice=null;}else if(Array.isArray(b.bulkUnits)&&b.bulkUnits.length)return res.status(400).json({error:'Property rows are available only when Property type is Bulk deal'});
   if (b.paymentPlanType && !PAYMENT_PLANS.includes(b.paymentPlanType)) return res.status(400).json({ error: 'Invalid paymentPlanType' });
   if (b.exclusivityTier && !TIERS.includes(b.exclusivityTier)) return res.status(400).json({ error: 'Invalid exclusivityTier' });
   const price=normalizeInventoryAmount(b.price,{required:true,label:'Asking price'}),reference=normalizeInventoryAmount(b.referencePrice,{label:'Reference / market price'});if(price.error)return res.status(400).json({error:price.error});if(reference.error)return res.status(400).json({error:reference.error});b.price=price.value;b.referencePrice=reference.value;
@@ -235,7 +235,7 @@ r.patch('/listings/:id', async (req, res) => {
   if(req.body.community!==undefined)req.body.community=String(req.body.community||'').trim()||null;
   const targetPropertyType=req.body.propertyType??listing.propertyType;
   let bulk=null;
-  if(req.body.bulkUnits!==undefined||req.body.propertyType!==undefined){bulk=normalizeBulkUnits(targetPropertyType,req.body.bulkUnits??[]);if(bulk.error)return res.status(400).json({error:bulk.error});if(targetPropertyType==='Bulk deal'){req.body.bedrooms=null;req.body.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);}}
+  if(req.body.bulkUnits!==undefined||req.body.propertyType!==undefined){bulk=normalizeBulkUnits(targetPropertyType,req.body.bulkUnits??[]);if(bulk.error)return res.status(400).json({error:bulk.error});if(targetPropertyType==='Bulk deal'){req.body.bedrooms=null;req.body.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);req.body.price=bulk.units.reduce((sum,item)=>sum+item.price,0);req.body.referencePrice=null;}}
   for(const [field,label,required] of [['price','Asking price',true],['referencePrice','Reference / market price',false]])if(req.body[field]!==undefined){const amount=normalizeInventoryAmount(req.body[field],{required,label});if(amount.error)return res.status(400).json({error:amount.error});req.body[field]=amount.value;}
   if(req.body.handoverStatus!==undefined||req.body.handoverExpectedDate!==undefined||req.body.handoverDate!==undefined){const handover=normalizeHandover(req.body);if(handover.error)return res.status(400).json({error:handover.error});Object.assign(req.body,{handoverStatus:handover.status,handoverExpectedDate:handover.expectedDate,handoverDate:handover.legacyValue});}
   const validationError = validateListingFields(req.body);

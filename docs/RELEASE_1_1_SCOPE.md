@@ -160,6 +160,30 @@ new production value.
   correctly for editing. Confirm a normal single-property listing remains unchanged.
   Explicit user confirmation is required before closure.
 
+#### Aligned Bulk Deal schedule and derived total
+
+- Amendment ID: R1.1-AMD-006 Revision 1
+- Related UAT finding: R1.1-UAT-007 (CRM Test Bulk Deal usability retest)
+- Agreed requirement: Bulk Deal property fields must remain aligned in one readable
+  row at desktop widths. Business amount inputs must show their interpreted AED value
+  while typing and replace shorthand such as `2m` with the formatted actual amount
+  when the user tabs away, without losing focus from the listing workflow. Because
+  every child property already carries its asking price, the legacy parent Asking Price
+  and Reference / Market Price inputs must not be requested again. The system displays
+  and persists a calculated Bulk Deal total equal to the sum of the validated property
+  asking prices. Ordinary single-property listings continue to show their normal
+  Asking Price and optional Reference / Market Price fields.
+- Status: Implemented locally and verified by the 131-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit user confirmation remain
+  pending.
+- Retest condition: On CRM Test, enter `2m` in a Bulk Deal property asking price and
+  press Tab. Confirm the same modal remains open, the input displays `2,000,000`, its
+  interpreted AED value is visible, and focus proceeds to the next control. Confirm all
+  property controls remain aligned, the calculated total updates, no duplicate parent
+  price fields appear, and the saved listing total equals the sum of its child property
+  prices. Confirm a normal listing still requires its own Asking Price. Explicit user
+  confirmation is required before closure.
+
 ### Photographs and property media
 
 - Private multi-file upload for supported photographs, floor plans and brochures
