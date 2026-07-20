@@ -33,3 +33,18 @@ export function validateMediaReview(media,{approvalStatus,reason}={},now=new Dat
   if(approvalStatus==='approved'&&!mediaRightsAreCurrent(media,now))return'Current documented media-use rights are required before approval';
   return null;
 }
+
+export function mediaApprovalPlan(reviewer,actorId,now=new Date()){
+  if(reviewer?.managerId)return{
+    approvalStatus:'pending',
+    approvedBy:null,
+    approvedAt:null,
+    automatic:false
+  };
+  return{
+    approvalStatus:'approved',
+    approvedBy:actorId,
+    approvedAt:now,
+    automatic:true
+  };
+}

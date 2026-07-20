@@ -34,10 +34,13 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   const ui=await readFile(new URL('../public/app.js',import.meta.url),'utf8'),routes=await readFile(new URL('../src/routes/listings.js',import.meta.url),'utf8'),migration=await readFile(new URL('../src/migrations/029_listing_executive_workflow.sql',import.meta.url),'utf8');
   assert.match(ui,/listing_agent:'Listing Executive'/);
   assert.match(ui,/renderListingExecutiveDashboard/);
+  assert.match(ui,/My listing workspace/);
+  assert.match(ui,/Approved company inventory/);
   assert.match(ui,/Submit for review/);
   assert.match(routes,/\/listings-workspace/);
   assert.match(routes,/`workflow_\$\{action\}`/);
   assert.match(routes,/b\.team_id=ANY/);
   assert.match(routes,/Manual listing drafts may be created by a Listing Executive/);
+  assert.match(routes,/q\.workspaceScope==='approved'/);
   assert.match(migration,/workflow_status/);
 });

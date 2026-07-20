@@ -266,7 +266,8 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/proposalGapLabels/);
   assert.match(app,/Built-up area/);
   assert.match(app,/Property media and approval/);
-  assert.match(app,/Upload for manager approval/);
+  assert.match(app,/Upload for \$\{esc\(reviewer\?\.managerName/);
+  assert.match(app,/Upload and approve automatically/);
   assert.match(app,/Images must meet the maintained size and aspect-ratio policy/);
   assert.match(app,/documented authority to use this media/);
   assert.match(app,/validatePropertyMediaFile/);

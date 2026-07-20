@@ -69,7 +69,14 @@ r.get('/listings', async (req, res) => {
   const q = req.query;
   const where = ['l.deleted_at IS NULL'];
   const params = [];
-  if(req.broker.jobRole==='listing_agent'){params.push(req.broker.id);where.push(`(l.workflow_status='approved' OR l.posted_by=$${params.length})`);}
+  if(req.broker.jobRole==='listing_agent'){
+    if(q.workspaceScope==='approved')where.push("l.workflow_status='approved'");
+    else{
+      params.push(req.broker.id);
+      if(q.workspaceScope==='mine')where.push(`l.posted_by=$${params.length}`);
+      else where.push(`(l.workflow_status='approved' OR l.posted_by=$${params.length})`);
+    }
+  }
   else if(req.broker.jobRole==='manager'){params.push(req.broker.managedTeamIds||[]);where.push(`(l.workflow_status='approved' OR b.team_id=ANY($${params.length}::uuid[]))`);}
   else if(req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')where.push("l.workflow_status='approved'");
   const add = (clause, value) => { params.push(value); where.push(clause.replace('?', `$${params.length}`)); };
@@ -80,7 +87,7 @@ r.get('/listings', async (req, res) => {
   if (q.maxPrice && Number.isFinite(+q.maxPrice)) add('l.price <= ?', +q.maxPrice);
   if (q.paymentPlanType && PAYMENT_PLANS.includes(q.paymentPlanType)) add('l.payment_plan_type = ?', q.paymentPlanType);
   if (q.status && STATUSES.includes(q.status)) add('l.status = ?', q.status);
-  if(q.workflowStatus&&isReviewer(req.broker)&&['draft','in_review','approved','changes_requested','blocked'].includes(q.workflowStatus))add('l.workflow_status = ?',q.workflowStatus);
+  if(q.workflowStatus&&(isReviewer(req.broker)||req.broker.jobRole==='listing_agent')&&['draft','in_review','approved','changes_requested','blocked'].includes(q.workflowStatus))add('l.workflow_status = ?',q.workflowStatus);
   if (q.exclusivityTier && TIERS.includes(q.exclusivityTier)) add('l.exclusivity_tier = ?', q.exclusivityTier);
   if (q.developer) add('l.developer ILIKE ?', `%${q.developer}%`);
   if (q.handoverBefore) add("(l.handover_date = 'Ready' OR l.handover_date <= ?)", q.handoverBefore);

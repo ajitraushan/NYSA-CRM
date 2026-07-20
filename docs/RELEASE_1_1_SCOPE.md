@@ -76,6 +76,27 @@ record enters a reviewable draft workflow before it can become approved inventor
   inventory remains approved, and the full workflow history is visible. Explicit user
   confirmation is required before closure.
 
+#### Listing Executive inventory presentation
+
+- Amendment ID: R1.1-AMD-003 Revision 1
+- Related UAT finding: R1.1-UAT-004 (CRM Test Listing Executive workspace presentation retest)
+- Agreed requirement: The Listing Executive experience must remain visibly distinct
+  when the user moves from the Dashboard to Inventory. The navigation and page heading
+  must identify the Listing Executive inventory workspace; own working inventory is the
+  default view with workload counts for Draft, Awaiting review, Changes requested and
+  Media incomplete records. Approved company inventory is available through a separate
+  reference view and must not be mixed into the default personal work queue. The primary
+  navigation presents Dashboard and My inventory workspace for this operational role,
+  rather than exposing the lead-centric Sales Agent navigation.
+- Status: Implemented locally and verified by the 130-test automated suite; CRM Test
+  deployment, functional retest and explicit user confirmation remain pending.
+- Retest condition: Sign in to CRM Test as a Listing Executive. Confirm the navigation
+  says `My inventory workspace`, the Inventory page displays the Listing Executive
+  heading and own-work counts, and the default list contains only that executive's
+  records. Switch to Approved company inventory and confirm only approved company
+  records appear. Confirm the common header remains available. Explicit user
+  confirmation is required before closure.
+
 ### Listing information
 
 The guided capture flow groups fields by purpose:
@@ -139,6 +160,27 @@ release explicitly approves private video-file storage.
   confirm one cover only. Upload another file and reject it with a reason; confirm the
   reason is visible and the rejected file is excluded. Confirm missing/expired rights,
   an unrelated Manager and an unrelated Listing Executive are blocked. Explicit user
+  confirmation is required before closure.
+
+#### Named or automatic property-media approval
+
+- Amendment ID: R1.1-AMD-004 Revision 1
+- Related UAT finding: R1.1-UAT-005 (CRM Test property-media approval usability retest)
+- Agreed requirement: The property-media window must remain open after upload and
+  refresh its contents in place. Where the listing owner's team has an active maintained
+  Manager, the screen and confirmation must name that responsible Manager and the media
+  remains Pending for that person's decision. Where no active responsible Manager is
+  maintained, a compliant upload is approved automatically instead of entering an
+  ownerless queue; the automatic decision, actor, team context and reason are audit
+  recorded. The upload action must state which of those two paths will occur before the
+  user submits it.
+- Status: Implemented locally and verified by the 130-test automated suite; CRM Test
+  deployment, functional retest and explicit user confirmation remain pending.
+- Retest condition: In CRM Test, upload compliant media for a Listing Executive whose
+  team has a maintained Manager. Confirm the window stays open, names the Manager and
+  shows the new record as Pending. Repeat for an executive whose team has no active
+  Manager; confirm the action says it will approve automatically, the same window stays
+  open, and the new record appears as Approved with audit evidence. Explicit user
   confirmation is required before closure.
 
 ### Business-friendly inventory commercial controls

@@ -30,7 +30,13 @@
   the runtime enforces duplicate-file hashing, responsible-manager review, owner
   caption/order maintenance, audit history and current-rights filtering for readiness
   and customer proposals.
-- The complete local automated suite passes 129 tests. CRM Test deployment, authenticated
+- R1.1-AMD-003 Revision 1 extends the dedicated Listing Executive presentation into
+  the Inventory tab: own working inventory is the default, approved company inventory
+  is a separate reference view and role-specific workload counts remain visible.
+- R1.1-AMD-004 Revision 1 refreshes the media workflow in place, names the responsible
+  maintained Manager, and automatically approves compliant media with explicit audit
+  evidence when the listing owner's team has no active Manager.
+- The complete local automated suite passes 130 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and
