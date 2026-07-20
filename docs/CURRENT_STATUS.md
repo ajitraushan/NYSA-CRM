@@ -61,7 +61,12 @@
   five-photo, 20 MB batch. The user reviews selected file names, records common source
   and usage rights once and submits once; all files are validated before an atomic
   database commit, and any invalid or duplicate file rejects the complete batch.
-- The complete local automated suite passes 132 tests. CRM Test deployment, authenticated
+- R1.1-AMD-004 Revision 3 is implemented locally. A full Administrator can maintain
+  whether responsible-Manager approval is required for future property-media uploads.
+  The safe default remains Required; when set to Not required, compliant uploads are
+  approved immediately with an explicit policy audit record. Existing pending media
+  is not silently changed.
+- CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and

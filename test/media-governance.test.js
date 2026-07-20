@@ -19,12 +19,21 @@ test('only current permitted-use media can be approved',()=>{
 });
 
 test('property media names a maintained manager and otherwise auto approves',()=>{
-  assert.deepEqual(mediaApprovalPlan({managerId:'manager-1'},'uploader-1'),{approvalStatus:'pending',approvedBy:null,approvedAt:null,automatic:false});
+  assert.deepEqual(mediaApprovalPlan({managerId:'manager-1'},'uploader-1'),{approvalStatus:'pending',approvedBy:null,approvedAt:null,automatic:false,automaticReason:null});
   const automatic=mediaApprovalPlan({managerId:null},'uploader-1',new Date('2026-07-20T12:00:00Z'));
   assert.equal(automatic.approvalStatus,'approved');
   assert.equal(automatic.approvedBy,'uploader-1');
   assert.equal(automatic.automatic,true);
+  assert.equal(automatic.automaticReason,'no_responsible_manager');
   assert.equal(automatic.approvedAt.toISOString(),'2026-07-20T12:00:00.000Z');
+});
+
+test('administrator policy can make manager approval optional for future media',()=>{
+  const automatic=mediaApprovalPlan({managerId:'manager-1'},'uploader-1',new Date('2026-07-20T12:00:00Z'),{managerApprovalRequired:false});
+  assert.equal(automatic.approvalStatus,'approved');
+  assert.equal(automatic.approvedBy,'uploader-1');
+  assert.equal(automatic.automatic,true);
+  assert.equal(automatic.automaticReason,'approval_policy_disabled');
 });
 
 test('property photos are validated as one bounded duplicate-free batch',()=>{
@@ -41,11 +50,14 @@ test('property media routes govern duplicates rights cover ordering and review',
   const ui=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   const migration=readFileSync(new URL('../src/migrations/030_property_media_governance.sql',import.meta.url),'utf8');
   const reconciliation=readFileSync(new URL('../src/migrations/031_orphaned_property_media_approval.sql',import.meta.url),'utf8');
+  const policyMigration=readFileSync(new URL('../src/migrations/033_property_media_approval_policy.sql',import.meta.url),'utf8');
   for(const marker of ['usage_rights_confirmed','rights_basis','rights_expires_at','is_cover','rejection_reason'])assert.match(migration,new RegExp(marker));
-  for(const marker of ['Duplicate media file','media_metadata_changed','cover_selected','automatic_no_manager','responsibleMediaReviewer'])assert.match(routes,new RegExp(marker));
+  for(const marker of ['Duplicate media file','media_metadata_changed','cover_selected','auto_approved_no_responsible_manager','responsibleMediaReviewer'])assert.match(routes,new RegExp(marker));
   for(const marker of ["/crm/listings/:id/media/batch",'batch_uploaded','validateMediaBatch'])assert.match(routes,new RegExp(marker));
   assert.match(domain,/A rejection reason is required/);
   assert.match(reconciliation,/auto_approved_no_responsible_manager/);
   assert.match(reconciliation,/manager\.id IS NULL/);
-  for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos'])assert.match(ui,new RegExp(marker));
+  assert.match(policyMigration,/manager_approval_required BOOLEAN NOT NULL DEFAULT TRUE/);
+  for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos','Property media approval policy','future uploads only'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['propertyMediaApprovalPolicy','auto_approved_by_policy','approval_policy_disabled'])assert.match(routes,new RegExp(marker));
 });

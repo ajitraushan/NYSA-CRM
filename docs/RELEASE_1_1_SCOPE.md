@@ -277,6 +277,27 @@ release explicitly approves private video-file storage.
   five files and more than 20 MB are blocked. Explicit user confirmation is required
   before closure.
 
+#### Administrator-controlled optional media approval
+
+- Amendment ID: R1.1-AMD-004 Revision 3
+- Related UAT finding: R1.1-UAT-009 (property-media approval policy review)
+- Agreed requirement: Property-media approval must be optional at Administrator
+  level. The maintained policy defaults to requiring responsible-Manager approval.
+  When a full Administrator selects `Not required` and records a mandatory reason,
+  future uploads that pass file, rights, duplicate, size and aspect-ratio controls
+  are approved immediately. Re-enabling approval restores the responsible-Manager
+  workflow. Existing pending media remains unchanged and every policy decision and
+  automatic approval is audit recorded.
+- Status: Implemented locally; CRM Test deployment, business retest and explicit
+  NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, set approval to `Not required`, record the reason,
+  and upload a valid multi-photo batch from a listing owned by a user with a maintained
+  Manager. Confirm every photo is immediately Approved and the interface identifies
+  the Administrator policy. Restore `Required`, upload another valid photo and confirm
+  it remains Pending for the named responsible Manager. Confirm pre-existing pending
+  media is unchanged and an Admin Assistant cannot edit the policy. Explicit user
+  confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

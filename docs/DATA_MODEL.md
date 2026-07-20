@@ -73,6 +73,15 @@ Migration filenames already applied to the database.
   proposal footer, approved disclaimers, default currency, locale, and effective dates
 - Separate from external companies and never used as a customer or partner record
 
+#### `property_media_approval_policy`
+
+- Singleton Administrator-governed policy controlling whether future compliant
+  property-media uploads require responsible-Manager approval
+- Defaults safely to approval required; every decision records its reason,
+  Administrator and timestamp
+- Policy changes never rewrite existing pending media, preserving submission and
+  audit history
+
 #### `contacts`
 
 - Person identity and display name

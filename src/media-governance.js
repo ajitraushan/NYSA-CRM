@@ -36,18 +36,20 @@ export function validateMediaReview(media,{approvalStatus,reason}={},now=new Dat
   return null;
 }
 
-export function mediaApprovalPlan(reviewer,actorId,now=new Date()){
-  if(reviewer?.managerId)return{
+export function mediaApprovalPlan(reviewer,actorId,now=new Date(),policy={managerApprovalRequired:true}){
+  if(policy.managerApprovalRequired!==false&&reviewer?.managerId)return{
     approvalStatus:'pending',
     approvedBy:null,
     approvedAt:null,
-    automatic:false
+    automatic:false,
+    automaticReason:null
   };
   return{
     approvalStatus:'approved',
     approvedBy:actorId,
     approvedAt:now,
-    automatic:true
+    automatic:true,
+    automaticReason:policy.managerApprovalRequired===false?'approval_policy_disabled':'no_responsible_manager'
   };
 }
 
