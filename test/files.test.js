@@ -17,6 +17,15 @@ test('private upload validation checks type, magic, extension, size and hash',()
   assert.match(decodeAndValidateFile({base64:'not base64!',mediaType:'image/png',fileName:'x.png',maxBytes:1024,allowedTypes:['image/png']}).error,/base64/);
 });
 
+test('private upload validation accepts genuine MPEG property video only',()=>{
+  const mpeg=Buffer.from([0x00,0x00,0x01,0xba,0x21,0x00,0x01,0x00]);
+  const valid=decodeAndValidateFile({base64:mpeg.toString('base64'),mediaType:'video/mpeg',fileName:'property-tour.mpeg',maxBytes:1024,allowedTypes:['video/mpeg']});
+  assert.equal(valid.error,undefined);
+  assert.equal(valid.buffer.length,mpeg.length);
+  assert.match(decodeAndValidateFile({base64:Buffer.from('not an mpeg').toString('base64'),mediaType:'video/mpeg',fileName:'fake.mpg',maxBytes:1024,allowedTypes:['video/mpeg']}).error,/content/);
+  assert.match(decodeAndValidateFile({base64:mpeg.toString('base64'),mediaType:'video/mpeg',fileName:'wrong.mp4',maxBytes:1024,allowedTypes:['video/mpeg']}).error,/extension/);
+});
+
 test('security test content is rejected before persistence',()=>{
   const eicar=Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
   assert.match(decodeAndValidateFile({base64:eicar.toString('base64'),mediaType:'text/plain',fileName:'test.txt',maxBytes:1024,allowedTypes:['text/plain']}).error,/security/);

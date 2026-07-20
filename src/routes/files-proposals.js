@@ -15,6 +15,7 @@ import { mediaApprovalPlan,normalizeMediaGovernance,validateMediaBatch,validateM
 const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const imageTypes=['image/jpeg','image/png','image/webp','application/pdf'];
+const propertyMediaTypes=[...imageTypes,'video/mpeg'];
 const documentTypes=[...imageTypes,'text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const fallbackDocumentTypeCodes=['customer_requirement','mortgage_pre_approval','offer_letter','signed_form','property_document','correspondence','marketing_agreement','identity_document','financial_document','other'];
 const admin=(req,res)=>req.broker.role==='admin'||(req.broker.jobRole==='admin_assistant'&&!/\/(approve|activate)$/.test(req.path))||(res.status(403).json({error:'Administrator access required for approval and activation'}),false);
@@ -50,10 +51,11 @@ async function refreshListingReadiness(id){const listing=await one(`SELECT l.*,
 r.get('/crm/listings/:id/media',async(req,res)=>{const listing=await listingMediaAccess(req,req.params.id);if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Listing media is outside your permitted scope'});const[reviewer,approvalPolicy]=await Promise.all([responsibleMediaReviewer(listing),propertyMediaApprovalPolicy()]),automaticApproval=approvalPolicy.managerApprovalRequired===false||!reviewer?.managerId;res.json({media:await many('SELECT * FROM property_media WHERE listing_id=$1 ORDER BY is_cover DESC,display_order,created_at',[listing.id]),approvalPolicy,reviewer:{managerId:reviewer?.managerId||null,managerName:reviewer?.managerName||null,teamName:reviewer?.teamName||null,automaticApproval}});});
 r.post('/crm/listings/:id/media',async(req,res)=>{
   const listing=await listingMediaAccess(req,req.params.id,'write');if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Only the listing owner or authorized administrator can upload media'});
-  const b=req.body||{};if(!['image','floor_plan','brochure'].includes(b.mediaKind)||!clean(b.title)||!clean(b.source))return res.status(400).json({error:'mediaKind, title and source are required'});
+  const b=req.body||{};if(!['image','floor_plan','brochure','video'].includes(b.mediaKind)||!clean(b.title)||!clean(b.source))return res.status(400).json({error:'mediaKind, title and source are required'});
+  if((b.mediaKind==='video')!==(b.mediaType==='video/mpeg'))return res.status(400).json({error:'Property video must use the MPEG kind and an MPEG file (.mpeg or .mpg)'});
   const governance=normalizeMediaGovernance(b);if(governance.error)return res.status(400).json({error:governance.error});
-  const isImage=['image/jpeg','image/png','image/webp'].includes(b.mediaType),maxBytes=isImage?Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes):Number(process.env.MAX_MEDIA_BYTES||8388608);
-  const file=decodeAndValidateFile({...b,maxBytes,allowedTypes:imageTypes});if(file.error)return res.status(400).json({error:file.error});
+  const isImage=['image/jpeg','image/png','image/webp'].includes(b.mediaType),isVideo=b.mediaType==='video/mpeg',maxBytes=isImage?Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes):isVideo?Number(process.env.MAX_PROPERTY_VIDEO_BYTES||20971520):Number(process.env.MAX_MEDIA_BYTES||8388608);
+  const file=decodeAndValidateFile({...b,maxBytes,allowedTypes:propertyMediaTypes});if(file.error)return res.status(400).json({error:file.error});
   if(isImage){const dimensions=validatePropertyImage(file.buffer,b.mediaType);if(dimensions.error)return res.status(400).json({error:dimensions.error});}
   if(await one('SELECT id FROM property_media WHERE listing_id=$1 AND file_hash=$2',[listing.id,file.fileHash]))return res.status(409).json({error:'Duplicate media file: this exact file is already linked to the listing'});
   const[reviewer,approvalPolicy]=await Promise.all([responsibleMediaReviewer(listing),propertyMediaApprovalPolicy()]),approval=mediaApprovalPlan(reviewer,req.broker.id,new Date(),approvalPolicy);

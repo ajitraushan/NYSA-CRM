@@ -74,6 +74,10 @@
 - R1.1-AMD-004 Revision 5 raises the governed property-photo batch from five to 10
   photographs while retaining the 20 MB aggregate limit, per-image quality and
   content checks, duplicate controls and atomic all-or-none persistence.
+- R1.1-AMD-004 Revision 6 adds one-at-a-time private MPEG property-video upload with
+  a 20 MB maximum, MPEG content and extension validation, usage-rights governance,
+  duplicate detection and the maintained optional Manager approval policy. Videos
+  remain listing-scoped downloads and are not embedded in proposal PDFs.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

@@ -60,7 +60,9 @@ test('property media routes govern duplicates rights cover ordering and review',
   assert.match(reconciliation,/auto_approved_no_responsible_manager/);
   assert.match(reconciliation,/manager\.id IS NULL/);
   assert.match(policyMigration,/manager_approval_required BOOLEAN NOT NULL DEFAULT TRUE/);
-  for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos','Property media approval policy','future uploads only'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos','Property media approval policy','future uploads only','Upload MPEG property video','video/mpeg','MPEG video not uploaded'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['propertyMediaTypes','video/mpeg','MAX_PROPERTY_VIDEO_BYTES','Property video must use the MPEG kind'])assert.match(routes,new RegExp(marker));
+  assert.match(dashboardUi,/MPEG video/);
   for(const marker of ['propertyMediaApprovalPolicy','auto_approved_by_policy','approval_policy_disabled'])assert.match(routes,new RegExp(marker));
   for(const marker of ["/crm/property-media/approval-queue","t.manager_id=\\$1","approval_previewed","/crm/property-media/:mediaId/review"])assert.match(routes,new RegExp(marker));
   for(const marker of ['Media approvals','Property media approvals','media-approval-search','data-media-approve','data-media-reject','Property media rejected and returned'])assert.match(dashboardUi,new RegExp(marker));

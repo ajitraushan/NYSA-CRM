@@ -343,6 +343,26 @@ release explicitly approves private video-file storage.
   and one invalid or duplicate image still prevents every file in that batch from
   being committed. Explicit user confirmation is required before closure.
 
+#### Governed MPEG property video
+
+- Amendment ID: R1.1-AMD-004 Revision 6
+- Related UAT finding: R1.1-UAT-012 (property media also requires MPEG video)
+- Agreed requirement: In addition to the governed batch of up to 10 photographs, an
+  authorized Listing Executive may upload one private MPEG property video at a time.
+  Accepted files are `.mpeg` or `.mpg` with verified MPEG content and a maximum size
+  of 20 MB. The video requires a title, source, recorded usage rights, duplicate-hash
+  checking and the maintained media-approval policy. It remains listing-scoped and
+  downloadable by authorized staff; it is not embedded in proposal PDFs.
+- Status: Implemented locally; CRM Test deployment, business retest and explicit
+  NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, upload a genuine MPEG file no larger than 20 MB and
+  confirm it remains visible against the inventory record and follows the maintained
+  approval policy. Confirm the responsible Manager can identify and download it from
+  the Media approvals queue when approval is required. Confirm a renamed non-MPEG
+  file, an `.mp4`, a file over 20 MB and a duplicate file are rejected without a
+  partial record, and confirm the video is not offered as proposal-PDF media. Explicit
+  user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002
