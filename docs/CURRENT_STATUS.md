@@ -78,6 +78,9 @@
   a 20 MB maximum, MPEG content and extension validation, usage-rights governance,
   duplicate detection and the maintained optional Manager approval policy. Videos
   remain listing-scoped downloads and are not embedded in proposal PDFs.
+- R1.1-AMD-004 Revision 7 corrects the property-media policy save transaction by
+  permitting its dedicated `PropertyMediaApprovalPolicy` audit entity in migration
+  034. The policy and mandatory audit evidence continue to commit atomically.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

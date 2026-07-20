@@ -363,6 +363,25 @@ release explicitly approves private video-file storage.
   partial record, and confirm the video is not offered as proposal-PDF media. Explicit
   user confirmation is required before closure.
 
+#### Property-media policy save and audit
+
+- Amendment ID: R1.1-AMD-004 Revision 7
+- Related UAT finding: R1.1-UAT-013 (changing the property-media approval policy
+  returns an internal-server error)
+- Agreed requirement: A full Administrator must be able to change the maintained
+  responsible-Manager approval policy with a mandatory reason. The policy update and
+  its `PropertyMediaApprovalPolicy` audit entry must commit together; an audit failure
+  must never leave an unrecorded policy change.
+- Status: Root cause corrected locally in migration
+  `034_property_media_policy_audit.sql`; CRM Test deployment, database verification,
+  functional retest and explicit NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, change the policy from Required to Not required with
+  a reason and confirm the saved status refreshes immediately. Confirm migration 034
+  is recorded, the audit log contains `PropertyMediaApprovalPolicy / policy_changed`,
+  and a subsequent compliant upload follows the new policy. Change it back to Required
+  with a second reason and confirm the second audited decision. Explicit user
+  confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

@@ -53,6 +53,7 @@ test('property media routes govern duplicates rights cover ordering and review',
   const migration=readFileSync(new URL('../src/migrations/030_property_media_governance.sql',import.meta.url),'utf8');
   const reconciliation=readFileSync(new URL('../src/migrations/031_orphaned_property_media_approval.sql',import.meta.url),'utf8');
   const policyMigration=readFileSync(new URL('../src/migrations/033_property_media_approval_policy.sql',import.meta.url),'utf8');
+  const policyAuditMigration=readFileSync(new URL('../src/migrations/034_property_media_policy_audit.sql',import.meta.url),'utf8');
   for(const marker of ['usage_rights_confirmed','rights_basis','rights_expires_at','is_cover','rejection_reason'])assert.match(migration,new RegExp(marker));
   for(const marker of ['Duplicate media file','media_metadata_changed','cover_selected','auto_approved_no_responsible_manager','responsibleMediaReviewer'])assert.match(routes,new RegExp(marker));
   for(const marker of ["/crm/listings/:id/media/batch",'batch_uploaded','validateMediaBatch'])assert.match(routes,new RegExp(marker));
@@ -60,6 +61,7 @@ test('property media routes govern duplicates rights cover ordering and review',
   assert.match(reconciliation,/auto_approved_no_responsible_manager/);
   assert.match(reconciliation,/manager\.id IS NULL/);
   assert.match(policyMigration,/manager_approval_required BOOLEAN NOT NULL DEFAULT TRUE/);
+  assert.match(policyAuditMigration,/PropertyMediaApprovalPolicy/);
   for(const marker of ['Media use rights','Set as cover','Reject with reason','Save caption and order','multiple accept','media-file-review','Send selected photos','Property media approval policy','future uploads only','Upload MPEG property video','video/mpeg','MPEG video not uploaded'])assert.match(ui,new RegExp(marker));
   for(const marker of ['propertyMediaTypes','video/mpeg','MAX_PROPERTY_VIDEO_BYTES','Property video must use the MPEG kind'])assert.match(routes,new RegExp(marker));
   assert.match(dashboardUi,/MPEG video/);
