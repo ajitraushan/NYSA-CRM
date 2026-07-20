@@ -217,8 +217,8 @@ Approved source or import
   Malformed rows and genuine governance conflicts, including reuse of an existing
   stable code for a different area, continue to block the all-or-none creation of the
   remaining new rows.
-- Status: Implemented locally. CRM Test deployment, functional retest and explicit
-  user confirmation remain pending.
+- Status: Deployed to CRM Test in cumulative package `a875b80`; functionally retested
+  and explicitly accepted by the NYSA owner on 2026-07-20.
 - Retest condition: Upload a workbook containing one existing area, valid new areas,
   an exact duplicate row and a stable-code conflict. Confirm existing and exact
   duplicates are visibly skipped without workbook correction, valid new areas can be
@@ -234,8 +234,8 @@ Approved source or import
   for creation, Excel import, routing references and audit history, but do not display
   it in the routine Area maintenance list. The list must show only the customer-facing
   area name, Emirate, display order, lifecycle status and permitted actions.
-- Status: Implemented locally. CRM Test deployment, functional retest and explicit
-  user confirmation remain pending.
+- Status: Deployed to CRM Test in cumulative package `a875b80`; functionally retested
+  and explicitly accepted by the NYSA owner on 2026-07-20.
 - Retest condition: On CRM Test, confirm stable code remains required during manual
   creation and present in the approved Excel template, but is absent from the saved
   Area maintenance list. Confirm editing, retirement, routing and audit behavior are
@@ -251,8 +251,8 @@ Approved source or import
   stable-code reuse for a different maintained area remains a blocking conflict. The
   preview is a business review and must not display the internal stable area code;
   Excel row, customer-facing area, Emirate, order and validation outcome are sufficient.
-- Status: Implemented locally. CRM Test deployment, functional retest and explicit
-  user confirmation remain pending.
+- Status: Deployed to CRM Test in cumulative package `a875b80`; functionally retested
+  and explicitly accepted by the NYSA owner on 2026-07-20.
 - Retest condition: On CRM Test, review a workbook containing existing areas and new
   areas. Confirm existing areas show `Already exists — skipped automatically`, no
   workbook correction is required, the import action becomes available for the new

@@ -17,6 +17,9 @@
   it from the routine business-facing Area maintenance list.
 - R1.1-AMD-001 Revision 4 also removes the stable code from the Excel business-review
   table and ensures already-maintained areas are skipped without blocking valid new rows.
+- CRM Test cumulative package `a875b80` was deployed, tested and explicitly confirmed
+  by the NYSA owner on 2026-07-20. R1.1-AMD-001 Revisions 2, 3 and 4 are accepted;
+  the later minimal `a875b80-r2` runtime package is superseded and must not be deployed.
 - R1.1-AMD-003 implements the dedicated Listing Executive workspace and governed manual
   listing Draft, submission, return, approval, block and restore lifecycle. Migration 029
   preserves existing inventory as approved while new manual records require readiness
