@@ -35,7 +35,8 @@
   is a separate reference view and role-specific workload counts remain visible.
 - R1.1-AMD-004 Revision 1 refreshes the media workflow in place, names the responsible
   maintained Manager, and automatically approves compliant media with explicit audit
-  evidence when the listing owner's team has no active Manager.
+  evidence when the listing owner's team has no active Manager. Migration 031 safely
+  reconciles equivalent compliant Pending media created before the correction.
 - The complete local automated suite passes 130 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

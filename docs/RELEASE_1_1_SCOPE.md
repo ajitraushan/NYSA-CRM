@@ -172,8 +172,9 @@ release explicitly approves private video-file storage.
   remains Pending for that person's decision. Where no active responsible Manager is
   maintained, a compliant upload is approved automatically instead of entering an
   ownerless queue; the automatic decision, actor, team context and reason are audit
-  recorded. The upload action must state which of those two paths will occur before the
-  user submits it.
+  recorded. Migration 031 applies the same governed outcome to compliant Pending media
+  created before this correction. The upload action must state which of those two paths
+  will occur before the user submits it.
 - Status: Implemented locally and verified by the 130-test automated suite; CRM Test
   deployment, functional retest and explicit user confirmation remain pending.
 - Retest condition: In CRM Test, upload compliant media for a Listing Executive whose
