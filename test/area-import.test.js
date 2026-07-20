@@ -61,4 +61,5 @@ test('area maintenance list displays the business label without exposing its int
   const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   assert.match(app,/class="area-name"/);
   assert.doesNotMatch(app,/class="mono area-code"/);
+  assert.doesNotMatch(app,/<th>Stable code<\/th>/);
 });

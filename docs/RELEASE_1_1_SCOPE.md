@@ -241,6 +241,24 @@ Approved source or import
   Area maintenance list. Confirm editing, retirement, routing and audit behavior are
   unaffected. Explicit user confirmation is required before closure.
 
+#### Business-facing bulk-import review and duplicate handling
+
+- Amendment ID: R1.1-AMD-001 Revision 4
+- Related UAT finding: R1-UAT-005
+- Agreed requirement: The Excel review must treat an already-maintained area as an
+  automatic skip rather than a correction required from the administrator. The
+  preview must allow valid new areas in the same workbook to proceed, while genuine
+  stable-code reuse for a different maintained area remains a blocking conflict. The
+  preview is a business review and must not display the internal stable area code;
+  Excel row, customer-facing area, Emirate, order and validation outcome are sufficient.
+- Status: Implemented locally. CRM Test deployment, functional retest and explicit
+  user confirmation remain pending.
+- Retest condition: On CRM Test, review a workbook containing existing areas and new
+  areas. Confirm existing areas show `Already exists — skipped automatically`, no
+  workbook correction is required, the import action becomes available for the new
+  rows, only the new rows are created, and the preview does not display stable codes.
+  Explicit user confirmation is required before closure.
+
 ### Permissions and audit
 
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,

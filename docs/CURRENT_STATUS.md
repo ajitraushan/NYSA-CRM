@@ -15,6 +15,8 @@
   rows while continuing to block genuine stable-code conflicts.
 - R1.1-AMD-001 Revision 3 keeps the stable code in governed system controls but removes
   it from the routine business-facing Area maintenance list.
+- R1.1-AMD-001 Revision 4 also removes the stable code from the Excel business-review
+  table and ensures already-maintained areas are skipped without blocking valid new rows.
 - R1.1-AMD-003 implements the dedicated Listing Executive workspace and governed manual
   listing Draft, submission, return, approval, block and restore lifecycle. Migration 029
   preserves existing inventory as approved while new manual records require readiness
