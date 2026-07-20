@@ -6,6 +6,8 @@ export const MEDIA_RIGHTS_BASES=Object.freeze([
   'legacy_approved'
 ]);
 
+export const PROPERTY_MEDIA_BATCH_POLICY=Object.freeze({maxFiles:5,maxTotalBytes:20*1024*1024});
+
 const text=value=>typeof value==='string'?value.trim():'';
 
 export function normalizeMediaGovernance(body={},now=new Date()){
@@ -47,4 +49,14 @@ export function mediaApprovalPlan(reviewer,actorId,now=new Date()){
     approvedAt:now,
     automatic:true
   };
+}
+
+export function validateMediaBatch(files,policy=PROPERTY_MEDIA_BATCH_POLICY){
+  if(!Array.isArray(files)||!files.length)return'Select at least one property photo';
+  if(files.length>policy.maxFiles)return`Select no more than ${policy.maxFiles} files in one batch`;
+  const totalBytes=files.reduce((sum,file)=>sum+Number(file?.buffer?.length||0),0);
+  if(totalBytes>policy.maxTotalBytes)return`The selected batch exceeds ${Math.round(policy.maxTotalBytes/1024/1024)} MB`;
+  const hashes=files.map(file=>file?.fileHash).filter(Boolean);
+  if(new Set(hashes).size!==hashes.length)return'The selected batch contains the same file more than once';
+  return null;
 }

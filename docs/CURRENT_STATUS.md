@@ -57,7 +57,11 @@
   maintained Manager, and automatically approves compliant media with explicit audit
   evidence when the listing owner's team has no active Manager. Migration 031 safely
   reconciles equivalent compliant Pending media created before the correction.
-- The complete local automated suite passes 130 tests. CRM Test deployment, authenticated
+- R1.1-AMD-004 Revision 2 replaces repeated one-photo submissions with a governed
+  five-photo, 20 MB batch. The user reviews selected file names, records common source
+  and usage rights once and submits once; all files are validated before an atomic
+  database commit, and any invalid or duplicate file rejects the complete batch.
+- The complete local automated suite passes 132 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and

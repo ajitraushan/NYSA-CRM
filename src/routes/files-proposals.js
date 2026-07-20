@@ -10,7 +10,7 @@ import { publicOrganization,formatOrganizationDate } from '../organization-domai
 import { validateProposalConfiguration,buildIndicativePurchaseTimeline } from '../admin-governance.js';
 import { rankInventoryMatches } from '../ai-domain.js';
 import { derivePublicationReadiness } from '../inventory-domain.js';
-import { mediaApprovalPlan,normalizeMediaGovernance,validateMediaReview } from '../media-governance.js';
+import { mediaApprovalPlan,normalizeMediaGovernance,validateMediaBatch,validateMediaReview } from '../media-governance.js';
 
 const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
@@ -58,6 +58,40 @@ r.post('/crm/listings/:id/media',async(req,res)=>{
   const reviewer=await responsibleMediaReviewer(listing),approval=mediaApprovalPlan(reviewer,req.broker.id);
   const key=await savePrivate(file.buffer,path.extname(file.fileName));try{const id=uuid(),row=await one(`INSERT INTO property_media(id,listing_id,media_kind,title,caption,file_name,media_type,file_size_bytes,storage_key,file_hash,source,display_order,owner_id,created_by,usage_rights_confirmed,rights_basis,rights_expires_at,approval_status,approved_by,approved_at)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,[id,listing.id,b.mediaKind,clean(b.title),clean(b.caption),file.fileName,b.mediaType,file.buffer.length,key,file.fileHash,clean(b.source),Number(b.displayOrder||0),req.broker.id,governance.usageRightsConfirmed,governance.rightsBasis,governance.rightsExpiresAt,approval.approvalStatus,approval.approvedBy,approval.approvedAt]);await refreshListingReadiness(listing.id);await audit('PropertyMedia',id,'uploaded',req.broker.id,{listingId:listing.id,hash:file.fileHash,rightsBasis:governance.rightsBasis,rightsExpiresAt:governance.rightsExpiresAt,reviewMode:approval.automatic?'automatic_no_manager':'responsible_manager',responsibleManagerId:reviewer?.managerId||null,responsibleManagerName:reviewer?.managerName||null});if(approval.automatic)await audit('PropertyMedia',id,'auto_approved_no_responsible_manager',req.broker.id,{listingId:listing.id,teamId:reviewer?.teamId||null,teamName:reviewer?.teamName||null});res.status(201).json({...row,reviewer:{managerId:reviewer?.managerId||null,managerName:reviewer?.managerName||null,teamName:reviewer?.teamName||null,automaticApproval:approval.automatic}});}catch(error){await removePrivate(key);throw error;}
+});
+r.post('/crm/listings/:id/media/batch',async(req,res)=>{
+  const listing=await listingMediaAccess(req,req.params.id,'write');if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Only the listing owner or authorized administrator can upload media'});
+  const b=req.body||{},items=Array.isArray(b.files)?b.files:[];
+  if(b.mediaKind!=='image'||!clean(b.source))return res.status(400).json({error:'Property-image kind and source are required for a photo batch'});
+  const governance=normalizeMediaGovernance(b);if(governance.error)return res.status(400).json({error:governance.error});
+  const maxBytes=Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes),decoded=[];
+  for(let index=0;index<items.length;index++){
+    const item=items[index]||{},file=decodeAndValidateFile({...item,maxBytes,allowedTypes:['image/jpeg','image/png','image/webp']});
+    if(file.error)return res.status(400).json({error:`File ${index+1}: ${file.error}`});
+    const dimensions=validatePropertyImage(file.buffer,item.mediaType);if(dimensions.error)return res.status(400).json({error:`File ${index+1}: ${dimensions.error}`});
+    const displayOrder=Number(item.displayOrder??index);if(!Number.isInteger(displayOrder)||displayOrder<0)return res.status(400).json({error:`File ${index+1}: display order must be a non-negative whole number`});
+    decoded.push({...file,mediaType:item.mediaType,title:clean(item.title)||path.parse(file.fileName).name,caption:clean(item.caption),displayOrder});
+  }
+  const batchError=validateMediaBatch(decoded);if(batchError)return res.status(400).json({error:batchError});
+  for(const file of decoded)if(await one('SELECT id FROM property_media WHERE listing_id=$1 AND file_hash=$2',[listing.id,file.fileHash]))return res.status(409).json({error:`Duplicate media file: ${file.fileName} is already linked to the listing`});
+  const reviewer=await responsibleMediaReviewer(listing),approval=mediaApprovalPlan(reviewer,req.broker.id),stored=[];let committed=false;
+  try{
+    for(const file of decoded)stored.push({...file,key:await savePrivate(file.buffer,path.extname(file.fileName))});
+    const rows=await transaction(async client=>{
+      const inserted=[];
+      for(const file of stored){
+        const id=uuid(),row=await one(`INSERT INTO property_media(id,listing_id,media_kind,title,caption,file_name,media_type,file_size_bytes,storage_key,file_hash,source,display_order,owner_id,created_by,usage_rights_confirmed,rights_basis,rights_expires_at,approval_status,approved_by,approved_at)
+          VALUES($1,$2,'image',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,[id,listing.id,file.title,file.caption,file.fileName,file.mediaType,file.buffer.length,file.key,file.fileHash,clean(b.source),file.displayOrder,req.broker.id,governance.usageRightsConfirmed,governance.rightsBasis,governance.rightsExpiresAt,approval.approvalStatus,approval.approvedBy,approval.approvedAt],client);
+        await audit('PropertyMedia',id,'batch_uploaded',req.broker.id,{listingId:listing.id,batchSize:stored.length,hash:file.fileHash,rightsBasis:governance.rightsBasis,reviewMode:approval.automatic?'automatic_no_manager':'responsible_manager',responsibleManagerId:reviewer?.managerId||null},client);
+        if(approval.automatic)await audit('PropertyMedia',id,'auto_approved_no_responsible_manager',req.broker.id,{listingId:listing.id,teamId:reviewer?.teamId||null,teamName:reviewer?.teamName||null},client);
+        inserted.push(row);
+      }
+      return inserted;
+    });
+    committed=true;
+    await refreshListingReadiness(listing.id).catch(error=>console.error('Listing readiness refresh failed after committed media batch',error));
+    res.status(201).json({media:rows,uploadedCount:rows.length,reviewer:{managerId:reviewer?.managerId||null,managerName:reviewer?.managerName||null,teamName:reviewer?.teamName||null,automaticApproval:approval.automatic}});
+  }catch(error){if(!committed)for(const file of stored)await removePrivate(file.key);throw error;}
 });
 r.patch('/crm/property-media/:mediaId',async(req,res)=>{const media=await mediaAccess(req,req.params.mediaId,'write');if(media===null)return res.status(404).json({error:'Media not found'});if(media===false)return res.status(403).json({error:'Media is outside your writable scope'});const title=clean(req.body?.title),caption=clean(req.body?.caption),order=Number(req.body?.displayOrder);if(!title||!Number.isInteger(order)||order<0)return res.status(400).json({error:'Title and a non-negative whole-number order are required'});const row=await one('UPDATE property_media SET title=$1,caption=$2,display_order=$3 WHERE id=$4 RETURNING *',[title,caption,order,media.id]);await audit('PropertyMedia',row.id,'media_metadata_changed',req.broker.id,{title,caption,displayOrder:order});res.json(row);});
 r.patch('/crm/property-media/:mediaId/cover',async(req,res)=>{const media=await mediaAccess(req,req.params.mediaId,'write');if(media===null)return res.status(404).json({error:'Media not found'});if(media===false)return res.status(403).json({error:'Media is outside your writable scope'});if(media.approvalStatus!=='approved'||!['image/jpeg','image/png','image/webp'].includes(media.mediaType))return res.status(409).json({error:'Only an approved property image can be the cover'});await transaction(async client=>{await execute('UPDATE property_media SET is_cover=FALSE WHERE listing_id=$1',[media.listingId],client);await execute('UPDATE property_media SET is_cover=TRUE WHERE id=$1',[media.id],client);await audit('PropertyMedia',media.id,'cover_selected',req.broker.id,{listingId:media.listingId},client);});res.json({ok:true,mediaId:media.id});});

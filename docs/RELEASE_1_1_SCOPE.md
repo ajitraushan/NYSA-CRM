@@ -251,6 +251,32 @@ release explicitly approves private video-file storage.
   open, and the new record appears as Approved with audit evidence. Explicit user
   confirmation is required before closure.
 
+#### Multi-photo approval submission
+
+- Amendment ID: R1.1-AMD-004 Revision 2
+- Related UAT finding: R1.1-UAT-008 (CRM Test property-media batch-upload usability retest)
+- Agreed requirement: A Listing Executive must be able to select and review several
+  property photos once, record the common source, usage-rights basis, optional expiry
+  and rights confirmation once, and submit the selected batch once. One batch is
+  limited to five validated images and 20 MB total. Each file retains its own safe
+  title and consecutive display order. Every file is validated for type, content,
+  dimensions, aspect ratio, size and duplicate hash before any record is committed;
+  one invalid, repeated or already-linked file rejects the complete batch so partial
+  uploads cannot occur. The complete batch follows the same named responsible-Manager
+  or automatic-no-manager decision path, remains visible in the open media window and
+  is audit recorded against every resulting media record.
+- Status: Implemented locally and verified by the complete 132-test automated suite.
+  CRM Test deployment, authenticated functional retest and explicit user confirmation
+  remain pending.
+- Retest condition: In CRM Test, select three compliant photos and confirm the screen
+  lists all three before submission. Enter source and usage rights once, submit once,
+  and confirm all three appear in the still-open window with consecutive order and the
+  same named Manager (or the documented automatic-approval path). Repeat with one
+  invalid image, an in-batch duplicate and a file already linked to the listing; each
+  attempt must reject the whole batch and create no partial rows. Confirm more than
+  five files and more than 20 MB are blocked. Explicit user confirmation is required
+  before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002
