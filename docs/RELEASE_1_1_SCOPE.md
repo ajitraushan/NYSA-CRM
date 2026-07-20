@@ -117,6 +117,49 @@ Controlled values use stable codes and governed labels. Provider values are mapp
 to those codes; an unmapped value creates an exception instead of silently adding a
 new production value.
 
+#### Governed listing location
+
+- Amendment ID: R1.1-AMD-005
+- Related UAT finding: R1.1-UAT-006 (Release 1.1 findings document — listing location capture)
+- Agreed requirement: Area / Community must not remain one ambiguous free-text field.
+  Area is a mandatory dropdown sourced from active Area Maintenance records and the
+  listing stores the selected governed identity and its customer-facing label.
+  Community is a separate optional business field for the building, district or
+  sub-community. Create, edit, search, inventory cards, listing detail, API filtering
+  and audit evidence must preserve that distinction for every authorized role.
+- Status: Implemented locally and verified by the 131-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit user confirmation remain
+  pending.
+- Retest condition: On CRM Test, create and edit a listing as a Listing Executive and
+  confirm Area is required and selectable only from active Area Maintenance records.
+  Record a separate Community and confirm Area and Community remain distinct in the
+  Inventory search, card and detail views for Listing Executive, Manager, Director and
+  permitted read-only roles. Retire an area and confirm it is unavailable for new
+  selection without changing historical listings. Explicit user confirmation is
+  required before closure.
+
+#### Property-level Bulk Deal capture
+
+- Amendment ID: R1.1-AMD-006
+- Related UAT finding: R1.1-UAT-007 (Release 1.1 findings document — multi-property listing capture)
+- Agreed requirement: Bulk Deal represents one commercial package containing at least
+  two separately identified properties; it is not a substitute for missing property
+  detail. Selecting Bulk Deal opens a property schedule where every row records a
+  unique unit/property reference, its own non-bulk property type, bedrooms where
+  applicable, size and asking price. Plot rows do not use bedrooms. The listing retains
+  one negotiated package asking price while its property schedule remains queryable,
+  editable, auditable and visible in listing detail. Ordinary single-property listings
+  continue to use their existing fields unchanged.
+- Status: Implemented locally and verified by the 131-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit user confirmation remain
+  pending.
+- Retest condition: On CRM Test, select Bulk Deal and confirm two property rows are
+  required. Save a mixed schedule such as Apartment, Villa and Plot with different
+  bedroom, size and price values; confirm Plot bedrooms are not requested, duplicate
+  references and incomplete rows are rejected, and the package and all rows reopen
+  correctly for editing. Confirm a normal single-property listing remains unchanged.
+  Explicit user confirmation is required before closure.
+
 ### Photographs and property media
 
 - Private multi-file upload for supported photographs, floor plans and brochures

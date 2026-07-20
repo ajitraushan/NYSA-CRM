@@ -182,6 +182,21 @@ an assessment used in a prior decision.
 
 ### Property media and sales enablement
 
+#### `listings`
+
+- Governed Area identity and retained customer-facing area label
+- Separate optional Community/building/district text
+- One property type, commercial package price and normal single-property attributes
+- Bulk Deal parents derive their combined size from relational property rows
+
+#### `listing_units`
+
+- Bulk Deal listing, unique unit/property reference and display order
+- Property-specific non-bulk type, bedrooms where applicable, size and asking price
+- Plot rows have no bedrooms; built-property rows require bedrooms
+- Rows are replaced atomically with a governed parent edit and retain database
+  constraints against incomplete or duplicate property schedules
+
 #### `property_media`
 
 - Listing, storage key, media type, title, sort order, approval status, hash,

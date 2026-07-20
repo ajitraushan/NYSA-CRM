@@ -5,6 +5,7 @@ let TOKEN = null;
 let ME = null;
 let currentTab = 'dashboard';
 let lastListings = [];
+let listingAreas = null;
 
 const PROPERTY_TYPES = ['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'];
 const BEDROOMS = ['Studio','1','2','3','4','5+'];
@@ -709,6 +710,7 @@ async function openValueBriefs(lead,parent) {
 
 /* ============ LISTINGS ============ */
 const opts = (arr, sel) => arr.map(o => `<option ${o === sel ? 'selected' : ''}>${esc(o)}</option>`).join('');
+async function loadListingAreas(){if(listingAreas)return listingAreas;const result=await api('/crm/areas');listingAreas=result.areas||[];return listingAreas;}
 
 function renderListings() {
   const listingExecutive=ME.jobRole==='listing_agent';
@@ -718,7 +720,8 @@ function renderListings() {
     <div class="filter-grid">
       ${listingExecutive?`<div><label>Inventory view</label><select id="f-workspace-scope"><option value="mine">My working inventory</option><option value="approved">Approved company inventory</option></select></div>`:''}
       <div><label>Search</label><input id="f-q" placeholder="Project, developer, area…"></div>
-      <div><label>Area / community</label><input id="f-area" placeholder="e.g. Palm Jebel Ali"></div>
+      <div><label>Area</label><select id="f-area"><option value="">All maintained areas</option></select></div>
+      <div><label>Community</label><input id="f-community" placeholder="Building, district or sub-community"></div>
       <div><label>Property type</label><select id="f-type"><option value="">Any</option>${opts(PROPERTY_TYPES)}</select></div>
       <div><label>Bedrooms</label><select id="f-beds"><option value="">Any</option>${opts(BEDROOMS)}</select></div>
       <div><label>Min budget (AED)</label><input id="f-min" type="number" min="0" placeholder="0"></div>
@@ -756,7 +759,7 @@ function renderListings() {
   $('#listing-workspace-dashboard')?.addEventListener('click',()=>switchTab('dashboard'));
   $('#view').querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') loadListings(); }));
   if(listingExecutive)api('/listings-workspace').then(({counts})=>{$('#listing-workspace-strip').innerHTML=[['My drafts',counts.drafts],['Awaiting review',counts.awaitingReview],['Changes requested',counts.changesRequested],['Media incomplete',counts.incompleteMedia]].map(([label,value])=>`<div><b>${Number(value||0)}</b><span>${label}</span></div>`).join('');}).catch(err=>{$('#listing-workspace-strip').textContent=err.message;});
-  loadListings();
+  loadListingAreas().then(areas=>{$('#f-area').innerHTML='<option value="">All maintained areas</option>'+areas.map(area=>`<option value="${area.id}">${esc(area.businessLabel)} · ${esc(area.emirate)}</option>`).join('');loadListings();}).catch(err=>toast(`Areas not loaded: ${err.message}`));
 }
 
 async function loadListings() {
@@ -764,7 +767,7 @@ async function loadListings() {
   loadListings.requestId = requestId;
   const p = new URLSearchParams();
   const set = (k, v) => { if (v) p.set(k, v); };
-  set('q', $('#f-q').value.trim()); set('area', $('#f-area').value.trim());
+  set('q', $('#f-q').value.trim()); set('areaId', $('#f-area').value); set('community',$('#f-community').value.trim());
   set('propertyType', $('#f-type').value); set('bedrooms', $('#f-beds').value);
   set('minPrice', $('#f-min').value); set('maxPrice', $('#f-max').value);
   set('paymentPlanType', $('#f-plan').value); set('status', $('#f-status').value);
@@ -789,10 +792,10 @@ function cardHTML(l) {
     <div class="card" data-id="${esc(l.id)}">
     ${l.discountPercent > 0 ? `<div class="discount-tag">−${l.discountPercent}% vs ref</div>` : ''}
     <h3>${esc(l.project)}</h3>
-    <div class="meta">${esc(l.area)}${l.developer ? ' · ' + esc(l.developer) : ''}</div>
+    <div class="meta">${esc(l.area)}${l.community?' · '+esc(l.community):''}${l.developer ? ' · ' + esc(l.developer) : ''}</div>
     <div class="price">${fmtPrice(l.price, l.currency)}${l.referencePrice ? ` <small>ref ${fmtPrice(l.referencePrice, l.currency)}</small>` : ''}</div>
     <div class="specs">
-      <span>${esc(l.propertyType)}</span>
+      <span>${esc(l.propertyType)}${l.propertyType==='Bulk deal'?` · ${Number(l.bulkUnitCount||0)} properties`:''}</span>
       ${l.bedrooms ? `<span>${esc(l.bedrooms)} BR</span>` : ''}
       ${l.sizeSqft ? `<span>${Number(l.sizeSqft).toLocaleString()} sqft</span>` : ''}
       <span>${esc(handoverLabel(l))}</span>
@@ -833,7 +836,7 @@ async function openDetail(id) {
     <div class="detail-head">
       <div>
         <h2 style="margin-bottom:2px">${esc(l.project)}</h2>
-        <div style="color:var(--muted);font-size:13px">${esc(l.area)}${l.developer ? ' · ' + esc(l.developer) : ''}</div>
+        <div style="color:var(--muted);font-size:13px">${esc(l.area)}${l.community?' · '+esc(l.community):''}${l.developer ? ' · ' + esc(l.developer) : ''}</div>
       </div>
       <div style="text-align:right">
         <div class="detail-price">${fmtPrice(l.price, l.currency)}</div>
@@ -847,14 +850,15 @@ async function openDetail(id) {
       <span class="badge">${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus||'Approved')}</span>
     <div class="kv-grid">
       <div><b>Type</b>${esc(l.propertyType)}</div>
-      <div><b>Bedrooms</b>${esc(l.bedrooms || '—')}</div>
-      <div><b>Size</b>${l.sizeSqft ? Number(l.sizeSqft).toLocaleString() + ' sqft' : '—'}</div>
+      <div><b>${l.propertyType==='Bulk deal'?'Properties':'Bedrooms'}</b>${l.propertyType==='Bulk deal'?Number(l.bulkUnitCount||0):esc(l.bedrooms || '—')}</div>
+      <div><b>${l.propertyType==='Bulk deal'?'Combined size':'Size'}</b>${l.sizeSqft ? Number(l.sizeSqft).toLocaleString() + ' sqft' : '—'}</div>
       <div><b>Handover</b>${esc(handoverLabel(l))}</div>
       <div class="span2"><b>Payment plan</b>${esc(plan || '—')}${l.paymentPlanNotes ? '<br><span style="color:var(--muted);font-size:12px">' + esc(l.paymentPlanNotes) + '</span>' : ''}</div>
       <div><b>Posted by</b>${esc(l.postedByName)}<br><span style="color:var(--muted);font-size:12px">${esc(l.postedByBrokerage || '')}</span></div>
       <div><b>Contact</b>${esc(l.contact || '—')}</div>
       <div><b>Listed</b>${fmtDate(l.createdAt)}</div>
     </div>
+    ${l.propertyType==='Bulk deal'?`<div class="bulk-unit-summary"><h3>Bulk deal properties</h3><table><tr><th>Reference</th><th>Property type</th><th>Bedrooms</th><th>Size</th><th>Asking price</th></tr>${(l.bulkUnits||[]).map(unit=>`<tr><td>${esc(unit.unitReference)}</td><td>${esc(unit.propertyType)}</td><td>${esc(unit.bedrooms||'Not applicable')}</td><td>${Number(unit.sizeSqft).toLocaleString()} sqft</td><td>${fmtPrice(unit.price,l.currency)}</td></tr>`).join('')}</table></div>`:''}
     <div class="proposal-readiness ${l.publicationReadiness?.ready?'ready':'blocked'}"><b>Listing publication readiness: ${l.publicationReadiness?.ready?'Ready':'Blocked'}</b><span>${l.publicationReadiness?.ready?'Required listing information, current availability, verification and approved media are present.':esc((l.publicationReadiness?.blockers||[]).map(x=>x.label).join(' · ')||'Readiness evidence is incomplete.')}</span><small>Calculated by NYSA CORE. Portal publication is not available in Release 1.1.</small></div>
     ${l.reviewComment?`<div class="proposal-readiness ${['changes_requested','blocked'].includes(l.workflowStatus)?'blocked':''}"><b>Latest workflow review</b><span>${esc(l.reviewComment)}</span><small>${l.reviewedAt?fmtDate(l.reviewedAt):''}</small></div>`:''}
     ${l.notes ? `<div class="notes-block">${esc(l.notes)}</div>` : ''}
@@ -952,7 +956,9 @@ async function postComment(listingId, o) {
 }
 
 /* ============ ADD / EDIT LISTING ============ */
-function openListingForm(l = null) {
+function bulkUnitRow(unit={}){return `<div class="bulk-unit-row"><div><label>Unit / property reference *</label><input data-unit="unitReference" required value="${esc(unit.unitReference||'')}"></div><div><label>Property type *</label><select data-unit="propertyType">${opts(PROPERTY_TYPES.filter(value=>value!=='Bulk deal'),unit.propertyType||'Apartment')}</select></div><div><label>Bedrooms *</label><select data-unit="bedrooms"><option value="">Select</option>${opts(BEDROOMS,unit.bedrooms)}</select></div><div><label>Built-up / plot area (sqft) *</label><input data-unit="sizeSqft" type="number" min="0.01" step="0.01" required value="${esc(unit.sizeSqft||'')}"></div><div><label>Property asking price *</label><input data-unit="price" data-business-amount required value="${esc(unit.price||'')}"></div><button class="btn btn-sm" type="button" data-remove-bulk-unit>Remove</button></div>`;}
+async function openListingForm(l = null) {
+  let areas;try{areas=await loadListingAreas();}catch(err){return toast(`Listing form not opened: ${err.message}`);}
   const v = (f) => l ? esc(l[f] ?? '') : '';
   const dt = (f) => l?.[f] ? esc(String(l[f]).slice(0,16)) : '';
   const handoverStatus=l?.handoverStatus||(l?.handoverDate==='Ready'?'ready':/^\d{4}-\d{2}-\d{2}$/.test(String(l?.handoverDate||''))?'expected':'to_be_confirmed');
@@ -965,10 +971,12 @@ function openListingForm(l = null) {
       <div class="form-grid">
         <div class="span2"><label>Project *</label><input name="project" required value="${v('project')}"></div>
         <div><label>Developer</label><input name="developer" value="${v('developer')}"></div>
-        <div><label>Area / community *</label><input name="area" required value="${v('area')}"></div>
+        <div><label>Area *</label><select name="areaId" required><option value="">Select from Area Maintenance</option>${areas.map(area=>`<option value="${area.id}" ${area.id===l?.areaId?'selected':''}>${esc(area.businessLabel)} · ${esc(area.emirate)}</option>`).join('')}</select><small>Governed in Administration → Area maintenance.</small></div>
+        <div><label>Community</label><input name="community" value="${v('community')}" placeholder="Building, district or sub-community"></div>
         <div><label>Property type *</label><select name="propertyType">${opts(PROPERTY_TYPES, l?.propertyType)}</select></div>
-        <div><label>Bedrooms</label><select name="bedrooms"><option value="">—</option>${opts(BEDROOMS, l?.bedrooms)}</select></div>
-        <div><label>Size (sqft)</label><input name="sizeSqft" type="number" min="0" value="${v('sizeSqft')}"></div>
+        <div data-single-property><label>Bedrooms</label><select name="bedrooms"><option value="">—</option>${opts(BEDROOMS, l?.bedrooms)}</select></div>
+        <div data-single-property><label>Size (sqft)</label><input name="sizeSqft" type="number" min="0" value="${v('sizeSqft')}"></div>
+        <div class="span3" data-bulk-deal hidden><h3>Bulk deal property schedule</h3><p class="tool-note">Record each property separately. Bedrooms are required for built units and do not apply to plots. The parent asking price remains the negotiated package price.</p><div id="bulk-unit-list">${(l?.bulkUnits||[]).map(bulkUnitRow).join('')}</div><button class="btn btn-sm" id="add-bulk-unit" type="button">Add property row</button></div>
         <div><label>Asking price *</label><input name="price" data-business-amount required value="${v('price')}"></div>
         <div><label>Reference / market price</label><input name="referencePrice" data-business-amount value="${v('referencePrice')}"></div>
         <div><label>Currency *</label><select name="currency">${opts(CURRENCIES,l?.currency||'AED')}</select></div>
@@ -996,10 +1004,15 @@ function openListingForm(l = null) {
     </form>
   </div>`);
   $('#lf-cancel', o).addEventListener('click', () => o.remove());
-  const form=$('#listing-form',o),handoverDateWrap=$('[data-handover-date]',o),syncHandover=()=>{const expected=form.elements.handoverStatus.value==='expected';handoverDateWrap.hidden=!expected;form.elements.handoverExpectedDate.required=expected;if(!expected)form.elements.handoverExpectedDate.value='';};form.elements.handoverStatus.addEventListener('change',syncHandover);syncHandover();
+  const form=$('#listing-form',o),handoverDateWrap=$('[data-handover-date]',o),bulkWrap=$('[data-bulk-deal]',o),bulkList=$('#bulk-unit-list',o),syncHandover=()=>{const expected=form.elements.handoverStatus.value==='expected';handoverDateWrap.hidden=!expected;form.elements.handoverExpectedDate.required=expected;if(!expected)form.elements.handoverExpectedDate.value='';};
+  const wireBulkRows=()=>{bulkList.querySelectorAll('[data-remove-bulk-unit]').forEach(button=>button.onclick=()=>button.closest('.bulk-unit-row').remove());bulkList.querySelectorAll('[data-unit="propertyType"]').forEach(select=>{const sync=()=>{const bedrooms=select.closest('.bulk-unit-row').querySelector('[data-unit="bedrooms"]'),plot=select.value==='Plot';bedrooms.disabled=plot;bedrooms.required=!plot;if(plot)bedrooms.value='';};select.onchange=sync;sync();});installBusinessAmountInputs(bulkList);};
+  const addBulkRow=unit=>{bulkList.insertAdjacentHTML('beforeend',bulkUnitRow(unit));wireBulkRows();};
+  const syncPropertyType=()=>{const bulk=form.elements.propertyType.value==='Bulk deal';bulkWrap.hidden=!bulk;o.querySelectorAll('[data-single-property]').forEach(field=>{field.hidden=bulk;field.querySelectorAll('input,select').forEach(control=>control.disabled=bulk);});bulkWrap.querySelectorAll('input,select,button').forEach(control=>control.disabled=!bulk);if(bulk&&!bulkList.children.length){addBulkRow();addBulkRow();}if(bulk)wireBulkRows();};
+  $('#add-bulk-unit',o).onclick=()=>addBulkRow();form.elements.propertyType.addEventListener('change',syncPropertyType);form.elements.handoverStatus.addEventListener('change',syncHandover);wireBulkRows();syncPropertyType();syncHandover();
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
+    f.bulkUnits=form.elements.propertyType.value==='Bulk deal'?[...bulkList.querySelectorAll('.bulk-unit-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-unit]')].map(input=>[input.dataset.unit,input.value]))):[];
     for(const [field,label,required] of [['price','Asking price',true],['referencePrice','Reference / market price',false]]){const amount=parseBusinessAmountInput(f[field]);if((required&&(!Number.isFinite(amount)||amount<=0))||(!required&&f[field]&&!Number.isFinite(amount)))return toast(`${label} must be an amount such as 1 M, 750K or 1000000`);f[field]=amount;}
     for (const k of ['sizeSqft','downPaymentPercent','onHandoverPercent','postHandoverYears'])
       f[k] = f[k] === '' ? null : +f[k];

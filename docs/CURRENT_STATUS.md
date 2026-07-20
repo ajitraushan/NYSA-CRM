@@ -1,5 +1,20 @@
 # NYSA CORE Current Status
 
+## Release 1.1 listing-intake amendments — 2026-07-20
+
+- R1.1-AMD-005 separates listing location into a mandatory governed Area selected
+  from active Area Maintenance and an optional business-facing Community throughout
+  create, edit, search, card, detail, API and audit paths. Migration 032 preserves the
+  governed area identity without rewriting historical display labels.
+- R1.1-AMD-006 replaces the ambiguous single-row Bulk Deal treatment with a child
+  property schedule. Every bulk package requires at least two unique property/unit
+  references with property-specific type, bedrooms where applicable, size and asking
+  price; ordinary single-property listings remain unchanged. Migration 032 introduces
+  relational `listing_units` records.
+- Both amendments are implemented locally and the complete 131-test automated suite
+  passes. CRM Test deployment, authenticated functional retest and explicit user
+  confirmation remain pending; neither finding is closed.
+
 ## Release 1.1 local implementation checkpoint — 2026-07-20
 
 - R1.1-AMD-001 / R1-UAT-005 implements governed Area maintenance and deterministic,

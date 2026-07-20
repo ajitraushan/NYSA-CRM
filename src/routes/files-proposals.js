@@ -40,7 +40,11 @@ async function responsibleMediaReviewer(listing){
     LEFT JOIN brokers m ON m.id=t.manager_id AND m.status='active'
     WHERE owner.id=$1`,[listing.postedBy]);
 }
-async function refreshListingReadiness(id){const listing=await one(`SELECT l.*,(SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count FROM listings l WHERE l.id=$1`,[id]);if(!listing||listing.portalStatus==='published')return;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);await execute('UPDATE listings SET portal_status=$1,updated_at=NOW() WHERE id=$2',[readiness.status,id]);}
+async function refreshListingReadiness(id){const listing=await one(`SELECT l.*,
+  (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
+  0::int AS incomplete_bulk_unit_count,
+  (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+  FROM listings l WHERE l.id=$1`,[id]);if(!listing||listing.portalStatus==='published')return;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);await execute('UPDATE listings SET portal_status=$1,updated_at=NOW() WHERE id=$2',[readiness.status,id]);}
 
 r.get('/crm/listings/:id/media',async(req,res)=>{const listing=await listingMediaAccess(req,req.params.id);if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Listing media is outside your permitted scope'});const reviewer=await responsibleMediaReviewer(listing);res.json({media:await many('SELECT * FROM property_media WHERE listing_id=$1 ORDER BY is_cover DESC,display_order,created_at',[listing.id]),reviewer:{managerId:reviewer?.managerId||null,managerName:reviewer?.managerName||null,teamName:reviewer?.teamName||null,automaticApproval:!reviewer?.managerId}});});
 r.post('/crm/listings/:id/media',async(req,res)=>{
