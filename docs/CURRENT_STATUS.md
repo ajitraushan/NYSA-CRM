@@ -25,7 +25,12 @@
   preserves existing inventory as approved while new manual records require readiness
   and review; non-approved records are owner/team/administration scoped and every
   transition is audited.
-- The complete local automated suite passes 126 tests. CRM Test deployment, authenticated
+- R1.1-AMD-004 implements private, listing-scoped property-media governance. Migration
+  030 records confirmed usage rights and expiry, one cover image and reasoned rejection;
+  the runtime enforces duplicate-file hashing, responsible-manager review, owner
+  caption/order maintenance, audit history and current-rights filtering for readiness
+  and customer proposals.
+- The complete local automated suite passes 129 tests. CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
 - Release 1.1 changes are for `https://crm-test.nysarealty.com/` only at this stage and

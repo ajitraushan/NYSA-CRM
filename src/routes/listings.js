@@ -44,7 +44,7 @@ async function canReview(broker,listing){
     WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$2 AND tm.membership_role='manager' AND tm.ends_at IS NULL))`,[listing.postedBy,broker.id]));
 }
 
-async function refreshReadiness(id){const listing=await one(`SELECT l.*,(SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count FROM listings l WHERE l.id=$1`,[id]);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id]);return{...updated,approvedMediaCount:listing.approvedMediaCount};}
+async function refreshReadiness(id){const listing=await one(`SELECT l.*,(SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count FROM listings l WHERE l.id=$1`,[id]);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id]);return{...updated,approvedMediaCount:listing.approvedMediaCount};}
 
 function canEdit(broker, listing) {
   return broker.role === 'admin' || broker.jobRole==='admin_assistant' || listing.postedBy === broker.id;
@@ -98,7 +98,7 @@ r.get('/listings', async (req, res) => {
   const rows = await many(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,
     b.team_id AS posted_by_team_id,
     (SELECT COUNT(*)::int FROM comments c WHERE c.listing_id = l.id AND c.deleted_at IS NULL) AS comment_count,
-    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by
     WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest}`, params);
   res.json({ count: rows.length, listings: rows.map(withDiscount) });
@@ -108,7 +108,7 @@ r.get('/listings-workspace',async(req,res)=>{
   if(req.broker.jobRole!=='listing_agent'&&req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')return res.status(403).json({error:'Listing Executive workspace is outside your role'});
   const params=[],scope=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),'l.posted_by=$1'):'TRUE';
   const rows=await many(`SELECT l.*,b.name AS posted_by_name,b.team_id AS posted_by_team_id,
-    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.deleted_at IS NULL AND ${scope} ORDER BY l.updated_at DESC LIMIT 500`,params);
   const listings=rows.map(withDiscount).map(item=>({...item,queue:listingWorkflowQueue(withDiscount(item))}));
   const counts={active:0,drafts:0,awaitingReview:0,changesRequested:0,availabilityRefresh:0,pendingVerification:0,expiringPermits:0,incompleteMedia:0,readinessBlocks:0};
@@ -129,7 +129,7 @@ r.get('/listings-workspace',async(req,res)=>{
 
 r.get('/listings/:id', async (req, res) => {
   const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
-    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if(listing.workflowStatus!=='approved'&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This draft is outside your inventory scope'});

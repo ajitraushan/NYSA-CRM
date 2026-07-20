@@ -112,6 +112,35 @@ new production value.
 Video and virtual-tour content is stored as an approved governed link unless a later
 release explicitly approves private video-file storage.
 
+#### Governed property-media workflow
+
+- Amendment ID: R1.1-AMD-004
+- Related UAT finding: R1.1-UAT-003 (pre-implementation property-media governance review)
+- Agreed requirement: Property media must remain private and listing-scoped. An
+  authorized listing owner or Administrator uploads a validated image, floor plan or
+  brochure once, records its business source and confirms the documented authority to
+  use it, including an optional rights-expiry date. The system rejects an exact
+  duplicate file for the same listing by hash. The owner may maintain the
+  customer-facing title, caption and display order; an approved image may be selected
+  as the listing's single cover image. The responsible Manager or Administrator must
+  either approve pending media or reject it with a mandatory reason. Only approved
+  media whose recorded usage rights remain current may satisfy listing readiness or
+  be selected for a customer proposal. Downloads, changes, cover selection and review
+  decisions remain role-scoped and audit recorded.
+- Status: Implemented locally and verified by the 129-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit user confirmation remain
+  pending.
+- Retest condition: On CRM Test, sign in as a Listing Executive, upload a compliant
+  property image with a recorded source and current usage-rights basis, and confirm it
+  remains Pending and does not satisfy readiness or appear in proposal media. Upload
+  the same file again and confirm the duplicate is rejected without creating a second
+  record. As the responsible Manager, approve it and confirm it becomes available for
+  readiness and proposal selection. Maintain its caption/order, select it as cover and
+  confirm one cover only. Upload another file and reject it with a reason; confirm the
+  reason is visible and the rejected file is excluded. Confirm missing/expired rights,
+  an unrelated Manager and an unrelated Listing Executive are blocked. Explicit user
+  confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002
