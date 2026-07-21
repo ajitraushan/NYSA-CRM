@@ -2508,10 +2508,11 @@ For every new test observation:
   deliberate responsive layout on narrow screens. Inventory editing and coordination
   notes must likewise use the available modal width rather than forcing all content
   through one narrow column.
-- Status: Implemented locally and all 153 automated tests pass. The
-  Inventory detail/edit modals are wider, workflow history uses three labelled columns,
-  and coordination notes use author/comment/action columns with narrow-screen fallback.
-  The finding remains open until explicit user confirmation on CRM Test.
+- Status: Closed. All 153 automated tests passed. Cumulative package commit `e337946`
+  was deployed to CRM Test, health returned database ready, and the NYSA owner visually
+  retested the wider Inventory detail/edit presentation, three-column Workflow history
+  and coordination-note columns and explicitly confirmed they are fine on 2026-07-21.
+  `R1.1-AMD-015` is accepted.
 - Retest condition: Deploy to CRM Test, open a Draft listing with at least one workflow
   event, expand Workflow history and confirm the action, actor/date and reason remain
   horizontally readable without overlap at desktop and narrow modal widths. Explicit

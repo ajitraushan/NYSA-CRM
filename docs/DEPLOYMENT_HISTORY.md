@@ -4,6 +4,24 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-21 — CRM Test Inventory history column correction
+
+- Environment: CRM Test only; production unchanged
+- Amendment: R1.1-AMD-015
+- Related finding: R1.1-UAT-029
+- Source commit: `e337946`
+- Package: `nysa-core-r1-1-inventory-history-columns-crm-test-e337946.zip`
+- Package SHA-256:
+  `0a9b562f591515ac6d8685860cc111fc81662d709bb7d0fdf1a7a16bbff94214`
+- Scope: wider Inventory detail/edit modals, explicit Action / Updated by-time / Reason
+  workflow columns, and Author-time / Comment / Actions coordination-note columns;
+  no migration or database change
+- Verification: the complete local automated suite passed 153 tests and CRM Test
+  health returned `{"ok":true,"database":"ready"}` after deployment.
+- Acceptance: the NYSA owner visually retested the corrected Inventory edit, Workflow
+  history and coordination-note presentation and explicitly confirmed it is fine on
+  2026-07-21. R1.1-UAT-029 is closed; R1.1-UAT-028 remains open.
+
 ## 2026-07-19 — Production administration alignment hotfix
 
 - Environment: Production

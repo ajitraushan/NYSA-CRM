@@ -9,8 +9,11 @@
   modals; Workflow history presents Action, Updated by/time and Reason as explicit
   columns; coordination notes present author/time, comment and actions as columns. The
   layouts collapse responsively only on narrow screens.
-- The complete automated suite passes 153 tests. CRM Test deployment, visual retest and
-  explicit user confirmation are required before the finding can close.
+- The complete automated suite passes 153 tests. Cumulative package commit `e337946`
+  was deployed to CRM Test, health returned database ready, and the NYSA owner visually
+  retested the Inventory edit, Workflow history and coordination-note presentation and
+  explicitly confirmed it is fine on 2026-07-21. `R1.1-UAT-029` is closed and
+  `R1.1-AMD-015` is accepted.
 
 ## Planned communications, calendar and Agent lifecycle enhancements — 2026-07-21
 

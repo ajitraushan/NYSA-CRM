@@ -954,8 +954,9 @@ Approved source or import
   show workflow Action, Updated by/time and Reason in explicit readable columns.
   Coordination notes must similarly separate author/time, comment and actions, while
   narrow screens receive a deliberate responsive fallback.
-- Status: Implemented locally; CRM Test deployment and explicit retest confirmation
-  pending.
+- Status: Accepted on CRM Test. Commit `e337946` was deployed and the NYSA owner
+  visually retested the Inventory edit, Workflow history and coordination-note layouts
+  and explicitly confirmed they are fine on 2026-07-21.
 - Retest condition: Expand Workflow history on CRM Test at desktop and narrow modal
   widths and confirm ordinary words no longer stack vertically. Explicit user
   confirmation is required before closure.
