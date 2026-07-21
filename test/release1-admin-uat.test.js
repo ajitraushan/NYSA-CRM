@@ -152,6 +152,20 @@ test('customers are a primary workspace and lead KYC links to the customer maste
   const styles=read('public/index.html');assert.match(styles,/#customer-results td small\{display:block/);assert.match(styles,/#customer-results table\{min-width:1120px;table-layout:fixed/);
 });
 
+test('Sales Agent customer loading is scope-first and opened leads show a distinct lifecycle',()=>{
+  const ui=read('public/app.js'),crm=read('src/routes/crm.js'),styles=read('public/index.html');
+  assert.match(crm,/SELECT c\.id FROM contacts c WHERE \$\{where\.join\(' AND '\)\}/);
+  assert.match(crm,/WHERE c\.id=ANY\(\$1::uuid\[\]\)/);
+  assert.match(crm,/res\.json\(\{ count: contacts\.length, contacts \}\)/);
+  assert.match(crm,/stageHistory/);
+  assert.match(ui,/Customer.*Lead.*Contacted.*Qualified.*Viewing.*Negotiation.*Won/s);
+  assert.match(ui,/One customer may have several leads, and each lead can be at a different stage\./);
+  assert.match(ui,/lead\.stage==='Lost'/);
+  assert.match(ui,/aria-current="step"/);
+  assert.match(styles,/\.lead-lifecycle-step\.current/);
+  assert.match(styles,/\.lead-lifecycle-lost\.current/);
+});
+
 test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js');
   assert.match(ui,/Select existing customer \(optional\)/);

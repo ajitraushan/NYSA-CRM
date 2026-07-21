@@ -580,6 +580,49 @@ release explicitly approves private video-file storage.
   MOV with a mismatched extension or declared type are rejected. Explicit user
   confirmation is required before closure.
 
+#### Sales Agent customer-register reliability
+
+- Amendment ID: R1.1-AMD-008
+- Related UAT finding: R1.1-UAT-021 (a Sales Agent opening Customers receives
+  `Internal server error`, so the customer register fails before customer creation can
+  complete and be verified)
+- Agreed requirement: `GET /api/crm/contacts` must first resolve the authenticated
+  user's customer IDs under the existing role scope, then load optional owner/company
+  presentation metadata and related-lead counts. A Sales Agent must see a customer they
+  own even before it has a lead, plus customers connected to leads assigned to or created
+  by that agent. The correction must not widen access to any unrelated customer.
+- Status: Implemented locally and verified by the 140-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit NYSA owner confirmation remain
+  pending; the finding is not closed.
+- Retest condition: On CRM Test, sign in as a Sales Agent and open Customers with no
+  search and with a name/email/phone search; confirm the register loads without an internal
+  error and contains only owned or lead-scoped customers. Create a new customer, confirm
+  the save succeeds and the exact customer opens immediately before any lead exists. Then
+  create a lead for that customer and confirm both Customers and the lead customer selector
+  retain it. Verify a different Sales Agent's unrelated customer is not returned. Explicit
+  user confirmation is required before closure.
+
+#### Open-lead lifecycle tracker
+
+- Amendment ID: R1.1-AMD-009
+- Related UAT finding: R1.1-UAT-022 (opening a lead does not provide a clear visual
+  lifecycle or distinguish a lead's stage from the shared customer record)
+- Agreed requirement: Every opened lead must show the progression Customer -> Lead ->
+  Contacted -> Qualified -> Viewing -> Negotiation -> Won and visibly highlight the
+  selected lead's current stage. Lost must be displayed separately as a terminal outcome,
+  not as the next success step. The tracker must explain that a customer is the shared
+  master record and may have several leads at different stages. It must use the selected
+  lead and its stage history without combining the stages of sibling leads.
+- Status: Implemented locally and verified by the 140-test automated suite. CRM Test
+  deployment, visual/functional retest and explicit NYSA owner confirmation remain pending;
+  the finding is not closed.
+- Retest condition: On CRM Test, open separate New, Contacted, Qualified, Viewing,
+  Negotiation, Won and Lost leads and confirm the exact selected stage is highlighted;
+  Lost is highlighted only in the separate terminal outcome. Open two leads belonging to
+  one customer at different stages and confirm each lead shows its own current position and
+  the multi-lead explanation remains visible. Confirm the tracker remains readable at
+  desktop and narrow widths. Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

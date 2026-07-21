@@ -2309,6 +2309,46 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Retest condition: The R1-UAT-034 CRM Test retest condition passes and the user
   explicitly confirms the alignment before production promotion.
 
+### R1.1-UAT-021: Sales Agent customer register returns an internal error
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Sales Agent -> Customers and standalone customer creation
+- Status: Correction implemented locally; CRM Test deployment, authenticated retest and
+  explicit user confirmation pending. The finding is open.
+- Priority: High operational correction
+- Evidence: The Sales Agent customer workspace returned `Internal server error` while
+  loading `GET /api/crm/contacts`, before the standalone customer flow could complete and
+  reopen the saved record.
+- Required correction: Preserve the existing owner/lead Sales Agent scope while resolving
+  permitted customer IDs independently of optional display joins and lead counts. The
+  resulting customer register must include a newly created, agent-owned customer even when
+  it does not yet have a lead and must not expose unrelated customers.
+- Related amendment: R1.1-AMD-008
+- Retest condition: On CRM Test, complete the no-search, search, standalone-create,
+  immediate-open, related-lead and cross-agent denial checks recorded under R1.1-AMD-008.
+  Explicit user confirmation is required before closure.
+
+### R1.1-UAT-022: Opened leads have no clear customer-to-outcome lifecycle
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Lead detail
+- Status: Correction implemented locally; CRM Test deployment, visual/functional retest
+  and explicit user confirmation pending. The finding is open.
+- Priority: High workflow-clarity correction
+- Evidence: An opened lead exposes a Stage selector but does not visually explain the
+  Customer -> Lead -> Contacted -> Qualified -> Viewing -> Negotiation -> Won progression,
+  does not separate Lost as a terminal outcome and does not clarify that sibling leads for
+  one customer may be at different stages.
+- Required correction: Add a selected-lead lifecycle tracker that highlights the current
+  stage, keeps Lost separate and explains the customer-to-many-leads relationship without
+  combining sibling-lead histories.
+- Related amendment: R1.1-AMD-009
+- Retest condition: On CRM Test, complete every-stage, Lost, same-customer/multiple-lead
+  and responsive-layout checks recorded under R1.1-AMD-009. Explicit user confirmation is
+  required before closure.
+
 ## Review discipline
 
 For every new test observation:

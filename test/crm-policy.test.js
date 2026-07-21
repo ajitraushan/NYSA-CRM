@@ -73,6 +73,14 @@ test('SQL scopes are parameterized and deny accountants',()=>{
   assert.deepEqual(contact.params,[]);
 });
 
+test('Sales Agents can list customers they own or serve through a scoped lead',()=>{
+  const contact=contactScopeSql('c',agent,[]);
+  assert.deepEqual(contact.params,['u']);
+  assert.match(contact.clause,/c\.owner_id=\$1/);
+  assert.match(contact.clause,/sl\.contact_id=c\.id/);
+  assert.match(contact.clause,/sl\.assigned_to=\$1 OR sl\.created_by=\$1/);
+});
+
 test('team selectors expose company scope to directors managed scope to managers and own team to agents',()=>{
   const directorScope=teamScopeSql('t',director,[]),managerScope=teamScopeSql('t',manager,[]),agentScope=teamScopeSql('t',agent,[]);
   assert.equal(directorScope.clause,'1=1');

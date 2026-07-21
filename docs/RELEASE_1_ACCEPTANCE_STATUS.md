@@ -1,5 +1,13 @@
 # Release 1 Acceptance Status
 
+## Release 1.1 correction checkpoint — 2026-07-21
+
+- R1.1-AMD-008 / R1.1-UAT-021 and R1.1-AMD-009 / R1.1-UAT-022 are implemented
+  locally and covered by the passing 140-test suite.
+- Acceptance remains pending: both corrections require deployment only to
+  `https://crm-test.nysarealty.com/`, authenticated/visual retesting and explicit user
+  confirmation. Neither finding is closed and no production deployment is authorized.
+
 ## Release decision — accepted for production promotion
 
 - Business/UAT acceptance: **Accepted by the NYSA owner on 2026-07-19**

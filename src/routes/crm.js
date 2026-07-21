@@ -195,10 +195,19 @@ r.get('/crm/contacts', async (req, res) => {
     params.push(`%${req.query.q}%`);
     where.push(`(c.full_name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`);
   }
-  const contacts = await many(`SELECT c.*, b.name AS owner_name,co.name AS company_name_resolved,
-    (SELECT COUNT(*)::int FROM leads l WHERE l.contact_id=c.id) AS lead_count
-    FROM contacts c LEFT JOIN brokers b ON b.id=c.owner_id LEFT JOIN companies co ON co.id=c.company_id
-    WHERE ${where.join(' AND ')} ORDER BY LOWER(c.full_name), LOWER(COALESCE(c.email,c.phone,'')), c.id LIMIT 500`, params);
+  // Resolve permission scope before loading optional presentation metadata. This keeps
+  // the Sales Agent owner/lead predicate in a small, independently parameterized query
+  // and ensures a newly created customer remains visible even before it has a lead.
+  const visible = await many(`SELECT c.id FROM contacts c WHERE ${where.join(' AND ')}
+    ORDER BY LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,'')),c.id LIMIT 500`,params);
+  if(!visible.length)return res.json({count:0,contacts:[]});
+  const contacts = await many(`SELECT c.*,b.name AS owner_name,co.name AS company_name_resolved,lc.lead_count
+    FROM contacts c
+    LEFT JOIN brokers b ON b.id=c.owner_id
+    LEFT JOIN companies co ON co.id=c.company_id
+    LEFT JOIN LATERAL (SELECT COUNT(*)::int AS lead_count FROM leads l WHERE l.contact_id=c.id) lc ON TRUE
+    WHERE c.id=ANY($1::uuid[])
+    ORDER BY LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,'')),c.id`,[visible.map(x=>x.id)]);
   res.json({ count: contacts.length, contacts });
 });
 
@@ -369,10 +378,15 @@ r.get('/crm/leads/:id', async (req, res) => {
     LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN listings x ON x.id=l.listing_id WHERE l.id=$1`,[req.params.id]);
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
   if (!canReadLead(req.broker,lead)) return res.status(403).json({ error:'Lead is outside your permitted scope' });
-  const activities = await many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name FROM activities a
-    JOIN brokers b ON b.id=a.owner_id JOIN brokers x ON x.id=a.created_by
-    WHERE a.lead_id=$1 ORDER BY COALESCE(a.due_at,a.created_at) DESC`,[lead.id]);
-  res.json({ lead, activities, qualificationGuidance: QUALIFICATION_GUIDANCE[lead.temperature] });
+  const [activities,stageHistory] = await Promise.all([
+    many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name FROM activities a
+      JOIN brokers b ON b.id=a.owner_id JOIN brokers x ON x.id=a.created_by
+      WHERE a.lead_id=$1 ORDER BY COALESCE(a.due_at,a.created_at) DESC`,[lead.id]),
+    many(`SELECT h.from_stage,h.to_stage,h.reason_code,h.changed_at,b.name AS changed_by_name
+      FROM lead_stage_history h JOIN brokers b ON b.id=h.changed_by
+      WHERE h.lead_id=$1 ORDER BY h.changed_at`,[lead.id])
+  ]);
+  res.json({ lead, activities, stageHistory, qualificationGuidance: QUALIFICATION_GUIDANCE[lead.temperature] });
 });
 
 async function insertCapturedLead(b, actorId, budget, client) {

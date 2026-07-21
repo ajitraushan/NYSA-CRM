@@ -16,6 +16,15 @@ const STATUSES = ['Available','Reserved','Under offer','Closed'];
 const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
 const ROLES = { admin:'Admin', internal_broker:'Internal Broker', partner_broker:'Partner Broker', viewer:'Viewer' };
 const LEAD_STAGES = ['New','Contacted','Qualified','Viewing','Negotiation','Won','Lost'];
+const LEAD_LIFECYCLE_STAGES = [
+  {stage:'Customer',label:'Customer'},
+  {stage:'New',label:'Lead'},
+  {stage:'Contacted',label:'Contacted'},
+  {stage:'Qualified',label:'Qualified'},
+  {stage:'Viewing',label:'Viewing'},
+  {stage:'Negotiation',label:'Negotiation'},
+  {stage:'Won',label:'Won'}
+];
 const LEAD_SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'];
 const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
 const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
@@ -485,10 +494,21 @@ async function openNewLeadForm(preselectedCustomerId=null) {
   });
 }
 
+function leadLifecycleHTML(lead,stageHistory=[]){
+  const activeIndex=LEAD_LIFECYCLE_STAGES.findIndex(step=>step.stage===lead.stage),isLost=lead.stage==='Lost';
+  const reached=new Set(['Customer','New',...(stageHistory||[]).map(change=>change.toStage).filter(Boolean)]);
+  if(!isLost&&activeIndex>=0)for(let i=0;i<=activeIndex;i++)reached.add(LEAD_LIFECYCLE_STAGES[i].stage);
+  const steps=LEAD_LIFECYCLE_STAGES.map((step,index)=>{
+    const current=!isLost&&step.stage===lead.stage,complete=!current&&reached.has(step.stage);
+    return `<li class="lead-lifecycle-step ${current?'current':complete?'complete':'future'}" ${current?'aria-current="step"':''}><span>${index+1}</span><b>${esc(step.label)}</b></li>`;
+  }).join('');
+  return `<section class="lead-lifecycle" aria-label="Lead lifecycle"><div class="lead-lifecycle-heading"><div><span class="eyebrow">SELECTED LEAD LIFECYCLE</span><h3>${esc(lead.title)}</h3></div><p>One customer may have several leads, and each lead can be at a different stage.</p></div><div class="lead-lifecycle-track"><ol>${steps}</ol><div class="lead-lifecycle-lost ${isLost?'current':'future'}" ${isLost?'aria-current="step"':''}><span>!</span><b>Lost</b><small>Separate terminal outcome</small></div></div></section>`;
+}
+
 async function openLead(id) {
-  let lead, activities, qualificationGuidance, staff, teams, listings, consent;
+  let lead, activities, stageHistory, qualificationGuidance, staff, teams, listings, consent;
   try {
-    [{ lead, activities, qualificationGuidance }, { staff }, { teams }, { listings }] = await Promise.all([
+    [{ lead, activities, stageHistory, qualificationGuidance }, { staff }, { teams }, { listings }] = await Promise.all([
       api('/crm/leads/' + id),api('/crm/staff'),api('/crm/teams'),api('/listings?sort=newest')]);
   } catch(err) { return toast(err.message); }
   try{consent=await api(`/crm/contacts/${lead.contactId}/consent`);}catch{consent={effectiveConsent:false,restricted:false};}
@@ -497,6 +517,7 @@ async function openLead(id) {
   const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button>
     <div class="detail-head"><div><div class="eyebrow">${esc(lead.businessType)} LEAD · ${esc(lead.source)}</div><h2>${esc(lead.contactName)}</h2><p>${esc(lead.title)}</p></div><span class="lead-temp temp-${esc(lead.temperature.toLowerCase())}">${esc(lead.temperature)}</span></div>
     <div class="contact-actions">${contactLinks}<button class="btn btn-sm" id="lead-customer-record">Open customer record</button>${!consent.effectiveConsent&&!consent.restricted?'<span class="tool-note" style="margin:6px 0">No effective marketing consent</span>':''}</div>
+    ${leadLifecycleHTML(lead,stageHistory)}
     <div class="kv-grid"><div><b>Phone</b>${esc(lead.contactPhone||'—')}<br><small>${esc(lead.phoneStatus||'unverified')}</small></div><div><b>Email</b>${esc(lead.contactEmail||'—')}<br><small>${esc(lead.emailStatus||'unverified')}</small></div><div><b>Preferred channel</b>${esc(lead.preferredChannel||'—')}</div><div><b>Customer address</b>${esc(lead.contactAddress||'Not recorded')}</div>
     <div><b>Owner</b>${esc(lead.assignedToName||'Unassigned')}</div><div><b>Team</b>${esc(lead.assignedTeamName||'—')}</div><div><b>Next follow-up</b>${fmtDate(lead.nextFollowUpAt)}</div>
     <div><b>Budget</b>${lead.budgetMin||lead.budgetMax ? `${lead.budgetMin?fmtPrice(lead.budgetMin):'Any'} – ${lead.budgetMax?fmtPrice(lead.budgetMax):'Any'}`:'—'}</div><div><b>Original property enquiry</b>${esc(lead.listingProject||'No specific property linked')}</div><div><b>Assignment</b>${esc((lead.assignmentStatus||'assigned').replace('_',' '))}${lead.assignmentDueAt?'<br><small>'+fmtDate(lead.assignmentDueAt)+'</small>':''}</div><div class="span3"><b>Requirements</b>${esc(lead.propertyRequirements||'—')}</div></div>
