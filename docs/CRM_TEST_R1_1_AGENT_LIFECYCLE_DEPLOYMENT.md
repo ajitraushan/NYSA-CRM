@@ -9,18 +9,20 @@ Target: `https://crm-test.nysarealty.com/` only. Production deployment is not au
 - Agreed requirement: The Sales Agent dashboard shows Lead/New, Contacted, Qualified,
   Viewing, Negotiation and Won current-stage counts, with Lost separate. Counts preserve
   Agent scope and dashboard filters, include zero-count stages and drill to the exact leads
-  with stage-appropriate actions. Customer is contextual and is not a lead stage.
+  with stage-appropriate actions. Customer is contextual and is not a lead stage. A successful
+  stage change from drill-down must automatically refresh the filtered dashboard without a
+  manual browser refresh.
 - Status: Implemented and automatically tested locally. CRM Test deployment, functional
   retest and explicit NYSA owner confirmation remain pending; the finding is open.
 - Retest condition: Reconcile every count and distinct-customer context, drill each non-zero
-  stage, open each action, preserve filters, prove cross-Agent denial and confirm desktop and
-  narrow-width layouts on CRM Test.
+  stage, change a lead stage and confirm the aggregate refreshes immediately, preserve filters,
+  prove cross-Agent denial and confirm desktop and narrow-width layouts on CRM Test.
 
 ## Package
 
-- Source commit: `4c8266b`
-- File: `nysa-core-r1-1-enh-dash-001-crm-test-4c8266b.zip`
-- SHA-256: `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`
+- Source commit: `fdc351f`
+- File: `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-fdc351f.zip`
+- SHA-256: `e2a218bb2d228faa0a2fdf09eac8e012ef286f3b12fc19f6b3f1f4c599a4ab50`
 - Migration: none
 - Dependency change: none
 - Environment-variable change: none
@@ -31,77 +33,70 @@ in cPanel Terminal. If an expected result is absent, stop and do not copy files.
 ## 1. Verify and extract
 
 ```bash
-sha256sum /home/nysareal/nysa-core-r1-1-enh-dash-001-crm-test-4c8266b.zip
+sha256sum /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-fdc351f.zip
 ```
 
 Expected SHA-256:
 
 ```text
-39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf
+e2a218bb2d228faa0a2fdf09eac8e012ef286f3b12fc19f6b3f1f4c599a4ab50
 ```
 
 ```bash
-mkdir -p /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage
+mkdir -p /home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage
 
 unzip -q -o \
-  /home/nysareal/nysa-core-r1-1-enh-dash-001-crm-test-4c8266b.zip \
-  -d /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage
+  /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-fdc351f.zip \
+  -d /home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage
 ```
 
 ## 2. Validate the staged source
 
 ```bash
-STAGE_DIR="/home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage"
+STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage"
 NODE_BIN="/home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/bin/node"
 
+"$NODE_BIN" --check "$STAGE_DIR/public/app.js"
 "$NODE_BIN" --check "$STAGE_DIR/public/dashboard-ui.js"
-"$NODE_BIN" --check "$STAGE_DIR/src/dashboard-domain.js"
-"$NODE_BIN" --check "$STAGE_DIR/src/routes/dashboards.js"
 
 printf '%s\n' \
-  '68fceca7e590f98c565fef0e0ba97eb29de0a631914a7e5591c08251432e727a  /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage/public/dashboard-ui.js' \
-  '6d269394c911a6beb5bcd3a704eb3ea980aa1aa41eae9b27697b69e4f7ffef60  /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage/public/index.html' \
-  'a1fbb735364f599c6d2bf0413198baf94b33a729428c453cb09f97e8b3cc9ae5  /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage/src/dashboard-domain.js' \
-  '2b97b8721c96a7c88adf8942a9dddf53590615a59e61ae45e97b240f22951f47  /home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage/src/routes/dashboards.js' \
+  '3821916476253df8b3ecde91eebaea3e5cf09348a5c14ac12fa4e1d10046be77  /home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage/public/app.js' \
+  'd9f774bdc858f5361b7dac88c61ba0f72f48b10a6fd1b970586b2c0fe41300d0  /home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage/public/dashboard-ui.js' \
+  'db4080e1ff7c0c227b2c24c3dcb457d7bbd0fd2b9aa59e710e77897433425774  /home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage/public/index.html' \
   | sha256sum -c -
 ```
 
-All four files must report `OK`.
+All three files must report `OK`.
 
 ## 3. Back up and deploy only the changed files
 
 ```bash
 APP_ROOT="/home/nysareal/nysa-core-dashboard-dd6262a-stage"
-BACKUP_DIR="/home/nysareal/crm-backups/r1-1-enh-dash-before-4c8266b"
+BACKUP_DIR="/home/nysareal/crm-backups/r1-1-lifecycle-refresh-before-fdc351f"
 
-mkdir -p "$BACKUP_DIR/public" "$BACKUP_DIR/src/routes" "$BACKUP_DIR/test"
+mkdir -p "$BACKUP_DIR/public" "$BACKUP_DIR/test"
 
+cp -a "$APP_ROOT/public/app.js" "$BACKUP_DIR/public/app.js"
 cp -a "$APP_ROOT/public/dashboard-ui.js" "$BACKUP_DIR/public/dashboard-ui.js"
 cp -a "$APP_ROOT/public/index.html" "$BACKUP_DIR/public/index.html"
-cp -a "$APP_ROOT/src/dashboard-domain.js" "$BACKUP_DIR/src/dashboard-domain.js"
-cp -a "$APP_ROOT/src/routes/dashboards.js" "$BACKUP_DIR/src/routes/dashboards.js"
-cp -a "$APP_ROOT/test/dashboard-domain.test.js" "$BACKUP_DIR/test/dashboard-domain.test.js"
 cp -a "$APP_ROOT/test/dashboard-requirements.test.js" "$BACKUP_DIR/test/dashboard-requirements.test.js"
 ```
 
 ```bash
 APP_ROOT="/home/nysareal/nysa-core-dashboard-dd6262a-stage"
-STAGE_DIR="/home/nysareal/nysa-r1-1-enh-dash-4c8266b-stage"
+STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-fdc351f-stage"
 
+cp -a "$STAGE_DIR/public/app.js" "$APP_ROOT/public/app.js"
 cp -a "$STAGE_DIR/public/dashboard-ui.js" "$APP_ROOT/public/dashboard-ui.js"
 cp -a "$STAGE_DIR/public/index.html" "$APP_ROOT/public/index.html"
-cp -a "$STAGE_DIR/src/dashboard-domain.js" "$APP_ROOT/src/dashboard-domain.js"
-cp -a "$STAGE_DIR/src/routes/dashboards.js" "$APP_ROOT/src/routes/dashboards.js"
-cp -a "$STAGE_DIR/test/dashboard-domain.test.js" "$APP_ROOT/test/dashboard-domain.test.js"
 cp -a "$STAGE_DIR/test/dashboard-requirements.test.js" "$APP_ROOT/test/dashboard-requirements.test.js"
 
+cmp -s "$STAGE_DIR/public/app.js" "$APP_ROOT/public/app.js" && echo 'app.js MATCH'
 cmp -s "$STAGE_DIR/public/dashboard-ui.js" "$APP_ROOT/public/dashboard-ui.js" && echo 'dashboard-ui.js MATCH'
 cmp -s "$STAGE_DIR/public/index.html" "$APP_ROOT/public/index.html" && echo 'index.html MATCH'
-cmp -s "$STAGE_DIR/src/dashboard-domain.js" "$APP_ROOT/src/dashboard-domain.js" && echo 'dashboard-domain.js MATCH'
-cmp -s "$STAGE_DIR/src/routes/dashboards.js" "$APP_ROOT/src/routes/dashboards.js" && echo 'dashboards.js MATCH'
 ```
 
-All four `MATCH` messages are required.
+All three `MATCH` messages are required.
 
 ## 4. Restart and verify CRM Test
 
@@ -129,7 +124,7 @@ cd "$APP_ROOT"
 "$NODE_BIN" --test --test-isolation=none
 ```
 
-Expected: 155 tests, 155 pass, 0 fail.
+Expected: 156 tests, 156 pass, 0 fail.
 
 ## 5. Functional acceptance
 
@@ -143,9 +138,12 @@ Expected: 155 tests, 155 pass, 0 fail.
 5. Reconcile every displayed stage count against the exact Lead pipeline records.
 6. Select each non-zero count and confirm the modal lists only those exact leads.
 7. Use every displayed next-action button and confirm it opens the correct lead record.
-8. Apply period, source, campaign and stage filters and confirm counts and drill-down agree.
-9. Sign in as Sales Agent B and confirm Agent A's leads are absent.
-10. Confirm the lifecycle remains readable at desktop and narrow browser widths.
-11. Confirm the browser console and `stderr.log` contain no new error.
+8. From a non-zero stage, open a lead and change it to the next permitted stage. Without a
+   browser refresh, confirm the old count decreases, the new count increases, the stale
+   contributing-record list closes and the updated lead remains open.
+9. Close the lead and confirm the original period, source, campaign and stage filters remain.
+10. Sign in as Sales Agent B and confirm Agent A's leads are absent.
+11. Confirm the lifecycle remains readable at desktop and narrow browser widths.
+12. Confirm the browser console and `stderr.log` contain no new error.
 
 Do not close R1.1-UAT-030 until the NYSA owner explicitly confirms these CRM Test results.

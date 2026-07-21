@@ -7,6 +7,7 @@ the exact commit is approved for `main`, and the NYSA owner separately authorize
 
 ## Candidate identity
 
+- Status: Superseded by `R1.1-AMD-016 Revision 3`; do not deploy this production candidate.
 - Source commit: `4c8266b`
 - File: `nysa-core-r1-1-production-candidate-4c8266b.zip`
 - SHA-256: `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`
