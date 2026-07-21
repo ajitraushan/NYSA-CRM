@@ -3,7 +3,8 @@ import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS, ACTIVITY_TYPES,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
-  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues } from '../crm-domain.js';
+  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues,
+  activityStageTransition } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canAssignLead, leadScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
@@ -643,10 +644,16 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
       duration_seconds,follow_up_required,lead_stage_snapshot,qualification_snapshot)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null,b.durationSeconds??null,b.followUpRequired?1:0,lead.stage,lead.temperature],client);
-    const isContact=b.direction==='Outbound'&&['Call','Email','WhatsApp','Meeting'].includes(b.activityType);
+    const isContact=b.activityType==='Call'||b.direction==='Outbound'&&['Email','WhatsApp','Meeting'].includes(b.activityType),nextStage=activityStageTransition(lead.stage,b.activityType);
     await execute(`UPDATE leads SET next_follow_up_at=CASE WHEN $1::boolean THEN $2 ELSE next_follow_up_at END,
-      first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,updated_at=NOW() WHERE id=$4`,
-      [b.nextFollowUpAt!==undefined,b.nextFollowUpAt||null,isContact,lead.id],client);
+      first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,
+      stage=COALESCE($4,stage),updated_at=NOW() WHERE id=$5`,
+      [b.nextFollowUpAt!==undefined,b.nextFollowUpAt||null,isContact,nextStage,lead.id],client);
+    if(nextStage){
+      await execute(`INSERT INTO lead_stage_history(id,lead_id,from_stage,to_stage,reason_code,changed_by) VALUES($1,$2,$3,$4,$5,$6)`,
+        [uuid(),lead.id,lead.stage,nextStage,'call_activity_recorded',req.broker.id],client);
+      await audit('LeadStage',lead.id,'transitioned',req.broker.id,{from:lead.stage,to:nextStage,reason:'call_activity_recorded',activityId:id},client);
+    }
     await audit('Activity',id,'created',req.broker.id,{leadId:lead.id,type:row.activityType,firstContact:isContact},client);return row;
   });
   res.status(201).json(activity);

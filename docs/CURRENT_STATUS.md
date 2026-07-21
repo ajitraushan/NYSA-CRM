@@ -24,12 +24,16 @@
 - R1.1-AMD-011 Revision 1 corrects the Lead pipeline search wording. It now says
   `Search existing leads` and explains that a customer appears only after a lead exists;
   zero-lead customers remain in Customer Master and start their first lead there.
+- R1.1-AMD-012 / R1.1-UAT-026 makes a recorded Call an atomic first-contact event:
+  a selected lead still at New advances to Contacted, receives `first_contact_at`, stage
+  history and audit evidence in the same transaction. Calls never regress a lead already
+  at Contacted or later. The stage belongs to the lead, not the shared customer record.
 - R1.1-AMD-009 / R1.1-UAT-022 adds a visual tracker to every opened lead:
   Customer -> Lead -> Contacted -> Qualified -> Viewing -> Negotiation -> Won, with
   Lost shown as a separate terminal outcome. The selected lead's current stage is
   highlighted and the screen explains that one customer may have several leads at
   different stages.
-- All 143 automated tests pass. The corrections are being packaged for CRM Test deployment;
+- All 144 automated tests pass. The corrections are being packaged for CRM Test deployment;
   authenticated lead creation, Manager KYC queue/decision, visual lifecycle retest and
   explicit NYSA owner confirmation remain pending. No new finding is closed.
 - The only authorized deployment and retest target is

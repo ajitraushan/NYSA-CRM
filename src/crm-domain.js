@@ -29,6 +29,10 @@ export function validateLeadTransition(from, to) {
   return LEAD_TRANSITIONS[from].includes(to) ? null : `Lead cannot move from ${from} to ${to}`;
 }
 
+export function activityStageTransition(currentStage, activityType) {
+  return currentStage === 'New' && activityType === 'Call' ? 'Contacted' : null;
+}
+
 // Adds working minutes using a weekly calendar expressed in the calendar's UTC offset.
 // This keeps API and SLA-worker calculations deterministic without relying on host timezone.
 export function addBusinessMinutes(start, minutes, calendar = {}) {

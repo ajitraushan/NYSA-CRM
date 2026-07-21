@@ -715,6 +715,24 @@ release explicitly approves private video-file storage.
   exists and confirm zero leads, create Manoj's lead from Customer Master, then repeat the
   search and confirm that linked lead is returned. Explicit confirmation is required.
 
+#### Recorded first call advances the selected lead
+
+- Amendment ID: R1.1-AMD-012
+- Related UAT finding: R1.1-UAT-026 (a Call is recorded on a New lead but the selected
+  lead lifecycle remains at Lead/New instead of Contacted)
+- Agreed requirement: Recording a Call activity is evidence that first contact occurred.
+  When and only when the selected lead is still New, save the activity, first-contact time,
+  New-to-Contacted stage transition, stage-history row and audit evidence atomically. Never
+  regress Contacted, Qualified, Viewing, Negotiation, Won or Lost leads. The transition is
+  lead-specific because one customer may have several leads at different stages.
+- Status: Implemented locally with a deterministic transition rule and automated coverage.
+  CRM Test deployment, authenticated activity retest and explicit NYSA owner confirmation
+  remain pending; the finding is open.
+- Retest condition: On CRM Test, record a Call on a New lead and confirm the refreshed
+  stage selector and lifecycle tracker show Contacted and the activity/history remain linked.
+  Record another Call and confirm no duplicate stage transition occurs. Record a Call on a
+  Qualified lead and confirm it remains Qualified. Explicit confirmation is required.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

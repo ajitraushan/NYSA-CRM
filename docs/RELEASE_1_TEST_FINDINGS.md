@@ -2427,6 +2427,26 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   represented as a pipeline lead, create Manoj's first lead from Customer Master, and confirm
   the linked lead is then returned when searching Manoj. Explicit confirmation is required.
 
+### R1.1-UAT-026: Recorded first call does not advance the lead to Contacted
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Selected lead lifecycle and activity timeline
+- Amendment ID: R1.1-AMD-012
+- Related UAT finding: R1.1-UAT-026
+- Agreed requirement: A recorded Call against a lead still at New must atomically set the
+  lead—not the shared customer—to Contacted, record first contact, append stage history and
+  retain audit evidence. Later-stage and terminal leads must never be moved backwards by a
+  Call, and repeated calls must not create repeated stage transitions.
+- Status: Open. CRM Test shows Manoj's Call in the activity timeline while the selected lead
+  remains New. The route records the activity but previously did not update `leads.stage`.
+  The correction is implemented locally; deployment, retest and explicit confirmation are
+  pending. The already recorded Manoj call predates the correction and can be reconciled by
+  the authorized user selecting Contacted once; the correction governs newly recorded calls.
+- Retest condition: Record a Call on a new test lead and confirm New becomes Contacted with
+  history/audit evidence. Repeat the Call and test a Qualified lead to confirm neither is
+  moved incorrectly. Explicit user confirmation is required before closure.
+
 ## Review discipline
 
 For every new test observation:

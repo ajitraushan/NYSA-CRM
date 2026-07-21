@@ -2,12 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { QUALIFICATION_GUIDANCE, JOB_ROLES, parseBusinessAmount, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
-  validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue } from '../src/crm-domain.js';
+  validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue,
+  activityStageTransition } from '../src/crm-domain.js';
 import { normalizeDelimitedValues } from '../src/crm-domain.js';
 
 test('preferred areas normalize comma-separated values and remove case-insensitive duplicates',()=>{
   assert.deepEqual(normalizeDelimitedValues(' Dubai Marina, Palm Jumeirah, dubai marina, Downtown '),['Dubai Marina','Palm Jumeirah','Downtown']);
   assert.deepEqual(normalizeDelimitedValues(['Dubai Hills',' Arabian Ranches ','Dubai Hills']),['Dubai Hills','Arabian Ranches']);
+});
+
+test('recorded calls advance only new leads to Contacted',()=>{
+  assert.equal(activityStageTransition('New','Call'),'Contacted');
+  assert.equal(activityStageTransition('Contacted','Call'),null);
+  assert.equal(activityStageTransition('Qualified','Call'),null);
+  assert.equal(activityStageTransition('New','Note'),null);
 });
 
 test('qualification guidance gives Hot leads the fastest response target', () => {

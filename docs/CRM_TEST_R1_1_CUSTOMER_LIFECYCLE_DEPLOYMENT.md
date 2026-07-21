@@ -17,6 +17,8 @@ Production deployment is not authorized by this package.
   lead creation, without repeated customer identity input.
 - R1.1-AMD-011 Revision 1 / R1.1-UAT-025: accurate existing-lead search wording and
   direction to Customer Master for a customer's first lead.
+- R1.1-AMD-012 / R1.1-UAT-026: atomic New-to-Contacted transition, first-contact time,
+  stage history and audit evidence when a Call activity is recorded.
 
 Both findings remain open after deployment. Closure requires successful CRM Test retest
 and explicit confirmation from the NYSA owner.
@@ -74,6 +76,10 @@ Revision 1 package, restart fully and repeat the complete customer-scope retest.
 9. Confirm the pipeline says `Search existing leads`, not `Lead or customer name`. Search
    Manoj before and after creating the first lead from Customer Master and confirm only the
    linked lead appears in the pipeline.
+10. Record a Call on a New test lead and confirm it advances to Contacted. Record another
+    Call and confirm no duplicate transition; record a Call on a Qualified lead and confirm
+    it remains Qualified. For Manoj's call recorded before this correction, select Contacted
+    once as the authorized reconciliation and retain the original Call activity evidence.
 
 For each correction record the Amendment ID, related UAT finding, agreed requirement,
 deployment/retest status and evidence satisfying the retest condition. Do not close either
