@@ -67,7 +67,8 @@ privacy/compliance review and implementation approval remain separate gates.
   actions remain separately planned.
 - Status: Implemented locally and covered by the complete 155-test suite. CRM Test deployment,
   visual/functional retest and explicit owner confirmation remain pending; `R1.1-UAT-030` is
-  open.
+  open. Revision 1 places the strip at the top of My dashboard, before filters and KPI cards,
+  and excludes it from My Tasks.
 - Acceptance condition: With controlled Agent A/Agent B fixtures, reconcile every stage count,
   prove cross-agent denial, drill each count to the exact records, execute each available next
   action and confirm the component refreshes without losing filter or breadcrumb context.

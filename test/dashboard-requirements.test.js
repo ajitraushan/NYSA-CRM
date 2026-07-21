@@ -145,6 +145,9 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.match(routes,/const lifecycle=AGENT_LIFECYCLE_STAGES\.find/);
   assert.match(routes,/l\.stage='\$\{lifecycle\.stage\}'/);
   assert.match(ui,/result\.stageAction/);
+  assert.match(ui,/id="dashboard-lifecycle"[\s\S]*id="dashboard-filters"[\s\S]*id="dashboard-kpis"/);
+  assert.match(ui,/dashboard-lifecycle'\)\.innerHTML=likelyType==='agent'&&!showingTasks\?agentLifecycle\(data\):''/);
+  assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
 });

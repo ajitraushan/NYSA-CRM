@@ -134,16 +134,18 @@ Expected: 155 tests, 155 pass, 0 fail.
 ## 5. Functional acceptance
 
 1. Sign in as Sales Agent A and select a period containing controlled leads at every stage.
-2. Confirm the visual sequence is Lead, Contacted, Qualified, Viewing, Negotiation, Won,
+2. Confirm the lifecycle is the first operational component below the My dashboard tabs,
+   before filters and KPI cards. Confirm it is absent from My Tasks.
+3. Confirm the visual sequence is Lead, Contacted, Qualified, Viewing, Negotiation, Won,
    with Lost separate and every zero-count stage still visible.
-3. Confirm the customer context is a distinct-customer count; two leads for one customer
+4. Confirm the customer context is a distinct-customer count; two leads for one customer
    increase lead counts by two but customer count by one.
-4. Reconcile every displayed stage count against the exact Lead pipeline records.
-5. Select each non-zero count and confirm the modal lists only those exact leads.
-6. Use every displayed next-action button and confirm it opens the correct lead record.
-7. Apply period, source, campaign and stage filters and confirm counts and drill-down agree.
-8. Sign in as Sales Agent B and confirm Agent A's leads are absent.
-9. Confirm the lifecycle remains readable at desktop and narrow browser widths.
-10. Confirm the browser console and `stderr.log` contain no new error.
+5. Reconcile every displayed stage count against the exact Lead pipeline records.
+6. Select each non-zero count and confirm the modal lists only those exact leads.
+7. Use every displayed next-action button and confirm it opens the correct lead record.
+8. Apply period, source, campaign and stage filters and confirm counts and drill-down agree.
+9. Sign in as Sales Agent B and confirm Agent A's leads are absent.
+10. Confirm the lifecycle remains readable at desktop and narrow browser widths.
+11. Confirm the browser console and `stderr.log` contain no new error.
 
 Do not close R1.1-UAT-030 until the NYSA owner explicitly confirms these CRM Test results.

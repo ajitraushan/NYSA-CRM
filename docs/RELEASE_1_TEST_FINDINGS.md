@@ -2535,6 +2535,9 @@ For every new test observation:
 - Status: Open. Implemented locally and all 155 automated tests pass. CRM Test deployment,
   visual/functional reconciliation and explicit NYSA owner confirmation remain pending. No
   migration, dependency or environment-variable change is required.
+- Revision 1: The owner clarified that the lifecycle strip belongs at the top of My dashboard.
+  It is now immediately below the dashboard tabs, before filters and KPI cards, is not repeated
+  in the lower panel grid and is excluded from My Tasks.
 - Retest condition: On CRM Test, use controlled Agent A and Agent B records spanning every
   lifecycle stage, including multiple leads for one customer. Reconcile stage and customer
   counts, drill each non-zero count to the exact leads, verify each action opens the intended
