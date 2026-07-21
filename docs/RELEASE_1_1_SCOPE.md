@@ -971,11 +971,15 @@ Approved source or import
   drill-down must automatically re-query and redraw the originating dashboard under the same
   filters, close the stale contributing-record list and keep the updated lead open. A manual
   browser refresh must not be required.
+- Revision 4 fresh-read requirement: Operational API reads must not reuse cached JSON, and the
+  post-transition dashboard request must be uniquely cache-busted. Both permitted forward and
+  backward stage movements must immediately reconcile the displayed aggregate to current data.
 - Retest condition: On CRM Test, sign in as a controlled Sales Agent with leads distributed
   across every stage and at least two leads for one customer. Confirm every stage count and
   the distinct-customer context, drill every non-zero stage to its exact leads, use each
-  displayed action to open the correct governed lead record, change a stage from a drill-down
-  lead and confirm the lifecycle counts update immediately, and confirm the selected period,
+  displayed action to open the correct governed lead record, move a stage forward and backward
+  from a drill-down lead and confirm the lifecycle counts update immediately after both changes,
+  and confirm the selected period,
   source, campaign and stage filters remain effective. Sign in as a different Agent and prove
   the first Agent's leads are absent. Retest desktop and narrow widths and explicitly confirm.
 

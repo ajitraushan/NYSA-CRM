@@ -42,11 +42,12 @@
   the lifecycle drill-down left the aggregate stale. A successful stage update now closes the
   stale contributing-record list and automatically redraws the dashboard with the original
   filters while keeping the updated lead open. The browser bundle key is advanced again.
-- Packages `47a2c10`, `7b2e1a0`, `4c8266b`, `fdc351f` and `773622f` are superseded and must not
-  be deployed. Revision 3 source commit `eee18a7` is packaged as
-  `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-eee18a7.zip`, SHA-256
-  `8e4ee8d0bf5326bd242fa990b7f1ed76c35c1047d804f414e2ef283412709837`.
-  It is authorized for CRM Test only; production remains on hold.
+- `R1.1-AMD-016 Revision 4` follows CRM Test evidence that a backward Viewing-to-Qualified
+  transition updated the underlying lead but not the aggregate. Operational API reads now bypass
+  caches and the post-transition dashboard request receives a unique refresh key, covering both
+  permitted forward and backward movements.
+- All earlier lifecycle packages through `eee18a7` are superseded and must not be deployed. A
+  Revision 4 CRM Test package is required; production remains on hold.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 

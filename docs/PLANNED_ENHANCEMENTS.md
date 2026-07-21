@@ -69,7 +69,8 @@ privacy/compliance review and implementation approval remain separate gates.
   visual/functional retest and explicit owner confirmation remain pending; `R1.1-UAT-030` is
   open. Revision 1 places the strip at the top of My dashboard, before filters and KPI cards,
   and excludes it from My Tasks. Revision 3 automatically refreshes the originating filtered
-  dashboard after a successful stage change from lifecycle drill-down.
+  dashboard after a successful stage change from lifecycle drill-down. Revision 4 forces a
+  current-data read for both forward and backward movements instead of accepting cached counts.
 - Acceptance condition: With controlled Agent A/Agent B fixtures, reconcile every stage count,
   prove cross-agent denial, drill each count to the exact records, execute each available next
   action and confirm the component refreshes without losing filter or breadcrumb context.

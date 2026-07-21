@@ -2544,10 +2544,15 @@ For every new test observation:
 - Revision 3: After a successful stage change opened from a lifecycle drill-down, automatically
   re-query and redraw the originating dashboard with its selected filters. Close the stale
   contributing-record list and keep the updated lead open; no manual browser refresh is required.
+- Revision 4: CRM Test confirmed that the lead itself moved from Viewing back to Qualified while
+  the aggregate retained its prior counts. Operational API reads must bypass browser caches, and
+  the post-transition dashboard request must use a unique refresh key so permitted forward and
+  backward movements both redraw from current database state.
 - Retest condition: On CRM Test, use controlled Agent A and Agent B records spanning every
   lifecycle stage, including multiple leads for one customer. Reconcile stage and customer
   counts, drill each non-zero count to the exact leads, verify each action opens the intended
-  governed lead, change a lead stage from the drill-down and confirm the filtered lifecycle
-  counts refresh immediately without a browser refresh, preserve the selected period/source/
+  governed lead, move a lead forward and then backward from the drill-down and confirm the
+  filtered lifecycle counts refresh immediately after both changes without a browser refresh,
+  preserve the selected period/source/
   campaign/stage filters, prove cross-Agent denial, and confirm responsive presentation.
   Explicit user confirmation is required before closure.

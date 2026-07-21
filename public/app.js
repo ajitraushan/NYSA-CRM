@@ -40,6 +40,7 @@ const canWriteCrm = () => ME && !['director','accountant'].includes(ME.jobRole);
 async function api(path, opts = {}) {
   const res = await fetch('/api' + path, {
     ...opts,
+    cache: opts.cache || 'no-store',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}), ...(opts.headers || {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined
