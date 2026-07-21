@@ -1,5 +1,12 @@
 # NYSA CORE Current Status
 
+## Release 1.1 commercial-fields acceptance — 2026-07-21
+
+- R1.1-AMD-002 / R1.1-UAT-001 business-friendly inventory commercial fields were tested
+  on CRM Test and explicitly accepted by the NYSA owner.
+- R1.1-UAT-001 is closed. This acceptance does not close any unrelated Release 1.1
+  finding or amendment.
+
 ## Release 1.1 configurable listing approval and session clarity — 2026-07-21
 
 - The Listing Executive manual-listing submission and responsible-Manager approval path

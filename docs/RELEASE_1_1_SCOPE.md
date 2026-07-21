@@ -577,8 +577,8 @@ release explicitly approves private video-file storage.
   Release 4. Buyer Funding Method and inventory Payment Plan remain distinct business
   concepts but must use governed values, aligned layout and an explicit compatibility
   mapping for matching and proposals rather than unrelated labels.
-- Status: Implemented locally and verified by the 116-test automated suite. CRM Test
-  deployment, functional retest and explicit user confirmation remain pending.
+- Status: Deployed to CRM Test, functionally tested and explicitly accepted by the NYSA
+  owner on 2026-07-21. R1.1-UAT-001 is closed; R1.1-AMD-002 is accepted.
 - Retest condition: On CRM Test, enter every supported amount notation in Asking Price,
   Reference Price and buyer Minimum / Maximum Budget and confirm identical normalized
   values and previews. Confirm invalid, negative and reversed values are rejected.
