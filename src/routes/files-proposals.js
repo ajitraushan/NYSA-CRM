@@ -15,7 +15,8 @@ import { mediaApprovalPlan,normalizeMediaGovernance,validateMediaBatch,validateM
 const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const imageTypes=['image/jpeg','image/png','image/webp','application/pdf'];
-const propertyMediaTypes=[...imageTypes,'video/mpeg'];
+const propertyVideoTypes=['video/mpeg','video/quicktime'];
+const propertyMediaTypes=[...imageTypes,...propertyVideoTypes];
 const documentTypes=[...imageTypes,'text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const fallbackDocumentTypeCodes=['customer_requirement','mortgage_pre_approval','offer_letter','signed_form','property_document','correspondence','marketing_agreement','identity_document','financial_document','other'];
 const admin=(req,res)=>req.broker.role==='admin'||(req.broker.jobRole==='admin_assistant'&&!/\/(approve|activate)$/.test(req.path))||(res.status(403).json({error:'Administrator access required for approval and activation'}),false);
@@ -52,9 +53,10 @@ r.get('/crm/listings/:id/media',async(req,res)=>{const listing=await listingMedi
 r.post('/crm/listings/:id/media',async(req,res)=>{
   const listing=await listingMediaAccess(req,req.params.id,'write');if(listing===null)return res.status(404).json({error:'Listing not found'});if(listing===false)return res.status(403).json({error:'Only the listing owner or authorized administrator can upload media'});
   const b=req.body||{};if(!['image','floor_plan','brochure','video'].includes(b.mediaKind)||!clean(b.title)||!clean(b.source))return res.status(400).json({error:'mediaKind, title and source are required'});
-  if((b.mediaKind==='video')!==(b.mediaType==='video/mpeg'))return res.status(400).json({error:'Property video must use the MPEG kind and an MPEG file (.mpeg or .mpg)'});
+  const isVideo=propertyVideoTypes.includes(b.mediaType);
+  if((b.mediaKind==='video')!==isVideo)return res.status(400).json({error:'Property video must use the video kind and a supported MPEG or MOV file (.mpeg, .mpg or .mov)'});
   const governance=normalizeMediaGovernance(b);if(governance.error)return res.status(400).json({error:governance.error});
-  const isImage=['image/jpeg','image/png','image/webp'].includes(b.mediaType),isVideo=b.mediaType==='video/mpeg',maxBytes=isImage?Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes):isVideo?Number(process.env.MAX_PROPERTY_VIDEO_BYTES||20971520):Number(process.env.MAX_MEDIA_BYTES||8388608);
+  const isImage=['image/jpeg','image/png','image/webp'].includes(b.mediaType),maxBytes=isImage?Number(process.env.MAX_PROPERTY_IMAGE_BYTES||PROPERTY_IMAGE_POLICY.maxBytes):isVideo?Number(process.env.MAX_PROPERTY_VIDEO_BYTES||20971520):Number(process.env.MAX_MEDIA_BYTES||8388608);
   const file=decodeAndValidateFile({...b,maxBytes,allowedTypes:propertyMediaTypes});if(file.error)return res.status(400).json({error:file.error});
   if(isImage){const dimensions=validatePropertyImage(file.buffer,b.mediaType);if(dimensions.error)return res.status(400).json({error:dimensions.error});}
   const duplicate=await one('SELECT id,file_name,title FROM property_media WHERE listing_id=$1 AND file_hash=$2',[listing.id,file.fileHash]);if(duplicate)return res.status(409).json({error:`Duplicate media file: ${file.fileName} matches the already uploaded file ${duplicate.fileName} (${duplicate.title}). Remove it from the selected upload before continuing.`});

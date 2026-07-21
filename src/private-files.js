@@ -8,6 +8,7 @@ const TYPES={
   'image/png':{extensions:['.png'],magic:b=>b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))},
   'image/webp':{extensions:['.webp'],magic:b=>b.subarray(0,4).toString()==='RIFF'&&b.subarray(8,12).toString()==='WEBP'},
   'video/mpeg':{extensions:['.mpeg','.mpg'],magic:b=>b.length>=4&&b[0]===0x00&&b[1]===0x00&&b[2]===0x01&&[0xba,0xb3].includes(b[3])},
+  'video/quicktime':{extensions:['.mov'],magic:b=>b.length>=12&&b.subarray(4,8).toString('ascii')==='ftyp'&&b.subarray(8,12).toString('ascii')==='qt  '},
   'application/pdf':{extensions:['.pdf'],magic:b=>b.subarray(0,5).toString()==='%PDF-'},
   'text/plain':{extensions:['.txt'],magic:b=>!b.subarray(0,1024).includes(0)},
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document':{extensions:['.docx'],magic:b=>b[0]===0x50&&b[1]===0x4b},

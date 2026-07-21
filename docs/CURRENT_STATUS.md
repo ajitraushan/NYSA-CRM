@@ -1,5 +1,16 @@
 # NYSA CORE Current Status
 
+## Release 1.1 iPhone MOV property-video support — 2026-07-21
+
+- R1.1-AMD-004 Revision 14 extends governed property-video upload to genuine QuickTime
+  `.mov` files commonly produced by iPhone, while retaining `.mpeg` and `.mpg` support.
+- MOV acceptance requires the `.mov` extension, `video/quicktime` declaration and a
+  QuickTime `ftyp`/`qt  ` file signature. Renamed or mismatched content is rejected.
+  The existing 20 MB cap, usage-rights evidence, duplicate hashing, optional Manager
+  approval policy, private storage and proposal-PDF exclusion remain unchanged.
+- The correction is implemented locally. CRM Test deployment, authenticated functional
+  retest and explicit NYSA owner confirmation remain pending; the finding is not closed.
+
 ## Release 1.1 commercial-fields acceptance — 2026-07-21
 
 - R1.1-AMD-002 / R1.1-UAT-001 business-friendly inventory commercial fields were tested

@@ -559,6 +559,27 @@ release explicitly approves private video-file storage.
   (or `0 pending`), then search and clear the search field and confirm the queue reloads.
   Explicit user confirmation is required before closure.
 
+#### Governed iPhone MOV property video
+
+- Amendment ID: R1.1-AMD-004 Revision 14
+- Related UAT finding: R1.1-UAT-020 (iPhone property videos commonly use QuickTime
+  `.mov`, which the governed property-video upload did not accept)
+- Agreed requirement: Property-video upload must retain `.mpeg` and `.mpg` and also
+  accept a genuine QuickTime `.mov` declared as `video/quicktime`. Acceptance must not
+  rely on the filename alone: the server must verify the QuickTime `ftyp` box and `qt  `
+  major brand. MOV uses the existing one-file-at-a-time 20 MB maximum, recorded usage
+  rights, duplicate-file hashing, private listing scope, maintained optional Manager
+  approval policy and audit trail. Property videos remain downloadable to authorized
+  staff and are not embedded in proposal PDFs.
+- Status: Implemented locally. CRM Test deployment, authenticated functional retest and
+  explicit NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, upload a genuine iPhone `.mov` of no more than 20 MB
+  and confirm it is retained against the listing under the maintained approval policy.
+  Confirm it appears as `Property video`, can be downloaded by authorized staff and is
+  excluded from proposal PDFs. Confirm an oversized MOV, a renamed non-MOV file and a
+  MOV with a mismatched extension or declared type are rejected. Explicit user
+  confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002
