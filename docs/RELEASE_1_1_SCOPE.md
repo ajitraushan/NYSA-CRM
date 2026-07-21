@@ -644,6 +644,43 @@ release explicitly approves private video-file storage.
   `stderr.log`; confirm related-lead visibility and cross-agent denial. Explicit user
   confirmation is required before closure.
 
+#### Sales Agent company-scope SQL correction
+
+- Amendment ID: R1.1-AMD-008 Revision 2
+- Related UAT finding: R1.1-UAT-023 (opening Create lead for an agent-owned customer
+  returned `Internal server error` while loading the lead form's permitted companies)
+- Agreed requirement: The parameterized Sales Agent company owner-or-related-lead
+  predicate must close every grouping before `GET /api/crm/companies` appends ordering.
+  All generated CRM scope predicates must have automated balanced-parenthesis coverage.
+  Customer KYC may remain unverified or pending review when a lead is created; the lead
+  still requires its existing complete contact, source, business, budget and area inputs.
+- Status: Implemented locally. CRM Test deployment, authenticated lead-creation retest and
+  explicit NYSA owner confirmation remain pending; the finding is open.
+- Retest condition: On CRM Test, fully replace the Node worker, sign in as Sales Agent Ajit,
+  open Create lead from the newly created unverified customer and confirm the form loads
+  without PostgreSQL `42601`. Save a valid lead and confirm exactly one lead is created and
+  linked to that customer. Confirm an unrelated company's data remains outside the agent's
+  lookup scope. Explicit user confirmation is required before closure.
+
+#### Manager customer KYC review queue and authority
+
+- Amendment ID: R1.1-AMD-010
+- Related UAT finding: R1.1-UAT-024 (an agent submitted customer KYC for Manager review,
+  but the Manager dashboard had no queue and the customer-owner check blocked review)
+- Agreed requirement: A Manager dashboard must show a distinct KYC reviews queue containing
+  only `pending_review` customers owned by active members of teams maintained by that
+  Manager. The queue must show customer, masked identity reference, expiry, team, owner and
+  waiting time, and open the customer for an audited decision. Customer owners may submit
+  masked KYC for review; only scoped Managers or Administrators may verify, reject or mark
+  it expired. KYC status does not block lead creation.
+- Status: Implemented locally. CRM Test deployment, authenticated cross-role retest and
+  explicit NYSA owner confirmation remain pending; the finding is open.
+- Retest condition: On CRM Test, have Ajit submit a customer as Pending review. Sign in as
+  Ajit's maintained Team Manager and confirm the item appears in KYC reviews and can be
+  opened and verified. Confirm it leaves the pending queue after the audited decision.
+  Confirm an unrelated Manager cannot see or decide it, and the agent cannot self-verify.
+  Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

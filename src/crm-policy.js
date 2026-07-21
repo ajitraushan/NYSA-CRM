@@ -88,6 +88,11 @@ export function contactScopeSql(alias, broker, params = []) {
   const id = bind(params, broker.id);
   if (broker.jobRole === 'manager') {
     return { clause:`(${alias}.owner_id=${id} OR EXISTS (
+      SELECT 1 FROM team_memberships member
+      JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
+      WHERE member.broker_id=${alias}.owner_id AND member.ends_at IS NULL
+        AND reviewer.broker_id=${id} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL
+    ) OR EXISTS (
       SELECT 1 FROM leads sl JOIN team_memberships tm ON tm.team_id=sl.assigned_team_id
       WHERE sl.contact_id=${alias}.id AND tm.broker_id=${id} AND tm.membership_role='manager' AND tm.ends_at IS NULL))`, params };
   }
@@ -107,5 +112,5 @@ export function companyScopeSql(alias, broker, params = []) {
   }
   return { clause:`(${alias}.owner_id=${id} OR EXISTS (
     SELECT 1 FROM contacts sc JOIN leads sl ON sl.contact_id=sc.id
-    WHERE sc.company_id=${alias}.id AND (sl.assigned_to=${id} OR sl.created_by=${id}))`, params };
+    WHERE sc.company_id=${alias}.id AND (sl.assigned_to=${id} OR sl.created_by=${id})))`, params };
 }

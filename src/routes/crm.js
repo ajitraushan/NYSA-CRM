@@ -216,14 +216,40 @@ r.get('/crm/customers/:id',async(req,res)=>{
   const customer=await one(`SELECT c.*,co.name AS company_name_resolved FROM contacts c LEFT JOIN companies co ON co.id=c.company_id WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
   const allLeads=await many(`SELECT id,title,business_type,stage,temperature,assigned_to,assigned_team_id,created_by,created_at FROM leads WHERE contact_id=$1 ORDER BY created_at DESC`,[customer.id]);
-  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id);
+  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id),canReviewKyc=isManager(req.broker);
   const [roles,channels,consent,documents]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
     one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
-    canMaintain?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([])
+    canMaintain||canReviewKyc?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([])
   ]);
-  res.json({customer,roles,channels,leads,documents,canMaintain,effectiveConsent:Boolean(consent?.effectiveConsent),restricted:Boolean(customer.doNotContact)});
+  res.json({customer,roles,channels,leads,documents,canMaintain,canReviewKyc,effectiveConsent:Boolean(consent?.effectiveConsent),restricted:Boolean(customer.doNotContact)});
+});
+
+r.get('/crm/kyc-review-queue',async(req,res)=>{
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for KYC reviews'});
+  const page=Math.max(1,Number.parseInt(req.query.page,10)||1),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||20));
+  const params=[],where=["c.archived_at IS NULL","c.kyc_status='pending_review'"];
+  if(req.broker.role!=='admin'){
+    params.push(req.broker.id);
+    where.push(`EXISTS (SELECT 1 FROM team_memberships member
+      JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
+      WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
+        AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL)`);
+  }
+  if(clean(req.query.q)){
+    params.push(`%${clean(req.query.q)}%`);
+    where.push(`(c.full_name ILIKE $${params.length} OR COALESCE(c.email,'') ILIKE $${params.length} OR COALESCE(c.phone,'') ILIKE $${params.length} OR COALESCE(owner.name,'') ILIKE $${params.length} OR COALESCE(t.name,'') ILIKE $${params.length})`);
+  }
+  const from=`FROM contacts c LEFT JOIN brokers owner ON owner.id=c.owner_id
+    LEFT JOIN team_memberships member_team ON member_team.broker_id=c.owner_id AND member_team.ends_at IS NULL
+    LEFT JOIN teams t ON t.id=member_team.team_id WHERE ${where.join(' AND ')}`;
+  const countRow=await one(`SELECT COUNT(DISTINCT c.id)::int AS count ${from}`,params);
+  params.push(pageSize,(page-1)*pageSize);
+  const kycReviews=await many(`SELECT DISTINCT c.id,c.full_name,c.email,c.phone,c.id_document_type,c.id_document_last4,
+    c.id_document_expiry,c.kyc_status,c.kyc_notes,c.updated_at,owner.name AS owner_name,t.name AS team_name
+    ${from} ORDER BY c.updated_at ASC,c.id LIMIT $${params.length-1} OFFSET $${params.length}`,params);
+  res.json({count:Number(countRow?.count||0),page,pageSize,kycReviews});
 });
 
 r.post('/crm/contacts', async (req, res) => {
@@ -316,14 +342,16 @@ r.patch('/crm/contacts/:id', async (req, res) => {
 });
 
 r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
-  const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
+  const scopeParams=[req.params.id],scope=contactScopeSql('c',req.broker,scopeParams);
+  const contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!contact)return res.status(404).json({error:'Contact not found'});
-  if(!canWriteCrm(req.broker)||(req.broker.role!=='admin'&&contact.ownerId!==req.broker.id))return res.status(403).json({error:'Only the contact owner or an administrator can maintain KYC details'});
+  const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id),canReview=isManager(req.broker);
+  if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the contact owner or an authorized manager can maintain KYC details'});
   const b=req.body||{},type=clean(b.idDocumentType)||null,last4=clean(b.idDocumentLast4)?.toUpperCase()||null,status=clean(b.kycStatus)||'unverified';
   if(type&&!['passport','emirates_id'].includes(type))return res.status(400).json({error:'ID type must be Passport or Emirates ID'});
   if(last4&&!/^[A-Z0-9]{4}$/.test(last4))return res.status(400).json({error:'Record only the final four letters or digits of the ID; never enter the full ID number'});
   if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
-  if(status==='verified'&&!(req.broker.role==='admin'||isManager(req.broker)))return res.status(403).json({error:'Manager or administrator approval is required to mark KYC verified'});
+  if(['verified','expired','rejected'].includes(status)&&!canReview)return res.status(403).json({error:'Manager or administrator approval is required for this KYC decision'});
   if(['pending_review','verified'].includes(status)&&(!type||!last4||!b.idDocumentExpiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
   const row=await one(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
     kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5::uuid ELSE NULL::uuid END,

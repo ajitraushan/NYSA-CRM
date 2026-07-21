@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  leadScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql } from '../src/crm-policy.js';
+  leadScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -80,6 +80,13 @@ test('Sales Agents can list customers they own or serve through a scoped lead',(
   assert.match(contact.clause,/sl\.contact_id=c\.id/);
   assert.match(contact.clause,/sl\.assigned_to=\$1 OR sl\.created_by=\$1/);
   assert.equal((contact.clause.match(/\(/g)||[]).length,(contact.clause.match(/\)/g)||[]).length,'Sales Agent contact scope SQL must have balanced parentheses');
+});
+
+test('generated CRM visibility predicates keep balanced SQL parentheses',()=>{
+  const scopes=[leadScopeSql('l',agent,[]),leadScopeSql('l',manager,[]),contactScopeSql('c',agent,[]),contactScopeSql('c',manager,[]),companyScopeSql('c',agent,[]),companyScopeSql('c',manager,[]),teamScopeSql('t',manager,[])];
+  for(const scope of scopes)assert.equal((scope.clause.match(/\(/g)||[]).length,(scope.clause.match(/\)/g)||[]).length,scope.clause);
+  assert.match(companyScopeSql('c',agent,[]).clause,/sl\.assigned_to=\$1 OR sl\.created_by=\$1/);
+  assert.match(contactScopeSql('c',manager,[]).clause,/member\.broker_id=c\.owner_id/);
 });
 
 test('team selectors expose company scope to directors managed scope to managers and own team to agents',()=>{

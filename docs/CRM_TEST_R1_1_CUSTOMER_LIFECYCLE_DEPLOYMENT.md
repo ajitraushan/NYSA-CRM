@@ -10,6 +10,9 @@ Production deployment is not authorized by this package.
   standalone customer creation verification.
 - R1.1-AMD-009 / R1.1-UAT-022: selected-lead lifecycle tracker with a separate Lost
   outcome and explicit customer-to-many-leads explanation.
+- R1.1-AMD-008 Revision 2 / R1.1-UAT-023: syntactically complete Sales Agent company
+  lookup while opening the existing-customer lead form.
+- R1.1-AMD-010 / R1.1-UAT-024: team-scoped Manager KYC review queue and decision access.
 
 Both findings remain open after deployment. Closure requires successful CRM Test retest
 and explicit confirmation from the NYSA owner.
@@ -58,6 +61,9 @@ Revision 1 package, restart fully and repeat the complete customer-scope retest.
    its own highlighted position and the customer-to-many-leads explanation is visible.
 6. Repeat the lifecycle check at desktop and narrow browser widths. Record screenshots and
    the authenticated API results against each amendment.
+7. Submit Ajit's customer KYC as Pending review. Sign in as the maintained Manager, confirm
+   it appears under KYC reviews, open it and verify it. Confirm it leaves the queue, an
+   unrelated Manager is denied and Ajit cannot mark the customer Verified.
 
 For each correction record the Amendment ID, related UAT finding, agreed requirement,
 deployment/retest status and evidence satisfying the retest condition. Do not close either

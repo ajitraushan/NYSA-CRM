@@ -172,7 +172,7 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/data-approval-tab/);
   assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals','My tasks'\]/);
   assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
-  assert.match(ui,/showingTasks\|\|showingListingApprovals\|\|showingMediaApprovals\|\|data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
+  assert.match(ui,/showingTasks\|\|showingKycReviews\|\|showingListingApprovals\|\|showingMediaApprovals\|\|data\.view==='Proposal approvals'\?'':kpiCards\(data\)/);
   assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
   assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
   assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);
@@ -199,6 +199,22 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(proposals,/proposal_number_counters/);
   assert.match(proposals,/NYSA-PR-/);
   assert.match(app,/\['manager','director'\]\.includes\(ME\.jobRole\)/);
+});
+
+test('manager dashboard exposes a team-scoped customer KYC review queue',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  assert.match(ui,/KYC reviews/);
+  assert.match(ui,/data-kyc-review-tab/);
+  assert.match(ui,/\/crm\/kyc-review-queue/);
+  assert.match(ui,/data-kyc-review/);
+  assert.match(routes,/r\.get\('\/crm\/kyc-review-queue'/);
+  assert.match(routes,/c\.kyc_status='pending_review'/);
+  assert.match(routes,/reviewer\.membership_role='manager'/);
+  assert.match(routes,/canReviewKyc/);
+  assert.match(app,/KYC and verification · Manager review/);
+  assert.match(app,/verification is not required before creating a lead/);
 });
 
 test('manager dashboard exposes a team-scoped listing approval queue with complete review actions',()=>{

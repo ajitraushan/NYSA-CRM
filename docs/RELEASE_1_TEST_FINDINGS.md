@@ -2355,6 +2355,46 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and responsive-layout checks recorded under R1.1-AMD-009. Explicit user confirmation is
   required before closure.
 
+### R1.1-UAT-023: Sales Agent lead form fails while loading company scope
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Sales Agent -> customer -> Create lead
+- Amendment ID: R1.1-AMD-008 Revision 2
+- Related UAT finding: R1.1-UAT-023
+- Agreed requirement: A Sales Agent must be able to open and save a valid lead for an
+  accessible customer regardless of whether KYC is unverified or pending review. The
+  company lookup must use complete, parameterized owner/related-lead scope SQL and must not
+  expose unrelated companies.
+- Status: Open. CRM Test logged PostgreSQL `42601` at `src/routes/crm.js:155` while
+  `GET /api/crm/companies` appended `ORDER BY` to an unclosed `companyScopeSql` predicate.
+  The failure occurs before lead creation and is not expected KYC behaviour. The correction
+  is implemented locally; deployment, retest and explicit confirmation are pending.
+- Retest condition: Deploy the committed correction to CRM Test, fully replace the worker,
+  open Create lead for Ajit's unverified customer, save one valid lead and confirm there is
+  no new `42601` log entry or duplicate/partial lead. Verify unrelated-company denial and
+  obtain explicit user confirmation before closure.
+
+### R1.1-UAT-024: Manager has no actionable pending KYC review queue
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Manager dashboard and Customer KYC
+- Amendment ID: R1.1-AMD-010
+- Related UAT finding: R1.1-UAT-024
+- Agreed requirement: Provide a distinct Manager KYC reviews queue scoped to pending
+  customers owned by active members of maintained teams. Open the customer from the queue
+  and allow the scoped Manager or Administrator—not the Sales Agent—to record an audited
+  verified, rejected or expired decision using masked identity details only.
+- Status: Open. The current server names Manager approval as required but its owner-only
+  authorization prevents a non-owner Manager from acting, and no dashboard queue exposes
+  pending work. The correction is implemented locally; deployment, authenticated scope and
+  decision retest, and explicit user confirmation are pending.
+- Retest condition: Submit Ajit's customer for review; confirm Ajit's maintained Manager
+  sees and decides it, the item leaves the pending queue, an unrelated Manager is denied,
+  and Ajit cannot self-verify. Confirm lead creation is independent of KYC approval. Explicit
+  user confirmation is required before closure.
+
 ## Review discipline
 
 For every new test observation:
