@@ -42,10 +42,10 @@
   the lifecycle drill-down left the aggregate stale. A successful stage update now closes the
   stale contributing-record list and automatically redraws the dashboard with the original
   filters while keeping the updated lead open. The browser bundle key is advanced again.
-- Packages `47a2c10`, `7b2e1a0`, `4c8266b` and the interim `fdc351f` artifact are superseded and
-  must not be deployed. Revision 3 source commit `773622f` is packaged as
-  `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-773622f.zip`, SHA-256
-  `32c023487c8edc765ede852b639daf4af8df06fd2342837c72f2adafb615ce38`.
+- Packages `47a2c10`, `7b2e1a0`, `4c8266b`, `fdc351f` and `773622f` are superseded and must not
+  be deployed. Revision 3 source commit `eee18a7` is packaged as
+  `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-eee18a7.zip`, SHA-256
+  `8e4ee8d0bf5326bd242fa990b7f1ed76c35c1047d804f414e2ef283412709837`.
   It is authorized for CRM Test only; production remains on hold.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21

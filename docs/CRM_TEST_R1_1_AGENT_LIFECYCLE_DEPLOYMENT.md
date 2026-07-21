@@ -20,9 +20,9 @@ Target: `https://crm-test.nysarealty.com/` only. Production deployment is not au
 
 ## Package
 
-- Source commit: `773622f`
-- File: `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-773622f.zip`
-- SHA-256: `32c023487c8edc765ede852b639daf4af8df06fd2342837c72f2adafb615ce38`
+- Source commit: `eee18a7`
+- File: `nysa-core-r1-1-lifecycle-auto-refresh-crm-test-eee18a7.zip`
+- SHA-256: `8e4ee8d0bf5326bd242fa990b7f1ed76c35c1047d804f414e2ef283412709837`
 - Migration: none
 - Dependency change: none
 - Environment-variable change: none
@@ -33,36 +33,36 @@ in cPanel Terminal. If an expected result is absent, stop and do not copy files.
 ## 1. Verify and extract
 
 ```bash
-sha256sum /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-773622f.zip
+sha256sum /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-eee18a7.zip
 ```
 
 Expected SHA-256:
 
 ```text
-32c023487c8edc765ede852b639daf4af8df06fd2342837c72f2adafb615ce38
+8e4ee8d0bf5326bd242fa990b7f1ed76c35c1047d804f414e2ef283412709837
 ```
 
 ```bash
-mkdir -p /home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage
+mkdir -p /home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage
 
 unzip -q -o \
-  /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-773622f.zip \
-  -d /home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage
+  /home/nysareal/nysa-core-r1-1-lifecycle-auto-refresh-crm-test-eee18a7.zip \
+  -d /home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage
 ```
 
 ## 2. Validate the staged source
 
 ```bash
-STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage"
+STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage"
 NODE_BIN="/home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/bin/node"
 
 "$NODE_BIN" --check "$STAGE_DIR/public/app.js"
 "$NODE_BIN" --check "$STAGE_DIR/public/dashboard-ui.js"
 
 printf '%s\n' \
-  '7b46818d4d4b6c1c22498dd1e46c35920444713407ea3ce36f2e221af63c681e  /home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage/public/app.js' \
-  'd9f774bdc858f5361b7dac88c61ba0f72f48b10a6fd1b970586b2c0fe41300d0  /home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage/public/dashboard-ui.js' \
-  'db4080e1ff7c0c227b2c24c3dcb457d7bbd0fd2b9aa59e710e77897433425774  /home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage/public/index.html' \
+  '7b46818d4d4b6c1c22498dd1e46c35920444713407ea3ce36f2e221af63c681e  /home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage/public/app.js' \
+  'd9f774bdc858f5361b7dac88c61ba0f72f48b10a6fd1b970586b2c0fe41300d0  /home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage/public/dashboard-ui.js' \
+  '4e21f778b134b1a2ed0f0f72005cb79228dbe4060ca6dd5090fc15a091a468af  /home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage/public/index.html' \
   | sha256sum -c -
 ```
 
@@ -72,7 +72,7 @@ All three files must report `OK`.
 
 ```bash
 APP_ROOT="/home/nysareal/nysa-core-dashboard-dd6262a-stage"
-BACKUP_DIR="/home/nysareal/crm-backups/r1-1-lifecycle-refresh-before-773622f"
+BACKUP_DIR="/home/nysareal/crm-backups/r1-1-lifecycle-refresh-before-eee18a7"
 
 mkdir -p "$BACKUP_DIR/public" "$BACKUP_DIR/test"
 
@@ -84,7 +84,7 @@ cp -a "$APP_ROOT/test/dashboard-requirements.test.js" "$BACKUP_DIR/test/dashboar
 
 ```bash
 APP_ROOT="/home/nysareal/nysa-core-dashboard-dd6262a-stage"
-STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-773622f-stage"
+STAGE_DIR="/home/nysareal/nysa-r1-1-lifecycle-refresh-eee18a7-stage"
 
 cp -a "$STAGE_DIR/public/app.js" "$APP_ROOT/public/app.js"
 cp -a "$STAGE_DIR/public/dashboard-ui.js" "$APP_ROOT/public/dashboard-ui.js"
