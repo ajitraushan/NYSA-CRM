@@ -2487,9 +2487,13 @@ For every new test observation:
   unmapped exceptions until an authorized user resolves and activates a mapping, after
   which controlled replay creates exactly one Draft with immutable mapping/audit
   history.
-- Status: Open. Intake validation, mapping-version evidence and the unmapped queue are
-  implemented, but the CORE Admin mapping registry, activation workflow and resolution
-  screen are not. This remains a Release 1.1 completion item before Release 2.
+- Status: Implemented locally; CRM Test deployment and retest pending. Full
+  Administrators can create or clone a Draft mapping version, maintain external values
+  against governed CORE values, record test and approval evidence, activate one exact
+  version per provider and retain effective/replacement history. Intake records the
+  mapping identity and controlled replay uses a newly activated mapping without
+  guessing or duplicating inventory. All 152 automated tests pass. The finding remains
+  open pending CRM Test deployment, retest and explicit user confirmation.
 - Retest condition: Maintain, approve and activate provider mappings on CRM Test; prove
   successful mapped intake, unknown-value isolation, authorized resolution and replay,
   version immutability, audit evidence and unauthorized-role denial. Explicit user

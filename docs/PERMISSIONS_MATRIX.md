@@ -34,6 +34,7 @@ API authorization is authoritative. Hiding a button is not a security control.
 | View all inventory | All | Read | Read | Read | Read | Read |
 | Create or edit listings | All | If granted | Own | Team | Read | None |
 | Review listing integration/import intake | All safe metadata | None | Assigned | Managed team | Read-only oversight | None |
+| Govern provider listing value mappings | All | None | None | None | Read-only audit | None |
 | Archive listings | All | None | None | Request / approved team policy | Read | None |
 | Add listing media | All | If granted | Own | Team | Read | None |
 | Run financial calculator | All | Own | Assigned | Team | All | All |
@@ -59,6 +60,9 @@ Administrators configure the platform and access policy. High-risk actions such
 as data export, permanent deletion, role elevation, and secret configuration
 must be separately audited. Administrator access is not a reason to bypass
 business approvals.
+Only full Administrators may create, test, approve, activate or retire provider
+business-value mappings. Admin Assistants and operational reviewers may replay intake
+exceptions within their existing scope but cannot alter mapping interpretation.
 
 ### Sales agents
 

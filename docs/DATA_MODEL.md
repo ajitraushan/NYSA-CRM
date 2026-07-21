@@ -300,10 +300,19 @@ also have typed columns.
 - Accepted events link exactly one Draft; failed, unmapped and duplicate-review events
   never create a partial or second listing
 
+#### `listing_mapping_versions` and `listing_value_mappings` (Release 1.1 implemented locally)
+
+- Provider/version stable identity, business name, Draft/Tested/Approved/Active/Retired
+  status, test and approval evidence, actors, effective times and replacement lineage
+- Listing field code, exact case-insensitive external value and governed CORE value;
+  entries are editable only while their version is Draft
+- One Active mapping version per provider; prior versions remain immutable and linked
+  from the event/listing records that consumed them
+
 #### `listings` integration identity (Release 1.1 implemented)
 
-- Source kind, provider code, external record ID and mapping version are retained on
-  integration/import-created inventory
+- Source kind, provider code, external record ID, mapping version text and immutable
+  mapping-version identity are retained on integration/import-created inventory
 - A partial unique index prevents two live listings for one provider/external record
 
 #### `integration_accounts`

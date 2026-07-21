@@ -165,6 +165,14 @@ An accepted first event creates a blocked Draft. Advisory locking and database
 uniqueness serialize concurrent provider/external-record attempts, while repeated or
 materially changed records remain review events instead of overwriting inventory.
 
+Provider adapters remain responsible for technical extraction and field-shape
+conversion. `listing_mapping_versions` and `listing_value_mappings` form the CORE-owned
+business translation boundary. A full Administrator maintains external values against
+stable CORE values, then records test, approval and activation evidence. Intake applies
+only the exact Active provider/version mapping before canonical validation. Unknown
+values remain reviewable exceptions, and every accepted event/listing retains the
+mapping-version UUID so later replacements never rewrite historical interpretation.
+
 Integration credentials are environment or secret-manager values. They never
 appear in browser code, database exports, repository files, or audit details.
 

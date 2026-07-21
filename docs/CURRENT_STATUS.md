@@ -490,10 +490,15 @@ Use:
   all 148 deployed automated tests passed. The NYSA owner completed the functional
   intake conditions and explicitly confirmed that all passed on 2026-07-21;
   R1.1-UAT-027 is closed and R1.1-AMD-013 is accepted.
-- The reconciliation also identified `R1.1-AMD-014` / `R1.1-UAT-028`: technical field
-  transformations remain in ETL/adapters, but governed provider-to-CORE business-value
-  mapping maintenance, version activation and unmapped resolution are not yet available
-  in CORE Admin. This separate Release 1.1 finding remains open before Release 2.
+- `R1.1-AMD-014` / `R1.1-UAT-028` is now implemented locally: technical field-shape
+  transformations remain in ETL/adapters, while full Administrators govern provider
+  business-value mappings in CORE Admin through Draft, Tested, Approved, Active and
+  Retired versions. Intake applies only an exact Active provider/version mapping,
+  records the immutable mapping identity on the event and Draft, and leaves unknown
+  values in the existing attention queue for controlled replay without guessing.
+- Migration `037_listing_mapping_governance.sql` is included and the complete automated
+  suite passes 152 tests. CRM Test deployment and functional retest evidence are still
+  required. The finding remains open until explicit NYSA owner confirmation.
 
 ## Reconciled future marketing and lead-management roadmap
 

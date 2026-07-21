@@ -815,10 +815,13 @@ release explicitly approves private video-file storage.
   unmapped review queue and must never be guessed or silently introduced as a CORE
   controlled value. Correcting and activating a mapping permits controlled replay of
   the original event without creating a duplicate.
-- Status: Open. The Draft-only provider-neutral intake and unmapped queue are present,
-  but the governed CORE Admin mapping registry, activation workflow and business-user
-  resolution path are not implemented. This is the remaining Release 1.1 scope gap
-  identified before Release 2.
+- Status: Implemented locally; CRM Test deployment and retest pending. CORE Admin now
+  maintains provider/version records, external-to-CORE value entries, sequential
+  Draft → Tested → Approved → Active → Retired lifecycle evidence, effective history
+  and replacement lineage. Only full Administrators can maintain or activate mappings.
+  Intake translates against the exact Active provider/version, records its immutable
+  identity on the intake event and Draft listing, and retains unknown values for replay.
+  This finding remains open until CRM Test deployment and explicit user confirmation.
 - Retest condition: On CRM Test, maintain two provider mappings to active CORE values,
   activate a version with approval evidence and submit mapped events successfully.
   Submit an unknown value and confirm no Draft is created; resolve it through CORE
