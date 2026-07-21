@@ -2413,6 +2413,20 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   identity, and confirm one lead links to the same customer ID with no duplicate customer.
   Explicit user confirmation is required before closure.
 
+#### R1.1-AMD-011 Revision 1: Clarify Lead pipeline search scope
+
+- Amendment ID: R1.1-AMD-011 Revision 1
+- Related UAT finding: R1.1-UAT-025
+- Agreed requirement: Replace the misleading `Lead or customer name` placeholder with
+  existing-lead wording and explain that a Customer Master record enters the pipeline only
+  after its first lead is created. Customer Master remains the entry point for zero-lead
+  customers.
+- Status: Implemented locally. CRM Test deployment, Manoj before/after-lead retest and
+  explicit user confirmation are pending; the finding remains open.
+- Retest condition: Confirm the corrected wording, confirm Manoj with zero leads is not
+  represented as a pipeline lead, create Manoj's first lead from Customer Master, and confirm
+  the linked lead is then returned when searching Manoj. Explicit confirmation is required.
+
 ## Review discipline
 
 For every new test observation:

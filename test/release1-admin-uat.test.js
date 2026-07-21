@@ -186,6 +186,10 @@ test('customer-originated lead creation carries a locked Customer Master referen
   assert.match(ui,/This lead will be linked to the existing customer record/);
   assert.match(ui,/if\(!preselectedCustomerId\)\(\{companies\}=await api\('\/crm\/companies'\)\)/);
   assert.match(styles,/\.customer-lead-feed\{/);
+  assert.match(ui,/Search existing leads/);
+  assert.match(ui,/Opportunity or linked customer name/);
+  assert.match(ui,/Customers appear here only after a lead has been created/);
+  assert.doesNotMatch(ui,/placeholder="Lead or customer name"/);
 });
 
 test('lead capture explains the original property link in business language',()=>{

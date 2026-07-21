@@ -699,6 +699,22 @@ release explicitly approves private video-file storage.
   lead and confirm exactly one new lead references the existing customer ID and no duplicate
   customer is created. Explicit user confirmation is required before closure.
 
+#### Lead-pipeline search scope wording
+
+- Amendment ID: R1.1-AMD-011 Revision 1
+- Related UAT finding: R1.1-UAT-025 (the Lead pipeline placeholder said `Lead or
+  customer name`, implying that a zero-lead Customer Master record would be returned)
+- Agreed requirement: Label the control `Search existing leads`, describe its searchable
+  values as opportunity or linked customer name, and explicitly state that customers appear
+  in the pipeline only after a lead exists. Direct users to Customer Master to create the
+  first lead. Do not alter pipeline data scope or manufacture a lead result for a customer.
+- Status: Implemented locally. CRM Test deployment, wording/behaviour retest and explicit
+  NYSA owner confirmation remain pending; the finding remains open.
+- Retest condition: On CRM Test, confirm the Lead pipeline no longer displays `Lead or
+  customer name`; confirm it explains the existing-lead scope. Search Manoj before a lead
+  exists and confirm zero leads, create Manoj's lead from Customer Master, then repeat the
+  search and confirm that linked lead is returned. Explicit confirmation is required.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

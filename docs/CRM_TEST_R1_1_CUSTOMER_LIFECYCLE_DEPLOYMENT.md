@@ -15,6 +15,8 @@ Production deployment is not authorized by this package.
 - R1.1-AMD-010 / R1.1-UAT-024: team-scoped Manager KYC review queue and decision access.
 - R1.1-AMD-011 / R1.1-UAT-025: locked Customer Master feed into customer-originated
   lead creation, without repeated customer identity input.
+- R1.1-AMD-011 Revision 1 / R1.1-UAT-025: accurate existing-lead search wording and
+  direction to Customer Master for a customer's first lead.
 
 Both findings remain open after deployment. Closure requires successful CRM Test retest
 and explicit confirmation from the NYSA owner.
@@ -69,6 +71,9 @@ Revision 1 package, restart fully and repeat the complete customer-scope retest.
 8. From Ajit's opened customer select Create lead for this customer. Confirm customer search
    and identity-entry controls are absent, the Customer Master summary is read-only, and the
    saved lead references the same customer without creating a duplicate.
+9. Confirm the pipeline says `Search existing leads`, not `Lead or customer name`. Search
+   Manoj before and after creating the first lead from Customer Master and confirm only the
+   linked lead appears in the pipeline.
 
 For each correction record the Amendment ID, related UAT finding, agreed requirement,
 deployment/retest status and evidence satisfying the retest condition. Do not close either

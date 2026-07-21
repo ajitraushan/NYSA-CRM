@@ -384,7 +384,7 @@ function renderCrm() {
   </section>
   <div class="filterbar">
     <div class="filter-grid crm-filter-grid">
-      <div><label>Search</label><input id="crm-q" placeholder="Lead or customer name"></div>
+      <div><label>Search existing leads</label><input id="crm-q" placeholder="Opportunity or linked customer name"><small>Customers appear here only after a lead has been created. Create a customer's first lead from Customer Master.</small></div>
       <div><label>Stage</label><select id="crm-stage"><option value="">All stages</option>${opts(LEAD_STAGES)}</select></div>
       <div><label>Qualification</label><select id="crm-temp"><option value="">All</option>${opts(TEMPERATURES)}</select></div>
       <div><label>Assignment</label><select id="crm-owner"><option value="">Everyone</option><option value="me">Assigned to me</option></select></div>

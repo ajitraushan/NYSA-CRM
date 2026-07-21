@@ -21,6 +21,9 @@
   `Create lead for this customer` is used. The lead form receives a locked customer ID and
   read-only identity summary; it does not ask the user to search for or re-enter the name,
   contact details or KYC data.
+- R1.1-AMD-011 Revision 1 corrects the Lead pipeline search wording. It now says
+  `Search existing leads` and explains that a customer appears only after a lead exists;
+  zero-lead customers remain in Customer Master and start their first lead there.
 - R1.1-AMD-009 / R1.1-UAT-022 adds a visual tracker to every opened lead:
   Customer -> Lead -> Contacted -> Qualified -> Viewing -> Negotiation -> Won, with
   Lost shown as a separate terminal outcome. The selected lead's current stage is
