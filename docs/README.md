@@ -9,6 +9,7 @@ describe.
 - [Current status](CURRENT_STATUS.md) - live state, latest verification, and next action
 - [Product requirements](PRODUCT_REQUIREMENTS.md) - approved business scope and requirements
 - [Roadmap](ROADMAP.md) - phased delivery sequence
+- [Planned enhancements](PLANNED_ENHANCEMENTS.md) - approved planning inputs not yet implemented
 - [Decisions](DECISIONS.md) - approved decisions and unresolved items
 
 ## Design and Delivery

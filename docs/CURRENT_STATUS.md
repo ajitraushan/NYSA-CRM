@@ -1,5 +1,18 @@
 # NYSA CORE Current Status
 
+## Planned communications, calendar and Agent lifecycle enhancements — 2026-07-21
+
+- `ENH-COMMS-001` records a future provider-neutral Call, WhatsApp and Email action rail with
+  automatic conversation/activity correlation, consent controls, idempotent webhooks and
+  failure recovery. Current buttons remain external launchers plus manual activity recording.
+- `ENH-CALENDAR-001` records connected meeting scheduling and synchronization. The current
+  Calendar action is accurately treated as `.ics` download only until a provider is approved.
+- `ENH-DASH-001` records an Agent-scoped lifecycle aggregate with reconciled stage counts,
+  record drill-down and stage-appropriate next actions.
+- These are planned enhancements, not implemented features and not part of the current CRM
+  Test package. Communications/calendar are Release 3 candidates; dashboard allocation needs
+  an explicit prioritization decision after current Release 1/1.1 acceptance.
+
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
 - R1.1-AMD-008 / R1.1-UAT-021 isolates customer permission resolution from the

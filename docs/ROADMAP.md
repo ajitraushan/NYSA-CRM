@@ -114,9 +114,17 @@ Release 4 scope.
 - Meta Facebook/Instagram lead retrieval after business assets, permissions, and forms are approved
 - Optional Meta conversion-outcome feedback as a separate privacy-approved data flow
 - Integration failure queue, retry controls, and audit history
+- Provider-neutral Call, WhatsApp and Email action rail that preserves manual launchers
+  before configuration and automatically correlates connected conversations afterward
+- Connected meeting scheduling with provider event IDs, synchronization, cancellation,
+  failure recovery and a clearly labelled `.ics` fallback
 
 The final sequence may move selected email or calendar work into Release 1 after
 provider accounts and compliance decisions are confirmed.
+
+Detailed planning records and acceptance dependencies are maintained in
+`PLANNED_ENHANCEMENTS.md`. The Agent lifecycle aggregate/drill-down is a candidate for the
+next approved dashboard increment and is not silently added to the current release scope.
 
 ## Release 4: Inventory and Partner Operations
 
