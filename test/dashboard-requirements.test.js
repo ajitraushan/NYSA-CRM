@@ -278,6 +278,7 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/async function openLead\(id,\{afterStageChange=null\}=\{\}\)/);
   assert.match(app,/if\(afterStageChange\)await afterStageChange\(\)/);
   assert.match(app,/openLead\(id,\{afterStageChange\}\)/);
+  assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(filters\);\}/);
   assert.match(page,/dashboard-ui\.js\?v=r1\.1-amd016-r3/);
 });
