@@ -487,3 +487,18 @@ Use:
   passes 148 tests.
 - CRM Test deployment, authenticated end-to-end retest and explicit user confirmation
   remain pending. R1.1-UAT-027 remains open; production is not an authorized target.
+
+## Reconciled future marketing and lead-management roadmap
+
+- On 2026-07-21, additional planning inputs were allocated across the existing roadmap
+  without authorizing development: sequential Agent workflow and `ENH-DASH-001` in the
+  Release 2 entry scope; campaign management, additional channels, nurture, landing
+  pages and governed dynamic advertising in Release 3; MLS/listing adapters, portal
+  quality and controlled external-CRM synchronization in Release 4; and marketing
+  compliance, privacy operations, CPL/CPA/ROI and authoritative closed-sales analytics
+  in Release 6.
+- Existing functionality remains distinguished from the future scope: CORE currently
+  has campaign/source attribution, team-queue routing by source/business line/Area,
+  lead-level lifecycle history and response/conversion dashboards, but not a campaign
+  master, direct-to-agent skill routing, automated nurture, landing-page/ad publishing,
+  two-way CRM/MLS connectors or authoritative campaign-cost/acquisition reporting.

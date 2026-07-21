@@ -95,6 +95,12 @@ Release 4 scope.
 
 ## Release 2: Opportunity and Deal Pipeline
 
+- Reorganize the Agent workspace into a clear operational sequence from Customer
+  creation to Lead generation, inventory matching, contact/qualification, viewing,
+  offer, negotiation and outcome, without merging the customer and lead records
+- Prioritize `ENH-DASH-001`: a visually clear Agent lifecycle aggregate showing
+  scoped stage counts, exact contributing-lead drill-down and stage-appropriate
+  actions while keeping Lost separate
 - Opportunities created from qualified leads
 - Buyer-to-property matching
 - Viewing scheduling, attendance, feedback, and follow-up
@@ -106,18 +112,39 @@ Release 4 scope.
 
 ## Release 3: Communications and External Lead Channels
 
+- Governed campaign management covering campaign identity, owner, objective,
+  applicable properties, audience, channels, dates, budget, status, source identifiers
+  and performance targets
+- Preserve campaign, advert, form, landing-page and property attribution when an
+  external enquiry enters the common lead-management workflow
+- Expand automated routing only through an approved policy change, with candidate
+  dimensions including governed territory/Area, language, property type, source and
+  campaign; retain team-queue routing unless direct-to-agent assignment is separately
+  approved
 - Email connection, message logging, and approved templates
 - Google Calendar synchronization
 - WhatsApp Business Platform integration, approved templates, consent, and message logging
+- Approved SMS integration and nurture sequences where the provider, consent basis,
+  sender identity, opt-out handling and retention policy are confirmed
 - Property Finder lead retrieval after Enterprise API access and scopes are approved
 - Bayut lead retrieval after Profolio Leads API entitlement is approved
 - Meta Facebook/Instagram lead retrieval after business assets, permissions, and forms are approved
+- Google Ads lead/campaign attribution and LinkedIn lead integration only after
+  account ownership, supported APIs, privacy basis and sandbox access are approved
 - Optional Meta conversion-outcome feedback as a separate privacy-approved data flow
 - Integration failure queue, retry controls, and audit history
 - Provider-neutral Call, WhatsApp and Email action rail that preserves manual launchers
   before configuration and automatically correlates connected conversations afterward
 - Connected meeting scheduling with provider event IDs, synchronization, cancellation,
   failure recovery and a clearly labelled `.ics` fallback
+- Marketing landing-page capability for approved, localized property campaigns,
+  including governed inventory/media consumption, consent-aware lead capture and
+  immutable campaign attribution
+- Governed dynamic advertisement templates that consume approved inventory values and
+  media, surface availability/price changes for review and never silently publish
+  changed advertising content
+- Campaign reporting for lead volume, response, qualification and conversion, with
+  cost-per-lead available only after governed channel-spend data is reconciled
 
 The final sequence may move selected email or calendar work into Release 1 after
 provider accounts and compliance decisions are confirmed.
@@ -136,6 +163,14 @@ next approved dashboard increment and is not silently added to the current relea
 - Portal-ready location, amenity, agent, permit, off-plan, and publication validation
 - Property Finder listing publication and reconciliation through the Enterprise API
 - Bayut/dubizzle listing publication and reconciliation through an approved XML feed
+- Provider-specific MLS/listing-feed adapters built on the Release 1.1 Draft-only
+  intake contract, with governed CORE-admin business-value mappings and technical
+  transformations retained in the integration/ETL layer
+- Controlled two-way synchronization with approved external CRM platforms such as
+  Salesforce, HubSpot or a bespoke system, only where field ownership, conflict
+  resolution, deletion, replay and authoritative-system rules are explicitly approved
+- Portal/source quality reporting that reconciles external listing, enquiry, campaign
+  and lead identifiers rather than relying on source labels alone
 - Co-broker and sharing controls only if NYSA later approves external access
 
 ## Release 5: Commissions and Finance Operations
@@ -153,7 +188,29 @@ next approved dashboard increment and is not silently added to the current relea
 - Configurable expiry reminders and completion checklists
 - Restricted document access and approval history
 - Lead conversion, inventory aging, source, revenue, and commission analytics
+- Governed regional marketing-material compliance review, including applicable RERA
+  permit/disclosure evidence, approval history, expiry and channel-specific release
+  controls for digital and physical material
+- Campaign cost-per-lead, cost-per-acquisition and marketing ROI only after channel
+  spend, authoritative Release 2 deal outcomes and applicable revenue/commission data
+  reconcile to the same campaign and property identities
+- Agent performance reporting extended from response/SLA and lead conversion to
+  authoritative viewings, offers, bookings, closed sales and booked value after the
+  Release 2 source modules are accepted
+- Privacy operations for integrated marketing data, including documented purpose,
+  consent/legal basis, retention, correction, restriction, deletion/anonymization,
+  vendor review and cross-border transfer controls
 - Advanced management exports
+
+## Reconciled Marketing and Lead-Management Planning Gate
+
+The additions above were reconciled on 2026-07-21 as planning inputs. They do not
+authorize development or production connection. Before implementation, NYSA must
+approve the relevant release allocation, business owner, provider/account ownership,
+authoritative data source, campaign and routing policy, privacy/compliance basis,
+controlled-value mappings, sandbox credentials, measurable acceptance criteria and
+CRM Test deployment plan. Google Ads and Google Calendar are separate integrations;
+Property Finder/Bayut lead retrieval and listing publication are also separate flows.
 
 ## Release Gates
 
