@@ -765,6 +765,39 @@ release explicitly approves private video-file storage.
 
 ### Integration intake
 
+#### Provider-neutral listing integration and import intake
+
+- Amendment ID: R1.1-AMD-013
+- Related UAT finding: R1.1-UAT-027 (Release 1.1 scope audit found the specified
+  provider-neutral listing intake was not implemented)
+- Agreed requirement: An approved provider or controlled import must submit an
+  authenticated, size-limited event carrying stable provider, external-record, event
+  and mapping-version identifiers. A valid first event creates exactly one listing
+  assigned to a maintained NYSA reviewer in Draft and blocked from publication until
+  the normal Listing Executive and approval controls are completed. Replaying the same
+  event is idempotent. Reusing its identifier with different data is rejected. A
+  repeated provider/external-record combination creates a duplicate-review event and
+  does not create or overwrite inventory. Invalid and unmapped governed values create
+  controlled queue items without a partial listing. Authorized reviewers can inspect
+  safe event metadata, open the resulting or possible-duplicate listing, and replay a
+  failed/unmapped event after its data or mapping is corrected. Provider credentials
+  remain server-side and event diagnostics do not expose the full payload in browser
+  responses or application logs.
+- Status: Implemented locally with migration 036 and automated validation, security,
+  idempotency, duplicate, Draft-only and queue contract tests. CRM Test deployment,
+  authenticated end-to-end retest and explicit user confirmation remain pending;
+  R1.1-UAT-027 remains open.
+- Retest condition: On CRM Test, configure a test-only provider secret and active
+  Listing Executive reviewer. Submit a correctly signed valid event and confirm one
+  Draft appears in that reviewer's Integration / import intake queue and ordinary
+  listing workflow. Retry the identical event and confirm no second record. Retry the
+  event ID with changed data and confirm rejection. Send a new event for the same
+  provider/external record and confirm duplicate review without overwrite. Submit an
+  unmapped Area and invalid controlled value and confirm queue evidence with no partial
+  listing; correct the mapping/payload and replay it into one Draft. Submit an invalid
+  signature and oversized body and confirm safe rejection. Explicit user confirmation
+  is required before closure.
+
 ```text
 Approved source or import
 -> authenticated integration event

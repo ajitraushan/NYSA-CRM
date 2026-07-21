@@ -155,6 +155,7 @@ r.get('/listings-workspace',async(req,res)=>{
     if(!Number(item.approvedMediaCount||0))counts.incompleteMedia++;
     if(!item.publicationReadiness?.ready)counts.readinessBlocks++;
   }
+  counts.intakeAttention=Number((await one("SELECT COUNT(*)::int AS count FROM listing_intake_events WHERE assigned_to=$1 AND status IN ('failed','unmapped','duplicate_review')",[req.broker.id])).count||0);
   res.json({counts,listings});
 });
 

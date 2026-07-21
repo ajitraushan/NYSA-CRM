@@ -156,6 +156,15 @@ Integrations will use adapters behind internal interfaces. External webhook or
 API events are normalized, deduplicated, and recorded before changing CRM data.
 Retries must be idempotent and visible in an integration failure queue.
 
+Release 1.1 implements this boundary for inbound inventory at
+`POST /api/intake/listings`. Provider-specific adapters sign a common normalized
+contract; the server selects the provider credential and maintained NYSA reviewer
+from environment configuration. `listing_intake_events` records stable identifiers,
+safe processing state and a database-only payload for controlled correction/replay.
+An accepted first event creates a blocked Draft. Advisory locking and database
+uniqueness serialize concurrent provider/external-record attempts, while repeated or
+materially changed records remain review events instead of overwriting inventory.
+
 Integration credentials are environment or secret-manager values. They never
 appear in browser code, database exports, repository files, or audit details.
 

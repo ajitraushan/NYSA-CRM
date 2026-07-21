@@ -472,3 +472,18 @@ Use:
 - The complete automated suite passes: 122 tests.
 - CRM Test deployment, functional retest and explicit user confirmation remain
   pending.
+
+## Release 1.1 provider-neutral listing intake
+
+- Amendment `R1.1-AMD-013` / finding `R1.1-UAT-027` records the Release 1.1 scope
+  gap identified on 2026-07-21: provider-neutral listing integration/import intake
+  was specified but not implemented.
+- Migration `036_provider_neutral_listing_intake.sql`, the signed
+  `/api/intake/listings` endpoint and the role-scoped Integration / import intake queue
+  now implement stable provider/external/event/mapping identifiers, Draft-only
+  creation, idempotent replay, concurrent duplicate protection, failed/unmapped
+  review and controlled replay without approved-inventory overwrite.
+- All changed JavaScript passes syntax validation and the complete automated suite
+  passes 148 tests.
+- CRM Test deployment, authenticated end-to-end retest and explicit user confirmation
+  remain pending. R1.1-UAT-027 remains open; production is not an authorized target.

@@ -2456,3 +2456,21 @@ For every new test observation:
 3. Link the finding to the relevant acceptance criterion.
 4. Do not mark it closed until CRM Test retest is explicitly confirmed by the user.
 5. Include all open findings in the Release 1 acceptance decision.
+### R1.1-UAT-027: Provider-neutral listing intake was specified but not implemented
+
+- Amendment ID: R1.1-AMD-013
+- Related UAT finding: R1.1-UAT-027
+- Agreed requirement: Complete the Release 1.1 provider-neutral listing integration /
+  import path as an authenticated, idempotent and size-limited event flow. It creates
+  reviewable NYSA Draft inventory only, preserves stable source identifiers and mapping
+  version, prevents duplicate inventory and approved-field overwrite, and exposes
+  failed, unmapped and duplicate-review events to the assigned Listing Executive or
+  authorized reviewer for controlled replay.
+- Status: Implemented locally with migration 036 and automated tests. CRM Test
+  deployment, functional retest and explicit user confirmation remain pending. The
+  finding remains open.
+- Retest condition: Complete the R1.1-AMD-013 CRM Test retest covering valid signed
+  intake, identical replay, changed-data event reuse, provider/external-record
+  duplicate, unmapped and invalid values, corrected replay, invalid authentication and
+  oversized input. Confirm every accepted record remains a Draft until ordinary NYSA
+  review/approval and explicitly confirm the result before closure.

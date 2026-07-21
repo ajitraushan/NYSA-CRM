@@ -33,6 +33,7 @@ API authorization is authoritative. Hiding a button is not a security control.
 | Manage qualification | All | Own | Assigned input | Team override | Read | None |
 | View all inventory | All | Read | Read | Read | Read | Read |
 | Create or edit listings | All | If granted | Own | Team | Read | None |
+| Review listing integration/import intake | All safe metadata | None | Assigned | Managed team | Read-only oversight | None |
 | Archive listings | All | None | None | Request / approved team policy | Read | None |
 | Add listing media | All | If granted | Own | Team | Read | None |
 | Run financial calculator | All | Own | Assigned | Team | All | All |

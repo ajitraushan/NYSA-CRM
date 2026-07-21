@@ -22,6 +22,7 @@ describe.
 - [Release 1 test findings](RELEASE_1_TEST_FINDINGS.md) - numbered manual UAT findings, corrections, and retest conditions
 - [Release 1.1 scope](RELEASE_1_1_SCOPE.md) - Listing Executive workspace and inventory-intake definition of done
 - [Release 1.1 customer/lifecycle CRM Test deployment](CRM_TEST_R1_1_CUSTOMER_LIFECYCLE_DEPLOYMENT.md) - cPanel deployment and retest instructions for R1.1-AMD-008 and R1.1-AMD-009
+- [Release 1.1 listing-intake CRM Test deployment](CRM_TEST_R1_1_LISTING_INTAKE_DEPLOYMENT.md) - cPanel deployment and retest instructions for R1.1-AMD-013
 - [Requirements review log](REQUIREMENTS_REVIEW_LOG.md) - gaps found during field and label review
 - [Deployment runbook](DEPLOYMENT_RUNBOOK.md) - production release and recovery procedure
 - [Deployment history](DEPLOYMENT_HISTORY.md) - exact deployed commits, hotfixes, and verification evidence

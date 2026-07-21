@@ -290,6 +290,22 @@ also have typed columns.
 
 ### Release 1 integration foundation
 
+#### `listing_intake_events` (Release 1.1 implemented)
+
+- Stable event ID, provider code, source kind, external record ID and mapping version
+- SHA-256 payload identity, database-only normalized payload, processing status,
+  bounded safe error detail, attempt count and receive/process times
+- Assigned NYSA reviewer, resulting Draft listing or possible-duplicate listing, and
+  authorized replay actor
+- Accepted events link exactly one Draft; failed, unmapped and duplicate-review events
+  never create a partial or second listing
+
+#### `listings` integration identity (Release 1.1 implemented)
+
+- Source kind, provider code, external record ID and mapping version are retained on
+  integration/import-created inventory
+- A partial unique index prevents two live listings for one provider/external record
+
 #### `integration_accounts`
 
 - Provider, environment, external account reference, enabled capabilities,
