@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dashboardTypeFor,buildDashboardMetric,dashboardViewFor,buildRoleDashboardPresentation } from '../src/dashboard-domain.js';
+import { dashboardTypeFor,buildDashboardMetric,dashboardViewFor,buildRoleDashboardPresentation,buildAgentLifecycle } from '../src/dashboard-domain.js';
 
 test('authenticated staff receive the role-appropriate dashboard',()=>{
   assert.equal(dashboardTypeFor({role:'admin',jobRole:'admin'}),'executive');
@@ -9,6 +9,15 @@ test('authenticated staff receive the role-appropriate dashboard',()=>{
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'sales_agent'}),'agent');
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'listing_agent'}),'listing');
   assert.equal(dashboardTypeFor({role:'internal_broker',jobRole:'accountant'}),'accounting');
+});
+
+test('agent lifecycle aggregate is ordered, zero-filled and exposes governed actions',()=>{
+  const lifecycle=buildAgentLifecycle([{label:'Contacted',value:3},{label:'Lost',value:1}]);
+  assert.deepEqual(lifecycle.map(x=>x.label),['Lead','Contacted','Qualified','Viewing','Negotiation','Won','Lost']);
+  assert.deepEqual(lifecycle.map(x=>x.value),[0,3,0,0,0,0,1]);
+  assert.equal(lifecycle[0].segment,'lifecycle_new');
+  assert.equal(lifecycle[1].action,'Complete qualification');
+  assert.equal(lifecycle.at(-1).terminal,true);
 });
 
 test('KPI current prior target variance and trend reconcile arithmetically',()=>{

@@ -2,7 +2,7 @@ import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,leadScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
-import { dashboardTypeFor,buildRoleDashboardPresentation } from '../dashboard-domain.js';
+import { dashboardTypeFor,buildRoleDashboardPresentation,buildAgentLifecycle,AGENT_LIFECYCLE_STAGES } from '../dashboard-domain.js';
 import { DASHBOARD_METRICS } from '../admin-governance.js';
 
 const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM dashboards are restricted to NYSA staff'}));
@@ -64,7 +64,7 @@ r.get('/crm/dashboard',async(req,res)=>{
   f.broker=req.broker;proposalF.broker=req.broker;callF.broker=req.broker;
   const prior=priorWhere(f),priorProposal=priorWhere(proposalF,'l','p.updated_at'),priorCall=priorWhere(callF,'l','a.created_at'),type=dashboardTypeFor(req.broker),canSeeIntegration=isManager(req.broker)||isCompanyReader(req.broker);
   const [current,previous,stages,sources,priorSources,campaigns,teams,agents,trend,tasks,exceptions,previousExceptions,proposals,calls,priorProposals,priorCalls,priorAgents,inventory,targets,hierarchyRows,accountabilityRows,integrationFailures,previousIntegrationFailures]=await Promise.all([
-    one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
+    one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
       COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND accepted_at IS NULL)::int AS awaiting_acceptance,
@@ -173,7 +173,7 @@ r.get('/crm/dashboard',async(req,res)=>{
   const dataAsOf=new Date(),presentation=buildRoleDashboardPresentation({type,view:requestedView,current,previous,previousInventory,targets,trend,tasks:taskSummary,exceptions,previousExceptions,proposals,calls,inventory,agents,sources,priorSources,accountabilityRows,dataAsOf});
   res.json({dashboardType:type,view:presentation.view,canApproveProposals,dataAsOf,lastRefresh:dataAsOf,filters:f.selected,period:{current:{from:f.start,to:f.end},prior:{from:prior.start,to:prior.end}},
     calculationContext:'Role-scoped operational data; reassignment history is not rewritten. Counts use distinct accessible records.',...presentation,
-    organizationContext,qualification:{hot:current.hot,warm:current.warm},stages,sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue:approvalResult.rows,proposalApprovalQueueCount:approvalResult.count,proposalApprovalQueuePage:approvalResult.page,proposalApprovalQueuePageSize:approvalResult.pageSize,calls,inventory,recentActivities,hierarchy});
+    organizationContext,qualification:{hot:current.hot,warm:current.warm},stages,agentLifecycle:buildAgentLifecycle(stages),customerCount:Number(current.customers||0),sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue:approvalResult.rows,proposalApprovalQueueCount:approvalResult.count,proposalApprovalQueuePage:approvalResult.page,proposalApprovalQueuePageSize:approvalResult.pageSize,calls,inventory,recentActivities,hierarchy});
 });
 
 r.get('/crm/dashboard/proposal-approvals',async(req,res)=>{if(!isProposalApprover(req.broker))return res.status(403).json({error:'Proposal approval access requires Team Manager or Managing Director'});const selected={teamId:clean(req.query.teamId),managerId:clean(req.query.managerId),agentId:clean(req.query.agentId),businessType:clean(req.query.businessType)},result=await loadProposalApprovalQueue(req,selected,clean(req.query.q)||'',req.query.page,req.query.pageSize);res.json({proposalApprovalQueue:result.rows,count:result.count,page:result.page,pageSize:result.pageSize});});
@@ -185,6 +185,7 @@ r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_a
 
 r.get('/crm/dashboard/records',async(req,res)=>{
   const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const segment=req.query.segment||'new_leads';
+  const lifecycle=AGENT_LIFECYCLE_STAGES.find(item=>`lifecycle_${item.stage.toLowerCase()}`===segment);
   if(['inventory_available','inventory_stale','inventory_media_not_ready','inventory_readiness_exposure','inventory_aging_exposure','inventory_compliance_exposure'].includes(segment)){
     if(!isCompanyReader(req.broker))return res.status(403).json({error:'Company inventory drill-down requires Director or Administrator access'});
     const conditions={inventory_available:"status='Available'",inventory_stale:"updated_at<NOW()-INTERVAL '30 days' AND status<>'Closed'",inventory_media_not_ready:"NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))",
@@ -234,13 +235,13 @@ r.get('/crm/dashboard/records',async(req,res)=>{
     due_today:"EXISTS(SELECT 1 FROM tasks dt WHERE dt.lead_id=l.id AND dt.status NOT IN('completed','cancelled') AND dt.due_at>=CURRENT_DATE AND dt.due_at<CURRENT_DATE+INTERVAL '1 day')",
     proposal_workload:"EXISTS(SELECT 1 FROM proposals dp WHERE dp.lead_id=l.id AND dp.status IN('draft','generated','reviewed'))",
     };
-  const extra=clauses[segment];
+  const extra=lifecycle?`l.stage='${lifecycle.stage}'`:clauses[segment];
   const rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
     t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
     WHERE ${f.where}${extra?' AND '+extra:''} ORDER BY l.created_at DESC LIMIT 500`,f.params);
   const sample=rows[0],breadcrumbs=['NYSA CORE',f.selected.businessType,f.selected.teamId?sample?.teamName:null,f.selected.managerId?sample?.managerName:null,f.selected.agentId?sample?.agentName:null].filter(Boolean);
-  res.json({entityType:'lead',segment,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,records:rows.map(row=>({...row,breadcrumbs:["NYSA CORE",row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+  res.json({entityType:'lead',segment,segmentLabel:lifecycle?lifecycle.label:null,stageAction:lifecycle?lifecycle.action:null,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,records:rows.map(row=>({...row,breadcrumbs:["NYSA CORE",row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
 });
 
 const csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`;

@@ -2521,3 +2521,23 @@ For every new test observation:
   event, expand Workflow history and confirm the action, actor/date and reason remain
   horizontally readable without overlap at desktop and narrow modal widths. Explicit
   user confirmation is required before closure.
+
+### R1.1-UAT-030: Agent dashboard lacks an actionable lifecycle aggregate
+
+- Amendment ID: R1.1-AMD-016
+- Related UAT finding: R1.1-UAT-030
+- Agreed requirement: Add a visually clear Agent-only current-stage aggregate for Lead/New,
+  Contacted, Qualified, Viewing, Negotiation and Won, with Lost separate. Counts must preserve
+  the existing Agent scope and dashboard filters, include zero-count stages, reconcile to the
+  exact contributing leads and drill to those records with stage-appropriate actions. Show
+  distinct-customer context without treating Customer as a lead stage or merging several leads
+  belonging to one customer.
+- Status: Open. Implemented locally and all 155 automated tests pass. CRM Test deployment,
+  visual/functional reconciliation and explicit NYSA owner confirmation remain pending. No
+  migration, dependency or environment-variable change is required.
+- Retest condition: On CRM Test, use controlled Agent A and Agent B records spanning every
+  lifecycle stage, including multiple leads for one customer. Reconcile stage and customer
+  counts, drill each non-zero count to the exact leads, verify each action opens the intended
+  governed lead, preserve the selected period/source/campaign/stage filters, prove cross-Agent
+  denial, and confirm responsive presentation. Explicit user confirmation is required before
+  closure.

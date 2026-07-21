@@ -98,9 +98,6 @@ Release 4 scope.
 - Reorganize the Agent workspace into a clear operational sequence from Customer
   creation to Lead generation, inventory matching, contact/qualification, viewing,
   offer, negotiation and outcome, without merging the customer and lead records
-- Prioritize `ENH-DASH-001`: a visually clear Agent lifecycle aggregate showing
-  scoped stage counts, exact contributing-lead drill-down and stage-appropriate
-  actions while keeping Lost separate
 - Opportunities created from qualified leads
 - Buyer-to-property matching
 - Viewing scheduling, attendance, feedback, and follow-up
@@ -150,8 +147,8 @@ The final sequence may move selected email or calendar work into Release 1 after
 provider accounts and compliance decisions are confirmed.
 
 Detailed planning records and acceptance dependencies are maintained in
-`PLANNED_ENHANCEMENTS.md`. The Agent lifecycle aggregate/drill-down is a candidate for the
-next approved dashboard increment and is not silently added to the current release scope.
+`PLANNED_ENHANCEMENTS.md`. `ENH-DASH-001` was explicitly promoted into Release 1.1 as
+`R1.1-AMD-016`; the broader sequential Agent workspace and deal pipeline remain Release 2.
 
 ## Release 4: Inventory and Partner Operations
 

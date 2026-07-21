@@ -15,18 +15,22 @@
   explicitly confirmed it is fine on 2026-07-21. `R1.1-UAT-029` is closed and
   `R1.1-AMD-015` is accepted.
 
-## Planned communications, calendar and Agent lifecycle enhancements — 2026-07-21
+## Communications, calendar and Agent lifecycle enhancements — 2026-07-21
 
 - `ENH-COMMS-001` records a future provider-neutral Call, WhatsApp and Email action rail with
   automatic conversation/activity correlation, consent controls, idempotent webhooks and
   failure recovery. Current buttons remain external launchers plus manual activity recording.
 - `ENH-CALENDAR-001` records connected meeting scheduling and synchronization. The current
   Calendar action is accurately treated as `.ics` download only until a provider is approved.
-- `ENH-DASH-001` records an Agent-scoped lifecycle aggregate with reconciled stage counts,
-  record drill-down and stage-appropriate next actions.
-- These are planned enhancements, not implemented features and not part of the current CRM
-  Test package. Communications/calendar are Release 3 candidates; dashboard allocation needs
-  an explicit prioritization decision after current Release 1/1.1 acceptance.
+- `ENH-DASH-001` / `R1.1-AMD-016` is implemented locally as the final proposed Release 1.1
+  enhancement. The Agent dashboard now shows a visual current-stage aggregate for Lead,
+  Contacted, Qualified, Viewing, Negotiation and Won, with Lost separate. Every zero-count
+  stage remains visible; each count opens the exact role-scoped contributing leads with a
+  stage-appropriate action that opens the governed lead record. The customer context is a
+  distinct-customer count and is never treated as a lead stage.
+- All 155 automated tests pass. CRM Test deployment, visual/functional retest and explicit
+  NYSA owner confirmation remain required; `R1.1-UAT-030` is open. Communications/calendar
+  remain planned Release 3 candidates and are not included in this correction.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
@@ -523,9 +527,10 @@ Use:
 
 ## Reconciled future marketing and lead-management roadmap
 
-- On 2026-07-21, additional planning inputs were allocated across the existing roadmap
-  without authorizing development: sequential Agent workflow and `ENH-DASH-001` in the
-  Release 2 entry scope; campaign management, additional channels, nurture, landing
+- On 2026-07-21, additional planning inputs were allocated across the existing roadmap.
+  `ENH-DASH-001` was subsequently authorized as the final proposed Release 1.1 enhancement;
+  the broader sequential Agent workflow remains in Release 2. Campaign management,
+  additional channels, nurture, landing
   pages and governed dynamic advertising in Release 3; MLS/listing adapters, portal
   quality and controlled external-CRM synchronization in Release 4; and marketing
   compliance, privacy operations, CPL/CPA/ROI and authoritative closed-sales analytics

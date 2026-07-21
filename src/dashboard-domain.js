@@ -12,6 +12,19 @@ export function buildDashboardMetric(code,label,current,prior,target,unit,defini
 
 export const EXECUTIVE_DASHBOARD_VIEWS=['Executive','Sales','Inventory','Operations and Risk','Proposal approvals'];
 export const MANAGER_DASHBOARD_VIEWS=['Team performance','Listing approvals','Proposal approvals','Media approvals'];
+export const AGENT_LIFECYCLE_STAGES=[
+  {stage:'New',label:'Lead',action:'Record first contact'},
+  {stage:'Contacted',label:'Contacted',action:'Complete qualification'},
+  {stage:'Qualified',label:'Qualified',action:'Schedule viewing'},
+  {stage:'Viewing',label:'Viewing',action:'Record viewing outcome'},
+  {stage:'Negotiation',label:'Negotiation',action:'Progress negotiation'},
+  {stage:'Won',label:'Won',action:'Review completed lead'},
+  {stage:'Lost',label:'Lost',action:'Review loss outcome',terminal:true}
+];
+export function buildAgentLifecycle(stageRows=[]){
+  const counts=new Map((stageRows||[]).map(row=>[row.label,Number(row.value||0)]));
+  return AGENT_LIFECYCLE_STAGES.map(item=>({...item,value:counts.get(item.stage)||0,segment:`lifecycle_${item.stage.toLowerCase()}`}));
+}
 export const EXECUTIVE_KPI_CODES={
   Executive:['new_leads','won_leads','sla_breaches','team_capacity_pressure','inventory_available','proposal_workload','customer_engagement','operational_exceptions'],
   Sales:['new_leads','won_leads','hot_leads','stale_risk'],

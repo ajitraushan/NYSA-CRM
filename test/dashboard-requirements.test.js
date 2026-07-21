@@ -133,6 +133,22 @@ test('Agent dashboards remove hierarchy filters fixed by maintained identity',()
   assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
 });
 
+test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage actions',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
+  const domain=fs.readFileSync(new URL('../src/dashboard-domain.js',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  for(const marker of ['MY LEAD LIFECYCLE','Pipeline at a glance','customers are represented across','Select a stage to see the exact leads and next action','agentLifecycle(data)','data-dashboard-segment="${x.segment}"','exact leads'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const action of ['Record first contact','Complete qualification','Schedule viewing','Record viewing outcome','Progress negotiation','Review completed lead','Review loss outcome'])assert.match(domain,new RegExp(action));
+  assert.match(routes,/buildAgentLifecycle\(stages\)/);
+  assert.match(routes,/COUNT\(DISTINCT contact_id\)::int AS customers/);
+  assert.match(routes,/const lifecycle=AGENT_LIFECYCLE_STAGES\.find/);
+  assert.match(routes,/l\.stage='\$\{lifecycle\.stage\}'/);
+  assert.match(ui,/result\.stageAction/);
+  assert.match(page,/\.agent-lifecycle-track\{/);
+  assert.match(page,/\.agent-lifecycle-lost\{/);
+});
+
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');

@@ -51,10 +51,9 @@ privacy/compliance review and implementation approval remain separate gates.
 ## ENH-DASH-001: Agent lead-lifecycle overview with actionable drill-down
 
 - Requested: 2026-07-21
-- Current behavior: The Agent dashboard shows scoped workload/task information, and an opened
-  lead shows its individual lifecycle. It does not provide an aggregated personal lifecycle
-  view with stage-specific action drill-down.
-- Planned requirement: Add an Agent-scoped lifecycle component showing the current population
+- Previous behavior: The Agent dashboard showed scoped workload/task information, and an opened
+  lead showed its individual lifecycle, but no aggregated personal lifecycle with drill-down.
+- Agreed requirement: Add an Agent-scoped lifecycle component showing the current population
   at Lead/New, Contacted, Qualified, Viewing, Negotiation and Won, with Lost separate. Each
   stage opens the exact contributing leads while preserving period/filter context and offers
   the appropriate next action: record contact, assess/confirm qualification, schedule viewing,
@@ -62,12 +61,13 @@ privacy/compliance review and implementation approval remain separate gates.
 - Reconciliation rules: Count each lead once at its current stage; never count Customer as a
   lead stage; keep Lost separate; respect signed-in Agent scope; reconcile totals to the lead
   pipeline and underlying records; retain one-customer/many-leads separation.
-- Dependencies: Acceptance of stage meanings and action eligibility; decision on whether the
-  component is current-state or period-movement based; dashboard placement and responsive
-  design approval; Release 2 calendar/viewing actions where applicable.
-- Candidate release: Next approved Agent dashboard increment; Release 1.1 amendment or Release 2
-  entry scope requires an explicit prioritization decision.
-- Status: Planned; not implemented and not part of the current CRM Test package.
+- Release allocation: Authorized on 2026-07-21 as `R1.1-AMD-016`, the final proposed Release
+  1.1 enhancement before Release 2. It is a current-stage aggregate for the leads created in
+  the selected dashboard period, not a stage-movement report. Connected calendar/viewing
+  actions remain separately planned.
+- Status: Implemented locally and covered by the complete 155-test suite. CRM Test deployment,
+  visual/functional retest and explicit owner confirmation remain pending; `R1.1-UAT-030` is
+  open.
 - Acceptance condition: With controlled Agent A/Agent B fixtures, reconcile every stage count,
   prove cross-agent denial, drill each count to the exact records, execute each available next
   action and confirm the component refreshes without losing filter or breadcrumb context.
