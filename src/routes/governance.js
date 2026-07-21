@@ -39,6 +39,25 @@ r.patch('/admin/property-media-approval-policy',async(req,res)=>{
   res.json({policy});
 });
 
+r.get('/admin/listing-approval-policy',async(req,res)=>{
+  if(!adminOnly(req,res))return;
+  const policy=await one('SELECT * FROM listing_approval_policy LIMIT 1');
+  res.json({policy});
+});
+
+r.patch('/admin/listing-approval-policy',async(req,res)=>{
+  if(!adminOnly(req,res))return;
+  if(typeof req.body?.managerApprovalRequired!=='boolean')return res.status(400).json({error:'Choose whether responsible Manager approval is required'});
+  const reason=clean(req.body?.reason);if(!reason)return res.status(400).json({error:'A policy-change reason is required'});
+  const prior=await one('SELECT * FROM listing_approval_policy LIMIT 1');
+  const policy=await transaction(async client=>{
+    const updated=await one('UPDATE listing_approval_policy SET manager_approval_required=$1,change_reason=$2,updated_by=$3,updated_at=NOW() RETURNING *',[req.body.managerApprovalRequired,reason,req.broker.id],client);
+    await audit('ListingApprovalPolicy',updated.id,'policy_changed',req.broker.id,{from:prior?.managerApprovalRequired??true,to:updated.managerApprovalRequired,reason,appliesTo:'future_submissions'},client);
+    return updated;
+  });
+  res.json({policy});
+});
+
 async function scopedContact(req,id){
   const params=[id],scope=contactScopeSql('c',req.broker,params);
   return one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);

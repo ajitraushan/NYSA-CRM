@@ -48,6 +48,7 @@ async function replaceBulkUnits(listingId,units,client){
 const isReviewer=broker=>broker.role==='admin'||broker.jobRole==='manager';
 const canCreateListing=broker=>broker.role==='admin'||['listing_agent','admin_assistant','manager'].includes(broker.jobRole);
 const ownsListing=(broker,listing)=>listing.postedBy===broker.id;
+async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
 async function canReview(broker,listing){
   if(broker.role==='admin')return true;
   if(broker.jobRole!=='manager')return false;
@@ -231,13 +232,15 @@ r.patch('/listings/:id/workflow',async(req,res)=>{
     const current=withDiscount(await refreshReadiness(listing.id));
     if(!current.publicationReadiness.ready)return res.status(409).json({error:`Resolve listing readiness before ${action==='submit'?'submission':'approval'}: ${current.publicationReadiness.blockers.map(item=>item.label).join(', ')}`});
   }
-  const next={submit:'in_review',approve:'approved',request_changes:'changes_requested',block:'blocked',restore:'draft'}[action];
-  const submitted=action==='submit',reviewed=['approve','request_changes','block','restore'].includes(action);
+  const policy=action==='submit'?await listingApprovalPolicy():null,autoApproved=action==='submit'&&!policy.managerApprovalRequired;
+  const next=autoApproved?'approved':{submit:'in_review',approve:'approved',request_changes:'changes_requested',block:'blocked',restore:'draft'}[action];
+  const submitted=action==='submit',reviewed=autoApproved||['approve','request_changes','block','restore'].includes(action);
+  const reviewReason=autoApproved?'Automatically approved under the active listing-approval policy':reason||null;
   const updated=await one(`UPDATE listings SET workflow_status=$1,
     submitted_at=CASE WHEN $2 THEN NOW() ELSE submitted_at END,submitted_by=CASE WHEN $2 THEN $4 ELSE submitted_by END,
     reviewed_at=CASE WHEN $3 THEN NOW() ELSE reviewed_at END,reviewed_by=CASE WHEN $3 THEN $4 ELSE reviewed_by END,
-    review_comment=$5,updated_at=NOW() WHERE id=$6 RETURNING *`,[next,submitted,reviewed,req.broker.id,reason||null,listing.id]);
-  await audit('Listing',listing.id,`workflow_${action}`,req.broker.id,{from:listing.workflowStatus,to:next,reason:reason||null});
+    review_comment=$5,updated_at=NOW() WHERE id=$6 RETURNING *`,[next,submitted,reviewed,req.broker.id,reviewReason,listing.id]);
+  await audit('Listing',listing.id,autoApproved?'workflow_auto_approved_by_policy':`workflow_${action}`,req.broker.id,{from:listing.workflowStatus,to:next,reason:reviewReason,managerApprovalRequired:policy?.managerApprovalRequired??null});
   res.json(withDiscount(updated));
 });
 

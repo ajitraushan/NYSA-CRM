@@ -49,7 +49,7 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(ui,/Approved company inventory/);
   assert.match(ui,/Submit for review/);
   assert.match(routes,/\/listings-workspace/);
-  assert.match(routes,/`workflow_\$\{action\}`/);
+  assert.match(routes,/workflow_auto_approved_by_policy/);
   assert.match(routes,/b\.team_id=ANY/);
   assert.match(routes,/Manual listing drafts may be created by a Listing Executive/);
   assert.match(routes,/q\.workspaceScope==='approved'/);
@@ -63,4 +63,16 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(routes,/listingWorkflowNextStep/);
   assert.match(styles,/listing-queue-cover/);
   assert.match(migration,/workflow_status/);
+});
+
+test('listing approval is an administrator-controlled future-submission policy',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const ui=await readFile(new URL('../public/app.js',import.meta.url),'utf8'),routes=await readFile(new URL('../src/routes/listings.js',import.meta.url),'utf8'),governance=await readFile(new URL('../src/routes/governance.js',import.meta.url),'utf8'),migration=await readFile(new URL('../src/migrations/035_listing_approval_policy.sql',import.meta.url),'utf8');
+  for(const marker of ['Listing approval policy','listing-policy-form','future submissions only','loadListingApprovalPolicy','saveListingApprovalPolicy'])assert.match(ui,new RegExp(marker));
+  assert.match(routes,/listingApprovalPolicy/);
+  assert.match(routes,/Automatically approved under the active listing-approval policy/);
+  assert.match(governance,/admin\/listing-approval-policy/);
+  assert.match(governance,/future_submissions/);
+  assert.match(migration,/manager_approval_required BOOLEAN NOT NULL DEFAULT TRUE/);
+  assert.match(ui,/sign-in applies to every NYSA CORE tab in this browser profile/);
 });

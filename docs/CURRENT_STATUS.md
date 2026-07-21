@@ -1,5 +1,20 @@
 # NYSA CORE Current Status
 
+## Release 1.1 configurable listing approval and session clarity — 2026-07-21
+
+- The Listing Executive manual-listing submission and responsible-Manager approval path
+  was tested on CRM Test and explicitly accepted by the NYSA owner.
+- R1.1-AMD-003 Revision 2 adds an Administrator-maintained listing-approval policy. The
+  safe default remains Manager approval required. A reasoned policy change applies only
+  to future submissions; when approval is disabled, only publication-ready submissions
+  auto-approve and the decision is audited. Existing pending reviews remain pending.
+- R1.1-AMD-007 explains that secure sign-in is shared by all tabs and ordinary windows in
+  one browser profile. Concurrent Listing Executive and Manager testing requires separate
+  browser profiles, one normal and one Incognito/InPrivate profile, or different browsers.
+- The complete 138-test automated suite passes. CRM Test deployment, authenticated retest
+  and explicit user confirmation of these two corrections remain pending; neither finding
+  is closed.
+
 ## Release 1.1 media-approval queue loading correction — 2026-07-21
 
 - R1.1-AMD-004 Revision 13 makes an empty media-approval search safe; the API no

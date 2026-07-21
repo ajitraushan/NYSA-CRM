@@ -62,9 +62,10 @@ record enters a reviewable draft workflow before it can become approved inventor
   separately governed grant. Non-approved drafts remain limited to their owner,
   responsible management scope and authorized administration. Every transition records
   actor, timestamp, prior/new state and reason in immutable audit history.
-- Status: Implemented locally and verified by the 126-test automated suite. CRM Test
-  deployment, authenticated role/scope retest and explicit user confirmation remain
-  pending.
+- Status: The Listing Executive manual-listing submission and responsible-Manager
+  approval path was deployed to CRM Test, tested and explicitly accepted by the NYSA
+  owner on 2026-07-21. Other lifecycle and scope conditions remain governed by their
+  individual amendments and retest conditions.
 - Retest condition: On CRM Test, sign in as a Listing Executive and confirm the
   dedicated title, own-record KPIs/queues and manual Draft action. Save and resume an
   incomplete draft; confirm it cannot be submitted until readiness blockers are
@@ -498,6 +499,49 @@ release explicitly approves private video-file storage.
   the Listing Executive. Resubmit it, approve it, and confirm it again leaves the queue and
   becomes approved. Confirm a listing from a team not maintained by the Manager is not shown.
   Explicit user confirmation is required before closure.
+
+#### Configurable listing-approval policy
+
+- Amendment ID: R1.1-AMD-003 Revision 2
+- Related UAT finding: R1.1-UAT-018 (listing approval must be configurable in the same
+  governed manner as property-media approval)
+- Agreed requirement: A full Administrator can maintain whether future publication-ready
+  listing submissions require the responsible Manager's approval. The safe default is
+  `Required`. Every policy decision requires a reason and immutable audit entry. If the
+  policy is `Not required`, a future submission that passes all readiness checks is
+  approved immediately and the policy-based decision is audited; readiness is never
+  bypassed. Listings already awaiting review remain in the Manager queue when the policy
+  changes, so historical workflow is not silently rewritten.
+- Status: Implemented locally. CRM Test deployment, authenticated functional retest and
+  explicit NYSA owner confirmation remain pending; the finding is not closed.
+- Retest condition: On CRM Test, retain `Required`, submit a ready listing and confirm it
+  enters the responsible Manager's Listing approvals queue. As Administrator, set the
+  policy to `Not required` with a reason. Confirm an existing pending listing remains
+  pending, while a newly submitted ready listing becomes Approved without entering the
+  queue and has a policy-based audit event. Re-enable approval and confirm the next ready
+  submission enters the Manager queue. Explicit user confirmation is required before
+  closure.
+
+#### Concurrent role testing and browser-profile session clarity
+
+- Amendment ID: R1.1-AMD-007
+- Related UAT finding: R1.1-UAT-019 (two windows in one browser profile changed to the
+  same signed-in user after refresh)
+- Agreed requirement: NYSA CORE keeps one secure server-side session cookie per browser
+  profile. All tabs and ordinary windows in that profile therefore share the same signed-in
+  identity; the application must explain this on the sign-in screen. Concurrent role tests
+  must use separate browser profiles, one normal and one Incognito/InPrivate profile, or
+  different browser applications. Multiple windows in the same Incognito profile still
+  share one identity.
+  Per-tab credentials will not be introduced because they would weaken the HttpOnly
+  cookie-based security model.
+- Status: Sign-in guidance implemented locally. CRM Test deployment, session-behaviour
+  retest and explicit NYSA owner confirmation remain pending; the finding is not closed.
+- Retest condition: On CRM Test, confirm the sign-in guidance is visible. Confirm signing
+  in as another user in the same browser profile changes all tabs in that profile after
+  refresh. Then sign in as Listing Executive and Manager using two separate browser
+  profiles or different browsers and confirm both identities remain independent through
+  refresh and workflow approval. Explicit user confirmation is required before closure.
 
 #### Media-approval queue blank-search correction
 
