@@ -39,7 +39,10 @@
   requests `dashboard-ui.js` with a release-specific cache key so ordinary reloads fetch the
   corrected placement instead of a stale static asset.
 - Packages `47a2c10` and `7b2e1a0` are superseded and must not be deployed. The Revision 2
-  source and replacement package are recorded in the dedicated deployment instructions.
+  source commit is `4c8266b`. Package
+  `nysa-core-r1-1-enh-dash-001-crm-test-4c8266b.zip` and the byte-identical held production
+  candidate have SHA-256
+  `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
