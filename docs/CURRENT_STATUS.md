@@ -31,6 +31,12 @@
 - All 155 automated tests pass. CRM Test deployment, visual/functional retest and explicit
   NYSA owner confirmation remain required; `R1.1-UAT-030` is open. Communications/calendar
   remain planned Release 3 candidates and are not included in this correction.
+- Committed source `47a2c10` is packaged as
+  `nysa-core-r1-1-enh-dash-001-crm-test-47a2c10.zip`, SHA-256
+  `8675cfdc2dc6fe6be9a12e18b99f34140aa4a4ef54c740c9fca31c4f31e24347`. A byte-identical
+  `nysa-core-r1-1-production-candidate-47a2c10.zip` is prepared but remains on HOLD until
+  CRM Test acceptance, remaining Release 1/1.1 gate reconciliation and separate production
+  authorization. No production deployment has occurred.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
