@@ -41,3 +41,17 @@ export function listingWorkflowQueue(listing,now=new Date()){
   if(Number(listing.approvedMediaCount||0)===0)return 'media_incomplete';
   return listing.publicationReadiness?.ready?'ready':'readiness_blocks';
 }
+
+export function listingWorkflowNextStep(queue){
+  const steps={
+    incomplete_drafts:{kind:'action',title:'Complete this listing draft',detail:'Finish the required listing information, then submit it for review.',buttonLabel:'Continue draft',destination:'edit'},
+    changes_requested:{kind:'action',title:'Correct and resubmit this listing',detail:'Review the manager\'s correction instructions, update the listing and resubmit it.',buttonLabel:'Review corrections',destination:'detail'},
+    approval_queue:{kind:'waiting',title:'Waiting for manager review',detail:'No action is required from you unless the reviewer returns the listing.',buttonLabel:'View review status',destination:'detail'},
+    blocked:{kind:'waiting',title:'Listing is blocked',detail:'Review the recorded reason and contact the responsible manager before proceeding.',buttonLabel:'View block reason',destination:'detail'},
+    availability_refresh:{kind:'action',title:'Reconfirm current availability',detail:'Update when availability was last confirmed so brokers receive current information.',buttonLabel:'Refresh availability',destination:'availability'},
+    permit_verification_expiry:{kind:'action',title:'Update verification or permit evidence',detail:'Review the verification status and any permit or evidence expiry dates.',buttonLabel:'Update verification',destination:'verification'},
+    media_incomplete:{kind:'action',title:'Add approved property media',detail:'Upload compliant property photos and maintain the cover photo.',buttonLabel:'Complete media',destination:'media'},
+    readiness_blocks:{kind:'action',title:'Resolve publication-readiness blockers',detail:'Review the missing information identified by NYSA CORE and complete it.',buttonLabel:'Review blockers',destination:'detail'}
+  };
+  return steps[queue]||{kind:'waiting',title:'Review listing status',detail:'Open the listing to review its current workflow status.',buttonLabel:'Open listing',destination:'detail'};
+}

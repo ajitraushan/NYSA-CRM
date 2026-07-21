@@ -454,6 +454,29 @@ release explicitly approves private video-file storage.
   property-media workspace, return to or refresh the dashboard and confirm the replacement
   photo appears. Explicit user confirmation is required before closure.
 
+#### Listing-queue business actions and direct navigation
+
+- Amendment ID: R1.1-AMD-004 Revision 11
+- Related UAT finding: R1.1-UAT-015 (Records requiring action does not explain the
+  required action and opening a row does not take the user to the relevant workflow)
+- Agreed requirement: The Listing Executive dashboard must describe the next business step
+  for every listing. Drafts, returned listings, stale availability, verification/permit
+  attention, missing media and publication-readiness blocks must use explicit action wording
+  and a single-click button that opens the relevant edit, correction, media or blocker
+  workflow. A listing awaiting Manager review is not an action for the Listing Executive; it
+  must be labelled as waiting, explain that no action is currently required and provide only
+  a View review status action. Internal queue codes must not be shown to business users.
+- Status: Implemented locally and verified by the 136-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit NYSA owner confirmation remain
+  pending.
+- Retest condition: On CRM Test, sign in as a Listing Executive. Confirm a Draft row says
+  Complete this listing draft and Continue draft opens its edit form with one click. Confirm
+  an Awaiting review row says Waiting for manager review, states that no action is required
+  and View review status opens the workflow status. Retest a media-incomplete listing and
+  confirm Complete media opens the property-media workspace. Retest availability and
+  verification attention rows and confirm their buttons open and focus the relevant fields.
+  Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

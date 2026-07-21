@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listingWorkflowTransition,validateListingWorkflowAction,listingWorkflowQueue } from '../src/listing-workflow-domain.js';
+import { listingWorkflowTransition,validateListingWorkflowAction,listingWorkflowQueue,listingWorkflowNextStep } from '../src/listing-workflow-domain.js';
 
 test('listing workflow allows only governed state transitions',()=>{
   assert.equal(listingWorkflowTransition('draft','submit'),'in_review');
@@ -29,6 +29,17 @@ test('listing executive queues are deterministic',()=>{
   assert.equal(listingWorkflowQueue({workflowStatus:'approved',availabilityConfirmedAt:'2026-07-20T00:00:00Z',approvedMediaCount:0},now),'media_incomplete');
 });
 
+test('listing executive queues explain the next business step and destination',()=>{
+  assert.deepEqual(listingWorkflowNextStep('incomplete_drafts'),{
+    kind:'action',title:'Complete this listing draft',detail:'Finish the required listing information, then submit it for review.',buttonLabel:'Continue draft',destination:'edit'
+  });
+  assert.equal(listingWorkflowNextStep('approval_queue').kind,'waiting');
+  assert.match(listingWorkflowNextStep('approval_queue').detail,/No action is required/);
+  assert.equal(listingWorkflowNextStep('media_incomplete').destination,'media');
+  assert.equal(listingWorkflowNextStep('availability_refresh').destination,'availability');
+  assert.equal(listingWorkflowNextStep('permit_verification_expiry').destination,'verification');
+});
+
 test('browser and routes expose the dedicated Listing Executive lifecycle',async()=>{
   const {readFile}=await import('node:fs/promises');
   const ui=await readFile(new URL('../public/app.js',import.meta.url),'utf8'),styles=await readFile(new URL('../public/index.html',import.meta.url),'utf8'),routes=await readFile(new URL('../src/routes/listings.js',import.meta.url),'utf8'),migration=await readFile(new URL('../src/migrations/029_listing_executive_workflow.sql',import.meta.url),'utf8');
@@ -47,6 +58,9 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(ui,/listing-queue-cover/);
   assert.match(ui,/No cover photo/);
   assert.match(ui,/Cover unavailable/);
+  assert.match(ui,/data-listing-queue-action/);
+  assert.match(ui,/listing-queue-next-step/);
+  assert.match(routes,/listingWorkflowNextStep/);
   assert.match(styles,/listing-queue-cover/);
   assert.match(migration,/workflow_status/);
 });

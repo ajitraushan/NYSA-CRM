@@ -1,5 +1,13 @@
 # NYSA CORE Current Status
 
+## Release 1.1 listing-workflow action clarity — 2026-07-21
+
+- R1.1-AMD-004 Revision 11 replaces internal listing queue labels with explicit business
+  next steps and single-click workflow navigation. Listings awaiting Manager review are now
+  shown as waiting states rather than actions for the Listing Executive.
+- The complete 136-test automated suite passes. CRM Test deployment, authenticated
+  functional retest and explicit user confirmation remain pending; the finding is not closed.
+
 ## Release 1.1 listing-intake amendments — 2026-07-20
 
 - R1.1-AMD-005 separates listing location into a mandatory governed Area selected

@@ -2,7 +2,7 @@ import { Router } from '../lib/http-kit.js';
 import { one, many, execute, uuid, audit, transaction } from '../db.js';
 import { requireAuth, requirePostRights } from '../auth.js';
 import { PAYMENT_PLANS,PROPERTY_TYPES,BEDROOMS,normalizeInventoryAmount,normalizeHandover,normalizeBulkUnits,derivePublicationReadiness } from '../inventory-domain.js';
-import { listingWorkflowQueue,validateListingWorkflowAction } from '../listing-workflow-domain.js';
+import { listingWorkflowNextStep,listingWorkflowQueue,validateListingWorkflowAction } from '../listing-workflow-domain.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -140,7 +140,7 @@ r.get('/listings-workspace',async(req,res)=>{
     (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count,
     (SELECT m.id FROM property_media m WHERE m.listing_id=l.id AND m.is_cover=TRUE AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp') ORDER BY m.display_order,m.created_at,m.id LIMIT 1) AS cover_media_id
     FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.deleted_at IS NULL AND ${scope} ORDER BY l.updated_at DESC LIMIT 500`,params);
-  const listings=rows.map(withDiscount).map(item=>({...item,queue:listingWorkflowQueue(withDiscount(item))}));
+  const listings=rows.map(withDiscount).map(item=>{const queue=listingWorkflowQueue(item);return {...item,queue,nextStep:listingWorkflowNextStep(queue)};});
   const counts={active:0,drafts:0,awaitingReview:0,changesRequested:0,availabilityRefresh:0,pendingVerification:0,expiringPermits:0,incompleteMedia:0,readinessBlocks:0};
   for(const item of listings){
     if(item.workflowStatus==='approved'&&item.status!=='Closed')counts.active++;
