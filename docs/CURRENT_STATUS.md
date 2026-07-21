@@ -1,5 +1,15 @@
 # NYSA CORE Current Status
 
+## Release 1.1 listing workflow-history layout correction — 2026-07-21
+
+- Amendment `R1.1-AMD-015` / finding `R1.1-UAT-029` records the CRM Test observation
+  that a listing's Workflow history reused the three-column activity layout without a
+  marker element, causing its content to collapse into the 34px marker column.
+- The correction is implemented locally: every workflow row now renders its marker and
+  uses an explicit marker-plus-readable-content grid.
+- The complete automated suite passes 153 tests. CRM Test deployment, visual retest and
+  explicit user confirmation are required before the finding can close.
+
 ## Planned communications, calendar and Agent lifecycle enhancements — 2026-07-21
 
 - `ENH-COMMS-001` records a future provider-neutral Call, WhatsApp and Email action rail with

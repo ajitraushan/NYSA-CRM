@@ -437,3 +437,11 @@ test('administration entry forms keep labels controls help and actions aligned',
   assert.match(styles,/@media\(max-width:800px\)\{\.admin-entry-form/);
   assert.doesNotMatch(ui,/id="team-create" style=/);
 });
+
+test('listing workflow history reserves a marker column and a readable content column',()=>{
+  const ui=read('public/app.js'),styles=read('public/index.html');
+  assert.match(ui,/class="listing-workflow-history"/);
+  assert.match(ui,/activity-row listing-workflow-row/);
+  assert.match(ui,/class="activity-marker"/);
+  assert.match(styles,/\.listing-workflow-history \.listing-workflow-row\{grid-template-columns:34px minmax\(0,1fr\)\}/);
+});

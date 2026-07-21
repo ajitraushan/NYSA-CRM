@@ -946,6 +946,20 @@ Approved source or import
 
 ### Permissions and audit
 
+#### Readable listing workflow history
+
+- Amendment ID: R1.1-AMD-015
+- Related UAT finding: R1.1-UAT-029
+- Agreed requirement: An opened Inventory record must show workflow action, actor/time
+  and reason in readable responsive rows. Workflow history must supply the marker
+  expected by the shared activity-row layout and reserve the remaining width for its
+  content.
+- Status: Implemented locally; CRM Test deployment and explicit retest confirmation
+  pending.
+- Retest condition: Expand Workflow history on CRM Test at desktop and narrow modal
+  widths and confirm ordinary words no longer stack vertically. Explicit user
+  confirmation is required before closure.
+
 - Listing Executive: create listings, edit own drafts/owned listings, upload media,
   resolve assigned exceptions, and confirm availability.
 - Sales Agent: read inventory; create/edit only where separately granted.

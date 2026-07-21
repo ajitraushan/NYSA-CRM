@@ -2498,3 +2498,20 @@ For every new test observation:
   successful mapped intake, unknown-value isolation, authorized resolution and replay,
   version immutability, audit evidence and unauthorized-role denial. Explicit user
   confirmation is required before closure.
+
+### R1.1-UAT-029: Listing workflow history collapses into an unreadable narrow column
+
+- Amendment ID: R1.1-AMD-015
+- Related UAT finding: R1.1-UAT-029
+- Agreed requirement: Workflow history in an opened Inventory record must present each
+  action, actor/time and reason in a readable full-width row at desktop and narrow modal
+  sizes. The shared activity-row layout must receive its expected marker element and
+  must not wrap ordinary words vertically through a 34px column.
+- Status: Implemented locally and all 153 automated tests pass; CRM Test deployment and
+  retest are pending. The workflow row now has an explicit marker and a
+  `34px minmax(0,1fr)` history grid. The finding remains open until explicit user
+  confirmation on CRM Test.
+- Retest condition: Deploy to CRM Test, open a Draft listing with at least one workflow
+  event, expand Workflow history and confirm the action, actor/date and reason remain
+  horizontally readable without overlap at desktop and narrow modal widths. Explicit
+  user confirmation is required before closure.
