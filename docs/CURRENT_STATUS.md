@@ -485,8 +485,11 @@ Use:
   review and controlled replay without approved-inventory overwrite.
 - All changed JavaScript passes syntax validation and the complete automated suite
   passes 148 tests.
-- CRM Test deployment, authenticated end-to-end retest and explicit user confirmation
-  remain pending. R1.1-UAT-027 remains open; production is not an authorized target.
+- Package commit `f051e42` is deployed to CRM Test. The health endpoint returned
+  database ready, migration 036 is recorded at `2026-07-21 14:42:39.192808+00`, and
+  all 148 deployed automated tests passed. Authenticated functional intake retest and
+  explicit user confirmation remain pending. R1.1-UAT-027 remains open; production is
+  not an authorized target.
 
 ## Reconciled future marketing and lead-management roadmap
 

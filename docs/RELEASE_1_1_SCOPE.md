@@ -783,10 +783,11 @@ release explicitly approves private video-file storage.
   failed/unmapped event after its data or mapping is corrected. Provider credentials
   remain server-side and event diagnostics do not expose the full payload in browser
   responses or application logs.
-- Status: Implemented locally with migration 036 and automated validation, security,
-  idempotency, duplicate, Draft-only and queue contract tests. CRM Test deployment,
-  authenticated end-to-end retest and explicit user confirmation remain pending;
-  R1.1-UAT-027 remains open.
+- Status: Deployed to CRM Test from package commit `f051e42` on 2026-07-21.
+  CRM Test health returned database ready, migration 036 was recorded at
+  `2026-07-21 14:42:39.192808+00`, and the deployed 148-test suite passed with no
+  failures. Authenticated functional intake retest and explicit user confirmation
+  remain pending; R1.1-UAT-027 remains open.
 - Retest condition: On CRM Test, configure a test-only provider secret and active
   Listing Executive reviewer. Submit a correctly signed valid event and confirm one
   Draft appears in that reviewer's Integration / import intake queue and ordinary

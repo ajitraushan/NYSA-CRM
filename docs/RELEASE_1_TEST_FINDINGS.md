@@ -2466,9 +2466,11 @@ For every new test observation:
   version, prevents duplicate inventory and approved-field overwrite, and exposes
   failed, unmapped and duplicate-review events to the assigned Listing Executive or
   authorized reviewer for controlled replay.
-- Status: Implemented locally with migration 036 and automated tests. CRM Test
-  deployment, functional retest and explicit user confirmation remain pending. The
-  finding remains open.
+- Status: Deployed to CRM Test from package commit `f051e42` on 2026-07-21. Health
+  returned database ready, migration 036 is recorded at
+  `2026-07-21 14:42:39.192808+00`, and all 148 deployed automated tests passed.
+  Functional intake retest and explicit user confirmation remain pending; the finding
+  remains open.
 - Retest condition: Complete the R1.1-AMD-013 CRM Test retest covering valid signed
   intake, identical replay, changed-data event reuse, provider/external-record
   duplicate, unmapped and invalid values, corrected replay, invalid authentication and
