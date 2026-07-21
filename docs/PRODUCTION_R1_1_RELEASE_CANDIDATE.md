@@ -7,17 +7,17 @@ the exact commit is approved for `main`, and the NYSA owner separately authorize
 
 ## Candidate identity
 
-- Source commit: `47a2c10`
-- File: `nysa-core-r1-1-production-candidate-47a2c10.zip`
-- SHA-256: `8675cfdc2dc6fe6be9a12e18b99f34140aa4a4ef54c740c9fca31c4f31e24347`
+- Source commit: `7b2e1a0`
+- File: `nysa-core-r1-1-production-candidate-7b2e1a0.zip`
+- SHA-256: `f8725a79c9d685c7cd8829ccba484522a3b2bb66853e7c42fa5aceb6bae1fafa`
 - Archive policy: explicit tracked-source allowlist; `.git`, `.env`, `node_modules`, output,
   release artifacts, dumps and logs excluded
-- Entries: 136
+- Entries: 138
 - Included migrations: numbered migrations through `037_listing_mapping_governance.sql`
 
 ## Promotion gates
 
-1. Deploy commit `47a2c10` to CRM Test using the dedicated Agent lifecycle instructions.
+1. Deploy commit `7b2e1a0` to CRM Test using the dedicated Agent lifecycle instructions.
 2. Record 155/155 deployed automated tests and explicit `R1.1-UAT-030` acceptance.
 3. Reconcile every other Release 1 and 1.1 item still marked open or pending in the committed
    acceptance, finding and scope documents. User recollection alone does not replace the ledger.
@@ -36,8 +36,8 @@ After separate production authorization, use the production runbook and these re
 ```bash
 APP_ROOT="/home/nysareal/nysa-crm"
 NODE_BIN="/home/nysareal/nodevenv/nysa-crm/24/bin/node"
-PACKAGE="/home/nysareal/nysa-core-r1-1-production-candidate-47a2c10.zip"
-STAGE_DIR="/home/nysareal/nysa-r1-1-production-47a2c10-stage"
+PACKAGE="/home/nysareal/nysa-core-r1-1-production-candidate-7b2e1a0.zip"
+STAGE_DIR="/home/nysareal/nysa-r1-1-production-7b2e1a0-stage"
 ```
 
 Verify the package before any backup or file change:
@@ -49,7 +49,7 @@ sha256sum "$PACKAGE"
 Expected SHA-256:
 
 ```text
-8675cfdc2dc6fe6be9a12e18b99f34140aa4a4ef54c740c9fca31c4f31e24347
+f8725a79c9d685c7cd8829ccba484522a3b2bb66853e7c42fa5aceb6bae1fafa
 ```
 
 The separately authorized production run must then follow `docs/DEPLOYMENT_RUNBOOK.md` in
