@@ -398,9 +398,10 @@ release explicitly approves private video-file storage.
   Unused media may be deleted with confirmation and audit evidence; media retained in an
   immutable proposal version must never be deleted and must return a clear protection
   message.
-- Status: Implemented locally and verified by the 135-test automated suite. CRM Test
-  deployment, authenticated functional retest and explicit NYSA owner confirmation
-  remain pending.
+- Status: Deployed to CRM Test and retested on 2026-07-21. Retest failed because the
+  updated static browser files were served while the Node.js worker retained an older
+  backend route module: thumbnails did not load and reorder/delete returned Not found.
+  Superseded by Revision 9; the finding remains open.
 - Retest condition: On CRM Test, open a listing with an approved photo and confirm its
   thumbnail and original filename are visible. Select that same file together with two
   new photos and confirm the duplicate is highlighted before upload; remove only the
@@ -408,6 +409,30 @@ release explicitly approves private video-file storage.
   cover, refresh and confirm order and cover persist. Delete one unused photo and confirm
   it disappears. Attempt to delete media used in an immutable proposal and confirm it is
   protected with a clear message. Explicit user confirmation is required before closure.
+
+#### Property-photo organizer runtime alignment and direct placement
+
+- Amendment ID: R1.1-AMD-004 Revision 9
+- Related UAT finding: R1.1-UAT-014 (property thumbnails do not appear and organizer
+  actions return Not found after deployment)
+- Agreed requirement: The browser and running backend must expose the same property-photo
+  organizer contract. The media response must carry an explicit organizer-version marker;
+  when an old worker is still active, the screen must stop and explain that the Node.js
+  application requires a full restart instead of displaying unusable actions. Authenticated
+  thumbnail, reorder and safe-delete routes must be loaded together. Photo ordering must use
+  clear up/down arrow controls and also allow an authorized maintainer to choose any target
+  position directly. A thumbnail storage failure must be shown as a specific preview/storage
+  problem while retaining the filename and download action.
+- Status: Implemented locally and verified by the 135-test automated suite. CRM Test
+  deployment with a confirmed full worker stop/start, authenticated functional retest and
+  explicit NYSA owner confirmation remain pending.
+- Retest condition: Deploy the cumulative package to CRM Test, fully stop the prior Node.js
+  worker and confirm no stage worker remains before starting it again. Confirm unauthenticated
+  probes to the thumbnail and delete endpoints return 401 rather than 404. Sign in, open the
+  same listing and confirm photos render. Move a photo once with each arrow and then directly
+  from its current position to a non-adjacent target position; refresh and confirm the exact
+  order persists. Delete an unused photo and confirm it disappears. Confirm proposal-retained
+  media remains protected. Explicit user confirmation is required before closure.
 
 ### Business-friendly inventory commercial controls
 

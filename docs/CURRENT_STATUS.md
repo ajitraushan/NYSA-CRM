@@ -85,6 +85,14 @@
   thumbnails and original filenames, pre-upload duplicate identification and per-photo
   removal, business actions for order and cover selection, and audited deletion of
   unused media while immutable-proposal media remains protected.
+- Revision 8 was deployed to CRM Test on 2026-07-21, but its functional retest failed:
+  updated static files were served while an older Node.js worker retained the prior route
+  module, so thumbnail, reorder and delete actions were unavailable.
+- R1.1-AMD-004 Revision 9 adds an explicit browser/backend organizer-version handshake,
+  blocks misleading controls when the worker is stale, replaces text ordering actions with
+  up/down arrows, adds direct movement to any selected photo position, and distinguishes a
+  private-storage preview failure from a missing organizer route. It passes all 135 automated
+  tests locally; cumulative CRM Test deployment and functional retest remain pending.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
