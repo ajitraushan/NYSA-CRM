@@ -1,5 +1,13 @@
 # NYSA CORE Current Status
 
+## Release 1.1 Manager listing-approval queue — 2026-07-21
+
+- R1.1-AMD-004 Revision 12 adds a dedicated Manager Listing approvals tab for submitted
+  listings from maintained teams, with a live count, search, pagination, submission timing
+  and one-click access to approve, return for correction or block the exact listing.
+- The complete 137-test automated suite passes. CRM Test deployment, authenticated
+  functional retest and explicit user confirmation remain pending; the finding is not closed.
+
 ## Release 1.1 listing-workflow action clarity — 2026-07-21
 
 - R1.1-AMD-004 Revision 11 replaces internal listing queue labels with explicit business

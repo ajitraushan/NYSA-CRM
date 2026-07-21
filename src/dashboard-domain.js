@@ -11,7 +11,7 @@ export function buildDashboardMetric(code,label,current,prior,target,unit,defini
 }
 
 export const EXECUTIVE_DASHBOARD_VIEWS=['Executive','Sales','Inventory','Operations and Risk','Proposal approvals'];
-export const MANAGER_DASHBOARD_VIEWS=['Team performance','Proposal approvals'];
+export const MANAGER_DASHBOARD_VIEWS=['Team performance','Listing approvals','Proposal approvals','Media approvals'];
 export const EXECUTIVE_KPI_CODES={
   Executive:['new_leads','won_leads','sla_breaches','team_capacity_pressure','inventory_available','proposal_workload','customer_engagement','operational_exceptions'],
   Sales:['new_leads','won_leads','hot_leads','stale_risk'],

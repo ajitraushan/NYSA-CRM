@@ -844,7 +844,7 @@ function overlay(html) {
   return o;
 }
 
-async function openDetail(id) {
+async function openDetail(id,{afterWorkflow=null}={}) {
   let l;
   try { l = await api('/listings/' + id); } catch (e) { return toast(e.message); }
   const plan = [
@@ -915,7 +915,7 @@ async function openDetail(id) {
   </div>`);
 
   $('#d-edit', o)?.addEventListener('click', () => { o.remove(); openListingForm(l); });
-  o.querySelectorAll('[data-workflow]').forEach(button=>button.addEventListener('click',async()=>{const action=button.dataset.workflow,needsReason=['request_changes','block','restore'].includes(action),reason=needsReason?prompt(action==='request_changes'?'Required correction instructions':'Required review reason'):'';if(needsReason&&!reason)return;try{await api(`/listings/${l.id}/workflow`,{method:'PATCH',body:{action,reason}});toast(action==='submit'?'Listing submitted for review':action==='approve'?'Listing approved':action==='request_changes'?'Listing returned for correction':'Listing workflow updated');o.remove();ME.jobRole==='listing_agent'&&currentTab==='dashboard'?renderListingExecutiveDashboard():loadListings();}catch(err){toast(err.message);}}));
+  o.querySelectorAll('[data-workflow]').forEach(button=>button.addEventListener('click',async()=>{const action=button.dataset.workflow,needsReason=['request_changes','block','restore'].includes(action),reason=needsReason?prompt(action==='request_changes'?'Required correction instructions':'Required review reason'):'';if(needsReason&&!reason)return;try{await api(`/listings/${l.id}/workflow`,{method:'PATCH',body:{action,reason}});toast(action==='submit'?'Listing submitted for review':action==='approve'?'Listing approved':action==='request_changes'?'Listing returned for correction':'Listing workflow updated');o.remove();if(afterWorkflow)return afterWorkflow();ME.jobRole==='listing_agent'&&currentTab==='dashboard'?renderListingExecutiveDashboard():loadListings();}catch(err){toast(err.message);}}));
   $('#d-media',o)?.addEventListener('click',()=>openPropertyMedia(l));
   $('#d-status', o)?.addEventListener('change', async (e) => {
     try { await api(`/listings/${l.id}/status`, { method: 'PATCH', body: { status: e.target.value } }); toast('Status updated'); o.remove(); loadListings(); }

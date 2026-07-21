@@ -477,6 +477,28 @@ release explicitly approves private video-file storage.
   verification attention rows and confirm their buttons open and focus the relevant fields.
   Explicit user confirmation is required before closure.
 
+#### Manager listing-approval queue
+
+- Amendment ID: R1.1-AMD-004 Revision 12
+- Related UAT finding: R1.1-UAT-016 (a listing can be submitted for Manager review,
+  but the Manager dashboard has no listing-approval queue)
+- Agreed requirement: The Manager dashboard must provide a separate Listing approvals
+  tab with a live pending count. It must show only listings submitted by Listing Executives
+  in the Manager's maintained teams, show the listing reference, property, team, submitter,
+  submission timestamp and waiting time, support search and pagination, and open the exact
+  listing review record in one click. From that review the Manager must be able to approve,
+  return for correction with mandatory instructions, or block with a mandatory reason. The
+  queue must refresh immediately after the decision and must not expose company-wide drafts.
+- Status: Implemented locally and verified by the 137-test automated suite. CRM Test
+  deployment, functional retest and explicit NYSA owner confirmation remain pending.
+- Retest condition: On CRM Test, submit a ready listing as a Listing Executive assigned to
+  the Manager's team. Sign in as that Manager and confirm Listing approvals shows one pending
+  record with the correct listing, team, submitter and time. Select Review listing, return it
+  with correction instructions and confirm it leaves the queue and appears as returned for
+  the Listing Executive. Resubmit it, approve it, and confirm it again leaves the queue and
+  becomes approved. Confirm a listing from a team not maintained by the Manager is not shown.
+  Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

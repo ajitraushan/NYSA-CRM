@@ -157,6 +157,21 @@ r.get('/listings-workspace',async(req,res)=>{
   res.json({counts,listings});
 });
 
+r.get('/listings-approval-queue',async(req,res)=>{
+  if(req.broker.jobRole!=='manager')return res.status(403).json({error:'Listing approval queue requires the responsible Team Manager'});
+  const q=String(req.query.q||'').trim().toLowerCase(),page=Math.max(1,Number(req.query.page)||1),pageSize=Math.min(100,Math.max(1,Number(req.query.pageSize)||20)),params=[req.broker.id],search=[];
+  if(q){params.push(`%${q}%`);search.push(`(LOWER(l.project) LIKE $${params.length} OR LOWER(COALESCE(l.inventory_reference,'')) LIKE $${params.length} OR LOWER(COALESCE(l.area,'')) LIKE $${params.length} OR LOWER(COALESCE(l.community,'')) LIKE $${params.length} OR LOWER(COALESCE(l.property_type,'')) LIKE $${params.length} OR LOWER(COALESCE(owner.name,'')) LIKE $${params.length} OR LOWER(t.name) LIKE $${params.length})`);}
+  const where=`l.deleted_at IS NULL AND l.workflow_status='in_review' AND t.active=1 AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL))${search.length?' AND '+search.join(' AND '):''}`;
+  const count=Number((await one(`SELECT COUNT(*)::int AS count FROM listings l JOIN brokers owner ON owner.id=l.posted_by JOIN teams t ON t.id=owner.team_id WHERE ${where}`,params)).count||0);
+  params.push(pageSize,(page-1)*pageSize);
+  const listings=await many(`SELECT l.id,l.inventory_reference,l.project,l.area,l.community,l.property_type,l.price,l.currency,l.submitted_at,l.updated_at,
+    owner.name AS submitted_by,t.id AS team_id,t.name AS team_name,
+    (SELECT m.id FROM property_media m WHERE m.listing_id=l.id AND m.is_cover=TRUE AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp') ORDER BY m.display_order,m.created_at,m.id LIMIT 1) AS cover_media_id
+    FROM listings l JOIN brokers owner ON owner.id=l.posted_by JOIN teams t ON t.id=owner.team_id
+    WHERE ${where} ORDER BY COALESCE(l.submitted_at,l.updated_at) DESC,l.id DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);
+  res.json({listingApprovals:listings,count,page,pageSize});
+});
+
 r.get('/listings/:id', async (req, res) => {
   const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
