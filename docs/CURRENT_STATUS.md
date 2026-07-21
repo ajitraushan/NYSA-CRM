@@ -487,9 +487,13 @@ Use:
   passes 148 tests.
 - Package commit `f051e42` is deployed to CRM Test. The health endpoint returned
   database ready, migration 036 is recorded at `2026-07-21 14:42:39.192808+00`, and
-  all 148 deployed automated tests passed. Authenticated functional intake retest and
-  explicit user confirmation remain pending. R1.1-UAT-027 remains open; production is
-  not an authorized target.
+  all 148 deployed automated tests passed. The NYSA owner completed the functional
+  intake conditions and explicitly confirmed that all passed on 2026-07-21;
+  R1.1-UAT-027 is closed and R1.1-AMD-013 is accepted.
+- The reconciliation also identified `R1.1-AMD-014` / `R1.1-UAT-028`: technical field
+  transformations remain in ETL/adapters, but governed provider-to-CORE business-value
+  mapping maintenance, version activation and unmapped resolution are not yet available
+  in CORE Admin. This separate Release 1.1 finding remains open before Release 2.
 
 ## Reconciled future marketing and lead-management roadmap
 

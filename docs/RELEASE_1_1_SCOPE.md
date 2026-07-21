@@ -786,8 +786,9 @@ release explicitly approves private video-file storage.
 - Status: Deployed to CRM Test from package commit `f051e42` on 2026-07-21.
   CRM Test health returned database ready, migration 036 was recorded at
   `2026-07-21 14:42:39.192808+00`, and the deployed 148-test suite passed with no
-  failures. Authenticated functional intake retest and explicit user confirmation
-  remain pending; R1.1-UAT-027 remains open.
+  failures. The NYSA owner completed the authenticated functional conditions and
+  explicitly confirmed that all passed on 2026-07-21. R1.1-UAT-027 is closed and
+  R1.1-AMD-013 is accepted.
 - Retest condition: On CRM Test, configure a test-only provider secret and active
   Listing Executive reviewer. Submit a correctly signed valid event and confirm one
   Draft appears in that reviewer's Integration / import intake queue and ordinary
@@ -798,6 +799,32 @@ release explicitly approves private video-file storage.
   listing; correct the mapping/payload and replay it into one Draft. Submit an invalid
   signature and oversized body and confirm safe rejection. Explicit user confirmation
   is required before closure.
+
+#### Governed provider-to-CORE business-value mappings
+
+- Amendment ID: R1.1-AMD-014
+- Related UAT finding: R1.1-UAT-028 (the provider-neutral intake accepts normalized
+  CORE fields and records a mapping version, but CORE does not yet maintain the
+  provider field/value mapping rules)
+- Agreed requirement: Technical extraction, transport, field-shape conversion and
+  provider authentication remain in the ETL/integration adapter. Authorized CORE
+  Administration maintains the business mappings from provider values to governed
+  CORE stable codes, including provider, external field/value, applicable entity,
+  mapping version, lifecycle status, effective dates, replacement/history, approval
+  evidence and safe usage impact. An unknown provider business value must enter the
+  unmapped review queue and must never be guessed or silently introduced as a CORE
+  controlled value. Correcting and activating a mapping permits controlled replay of
+  the original event without creating a duplicate.
+- Status: Open. The Draft-only provider-neutral intake and unmapped queue are present,
+  but the governed CORE Admin mapping registry, activation workflow and business-user
+  resolution path are not implemented. This is the remaining Release 1.1 scope gap
+  identified before Release 2.
+- Retest condition: On CRM Test, maintain two provider mappings to active CORE values,
+  activate a version with approval evidence and submit mapped events successfully.
+  Submit an unknown value and confirm no Draft is created; resolve it through CORE
+  Admin, replay the same event into exactly one Draft and confirm prior mapping versions
+  and audit history remain immutable. Confirm an unauthorized role cannot maintain or
+  activate mappings. Explicit user confirmation is required before closure.
 
 ```text
 Approved source or import

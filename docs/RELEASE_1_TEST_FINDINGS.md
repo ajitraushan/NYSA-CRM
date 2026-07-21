@@ -2469,10 +2469,28 @@ For every new test observation:
 - Status: Deployed to CRM Test from package commit `f051e42` on 2026-07-21. Health
   returned database ready, migration 036 is recorded at
   `2026-07-21 14:42:39.192808+00`, and all 148 deployed automated tests passed.
-  Functional intake retest and explicit user confirmation remain pending; the finding
-  remains open.
+  The NYSA owner completed the functional conditions and explicitly confirmed that all
+  passed on 2026-07-21. The finding is closed and R1.1-AMD-013 is accepted.
 - Retest condition: Complete the R1.1-AMD-013 CRM Test retest covering valid signed
   intake, identical replay, changed-data event reuse, provider/external-record
   duplicate, unmapped and invalid values, corrected replay, invalid authentication and
   oversized input. Confirm every accepted record remains a Draft until ordinary NYSA
   review/approval and explicitly confirm the result before closure.
+
+### R1.1-UAT-028: Provider business mappings are not governed in CORE Admin
+
+- Amendment ID: R1.1-AMD-014
+- Related UAT finding: R1.1-UAT-028
+- Agreed requirement: Keep technical field transformation in the ETL/provider adapter,
+  while CORE Administration governs provider business values against stable CORE codes
+  through approved, effective-dated mapping versions. Unknown values must remain
+  unmapped exceptions until an authorized user resolves and activates a mapping, after
+  which controlled replay creates exactly one Draft with immutable mapping/audit
+  history.
+- Status: Open. Intake validation, mapping-version evidence and the unmapped queue are
+  implemented, but the CORE Admin mapping registry, activation workflow and resolution
+  screen are not. This remains a Release 1.1 completion item before Release 2.
+- Retest condition: Maintain, approve and activate provider mappings on CRM Test; prove
+  successful mapped intake, unknown-value isolation, authorized resolution and replay,
+  version immutability, audit evidence and unauthorized-role denial. Explicit user
+  confirmation is required before closure.
