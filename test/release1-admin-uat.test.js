@@ -438,10 +438,13 @@ test('administration entry forms keep labels controls help and actions aligned',
   assert.doesNotMatch(ui,/id="team-create" style=/);
 });
 
-test('listing workflow history reserves a marker column and a readable content column',()=>{
+test('inventory detail workflow and coordination history use readable responsive columns',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
   assert.match(ui,/class="listing-workflow-history"/);
-  assert.match(ui,/activity-row listing-workflow-row/);
-  assert.match(ui,/class="activity-marker"/);
-  assert.match(styles,/\.listing-workflow-history \.listing-workflow-row\{grid-template-columns:34px minmax\(0,1fr\)\}/);
+  assert.match(ui,/class="listing-workflow-head"/);
+  assert.match(ui,/Updated by \/ time/);
+  assert.match(ui,/class="modal listing-detail-modal"/);
+  assert.match(ui,/class="modal listing-edit-modal"/);
+  assert.match(styles,/\.listing-workflow-head,\.listing-workflow-row\{display:grid;grid-template-columns:/);
+  assert.match(styles,/\.listing-detail-modal \.comments \.comment\{display:grid;grid-template-columns:/);
 });

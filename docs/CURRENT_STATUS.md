@@ -5,8 +5,10 @@
 - Amendment `R1.1-AMD-015` / finding `R1.1-UAT-029` records the CRM Test observation
   that a listing's Workflow history reused the three-column activity layout without a
   marker element, causing its content to collapse into the 34px marker column.
-- The correction is implemented locally: every workflow row now renders its marker and
-  uses an explicit marker-plus-readable-content grid.
+- The correction is implemented locally: Inventory detail and edit use wider governed
+  modals; Workflow history presents Action, Updated by/time and Reason as explicit
+  columns; coordination notes present author/time, comment and actions as columns. The
+  layouts collapse responsively only on narrow screens.
 - The complete automated suite passes 153 tests. CRM Test deployment, visual retest and
   explicit user confirmation are required before the finding can close.
 

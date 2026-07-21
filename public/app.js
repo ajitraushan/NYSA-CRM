@@ -886,7 +886,7 @@ async function openDetail(id,{afterWorkflow=null}={}) {
     l.postHandoverYears != null ? l.postHandoverYears + ' yrs post-handover' : null
   ].filter(Boolean).join(' · ');
   const o = overlay(`
-  <div class="modal">
+  <div class="modal listing-detail-modal">
     <button class="close-x">✕</button>
     <div class="detail-head">
       <div>
@@ -933,7 +933,7 @@ async function openDetail(id,{afterWorkflow=null}={}) {
       ${(ME.role==='admin'||ME.jobRole==='manager')&&l.workflowStatus==='in_review'?'<button class="btn btn-primary btn-sm" data-workflow="approve">Approve listing</button><button class="btn btn-sm" data-workflow="request_changes">Request changes</button><button class="btn btn-sm btn-danger" data-workflow="block">Block listing</button>':''}
       ${(ME.role==='admin'||ME.jobRole==='manager')&&l.workflowStatus==='blocked'?'<button class="btn btn-sm" data-workflow="restore">Restore to draft</button>':''}
     </div>
-    ${l.workflowHistory?.length?`<details class="listing-workflow-history"><summary>Workflow history (${l.workflowHistory.length})</summary>${l.workflowHistory.map(h=>{const action=String(h.action).replace('workflow_','').replaceAll('_',' ');return`<div class="activity-row listing-workflow-row"><span class="activity-marker" aria-hidden="true">${esc(action.charAt(0).toUpperCase())}</span><div><b>${esc(action)}</b><small>${esc(h.performedByName)} · ${fmtDate(h.timestamp)}</small><p>${esc(h.details?.reason||'No reason recorded')}</p></div></div>`;}).join('')}</details>`:''}
+    ${l.workflowHistory?.length?`<details class="listing-workflow-history"><summary>Workflow history (${l.workflowHistory.length})</summary><div class="listing-workflow-head"><span>Action</span><span>Updated by / time</span><span>Reason</span></div>${l.workflowHistory.map(h=>{const action=String(h.action).replace('workflow_','').replaceAll('_',' ');return`<div class="listing-workflow-row"><div><small>Action</small><b>${esc(action)}</b></div><div><small>Updated by / time</small><b>${esc(h.performedByName)}</b><span>${fmtDate(h.timestamp)}</span></div><div><small>Reason</small><p>${esc(h.details?.reason||'No reason recorded')}</p></div></div>`;}).join('')}</details>`:''}
     <details class="comments">
       <summary>Internal coordination notes (optional)</summary>
       <p class="tool-note">This optional staff conversation is separate from the inventory record. It is not required to edit the listing, change availability or maintain property media.</p>
@@ -1019,7 +1019,7 @@ async function openListingForm(l = null,{focusField=null}={}) {
   const handoverStatus=l?.handoverStatus||(l?.handoverDate==='Ready'?'ready':/^\d{4}-\d{2}-\d{2}$/.test(String(l?.handoverDate||''))?'expected':'to_be_confirmed');
   const handoverExpectedDate=l?.handoverExpectedDate||(handoverStatus==='expected'?l?.handoverDate:'');
   const o = overlay(`
-  <div class="modal">
+  <div class="modal listing-edit-modal">
     <button class="close-x">✕</button>
     <h2>${l ? 'Edit listing' : 'Create manual listing draft'}</h2>
     <form id="listing-form">

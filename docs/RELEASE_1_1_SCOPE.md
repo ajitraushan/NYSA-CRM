@@ -950,10 +950,10 @@ Approved source or import
 
 - Amendment ID: R1.1-AMD-015
 - Related UAT finding: R1.1-UAT-029
-- Agreed requirement: An opened Inventory record must show workflow action, actor/time
-  and reason in readable responsive rows. Workflow history must supply the marker
-  expected by the shared activity-row layout and reserve the remaining width for its
-  content.
+- Agreed requirement: An opened Inventory record must use the available modal width and
+  show workflow Action, Updated by/time and Reason in explicit readable columns.
+  Coordination notes must similarly separate author/time, comment and actions, while
+  narrow screens receive a deliberate responsive fallback.
 - Status: Implemented locally; CRM Test deployment and explicit retest confirmation
   pending.
 - Retest condition: Expand Workflow history on CRM Test at desktop and narrow modal

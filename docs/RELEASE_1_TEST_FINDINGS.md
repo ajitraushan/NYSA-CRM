@@ -2504,13 +2504,14 @@ For every new test observation:
 - Amendment ID: R1.1-AMD-015
 - Related UAT finding: R1.1-UAT-029
 - Agreed requirement: Workflow history in an opened Inventory record must present each
-  action, actor/time and reason in a readable full-width row at desktop and narrow modal
-  sizes. The shared activity-row layout must receive its expected marker element and
-  must not wrap ordinary words vertically through a 34px column.
-- Status: Implemented locally and all 153 automated tests pass; CRM Test deployment and
-  retest are pending. The workflow row now has an explicit marker and a
-  `34px minmax(0,1fr)` history grid. The finding remains open until explicit user
-  confirmation on CRM Test.
+  action, actor/time and reason in readable labelled columns at desktop sizes and a
+  deliberate responsive layout on narrow screens. Inventory editing and coordination
+  notes must likewise use the available modal width rather than forcing all content
+  through one narrow column.
+- Status: Implemented locally and all 153 automated tests pass. The
+  Inventory detail/edit modals are wider, workflow history uses three labelled columns,
+  and coordination notes use author/comment/action columns with narrow-screen fallback.
+  The finding remains open until explicit user confirmation on CRM Test.
 - Retest condition: Deploy to CRM Test, open a Draft listing with at least one workflow
   event, expand Workflow history and confirm the action, actor/date and reason remain
   horizontally readable without overlap at desktop and narrow modal widths. Explicit
