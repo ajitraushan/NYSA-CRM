@@ -34,11 +34,12 @@
 - `R1.1-AMD-016 Revision 1` clarifies placement: the lifecycle is the first operational
   component on the Agent's My dashboard, immediately below its tabs and before filters and
   KPI cards. It is not repeated lower in the dashboard and does not appear on My Tasks.
-- Package `47a2c10` is superseded by Revision 1 and must not be deployed. The replacement
-  source commit is `7b2e1a0`. Package
-  `nysa-core-r1-1-enh-dash-001-crm-test-7b2e1a0.zip` and the byte-identical held production
-  candidate have SHA-256
-  `f8725a79c9d685c7cd8829ccba484522a3b2bb66853e7c42fa5aceb6bae1fafa`.
+- `R1.1-AMD-016 Revision 2` follows CRM Test evidence that the correct Revision 1 JavaScript
+  was present on disk while the browser still rendered the prior dashboard. The page now
+  requests `dashboard-ui.js` with a release-specific cache key so ordinary reloads fetch the
+  corrected placement instead of a stale static asset.
+- Packages `47a2c10` and `7b2e1a0` are superseded and must not be deployed. The Revision 2
+  source and replacement package are recorded in the dedicated deployment instructions.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 

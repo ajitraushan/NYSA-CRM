@@ -965,6 +965,8 @@ Approved source or import
 - Revision 1 placement requirement: Present the lifecycle as the first operational component
   on My dashboard, immediately below the dashboard tabs and before filters and KPI cards. Do
   not repeat it in the lower panel grid or show it on My Tasks.
+- Revision 2 cache requirement: The page must request the dashboard bundle with a release-
+  specific cache key so a previously cached dashboard cannot conceal the corrected placement.
 - Retest condition: On CRM Test, sign in as a controlled Sales Agent with leads distributed
   across every stage and at least two leads for one customer. Confirm every stage count and
   the distinct-customer context, drill every non-zero stage to its exact leads, use each

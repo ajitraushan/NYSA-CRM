@@ -2538,6 +2538,9 @@ For every new test observation:
 - Revision 1: The owner clarified that the lifecycle strip belongs at the top of My dashboard.
   It is now immediately below the dashboard tabs, before filters and KPI cards, is not repeated
   in the lower panel grid and is excluded from My Tasks.
+- Revision 2: CRM Test had the correct Revision 1 source on disk but the browser rendered the
+  prior bundle. Add a release-specific query key to the dashboard script reference and verify
+  the served page requests the corrected asset without relying on a manual hard refresh.
 - Retest condition: On CRM Test, use controlled Agent A and Agent B records spanning every
   lifecycle stage, including multiple leads for one customer. Reconcile stage and customer
   counts, drill each non-zero count to the exact leads, verify each action opens the intended
