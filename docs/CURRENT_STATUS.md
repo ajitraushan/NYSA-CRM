@@ -81,6 +81,10 @@
 - R1.1-AMD-004 Revision 7 corrects the property-media policy save transaction by
   permitting its dedicated `PropertyMediaApprovalPolicy` audit entity in migration
   034. The policy and mandatory audit evidence continue to commit atomically.
+- R1.1-AMD-004 Revision 8 adds the property-photo organizer: uploaded and selected
+  thumbnails and original filenames, pre-upload duplicate identification and per-photo
+  removal, business actions for order and cover selection, and audited deletion of
+  unused media while immutable-proposal media remains protected.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.

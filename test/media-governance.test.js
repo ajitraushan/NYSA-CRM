@@ -69,3 +69,12 @@ test('property media routes govern duplicates rights cover ordering and review',
   for(const marker of ["/crm/property-media/approval-queue","t.manager_id=\\$1","approval_previewed","/crm/property-media/:mediaId/review"])assert.match(routes,new RegExp(marker));
   for(const marker of ['Media approvals','Property media approvals','media-approval-search','data-media-approve','data-media-reject','Property media rejected and returned'])assert.match(dashboardUi,new RegExp(marker));
 });
+
+test('property photo organizer exposes filenames thumbnails duplicate recovery and safe ordering',()=>{
+  const routes=readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
+  const ui=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const styles=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  for(const marker of ["/crm/property-media/:mediaId/thumbnail","/crm/listings/:id/media/reorder","r.delete('/crm/property-media/:mediaId'","SELECT id FROM proposal_media WHERE property_media_id","unused_media_deleted","property_media_reordered"])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['Original file:','Move earlier','Move later','Make cover photo','Delete unused media','data-remove-selected','Already uploaded as','fileSha256'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['property-media-thumbnail','selected-photo-grid','selected-photo-card'])assert.match(styles,new RegExp(marker));
+});

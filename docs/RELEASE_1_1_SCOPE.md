@@ -382,6 +382,33 @@ release explicitly approves private video-file storage.
   with a second reason and confirm the second audited decision. Explicit user
   confirmation is required before closure.
 
+#### Property-photo organizer and duplicate recovery
+
+- Amendment ID: R1.1-AMD-004 Revision 8
+- Related UAT finding: R1.1-UAT-014 (duplicate photo cannot be identified or removed,
+  and uploaded property photos are difficult to organize)
+- Agreed requirement: The property-media workspace must show a thumbnail, original
+  filename, title, caption, approval status and cover status for every uploaded photo.
+  Before upload, each selected photo must have its own thumbnail, filename, validation
+  result and Remove action. Exact duplicates of an uploaded photo or another selected
+  photo must be identified before submission by filename and existing record title, and
+  the batch must remain available while the user removes the problem file. After upload,
+  an authorized maintainer must reorder photos using Move earlier / Move later controls
+  and explicitly choose the cover photo without entering technical display-order numbers.
+  Unused media may be deleted with confirmation and audit evidence; media retained in an
+  immutable proposal version must never be deleted and must return a clear protection
+  message.
+- Status: Implemented locally and verified by the 135-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit NYSA owner confirmation
+  remain pending.
+- Retest condition: On CRM Test, open a listing with an approved photo and confirm its
+  thumbnail and original filename are visible. Select that same file together with two
+  new photos and confirm the duplicate is highlighted before upload; remove only the
+  duplicate and upload the remaining photos. Move photos earlier and later, choose a
+  cover, refresh and confirm order and cover persist. Delete one unused photo and confirm
+  it disappears. Attempt to delete media used in an immutable proposal and confirm it is
+  protected with a clear message. Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002
