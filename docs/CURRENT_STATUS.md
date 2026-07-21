@@ -6,14 +6,20 @@
   presentation-metadata query used by `GET /api/crm/contacts`. A Sales Agent can load
   customers they own or serve through an assigned/created lead, including a customer
   they have just created before any lead exists.
+- The first CRM Test retest of R1.1-AMD-008 failed with PostgreSQL `42601` at
+  `ORDER BY`. R1.1-AMD-008 Revision 1 corrects the actual cause: the Sales Agent branch
+  of `contactScopeSql` was missing the closing parenthesis for its outer owner-or-lead
+  predicate. The regression test now requires balanced generated SQL. Redeployment and
+  authenticated retest remain pending; R1.1-UAT-021 remains open.
 - R1.1-AMD-009 / R1.1-UAT-022 adds a visual tracker to every opened lead:
   Customer -> Lead -> Contacted -> Qualified -> Viewing -> Negotiation -> Won, with
   Lost shown as a separate terminal outcome. The selected lead's current stage is
   highlighted and the screen explains that one customer may have several leads at
   different stages.
-- All 140 automated tests pass. Both corrections are implemented locally; CRM Test
-  deployment, authenticated Sales Agent/customer-creation retest, visual lifecycle
-  retest and explicit NYSA owner confirmation remain pending. Neither finding is closed.
+- All 140 automated tests pass. The lifecycle correction is deployed to CRM Test;
+  R1.1-AMD-008 Revision 1 requires CRM Test deployment. Authenticated Sales
+  Agent/customer-creation retest, visual lifecycle retest and explicit NYSA owner
+  confirmation remain pending. Neither finding is closed.
 - The only authorized deployment and retest target is
   `https://crm-test.nysarealty.com/`; production is excluded.
 

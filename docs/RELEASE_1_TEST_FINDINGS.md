@@ -2314,8 +2314,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
 - Date raised: 2026-07-21
 - Environment observed: `https://crm-test.nysarealty.com/`
 - Area: Sales Agent -> Customers and standalone customer creation
-- Status: Correction implemented locally; CRM Test deployment, authenticated retest and
-  explicit user confirmation pending. The finding is open.
+- Status: First correction deployed to CRM Test, but authenticated retest failed with
+  PostgreSQL `42601` at `ORDER BY`. R1.1-AMD-008 Revision 1 is implemented locally;
+  redeployment, authenticated retest and explicit user confirmation are pending. The
+  finding remains open.
 - Priority: High operational correction
 - Evidence: The Sales Agent customer workspace returned `Internal server error` while
   loading `GET /api/crm/contacts`, before the standalone customer flow could complete and
@@ -2325,6 +2327,10 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   resulting customer register must include a newly created, agent-owned customer even when
   it does not yet have a lead and must not expose unrelated customers.
 - Related amendment: R1.1-AMD-008
+- Failed-retest diagnosis: The Sales Agent branch of `contactScopeSql` closed its nested
+  assigned-to/created-by group and `EXISTS` subquery but not the outer owner-or-lead
+  expression. The route therefore appended `ORDER BY` to incomplete SQL. Revision 1 adds
+  the missing parenthesis and a balance regression assertion.
 - Retest condition: On CRM Test, complete the no-search, search, standalone-create,
   immediate-open, related-lead and cross-agent denial checks recorded under R1.1-AMD-008.
   Explicit user confirmation is required before closure.

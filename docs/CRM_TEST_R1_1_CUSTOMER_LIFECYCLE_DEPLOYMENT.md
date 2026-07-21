@@ -14,6 +14,15 @@ Production deployment is not authorized by this package.
 Both findings remain open after deployment. Closure requires successful CRM Test retest
 and explicit confirmation from the NYSA owner.
 
+## Failed first retest and Revision 1
+
+The first R1.1-AMD-008 CRM Test retest failed with PostgreSQL `42601`, syntax error at
+`ORDER BY`. The Sales Agent branch of `contactScopeSql` was missing the final parenthesis
+of its outer owner-or-related-lead expression. R1.1-AMD-008 Revision 1 corrects that
+predicate in `src/crm-policy.js` and adds a generated-SQL balance regression assertion.
+The initial deployment must not be accepted as the customer correction; deploy the
+Revision 1 package, restart fully and repeat the complete customer-scope retest.
+
 ## cPanel deployment
 
 1. Confirm the browser address, cPanel application root and configured database belong to

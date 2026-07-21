@@ -92,7 +92,7 @@ export function contactScopeSql(alias, broker, params = []) {
       WHERE sl.contact_id=${alias}.id AND tm.broker_id=${id} AND tm.membership_role='manager' AND tm.ends_at IS NULL))`, params };
   }
   return { clause:`(${alias}.owner_id=${id} OR EXISTS (
-    SELECT 1 FROM leads sl WHERE sl.contact_id=${alias}.id AND (sl.assigned_to=${id} OR sl.created_by=${id}))`, params };
+    SELECT 1 FROM leads sl WHERE sl.contact_id=${alias}.id AND (sl.assigned_to=${id} OR sl.created_by=${id})))`, params };
 }
 
 export function companyScopeSql(alias, broker, params = []) {
