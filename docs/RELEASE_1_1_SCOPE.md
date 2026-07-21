@@ -958,7 +958,7 @@ Approved source or import
   filters. Selecting a stage must open those exact leads and present the appropriate next
   action. Customer is contextual identity, never a lead stage; one customer may contribute
   several distinct leads. Zero-count stages remain visible so the lifecycle is understandable.
-- Status: Implemented locally and verified by the complete 155-test automated suite. No
+- Status: Implemented locally and verified by the complete 156-test automated suite. No
   migration or environment-variable change is required. CRM Test deployment, desktop and
   narrow-width visual retest, reconciliation against exact leads, action navigation, cross-
   Agent denial and explicit NYSA owner confirmation remain pending. The finding is open.
@@ -967,10 +967,15 @@ Approved source or import
   not repeat it in the lower panel grid or show it on My Tasks.
 - Revision 2 cache requirement: The page must request the dashboard bundle with a release-
   specific cache key so a previously cached dashboard cannot conceal the corrected placement.
+- Revision 3 refresh requirement: A successful lead-stage change opened from the lifecycle
+  drill-down must automatically re-query and redraw the originating dashboard under the same
+  filters, close the stale contributing-record list and keep the updated lead open. A manual
+  browser refresh must not be required.
 - Retest condition: On CRM Test, sign in as a controlled Sales Agent with leads distributed
   across every stage and at least two leads for one customer. Confirm every stage count and
   the distinct-customer context, drill every non-zero stage to its exact leads, use each
-  displayed action to open the correct governed lead record, and confirm the selected period,
+  displayed action to open the correct governed lead record, change a stage from a drill-down
+  lead and confirm the lifecycle counts update immediately, and confirm the selected period,
   source, campaign and stage filters remain effective. Sign in as a different Agent and prove
   the first Agent's leads are absent. Retest desktop and narrow widths and explicitly confirm.
 

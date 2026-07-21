@@ -2532,7 +2532,7 @@ For every new test observation:
   exact contributing leads and drill to those records with stage-appropriate actions. Show
   distinct-customer context without treating Customer as a lead stage or merging several leads
   belonging to one customer.
-- Status: Open. Implemented locally and all 155 automated tests pass. CRM Test deployment,
+- Status: Open. Implemented locally and all 156 automated tests pass. CRM Test deployment,
   visual/functional reconciliation and explicit NYSA owner confirmation remain pending. No
   migration, dependency or environment-variable change is required.
 - Revision 1: The owner clarified that the lifecycle strip belongs at the top of My dashboard.
@@ -2541,9 +2541,13 @@ For every new test observation:
 - Revision 2: CRM Test had the correct Revision 1 source on disk but the browser rendered the
   prior bundle. Add a release-specific query key to the dashboard script reference and verify
   the served page requests the corrected asset without relying on a manual hard refresh.
+- Revision 3: After a successful stage change opened from a lifecycle drill-down, automatically
+  re-query and redraw the originating dashboard with its selected filters. Close the stale
+  contributing-record list and keep the updated lead open; no manual browser refresh is required.
 - Retest condition: On CRM Test, use controlled Agent A and Agent B records spanning every
   lifecycle stage, including multiple leads for one customer. Reconcile stage and customer
   counts, drill each non-zero count to the exact leads, verify each action opens the intended
-  governed lead, preserve the selected period/source/campaign/stage filters, prove cross-Agent
-  denial, and confirm responsive presentation. Explicit user confirmation is required before
-  closure.
+  governed lead, change a lead stage from the drill-down and confirm the filtered lifecycle
+  counts refresh immediately without a browser refresh, preserve the selected period/source/
+  campaign/stage filters, prove cross-Agent denial, and confirm responsive presentation.
+  Explicit user confirmation is required before closure.

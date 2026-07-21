@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r1\.1-amd016-r2"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r1\.1-amd016-r3"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -269,6 +269,17 @@ test('campaign filter is a role-scoped source-dependent dropdown on every dashbo
   assert.match(routes,/\/crm\/dashboard\/filter-options/);
   assert.match(routes,/leadScopeSql\('l',req\.broker,params\)/);
   assert.match(routes,/if\(req\.query\.source\).*l\.source=/s);
+});
+
+test('lifecycle drill-down refreshes the filtered dashboard after a successful stage change',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.match(app,/async function openLead\(id,\{afterStageChange=null\}=\{\}\)/);
+  assert.match(app,/if\(afterStageChange\)await afterStageChange\(\)/);
+  assert.match(app,/openLead\(id,\{afterStageChange\}\)/);
+  assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(filters\);\}/);
+  assert.match(page,/dashboard-ui\.js\?v=r1\.1-amd016-r3/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

@@ -65,10 +65,11 @@ privacy/compliance review and implementation approval remain separate gates.
   1.1 enhancement before Release 2. It is a current-stage aggregate for the leads created in
   the selected dashboard period, not a stage-movement report. Connected calendar/viewing
   actions remain separately planned.
-- Status: Implemented locally and covered by the complete 155-test suite. CRM Test deployment,
+- Status: Implemented locally and covered by the complete 156-test suite. CRM Test deployment,
   visual/functional retest and explicit owner confirmation remain pending; `R1.1-UAT-030` is
   open. Revision 1 places the strip at the top of My dashboard, before filters and KPI cards,
-  and excludes it from My Tasks.
+  and excludes it from My Tasks. Revision 3 automatically refreshes the originating filtered
+  dashboard after a successful stage change from lifecycle drill-down.
 - Acceptance condition: With controlled Agent A/Agent B fixtures, reconcile every stage count,
   prove cross-agent denial, drill each count to the exact records, execute each available next
   action and confirm the component refreshes without losing filter or breadcrumb context.

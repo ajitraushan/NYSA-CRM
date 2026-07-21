@@ -28,7 +28,7 @@
   stage remains visible; each count opens the exact role-scoped contributing leads with a
   stage-appropriate action that opens the governed lead record. The customer context is a
   distinct-customer count and is never treated as a lead stage.
-- All 155 automated tests pass. CRM Test deployment, visual/functional retest and explicit
+- All 156 automated tests pass. CRM Test deployment, visual/functional retest and explicit
   NYSA owner confirmation remain required; `R1.1-UAT-030` is open. Communications/calendar
   remain planned Release 3 candidates and are not included in this correction.
 - `R1.1-AMD-016 Revision 1` clarifies placement: the lifecycle is the first operational
@@ -38,11 +38,12 @@
   was present on disk while the browser still rendered the prior dashboard. The page now
   requests `dashboard-ui.js` with a release-specific cache key so ordinary reloads fetch the
   corrected placement instead of a stale static asset.
-- Packages `47a2c10` and `7b2e1a0` are superseded and must not be deployed. The Revision 2
-  source commit is `4c8266b`. Package
-  `nysa-core-r1-1-enh-dash-001-crm-test-4c8266b.zip` and the byte-identical held production
-  candidate have SHA-256
-  `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`.
+- `R1.1-AMD-016 Revision 3` follows CRM Test functional evidence that a stage change made from
+  the lifecycle drill-down left the aggregate stale. A successful stage update now closes the
+  stale contributing-record list and automatically redraws the dashboard with the original
+  filters while keeping the updated lead open. The browser bundle key is advanced again.
+- Packages `47a2c10`, `7b2e1a0` and `4c8266b` are superseded and must not be deployed. A new
+  Revision 3 CRM Test package is required before retest; production remains on hold.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
