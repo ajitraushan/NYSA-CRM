@@ -46,8 +46,11 @@
   transition updated the underlying lead but not the aggregate. Operational API reads now bypass
   caches and the post-transition dashboard request receives a unique refresh key, covering both
   permitted forward and backward movements.
-- All earlier lifecycle packages through `eee18a7` are superseded and must not be deployed. A
-  Revision 4 CRM Test package is required; production remains on hold.
+- All earlier lifecycle packages through `eee18a7` are superseded and must not be deployed.
+  Revision 4 source commit `3a92bcb` is packaged as
+  `nysa-core-r1-1-lifecycle-fresh-counts-crm-test-3a92bcb.zip`, SHA-256
+  `9345b7fd003baa595e031ee0771c279f8b6c14ba882e8891a066871b05ea86b4`.
+  It is authorized for CRM Test only; production remains on hold.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
