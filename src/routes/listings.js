@@ -137,7 +137,8 @@ r.get('/listings-workspace',async(req,res)=>{
   const rows=await many(`SELECT l.*,b.name AS posted_by_name,b.team_id AS posted_by_team_id,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
     0::int AS incomplete_bulk_unit_count,
-    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count,
+    (SELECT m.id FROM property_media m WHERE m.listing_id=l.id AND m.is_cover=TRUE AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp') ORDER BY m.display_order,m.created_at,m.id LIMIT 1) AS cover_media_id
     FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.deleted_at IS NULL AND ${scope} ORDER BY l.updated_at DESC LIMIT 500`,params);
   const listings=rows.map(withDiscount).map(item=>({...item,queue:listingWorkflowQueue(withDiscount(item))}));
   const counts={active:0,drafts:0,awaitingReview:0,changesRequested:0,availabilityRefresh:0,pendingVerification:0,expiringPermits:0,incompleteMedia:0,readinessBlocks:0};

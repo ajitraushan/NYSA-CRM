@@ -434,6 +434,26 @@ release explicitly approves private video-file storage.
   order persists. Delete an unused photo and confirm it disappears. Confirm proposal-retained
   media remains protected. Explicit user confirmation is required before closure.
 
+#### Listing-queue cover-photo visibility
+
+- Amendment ID: R1.1-AMD-004 Revision 10
+- Related UAT finding: R1.1-UAT-014 (the maintained cover photo is not visible in the
+  Listing Executive action queue)
+- Agreed requirement: Every row in the Listing Executive Records requiring action queue
+  must show the listing's current approved, rights-valid cover photo. A listing without a
+  maintained cover must show a compact `No cover photo` placeholder rather than an empty
+  space. If the database identifies a cover but its private file cannot be read, the row must
+  show `Cover unavailable` without breaking queue navigation. The image remains private and
+  must be served through the authenticated property-media thumbnail route.
+- Status: Implemented locally and verified by the 135-test automated suite. CRM Test
+  deployment, authenticated functional retest and explicit NYSA owner confirmation remain
+  pending.
+- Retest condition: On CRM Test, open the Listing Executive dashboard and confirm a listing
+  with a maintained approved cover shows that photo in Records requiring action. Confirm a
+  listing without a cover shows `No cover photo`. Select a different approved cover in the
+  property-media workspace, return to or refresh the dashboard and confirm the replacement
+  photo appears. Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

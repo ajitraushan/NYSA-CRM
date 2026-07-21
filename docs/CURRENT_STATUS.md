@@ -93,6 +93,10 @@
   up/down arrows, adds direct movement to any selected photo position, and distinguishes a
   private-storage preview failure from a missing organizer route. It passes all 135 automated
   tests locally; cumulative CRM Test deployment and functional retest remain pending.
+- R1.1-AMD-004 Revision 10 adds the approved, rights-valid cover photo to every Listing
+  Executive action-queue row, with explicit `No cover photo` and `Cover unavailable`
+  fallbacks. It passes all 135 automated tests locally; CRM Test deployment and explicit
+  user confirmation remain pending.
 - CRM Test deployment, authenticated
   functional retesting and explicit user confirmation remain pending; no Release 1.1
   amendment is closed.
