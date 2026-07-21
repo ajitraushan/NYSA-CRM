@@ -13,6 +13,8 @@ Production deployment is not authorized by this package.
 - R1.1-AMD-008 Revision 2 / R1.1-UAT-023: syntactically complete Sales Agent company
   lookup while opening the existing-customer lead form.
 - R1.1-AMD-010 / R1.1-UAT-024: team-scoped Manager KYC review queue and decision access.
+- R1.1-AMD-011 / R1.1-UAT-025: locked Customer Master feed into customer-originated
+  lead creation, without repeated customer identity input.
 
 Both findings remain open after deployment. Closure requires successful CRM Test retest
 and explicit confirmation from the NYSA owner.
@@ -64,6 +66,9 @@ Revision 1 package, restart fully and repeat the complete customer-scope retest.
 7. Submit Ajit's customer KYC as Pending review. Sign in as the maintained Manager, confirm
    it appears under KYC reviews, open it and verify it. Confirm it leaves the queue, an
    unrelated Manager is denied and Ajit cannot mark the customer Verified.
+8. From Ajit's opened customer select Create lead for this customer. Confirm customer search
+   and identity-entry controls are absent, the Customer Master summary is read-only, and the
+   saved lead references the same customer without creating a duplicate.
 
 For each correction record the Amendment ID, related UAT finding, agreed requirement,
 deployment/retest status and evidence satisfying the retest condition. Do not close either

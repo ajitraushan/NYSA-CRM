@@ -681,6 +681,24 @@ release explicitly approves private video-file storage.
   Confirm an unrelated Manager cannot see or decide it, and the agent cannot self-verify.
   Explicit user confirmation is required before closure.
 
+#### Integrated Customer Master to lead capture
+
+- Amendment ID: R1.1-AMD-011
+- Related UAT finding: R1.1-UAT-025 (Create lead for this customer still asks the user
+  to select or enter customer identity instead of carrying the opened customer forward)
+- Agreed requirement: When lead creation starts from an opened Customer Master record, the
+  lead form must carry that customer's immutable identifier and show a read-only identity,
+  contact and KYC summary. Customer search, customer selection and new-customer identity
+  fields must not appear in this path. Saving creates only the lead and links it to the
+  existing customer; Customer Master remains the single source for identity and KYC.
+- Status: Implemented locally. CRM Test deployment, functional retest and explicit NYSA
+  owner confirmation remain pending; the finding is open.
+- Retest condition: On CRM Test, open Ajit's customer and select Create lead for this
+  customer. Confirm the name, email, phone, preferred channel and KYC status are shown as a
+  read-only carried reference; no customer search or identity input appears. Save a valid
+  lead and confirm exactly one new lead references the existing customer ID and no duplicate
+  customer is created. Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

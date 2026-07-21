@@ -178,6 +178,16 @@ test('existing customer selection ranks typed matches first and alphabetizes bot
   assert.match(crm,/ORDER BY LOWER\(c\.full_name\)/);
 });
 
+test('customer-originated lead creation carries a locked Customer Master reference',()=>{
+  const ui=read('public/app.js'),styles=read('public/index.html');
+  assert.match(ui,/const preselectedCustomer=preselectedCustomerId\?contacts\.find/);
+  assert.match(ui,/Customer carried from Customer Master/);
+  assert.match(ui,/type="hidden" name="contactId" value=/);
+  assert.match(ui,/This lead will be linked to the existing customer record/);
+  assert.match(ui,/if\(!preselectedCustomerId\)\(\{companies\}=await api\('\/crm\/companies'\)\)/);
+  assert.match(styles,/\.customer-lead-feed\{/);
+});
+
 test('lead capture explains the original property link in business language',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Property that prompted this enquiry \(optional\)/);

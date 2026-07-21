@@ -2395,6 +2395,24 @@ deployment to CRM Test, user retest, recorded evidence, and an explicit pass.
   and Ajit cannot self-verify. Confirm lead creation is independent of KYC approval. Explicit
   user confirmation is required before closure.
 
+### R1.1-UAT-025: Customer-originated lead capture repeats customer identity input
+
+- Date raised: 2026-07-21
+- Environment observed: `https://crm-test.nysarealty.com/`
+- Area: Customer Master -> Create lead for this customer
+- Amendment ID: R1.1-AMD-011
+- Related UAT finding: R1.1-UAT-025
+- Agreed requirement: Carry the opened customer's identifier into lead capture as a locked
+  Customer Master reference. Show the existing identity/contact/KYC summary read-only and
+  suppress customer search, selection and new-customer inputs. Persist only a new lead linked
+  to the existing customer; never duplicate or re-key customer identity in this path.
+- Status: Open. The form currently preselects the customer in a general-purpose dropdown but
+  still presents customer selection/identity controls. The integrated correction is
+  implemented locally; CRM Test deployment, retest and explicit confirmation are pending.
+- Retest condition: Open Ajit's customer, create and save a lead without entering customer
+  identity, and confirm one lead links to the same customer ID with no duplicate customer.
+  Explicit user confirmation is required before closure.
+
 ## Review discipline
 
 For every new test observation:

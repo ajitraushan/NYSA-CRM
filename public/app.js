@@ -427,13 +427,16 @@ async function loadCRMLeads() {
 }
 
 async function openNewLeadForm(preselectedCustomerId=null) {
-  let contacts, companies, listings,areas;
+  let contacts, companies=[], listings,areas;
   try {
-    [{ contacts }, { companies }, { listings },{areas}] = await Promise.all([api('/crm/contacts'), api('/crm/companies'), api('/listings?sort=newest'),api('/crm/areas')]);
+    [{ contacts }, { listings },{areas}] = await Promise.all([api('/crm/contacts'),api('/listings?sort=newest'),api('/crm/areas')]);
+    if(!preselectedCustomerId)({companies}=await api('/crm/companies'));
   } catch (err) { return toast(err.message); }
+  const preselectedCustomer=preselectedCustomerId?contacts.find(c=>String(c.id)===String(preselectedCustomerId)):null;
+  if(preselectedCustomerId&&!preselectedCustomer)return toast('The selected customer is no longer available in your permitted scope.',6000);
   const o = overlay(`<div class="modal"><button class="close-x">×</button><h2>Capture new lead</h2>
     <form id="lead-form"><div class="form-grid">
-      <div class="span2"><label for="existing-customer-search">Search existing customers (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">The customer dropdown remains available and alphabetically sorted.</small></div>
+      ${preselectedCustomer?`<input type="hidden" name="contactId" value="${esc(preselectedCustomer.id)}"><div class="span3 customer-lead-feed"><span>Customer carried from Customer Master</span><b>${esc(preselectedCustomer.fullName)}</b><small>${esc(preselectedCustomer.email||'Email missing')} · ${esc(preselectedCustomer.phone||'Phone missing')} · ${esc(preselectedCustomer.preferredChannel||'Preferred channel missing')} · KYC ${esc((preselectedCustomer.kycStatus||'unverified').replaceAll('_',' '))}</small><p>This lead will be linked to the existing customer record. Customer identity and KYC remain maintained once in Customer Master.</p></div>`:`<div class="span2"><label for="existing-customer-search">Search existing customers (optional)</label><input id="existing-customer-search" type="search" autocomplete="off" placeholder="Type a name, email or phone, e.g. Ajit"><small id="existing-customer-search-status">The customer dropdown remains available and alphabetically sorted.</small></div>
       <div><label for="existing-customer-select">Select existing customer (optional)</label><select id="existing-customer-select" name="contactId"><option value="">Create a new customer below</option></select><small>Select a customer from the sorted dropdown, or leave this blank to create a new customer.</small></div>
       <div class="span2 new-contact"><label>Customer full name *</label><input name="fullName" data-new-customer-required></div>
       <div class="new-contact"><label>Customer type</label><select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>developer</option><option>investor</option><option>other</option></select></div>
@@ -442,7 +445,7 @@ async function openNewLeadForm(preselectedCustomerId=null) {
       <div class="new-contact"><label>Preferred channel *</label><select name="preferredChannel" data-new-customer-required><option>WhatsApp</option><option>Phone</option><option>Email</option><option>SMS</option></select></div>
       <div class="new-contact span2"><label>Customer postal address</label><input name="postalAddress" placeholder="Building, street, community, city, country"></div>
       <div class="new-contact"><label>Company</label><select name="companyId"><option value="">Individual</option>${companies.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>
-      <div class="new-contact span2"><label>Public professional profile (optional)</label><input name="publicProfileUrl" type="url" placeholder="https://..."></div>
+      <div class="new-contact span2"><label>Public professional profile (optional)</label><input name="publicProfileUrl" type="url" placeholder="https://..."></div>`}
       <div class="span2"><label>Opportunity title *</label><input name="title" required placeholder="e.g. 2BR home in Dubai Marina"></div>
       <div><label>Qualification</label><input value="Unassessed — complete after creating the lead" readonly></div>
       <div><label>Source *</label><select name="source">${opts(LEAD_SOURCES)}</select></div>
@@ -462,10 +465,9 @@ async function openNewLeadForm(preselectedCustomerId=null) {
   const contactSearch = $('#existing-customer-search',o);
   const contactSearchStatus = $('#existing-customer-search-status',o);
   const renderCustomerChoices=()=>{const query=contactSearch.value.trim().toLocaleLowerCase(),selected=contactSelect.value,ranked=rankCustomerChoices(contacts,query),matching=query?contacts.filter(customer=>customerSearchText(customer).includes(query)).length:contacts.length;contactSelect.innerHTML=`<option value="">Create a new customer below</option>${ranked.map(c=>`<option value="${esc(c.id)}">${esc(c.fullName)} · ${esc(c.email||c.phone||'No email or phone')}</option>`).join('')}`;if(selected&&ranked.some(c=>String(c.id)===selected))contactSelect.value=selected;contactSearchStatus.textContent=query?(matching?`${matching} matching customer${matching===1?'':'s'} shown first; names are alphabetical within each group.`:'No matching customer found; all customers remain available alphabetically.'):`${contacts.length} customer${contacts.length===1?'':'s'} listed alphabetically.`;};
-  contactSearch.addEventListener('input',renderCustomerChoices);renderCustomerChoices();
-  if(preselectedCustomerId&&contacts.some(c=>String(c.id)===String(preselectedCustomerId)))contactSelect.value=String(preselectedCustomerId);
+  if(contactSearch){contactSearch.addEventListener('input',renderCustomerChoices);renderCustomerChoices();}
   const toggleContact = () => {const existing=Boolean(contactSelect.value);o.querySelectorAll('.new-contact').forEach(x=>x.classList.toggle('hidden',existing));o.querySelectorAll('[data-new-customer-required]').forEach(x=>{x.required=!existing;x.disabled=existing;});};
-  contactSelect.addEventListener('change',toggleContact); toggleContact();
+  contactSelect.addEventListener?.('change',toggleContact); toggleContact();
   $('#lead-cancel',o).addEventListener('click',()=>o.remove());
   $('#lead-form',o).addEventListener('submit',async e=>{
     e.preventDefault(); const f=Object.fromEntries(new FormData(e.target));

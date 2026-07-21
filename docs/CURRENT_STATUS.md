@@ -17,12 +17,16 @@
   submissions in actively maintained teams and separates owner submission permission from
   scoped Manager approval permission. The existing server contract otherwise named Manager
   approval but blocked a Manager who did not own the customer.
+- R1.1-AMD-011 / R1.1-UAT-025 makes Customer Master the authoritative source when
+  `Create lead for this customer` is used. The lead form receives a locked customer ID and
+  read-only identity summary; it does not ask the user to search for or re-enter the name,
+  contact details or KYC data.
 - R1.1-AMD-009 / R1.1-UAT-022 adds a visual tracker to every opened lead:
   Customer -> Lead -> Contacted -> Qualified -> Viewing -> Negotiation -> Won, with
   Lost shown as a separate terminal outcome. The selected lead's current stage is
   highlighted and the screen explains that one customer may have several leads at
   different stages.
-- All 142 automated tests pass. The corrections are being packaged for CRM Test deployment;
+- All 143 automated tests pass. The corrections are being packaged for CRM Test deployment;
   authenticated lead creation, Manager KYC queue/decision, visual lifecycle retest and
   explicit NYSA owner confirmation remain pending. No new finding is closed.
 - The only authorized deployment and retest target is
