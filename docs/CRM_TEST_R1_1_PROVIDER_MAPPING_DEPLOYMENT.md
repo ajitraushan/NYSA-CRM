@@ -11,8 +11,8 @@ Target: `https://crm-test.nysarealty.com/` only. Production deployment is not au
   stable CORE values using approved, effective-dated versions. Unknown values are never
   guessed; they remain unmapped until an authorized correction is activated and the
   original event is replayed into exactly one Draft.
-- Status: Implemented and automatically tested locally. CRM Test deployment, functional
-  retest and explicit user confirmation remain pending.
+- Status: Deployed, functionally retested and explicitly accepted by the NYSA owner on
+  CRM Test on 2026-07-21. `R1.1-UAT-028` is closed and `R1.1-AMD-014` is accepted.
 - Retest condition: Complete every test below on CRM Test. Do not close the finding
   until the NYSA owner explicitly confirms the result.
 
@@ -93,5 +93,6 @@ psql -h localhost -p 5432 -U nysareal_nysacrmapp -d nysareal_nysacrm_r1test -P p
 10. Confirm audit entries exist for version creation, mappings, testing, approval,
     activation/replacement and the resulting intake/Draft.
 
-Record the deployed package SHA-256, migration evidence, automated-test count and user
-confirmation in the status/findings documents. Until then R1.1-UAT-028 remains open.
+The deployed package SHA-256, migration evidence, automated-test count and user
+confirmation are recorded in the status/findings documents. The full retest passed and
+R1.1-UAT-028 is closed.

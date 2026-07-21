@@ -2487,13 +2487,17 @@ For every new test observation:
   unmapped exceptions until an authorized user resolves and activates a mapping, after
   which controlled replay creates exactly one Draft with immutable mapping/audit
   history.
-- Status: Implemented locally; CRM Test deployment and retest pending. Full
+- Status: Closed and accepted on CRM Test on 2026-07-21. Full
   Administrators can create or clone a Draft mapping version, maintain external values
   against governed CORE values, record test and approval evidence, activate one exact
   version per provider and retain effective/replacement history. Intake records the
   mapping identity and controlled replay uses a newly activated mapping without
-  guessing or duplicating inventory. All 152 automated tests pass. The finding remains
-  open pending CRM Test deployment, retest and explicit user confirmation.
+  guessing or duplicating inventory. The 152-test implementation suite and later
+  153-test cumulative suite pass. Deployed files matched the staged package and CRM Test
+  health returned database ready. The NYSA owner explicitly confirmed the signed mapped
+  intake, unknown-value isolation, replacement activation, controlled replay into exactly
+  one Draft, duplicate-protection/history and unauthorized-role denial tests. R1.1-AMD-014
+  is accepted.
 - Retest condition: Maintain, approve and activate provider mappings on CRM Test; prove
   successful mapped intake, unknown-value isolation, authorized resolution and replay,
   version immutability, audit evidence and unauthorized-role denial. Explicit user

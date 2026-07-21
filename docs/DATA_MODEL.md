@@ -300,7 +300,7 @@ also have typed columns.
 - Accepted events link exactly one Draft; failed, unmapped and duplicate-review events
   never create a partial or second listing
 
-#### `listing_mapping_versions` and `listing_value_mappings` (Release 1.1 implemented locally)
+#### `listing_mapping_versions` and `listing_value_mappings` (Release 1.1 implemented)
 
 - Provider/version stable identity, business name, Draft/Tested/Approved/Active/Retired
   status, test and approval evidence, actors, effective times and replacement lineage

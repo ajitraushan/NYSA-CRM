@@ -4,6 +4,27 @@ This file records the exact Git source revisions deployed to production. Runtime
 secrets, database dumps, customer data, logs, and generated files are never stored
 in Git.
 
+## 2026-07-21 — CRM Test governed provider listing mappings
+
+- Environment: CRM Test only; production unchanged
+- Amendment: R1.1-AMD-014
+- Related finding: R1.1-UAT-028
+- Source commit: `25310fd`
+- Package: `nysa-core-r1-1-provider-mappings-crm-test.zip`
+- Package SHA-256:
+  `85ed5f44ce9e4a43644f60129cff2c9eae5de961964bc077d80f4d635c91aa6e`
+- Migration: `037_listing_mapping_governance.sql`
+- Scope: full-Administrator governance of provider business-value mappings through
+  Draft, Tested, Approved, Active and Retired versions; exact active-version intake;
+  unknown-value isolation; immutable mapping identity and controlled replay.
+- Verification: deployed files matched the staged package, CRM Test health returned
+  `{"ok":true,"database":"ready"}`, the implementation suite passed 152 tests and the
+  later cumulative suite passed 153 tests.
+- Acceptance: on 2026-07-21 the NYSA owner explicitly confirmed the signed mapped-intake,
+  unknown-value isolation, replacement activation, controlled replay into exactly one
+  Draft, duplicate-protection/history and unauthorized-role denial tests. R1.1-UAT-028
+  is closed and R1.1-AMD-014 is accepted.
+
 ## 2026-07-21 — CRM Test Inventory history column correction
 
 - Environment: CRM Test only; production unchanged
@@ -20,7 +41,7 @@ in Git.
   health returned `{"ok":true,"database":"ready"}` after deployment.
 - Acceptance: the NYSA owner visually retested the corrected Inventory edit, Workflow
   history and coordination-note presentation and explicitly confirmed it is fine on
-  2026-07-21. R1.1-UAT-029 is closed; R1.1-UAT-028 remains open.
+  2026-07-21. R1.1-UAT-029 is closed; R1.1-UAT-028 was subsequently accepted and closed.
 
 ## 2026-07-19 — Production administration alignment hotfix
 
