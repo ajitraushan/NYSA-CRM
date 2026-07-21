@@ -499,6 +499,22 @@ release explicitly approves private video-file storage.
   becomes approved. Confirm a listing from a team not maintained by the Manager is not shown.
   Explicit user confirmation is required before closure.
 
+#### Media-approval queue blank-search correction
+
+- Amendment ID: R1.1-AMD-004 Revision 13
+- Related UAT finding: R1.1-UAT-017 (the Manager Media approvals tab remains on
+  `Loading...` when opened with its search field empty)
+- Agreed requirement: Opening the Media approvals tab with no search text must be a
+  valid request and must return either the pending queue or `0 pending`. An API failure
+  must replace the loading placeholder with a visible error and Retry action rather than
+  leaving the user with an indefinite loading message.
+- Status: Implemented locally. CRM Test deployment, functional retest and explicit NYSA
+  owner confirmation remain pending.
+- Retest condition: On CRM Test, sign in as a Manager and open Media approvals without
+  entering search text. Confirm the loading state resolves to the pending count and rows
+  (or `0 pending`), then search and clear the search field and confirm the queue reloads.
+  Explicit user confirmation is required before closure.
+
 ### Business-friendly inventory commercial controls
 
 - Amendment ID: R1.1-AMD-002

@@ -1,5 +1,13 @@
 # NYSA CORE Current Status
 
+## Release 1.1 media-approval queue loading correction — 2026-07-21
+
+- R1.1-AMD-004 Revision 13 makes an empty media-approval search safe; the API no
+  longer calls `toLowerCase()` on a null value. Queue failures now replace the loading
+  placeholder with the actual error and a Retry action.
+- CRM Test deployment, authenticated functional retest and explicit user confirmation
+  remain pending; the finding is not closed.
+
 ## Release 1.1 Manager listing-approval queue — 2026-07-21
 
 - R1.1-AMD-004 Revision 12 adds a dedicated Manager Listing approvals tab for submitted

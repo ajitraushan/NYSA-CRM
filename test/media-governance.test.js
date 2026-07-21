@@ -68,6 +68,8 @@ test('property media routes govern duplicates rights cover ordering and review',
   for(const marker of ['propertyMediaApprovalPolicy','auto_approved_by_policy','approval_policy_disabled'])assert.match(routes,new RegExp(marker));
   for(const marker of ["/crm/property-media/approval-queue","t.manager_id=\\$1","approval_previewed","/crm/property-media/:mediaId/review"])assert.match(routes,new RegExp(marker));
   for(const marker of ['Media approvals','Property media approvals','media-approval-search','data-media-approve','data-media-reject','Property media rejected and returned'])assert.match(dashboardUi,new RegExp(marker));
+  assert.match(routes,/String\(clean\(req\.query\.q\)\|\|''\)\.toLowerCase\(\)/);
+  for(const marker of ['Media approvals could not be loaded.','media-approval-retry','Not loaded'])assert.match(dashboardUi,new RegExp(marker));
 });
 
 test('property photo organizer exposes filenames thumbnails duplicate recovery and safe ordering',()=>{
