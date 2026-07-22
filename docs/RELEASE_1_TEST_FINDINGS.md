@@ -2532,9 +2532,11 @@ For every new test observation:
   exact contributing leads and drill to those records with stage-appropriate actions. Show
   distinct-customer context without treating Customer as a lead stage or merging several leads
   belonging to one customer.
-- Status: Open. Implemented locally and all 156 automated tests pass. CRM Test deployment,
-  visual/functional reconciliation and explicit NYSA owner confirmation remain pending. No
-  migration, dependency or environment-variable change is required.
+- Status: Closed on 2026-07-22. Revision 4 was deployed to CRM Test, the live page was verified
+  to serve both `app.js?v=r1.1-amd016-r4` and `dashboard-ui.js?v=r1.1-amd016-r4`, health returned
+  `{"ok":true,"database":"ready"}`, and the NYSA owner explicitly confirmed that lifecycle
+  counts and contributing records update correctly. All 156 automated tests pass. No migration,
+  dependency or environment-variable change was required.
 - Revision 1: The owner clarified that the lifecycle strip belongs at the top of My dashboard.
   It is now immediately below the dashboard tabs, before filters and KPI cards, is not repeated
   in the lower panel grid and is excluded from My Tasks.
@@ -2553,6 +2555,6 @@ For every new test observation:
   counts, drill each non-zero count to the exact leads, verify each action opens the intended
   governed lead, move a lead forward and then backward from the drill-down and confirm the
   filtered lifecycle counts refresh immediately after both changes without a browser refresh,
-  preserve the selected period/source/
-  campaign/stage filters, prove cross-Agent denial, and confirm responsive presentation.
-  Explicit user confirmation is required before closure.
+  preserve the selected period/source/campaign/stage filters, prove cross-Agent denial, and
+  confirm responsive presentation.
+  Passed on CRM Test and explicitly confirmed by the NYSA owner on 2026-07-22.

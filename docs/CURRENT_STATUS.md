@@ -28,9 +28,10 @@
   stage remains visible; each count opens the exact role-scoped contributing leads with a
   stage-appropriate action that opens the governed lead record. The customer context is a
   distinct-customer count and is never treated as a lead stage.
-- All 156 automated tests pass. CRM Test deployment, visual/functional retest and explicit
-  NYSA owner confirmation remain required; `R1.1-UAT-030` is open. Communications/calendar
-  remain planned Release 3 candidates and are not included in this correction.
+- All 156 automated tests pass. Revision 4 is deployed to CRM Test and the NYSA owner explicitly
+  confirmed the corrected lifecycle counts and contributing-record behavior on 2026-07-22;
+  `R1.1-UAT-030` is closed. Communications/calendar remain planned Release 3 candidates and are
+  not included in this correction.
 - `R1.1-AMD-016 Revision 1` clarifies placement: the lifecycle is the first operational
   component on the Agent's My dashboard, immediately below its tabs and before filters and
   KPI cards. It is not repeated lower in the dashboard and does not appear on My Tasks.
@@ -50,7 +51,8 @@
   Revision 4 source commit `3a92bcb` is packaged as
   `nysa-core-r1-1-lifecycle-fresh-counts-crm-test-3a92bcb.zip`, SHA-256
   `9345b7fd003baa595e031ee0771c279f8b6c14ba882e8891a066871b05ea86b4`.
-  It is authorized for CRM Test only; production remains on hold.
+  CRM Test serves both Revision 4 bundle keys and reports database-ready health. Production
+  remains on hold pending the separate consolidated Release 1.1 promotion gates and authority.
 
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 

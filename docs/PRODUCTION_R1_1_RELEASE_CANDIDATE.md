@@ -7,7 +7,7 @@ the exact commit is approved for `main`, and the NYSA owner separately authorize
 
 ## Candidate identity
 
-- Status: Superseded by `R1.1-AMD-016 Revision 3`; do not deploy this production candidate.
+- Status: Superseded by `R1.1-AMD-016 Revision 4`; do not deploy this production candidate.
 - Source commit: `4c8266b`
 - File: `nysa-core-r1-1-production-candidate-4c8266b.zip`
 - SHA-256: `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`
@@ -18,8 +18,8 @@ the exact commit is approved for `main`, and the NYSA owner separately authorize
 
 ## Promotion gates
 
-1. Deploy commit `4c8266b` to CRM Test using the dedicated Agent lifecycle instructions.
-2. Record 155/155 deployed automated tests and explicit `R1.1-UAT-030` acceptance.
+1. Completed 2026-07-22: deploy Revision 4 to CRM Test using the dedicated Agent lifecycle instructions.
+2. Completed 2026-07-22: record 156/156 automated tests and explicit `R1.1-UAT-030` acceptance.
 3. Reconcile every other Release 1 and 1.1 item still marked open or pending in the committed
    acceptance, finding and scope documents. User recollection alone does not replace the ledger.
 4. Merge/approve the exact release commit on `main` according to the working agreement.

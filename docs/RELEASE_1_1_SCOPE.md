@@ -958,10 +958,10 @@ Approved source or import
   filters. Selecting a stage must open those exact leads and present the appropriate next
   action. Customer is contextual identity, never a lead stage; one customer may contribute
   several distinct leads. Zero-count stages remain visible so the lifecycle is understandable.
-- Status: Implemented locally and verified by the complete 156-test automated suite. No
-  migration or environment-variable change is required. CRM Test deployment, desktop and
-  narrow-width visual retest, reconciliation against exact leads, action navigation, cross-
-  Agent denial and explicit NYSA owner confirmation remain pending. The finding is open.
+- Status: Accepted on CRM Test on 2026-07-22. Revision 4 is deployed, CRM Test health is ready,
+  all 156 automated tests pass, and the NYSA owner explicitly confirmed the lifecycle behavior,
+  including current contributing records and refreshed counts. No migration, dependency or
+  environment-variable change was required. `R1.1-UAT-030` is closed.
 - Revision 1 placement requirement: Present the lifecycle as the first operational component
   on My dashboard, immediately below the dashboard tabs and before filters and KPI cards. Do
   not repeat it in the lower panel grid or show it on My Tasks.
@@ -982,6 +982,7 @@ Approved source or import
   and confirm the selected period,
   source, campaign and stage filters remain effective. Sign in as a different Agent and prove
   the first Agent's leads are absent. Retest desktop and narrow widths and explicitly confirm.
+  Passed and explicitly confirmed by the NYSA owner on 2026-07-22.
 
 ### Permissions and audit
 

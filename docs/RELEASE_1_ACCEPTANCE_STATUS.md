@@ -1,5 +1,14 @@
 # Release 1 Acceptance Status
 
+## Release 1.1 lifecycle checkpoint — 2026-07-22
+
+- `R1.1-AMD-016 Revision 4` is deployed to CRM Test and the live page serves the expected
+  Revision 4 application and dashboard bundle keys.
+- CRM Test health reports `{"ok":true,"database":"ready"}` and all 156 automated tests pass.
+- The NYSA owner explicitly confirmed that lifecycle contributing records and aggregate counts
+  refresh correctly after the permitted stage movements. `R1.1-UAT-030` is closed.
+- This finding-level acceptance does not itself authorize production deployment.
+
 ## Release 1.1 correction checkpoint — 2026-07-21
 
 - R1.1-AMD-008 / R1.1-UAT-021 and R1.1-AMD-009 / R1.1-UAT-022 are implemented

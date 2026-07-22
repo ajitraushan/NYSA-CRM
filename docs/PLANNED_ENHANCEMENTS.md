@@ -65,9 +65,9 @@ privacy/compliance review and implementation approval remain separate gates.
   1.1 enhancement before Release 2. It is a current-stage aggregate for the leads created in
   the selected dashboard period, not a stage-movement report. Connected calendar/viewing
   actions remain separately planned.
-- Status: Implemented locally and covered by the complete 156-test suite. CRM Test deployment,
-  visual/functional retest and explicit owner confirmation remain pending; `R1.1-UAT-030` is
-  open. Revision 1 places the strip at the top of My dashboard, before filters and KPI cards,
+- Status: Accepted on CRM Test on 2026-07-22 after the complete 156-test suite and explicit NYSA
+  owner confirmation; `R1.1-UAT-030` is closed. Revision 1 places the strip at the top of My
+  dashboard, before filters and KPI cards,
   and excludes it from My Tasks. Revision 3 automatically refreshes the originating filtered
   dashboard after a successful stage change from lifecycle drill-down. Revision 4 forces a
   current-data read for both forward and backward movements instead of accepting cached counts.
