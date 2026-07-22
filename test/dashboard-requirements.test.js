@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-12"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-13"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -173,6 +173,10 @@ test('Role dashboards show the maintained reporting structure at the top without
   assert.match(ui,/Dashboard service restart required/);
   assert.match(ui,/org\.supervisors/);
   assert.match(ui,/org\.reports/);
+  assert.match(ui,/My Manager/);
+  assert.match(ui,/My Direct Reports/);
+  assert.doesNotMatch(ui,/My reporting line/);
+  assert.doesNotMatch(ui,/My reporting agents/);
   assert.match(ui,/item\.personName/);
   assert.match(ui,/item\.unitName/);
   assert.match(ui,/No maintained reporting line/);
@@ -287,8 +291,8 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.1a-12/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-12/);
+  assert.match(page,/app\.js\?v=r2\.1a-13/);
+  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-13/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

@@ -137,6 +137,12 @@
   from exact source commit `dbce067` as `nysa-core-r2-1a-uat-refresh-dbce067.zip` with SHA-256
   `238373c1e9ada700e8afe76f11e06dd604ef8a29fdc486b65fcf2de08551e8fa`; CRM Test deployment and
   UAT remain pending.
+- Agent workspace terminology review identified `R2.1A-UAT-010`: **My reporting line** was an
+  internal hierarchy term rather than a clear user label. Version `2.0.0-dev.14` labels the Agent's
+  supervisor as **My Manager**. A Manager sees both **My Manager** and **My Direct Reports**;
+  Directors continue to see **My Direct Reports**. This changes presentation only and does not
+  change the maintained reporting hierarchy, permissions or record scope. Dev.14 supersedes the
+  pending dev.13 package and remains application-only with no migration.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
