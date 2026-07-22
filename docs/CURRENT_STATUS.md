@@ -117,7 +117,10 @@
   workspace tabs and was repeated inside Proposal approvals, confusing operating work with approval
   work. Version `2.0.0-dev.12` places the guided operating sequence above the tabs and renders it
   only on Team performance. Proposal, KYC, Listing and Media approval tabs open directly into their
-  dedicated queues. This supersedes dev.11 without a migration or data change.
+  dedicated queues. This supersedes dev.11 without a migration or data change. The complete
+  cumulative dev.12 package is built from exact source commit `3ca5ac0` as
+  `nysa-core-r2-1a-uat-workspace-3ca5ac0.zip` with SHA-256
+  `0e88c73b3ed1e6709fe052bc79c420ea45f994445bac83451be26dccb2f06025`.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
