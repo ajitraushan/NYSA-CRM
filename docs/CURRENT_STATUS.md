@@ -100,7 +100,10 @@
   action. Version `2.0.0-dev.10` separates responsibility: Manager priority cases contain only
   unassigned or reassignment-due Leads requiring Manager action, while Agent acceptance and
   execution actions remain only in the assigned Agent's priority queue. Managers retain complete
-  team monitoring through the full Lead register. This supersedes the pending dev.9 package.
+  team monitoring through the full Lead register. This supersedes the pending dev.9 package. The
+  complete cumulative dev.10 package is built from exact source commit `dae5d95` as
+  `nysa-core-r2-1a-uat-priority-dae5d95.zip` with SHA-256
+  `ea379d99ca72ac55c46037c3f4b55157b171baee637bca2bac51b14b23895a02`.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
