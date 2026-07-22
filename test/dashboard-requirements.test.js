@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-9"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-10"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -235,6 +235,12 @@ test('manager dashboard exposes a team-scoped customer KYC review queue',()=>{
   assert.match(routes,/canReviewKyc/);
   assert.match(app,/KYC and verification · Manager review/);
   assert.match(app,/verification is not required before creating a lead/);
+  for(const marker of ['Approve KYC','Reject KYC','Mark expired','Submitted KYC notes','Reviewer decision notes'])assert.match(app,new RegExp(marker));
+  assert.match(app,/String\(customer\.idDocumentExpiry\|\|''\)\.slice\(0,10\)/);
+  assert.match(routes,/reviewDecision\?contact\.idDocumentExpiry/);
+  assert.match(routes,/kyc_review_decided/);
+  assert.match(routes,/Managers may decide a pending KYC review but cannot alter the submitted identity details/);
+  assert.match(routes,/Review notes are required when rejecting or marking KYC expired/);
 });
 
 test('manager dashboard exposes a team-scoped listing approval queue with complete review actions',()=>{
@@ -281,8 +287,8 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.1a-9/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-9/);
+  assert.match(page,/app\.js\?v=r2\.1a-10/);
+  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-10/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

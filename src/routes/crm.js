@@ -351,16 +351,23 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   if(!contact)return res.status(404).json({error:'Contact not found'});
   const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id),canReview=isManager(req.broker);
   if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the contact owner or an authorized manager can maintain KYC details'});
-  const b=req.body||{},type=clean(b.idDocumentType)||null,last4=clean(b.idDocumentLast4)?.toUpperCase()||null,status=clean(b.kycStatus)||'unverified';
+  const b=req.body||{},status=clean(b.kycStatus)||'unverified',reviewDecision=canReview&&['verified','expired','rejected'].includes(status),
+    type=reviewDecision?contact.idDocumentType:clean(b.idDocumentType)||null,
+    last4=reviewDecision?contact.idDocumentLast4:clean(b.idDocumentLast4)?.toUpperCase()||null,
+    expiry=reviewDecision?contact.idDocumentExpiry:b.idDocumentExpiry||null,reviewNotes=clean(b.reviewNotes),
+    notes=reviewDecision?[contact.kycNotes,reviewNotes?`Manager review: ${reviewNotes}`:null].filter(Boolean).join('\n')||null:clean(b.kycNotes);
   if(type&&!['passport','emirates_id'].includes(type))return res.status(400).json({error:'ID type must be Passport or Emirates ID'});
   if(last4&&!/^[A-Z0-9]{4}$/.test(last4))return res.status(400).json({error:'Record only the final four letters or digits of the ID; never enter the full ID number'});
   if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
   if(['verified','expired','rejected'].includes(status)&&!canReview)return res.status(403).json({error:'Manager or administrator approval is required for this KYC decision'});
-  if(['pending_review','verified'].includes(status)&&(!type||!last4||!b.idDocumentExpiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
+  if(!canMaintain&&!reviewDecision)return res.status(403).json({error:'Managers may decide a pending KYC review but cannot alter the submitted identity details'});
+  if(reviewDecision&&contact.kycStatus!=='pending_review')return res.status(409).json({error:'Only a pending KYC submission can receive a review decision'});
+  if(reviewDecision&&['expired','rejected'].includes(status)&&!reviewNotes)return res.status(400).json({error:'Review notes are required when rejecting or marking KYC expired'});
+  if(['pending_review','verified'].includes(status)&&(!type||!last4||!expiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
   const row=await one(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
     kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5::uuid ELSE NULL::uuid END,
-    kyc_notes=$6,updated_at=NOW() WHERE id=$7 RETURNING *`,[type,last4,b.idDocumentExpiry||null,status,req.broker.id,clean(b.kycNotes),contact.id]);
-  await audit('Contact',contact.id,'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry:b.idDocumentExpiry||null});
+    kyc_notes=$6,updated_at=NOW() WHERE id=$7 RETURNING *`,[type,last4,expiry,status,req.broker.id,notes,contact.id]);
+  await audit('Contact',contact.id,reviewDecision?'kyc_review_decided':'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry,reviewNotes});
   res.json(row);
 });
 

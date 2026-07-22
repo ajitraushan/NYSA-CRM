@@ -104,6 +104,12 @@
   complete cumulative dev.10 package is built from exact source commit `dae5d95` as
   `nysa-core-r2-1a-uat-priority-dae5d95.zip` with SHA-256
   `ea379d99ca72ac55c46037c3f4b55157b171baee637bca2bac51b14b23895a02`.
+- Manager KYC UAT identified `R2.1A-UAT-007`: review reused the maintenance form, hid approval in a
+  status dropdown and passed a full timestamp into a date-only field, leaving the submitted expiry
+  visually blank. Version `2.0.0-dev.11` presents the submitted masked ID type, final four, expiry
+  and submitted notes as non-editable review evidence, provides explicit **Approve KYC**,
+  **Reject KYC** and **Mark expired** decisions, requires notes for adverse decisions, preserves
+  submitted evidence server-side and audits the decision separately. This supersedes dev.10.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
