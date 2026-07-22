@@ -52,6 +52,30 @@ or matched properties, next action and material history without searching severa
 - Summary cards and guided actions use business language and disclose incomplete or conflicting data.
   They must not conceal exceptions, silently overwrite another module or infer missing facts.
 
+### Role-guided work areas — D-040
+
+Release 2 must make the operating sequence self-explanatory in the normal Agent and Manager work
+areas. The flow is an interactive working guide, not a decorative lifecycle graphic.
+
+- The **Agent work area** shows `Customer -> Lead -> Qualification -> Opportunity -> Match ->
+  Viewing -> Offer -> Booking -> Deal`, highlights the current step, explains why a later step is
+  locked and provides one primary next action in context. The Agent should not need to leave the
+  case to discover a prerequisite already known by the system.
+- The **Manager work area** uses the same sequence at team level and adds ownership, SLA, overdue
+  next action, blocked-step, duplicate-risk and reassignment indicators. Drill-down opens the same
+  linked case context the Agent sees, with only the Manager's additional governed actions exposed.
+- Each step displays `Completed`, `Current`, `Ready`, `Blocked` or `Not yet available`; a blocked
+  step states the missing requirement in business language and links to the permitted correction.
+- The primary action is visually prominent. Secondary history, configuration and advanced detail
+  remain available through progressive disclosure so functional depth does not overwhelm daily work.
+- Counts and status labels must reconcile to the underlying scoped records. A flow indicator never
+  invents completion from a legacy Lead stage or hides an exception.
+- Desktop and mobile layouts preserve step order, current position and next action. Keyboard focus,
+  labels and colour-independent status cues are required for accessibility.
+- CRM Test acceptance requires representative Sales Agent and Manager users to complete the guided
+  flow without developer assistance and to identify ownership, current step, blocker and next action
+  correctly from their normal work area.
+
 - Customer is the canonical person or company and may have several leads.
 - Lead owns source, routing, assignment, SLA, contact and qualification history.
 - Opportunity owns a specific qualified property pursuit and its post-qualification stage.
@@ -212,7 +236,8 @@ Material stage, match, viewing, offer, booking, party, checklist and closure cha
    history, scope enforcement, work queue and compatibility dashboard evidence.
 3. **R2.1A connected operations and ownership**: guided Customer-to-Lead-to-Opportunity context,
    authoritative-data reuse, related-record navigation, duplicate warnings, ownership visibility
-   and transactional Lead/selected-Opportunity reassignment with immutable history.
+   transactional Lead/selected-Opportunity reassignment with immutable history, and role-guided
+   Agent/Manager flows with a clear current step, blocker and primary next action.
 4. **R2.2 matching and viewing**: explainable shortlist, local scheduling, attendees, attendance,
    feedback, follow-up and `.ics` fallback.
 5. **R2.3 offers, negotiation and booking**: immutable revisions, exact document links,
@@ -244,6 +269,11 @@ open, so neither R2.0 nor R2.1 is accepted or deployable yet.
   immutable assignment and audit history. A failed change leaves every record unchanged.
 - Administrator and Director can govern company-wide reassignment; Manager/Team Lead remains
   limited to managed-team scope, and all existing non-management access boundaries remain intact.
+- Agent and Manager work areas demonstrate the complete operating sequence, highlight the current
+  position and expose one clear next action. Locked steps explain the blocker and route the user to
+  the permitted correction without exposing unrelated administration.
+- In CRM Test usability validation, representative Agent and Manager users can identify the case
+  owner, current step, missing prerequisite and next action without developer guidance.
 - Cross-agent and cross-team reads and writes are denied by the API, with Manager, Director,
   Listing Executive and Accountant behavior matching the approved matrix.
 - Invalid lifecycle transitions and stale concurrent updates are rejected; valid changes append

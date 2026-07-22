@@ -14,6 +14,18 @@
 - This direction is additive. It does not rewrite Release 1.1 data or authorize production. Build,
   testing and acceptance remain restricted to `https://crm-test.nysarealty.com/`.
 
+## Release 2 role-guided work areas approved — 2026-07-22
+
+- D-040 requires the Agent and Manager work areas to demonstrate the end-to-end operating sequence,
+  highlight the current position and show one clear next action, with business-language explanations
+  and correction links for blocked steps.
+- The Agent experience is case-oriented and progressively discloses advanced detail. The Manager
+  experience uses the same flow at team level with ownership, SLA, overdue, blocker, duplicate-risk
+  and reassignment indicators, then drills into the shared linked-case context.
+- R2.1A cannot be accepted from technical tests alone. Representative Agent and Manager CRM Test
+  users must be able to identify ownership, current step, blocker and next action without developer
+  assistance. Production remains excluded.
+
 ## Release 2.0/2.1 Opportunity foundation migration rehearsal passed — 2026-07-22
 
 - The additive R2.0/R2.1 foundation is implemented locally on `agent/release-2-design`.
