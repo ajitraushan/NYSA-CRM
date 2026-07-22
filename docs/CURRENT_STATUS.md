@@ -36,7 +36,10 @@
   [manager]** and **Manager-controlled; open Lead context only**, while Manager, Director and
   Administrator users retain the actionable assignment prompt. Peer-to-peer Agent reassignment is
   not introduced. The complete suite passes 168/168 after the correction; CRM Test deployment of
-  this small correction and continued role UAT remain pending.
+  this small correction and continued role UAT remain pending. Exact source commit `f7e17d3` is
+  packaged as `nysa-core-r2-1a-agent-guidance-f7e17d3.zip` with SHA-256
+  `a46f5c5c09a0eb86ff4e8d76d1eff2fcd6179734f3aaf24ace23e188a465226d`; it contains no new
+  migration and must be deployed only to CRM Test.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
