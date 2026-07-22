@@ -19,9 +19,12 @@ reconcile the Release 1.1 control counts and the existing R2 Opportunity populat
    visibly unavailable rather than missing.
 3. Identify one next case, its owner, current step, blocker and next action without opening a
    separate report.
-4. Open that case and confirm Customer, Lead, qualification, Opportunity and property context are
+4. For an unassigned visible case, confirm the Agent sees **Await assignment by [manager]** and
+   **Manager-controlled; open Lead context only**, never an instruction to assign or reassign a
+   colleague.
+5. Open that case and confirm Customer, Lead, qualification, Opportunity and property context are
    linked rather than re-entered.
-5. Confirm the Agent cannot see governed reassignment controls.
+6. Confirm the Agent cannot see governed reassignment controls.
 
 ### Manager
 

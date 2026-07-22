@@ -1,8 +1,9 @@
 # NYSA CORE Current Status
 
-## Release 2.1A connected operations local build complete — 2026-07-22
+## Release 2.1A CRM Test deployment and Agent-guidance correction — 2026-07-22
 
-- Version `2.0.0-dev.2` implements the approved D-039/D-040 connected operating experience locally.
+- Version `2.0.0-dev.2` implements the approved D-039/D-040 connected operating experience on
+  CRM Test.
   It adds a role-scoped guided operating sequence to Agent and Manager dashboards and a connected
   case view showing Customer, Lead, qualification, active Opportunities, ownership, blockers and
   next action without re-entering authoritative data.
@@ -21,9 +22,22 @@
   package has SHA-256 `f002a889c6d13376c12a18f5437f1d882cddb93645df38070c984fade2292349`.
   The earlier working-tree checksum used CRLF line endings; the recorded value here is the
   authoritative LF-normalized file extracted from the exact Git package and matches CRM Test.
-- No deployment has occurred for R2.1A. Migration rehearsal, CRM Test role walkthroughs and
-  usability acceptance in `RELEASE_2_1A_TEST_PLAN.md` remain required. Production and the frozen
-  Release 1.1 candidate remain untouched and excluded.
+- Before deployment, the rehearsal database and CRM Test application were backed up as
+  `nysa-r2-rehearsal-pre-r2-1a-20260722.dump` (SHA-256
+  `da191d17652cb96f34a19b6d13d68b92f81032b2c68d003567679109491ae1ac`) and
+  `nysa-core-crm-test-pre-r2-1a-20260722.tar.gz` (SHA-256
+  `77459f706e1512919e278e798822f7944fc66245c43fb045ecd6037701bb882d`). Migration 039 committed
+  atomically; brokers 11, contacts 32, leads 25, listings 12, Opportunities 1 and audit rows 383
+  reconciled without loss. The existing Opportunity remained at Requirements version 3 and its
+  initial ownership history reconciled 1/1. CRM Test health returned HTTP 200 and database ready.
+- Agent UAT identified finding `R2.1A-UAT-001`: an unassigned case told an Agent to assign a
+  responsible agent even though governed reassignment is intentionally unavailable to Agents.
+  Version `2.0.0-dev.3` corrects this R2-only guidance: Agents now see **Await assignment by
+  [manager]** and **Manager-controlled; open Lead context only**, while Manager, Director and
+  Administrator users retain the actionable assignment prompt. Peer-to-peer Agent reassignment is
+  not introduced. The complete suite passes 168/168 after the correction; CRM Test deployment of
+  this small correction and continued role UAT remain pending.
+- Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
 

@@ -32,6 +32,8 @@ test('connected case and role dashboards guide users without hiding future relea
   for(const marker of ['GUIDED SALES FLOW','My operating sequence','Team operating sequence','Current work, blockers and the next permitted action','data-guided-step','data-guided-lead'])assert.match(dashboard,new RegExp(marker));
   for(const marker of ['dashboard-connected-flow','flow-current','flow-ready','flow-blocked','flow-not_available','reassignment-preview'])assert.match(styles,new RegExp(marker));
   assert.match(routes,/\/crm\/operations\/guided-work/);
+  for(const marker of ['awaiting manager assignment','Await assignment by','Manager-controlled; open Lead context only','Open Lead and review reassignment'])assert.match(routes,new RegExp(marker));
+  assert.match(dashboard,/actionHint/);
   assert.match(routes,/Available in a later Release 2 slice/);
   assert.match(routes,/R2\.1A enables connected guidance through Matching/);
 });
