@@ -3,6 +3,8 @@ import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { hasInternalCrmIdentity,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
+import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
+import { syncGoogleViewing } from '../calendar-sync.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -56,16 +58,143 @@ r.get('/crm/opportunities',async(req,res)=>{
 
 r.get('/crm/opportunities/:id',async(req,res)=>{
   const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
-  const [stageHistory,assignmentHistory]=await Promise.all([
+  const [stageHistory,assignmentHistory,matches,viewings]=await Promise.all([
     many(`SELECT h.*,b.name AS changed_by_name FROM opportunity_stage_history h
       JOIN brokers b ON b.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id]),
     many(`SELECT h.*,old_owner.name AS from_owner_name,new_owner.name AS to_owner_name,old_team.name AS from_team_name,
       new_team.name AS to_team_name,actor.name AS changed_by_name FROM opportunity_assignment_history h
       LEFT JOIN brokers old_owner ON old_owner.id=h.from_owner_id JOIN brokers new_owner ON new_owner.id=h.to_owner_id
       LEFT JOIN teams old_team ON old_team.id=h.from_team_id LEFT JOIN teams new_team ON new_team.id=h.to_team_id
-      JOIN brokers actor ON actor.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id])
+      JOIN brokers actor ON actor.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id]),
+    many(`SELECT pm.*,li.project,li.area,li.property_type,li.price,li.currency,li.inventory_reference,
+      creator.name AS created_by_name FROM property_matches pm JOIN listings li ON li.id=pm.listing_id
+      JOIN brokers creator ON creator.id=pm.created_by WHERE pm.opportunity_id=$1 ORDER BY
+      CASE pm.shortlist_status WHEN 'shortlisted' THEN 0 WHEN 'considering' THEN 1 ELSE 2 END,pm.created_at`,[opportunity.id]),
+    many(`SELECT v.*,li.project AS listing_project,li.inventory_reference,organizer.name AS organizer_name,
+      cal.event_url AS google_event_url,cal.meeting_url AS google_meeting_url,cal.sync_status AS google_sync_status,cal.last_error AS google_last_error,cal.retry_count AS google_retry_count,
+      COALESCE((SELECT json_agg(json_build_object('id',va.id,'contactId',va.contact_id,'brokerId',va.broker_id,
+        'guestName',va.guest_name,'attendeeRole',va.attendee_role,'invitationStatus',va.invitation_status,
+        'attendanceStatus',va.attendance_status,'displayName',COALESCE((SELECT c.full_name FROM contacts c WHERE c.id=va.contact_id),
+        (SELECT b.name FROM brokers b WHERE b.id=va.broker_id),va.guest_name))) FROM viewing_attendees va WHERE va.viewing_id=v.id),'[]'::json) AS attendees
+      FROM viewings v JOIN listings li ON li.id=v.listing_id JOIN brokers organizer ON organizer.id=v.organizer_id
+      LEFT JOIN viewing_calendar_events cal ON cal.viewing_id=v.id AND cal.provider='google_calendar'
+      WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
-  res.json({opportunity,stageHistory,assignmentHistory});
+  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings});
+});
+
+r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{
+  const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
+  const q=clean(req.query.q),params=[opportunity.id],where=["li.deleted_at IS NULL","li.workflow_status='approved'","li.id NOT IN (SELECT listing_id FROM property_matches WHERE opportunity_id=$1)"];
+  if(q){params.push(`%${q}%`);where.push(`(li.project ILIKE $${params.length} OR li.area ILIKE $${params.length} OR li.inventory_reference ILIKE $${params.length})`);}
+  const listings=await many(`SELECT li.id,li.inventory_reference,li.project,li.area,li.property_type,li.price,li.currency
+    FROM listings li WHERE ${where.join(' AND ')} ORDER BY li.project,li.area LIMIT 50`,params);
+  res.json({count:listings.length,listings,requirementId:opportunity.requirementId});
+});
+
+r.post('/crm/opportunities/:id/matches',async(req,res)=>{
+  const checked=validatePropertyMatch(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  try{const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
+    if(!['Requirements','Matching'].includes(opportunity.stage))return {code:409,error:'Property matching is available only before viewing starts'};
+    const listing=await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[checked.value.listingId],client);
+    if(!listing)return {code:409,error:'Select approved active inventory'};
+    const id=uuid(),v=checked.value;
+    const match=await one(`INSERT INTO property_matches(id,opportunity_id,requirement_id,listing_id,match_source,fit_status,rationale,exceptions,created_by,updated_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9) RETURNING *`,[id,opportunity.id,opportunity.requirementId,v.listingId,v.matchSource,v.fitStatus,v.rationale,v.exceptions,req.broker.id],client);
+    await execute(`INSERT INTO property_match_history(id,property_match_id,to_status,reason,changed_by) VALUES($1,$2,'considering',$3,$4)`,[uuid(),id,'Property added against the exact current requirement evidence',req.broker.id],client);
+    if(opportunity.stage==='Requirements'){
+      await execute("UPDATE opportunities SET stage='Matching',version=version+1,updated_at=NOW() WHERE id=$1",[opportunity.id],client);
+      await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,'Requirements','Matching','match_recorded','First explainable property match recorded',$3)`,[uuid(),opportunity.id,req.broker.id],client);
+    }
+    await audit('PropertyMatch',id,'created',req.broker.id,{opportunityId:opportunity.id,listingId:v.listingId,requirementId:opportunity.requirementId,fitStatus:v.fitStatus},client);
+    return match;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+  }catch(error){if(error.code==='23505')return res.status(409).json({error:'This property is already recorded for the opportunity'});throw error;}
+});
+
+r.patch('/crm/opportunities/:id/matches/:matchId',async(req,res)=>{
+  const checked=validateMatchDecision(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
+    const prior=await one('SELECT * FROM property_matches WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[req.params.matchId,opportunity.id],client);
+    if(!prior)return {code:404,error:'Property match not found'};
+    const v=checked.value,updated=await one(`UPDATE property_matches SET shortlist_status=$1,shortlisted_at=CASE WHEN $1='shortlisted' THEN NOW() ELSE NULL END,
+      rejected_at=CASE WHEN $1='rejected' THEN NOW() ELSE NULL END,rejection_reason=CASE WHEN $1='rejected' THEN $2 ELSE NULL END,
+      updated_by=$3,updated_at=NOW(),version=version+1 WHERE id=$4 AND version=$5 RETURNING *`,[v.status,v.reason,req.broker.id,prior.id,v.expectedVersion],client);
+    if(!updated)return {code:409,error:'This property match changed after it was opened; reload before updating it'};
+    await execute('INSERT INTO property_match_history(id,property_match_id,from_status,to_status,reason,changed_by) VALUES($1,$2,$3,$4,$5,$6)',[uuid(),prior.id,prior.shortlistStatus,v.status,v.reason,req.broker.id],client);
+    await audit('PropertyMatch',prior.id,'shortlist_decision',req.broker.id,{from:prior.shortlistStatus,to:v.status,reason:v.reason},client);return updated;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
+});
+
+r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
+  const checked=validateViewingCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    await one('SELECT id FROM opportunities WHERE id=$1 FOR UPDATE',[req.params.id],client);
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
+    if(!['Matching','Viewing'].includes(opportunity.stage))return {code:409,error:'A viewing can be scheduled only after matching starts and before offers begin'};
+    const v=checked.value,match=await one(`SELECT pm.*,li.project FROM property_matches pm JOIN listings li ON li.id=pm.listing_id
+      WHERE pm.id=$1 AND pm.opportunity_id=$2 FOR SHARE`,[v.propertyMatchId,opportunity.id],client);
+    if(!match||match.shortlistStatus!=='shortlisted')return {code:409,error:'Shortlist the approved property before scheduling a viewing'};
+    const id=uuid(),calendarUid=`${id}@nysarealty.com`;
+    const viewing=await one(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,organizer_id,starts_at,ends_at,timezone,location,instructions,calendar_uid,created_by,updated_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$5,$5) RETURNING *`,[id,opportunity.id,match.id,match.listingId,req.broker.id,v.startsAt,v.endsAt,v.timezone,v.location,v.instructions,calendarUid],client);
+    await execute(`INSERT INTO viewing_attendees(id,viewing_id,contact_id,attendee_role,invitation_status) VALUES($1,$2,$3,'customer','planned')`,[uuid(),id,opportunity.contactId],client);
+    await execute(`INSERT INTO viewing_attendees(id,viewing_id,broker_id,attendee_role,invitation_status) VALUES($1,$2,$3,'agent','planned')`,[uuid(),id,opportunity.ownerId],client);
+    for(const attendee of v.attendees){
+      const name=clean(attendee.guestName);if(!name)continue;
+      await execute(`INSERT INTO viewing_attendees(id,viewing_id,guest_name,attendee_role,invitation_status) VALUES($1,$2,$3,'guest','planned')`,[uuid(),id,name],client);
+    }
+    await execute(`INSERT INTO viewing_status_history(id,viewing_id,to_status,reason,changed_by) VALUES($1,$2,'scheduled','Viewing scheduled locally',$3)`,[uuid(),id,req.broker.id],client);
+    await execute(`UPDATE opportunities SET stage='Viewing',listing_id=COALESCE(listing_id,$1),next_action='Complete viewing and record feedback',next_action_due_at=$2,version=version+1,updated_at=NOW() WHERE id=$3`,[match.listingId,v.endsAt,opportunity.id],client);
+    if(opportunity.stage==='Matching')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,'Matching','Viewing','viewing_scheduled',$3,$4)`,[uuid(),opportunity.id,`Viewing scheduled for ${match.project}`,req.broker.id],client);
+    await audit('Viewing',id,'scheduled',req.broker.id,{opportunityId:opportunity.id,propertyMatchId:match.id,listingId:match.listingId,startsAt:v.startsAt,endsAt:v.endsAt,timezone:v.timezone},client);
+    return viewing;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+});
+
+r.patch('/crm/opportunities/:id/viewings/:viewingId',async(req,res)=>{
+  const checked=validateViewingOutcome(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
+    const prior=await one('SELECT * FROM viewings WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[req.params.viewingId,opportunity.id],client);
+    if(!prior)return {code:404,error:'Viewing not found'};if(prior.status!=='scheduled')return {code:409,error:'Only a scheduled viewing can receive an outcome'};
+    const v=checked.value,attendees=await many('SELECT id FROM viewing_attendees WHERE viewing_id=$1 FOR UPDATE',[prior.id],client);
+    if(prior.version!==v.expectedVersion)return {code:409,error:'This viewing changed after it was opened; reload before updating it'};
+    const attendeeIds=new Set(attendees.map(x=>x.id)),submittedIds=new Set(v.attendance.map(x=>x.id));
+    if(v.status==='completed'&&(submittedIds.size!==attendeeIds.size||[...submittedIds].some(id=>!attendeeIds.has(id))))return {code:409,error:'Record attendance for every viewing attendee'};
+    if([...submittedIds].some(id=>!attendeeIds.has(id)))return {code:409,error:'A viewing attendee changed; reload before recording the outcome'};
+    for(const item of v.attendance){
+      await execute('UPDATE viewing_attendees SET attendance_status=$1 WHERE id=$2 AND viewing_id=$3',[item.attendanceStatus,item.id,prior.id],client);
+    }
+    const updated=await one(`UPDATE viewings SET status=$1,outcome=$2,feedback=$3,follow_up_action=$4,follow_up_due_at=$5,
+      updated_by=$6,updated_at=NOW(),version=version+1 WHERE id=$7 AND version=$8 RETURNING *`,[v.status,v.outcome,v.feedback,v.followUpAction,v.followUpDueAt,req.broker.id,prior.id,v.expectedVersion],client);
+    if(!updated)return {code:409,error:'This viewing changed after it was opened; reload before updating it'};
+    await execute('INSERT INTO viewing_status_history(id,viewing_id,from_status,to_status,reason,changed_by) VALUES($1,$2,$3,$4,$5,$6)',[uuid(),prior.id,prior.status,v.status,v.feedback||v.outcome,req.broker.id],client);
+    if(v.followUpAction)await execute('UPDATE opportunities SET next_action=$1,next_action_due_at=$2,version=version+1,updated_at=NOW() WHERE id=$3',[v.followUpAction,v.followUpDueAt,opportunity.id],client);
+    await audit('Viewing',prior.id,'outcome_recorded',req.broker.id,{from:prior.status,to:v.status,outcome:v.outcome,followUpAction:v.followUpAction},client);return updated;
+  });if(result.error)return res.status(result.code).json({error:result.error});const calendarSync=result.status==='cancelled'?await syncGoogleViewing(result.id,req.broker.id):null;res.json({...result,calendarSync});
+});
+
+r.patch('/crm/opportunities/:id/viewings/:viewingId/schedule',async(req,res)=>{
+  const startsAt=new Date(req.body?.startsAt),endsAt=new Date(req.body?.endsAt),timezone=clean(req.body?.timezone),location=clean(req.body?.location),instructions=clean(req.body?.instructions),expectedVersion=Number(req.body?.expectedVersion);
+  if(Number.isNaN(startsAt.valueOf())||Number.isNaN(endsAt.valueOf())||endsAt<=startsAt||!timezone||!location||!Number.isInteger(expectedVersion))return res.status(400).json({error:'Valid start, end, timezone, location and current version are required'});
+  const result=await transaction(async client=>{const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};const prior=await one('SELECT * FROM viewings WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[req.params.viewingId,opportunity.id],client);if(!prior)return {code:404,error:'Viewing not found'};if(prior.status!=='scheduled')return {code:409,error:'Only a scheduled viewing can be rescheduled'};const updated=await one(`UPDATE viewings SET starts_at=$1,ends_at=$2,timezone=$3,location=$4,instructions=$5,updated_by=$6,updated_at=NOW(),version=version+1 WHERE id=$7 AND version=$8 RETURNING *`,[startsAt.toISOString(),endsAt.toISOString(),timezone,location,instructions,req.broker.id,prior.id,expectedVersion],client);if(!updated)return {code:409,error:'This viewing changed after it was opened; reload before rescheduling'};await execute("INSERT INTO viewing_status_history(id,viewing_id,from_status,to_status,reason,changed_by) VALUES($1,$2,'scheduled','scheduled',$3,$4)",[uuid(),prior.id,'Viewing schedule updated',req.broker.id],client);await audit('Viewing',prior.id,'rescheduled',req.broker.id,{from:{startsAt:prior.startsAt,endsAt:prior.endsAt},to:{startsAt:updated.startsAt,endsAt:updated.endsAt},timezone,location},client);return updated;});if(result.error)return res.status(result.code).json({error:result.error});const calendarSync=await syncGoogleViewing(result.id,req.broker.id);res.json({...result,calendarSync});
+});
+
+r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>{
+  const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
+  const viewing=await one(`SELECT v.*,li.project AS listing_project,o.opportunity_reference FROM viewings v JOIN listings li ON li.id=v.listing_id
+    JOIN opportunities o ON o.id=v.opportunity_id WHERE v.id=$1 AND v.opportunity_id=$2`,[req.params.viewingId,opportunity.id]);
+  if(!viewing)return res.status(404).json({error:'Viewing not found'});await audit('Viewing',viewing.id,'calendar_downloaded',req.broker.id,{opportunityId:opportunity.id});
+  res.setHeader('Content-Type','text/calendar; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="nysa-viewing-${viewing.id}.ics"`);res.end(buildViewingIcs(viewing));
 });
 
 r.post('/crm/leads/:id/opportunities',async(req,res)=>{
@@ -127,6 +256,10 @@ r.post('/crm/opportunities/:id/stage',async(req,res)=>{
     const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
     if(opportunity.version!==expectedVersion)return {code:409,error:'This opportunity changed after it was opened; reload before updating it'};
+    if(opportunity.stage==='Matching'&&req.body?.toStage==='Viewing'){
+      const scheduled=await one("SELECT id FROM viewings WHERE opportunity_id=$1 AND status='scheduled' LIMIT 1",[opportunity.id],client);
+      if(!scheduled)return {code:409,error:'Schedule a viewing for a shortlisted property before moving to Viewing'};
+    }
     const checked=validateOpportunityTransition(opportunity.stage,req.body?.toStage,{reasonCode:req.body?.reasonCode,reason:req.body?.reason});
     if(checked.error)return {code:409,error:checked.error};
     const next=checked.value,closed=next.toStage==='Closed Lost';
@@ -185,6 +318,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     one(`SELECT COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost'))::int AS active,
       COUNT(*) FILTER(WHERE o.stage='Requirements')::int AS requirements,
       COUNT(*) FILTER(WHERE o.stage='Matching')::int AS matching,
+      COUNT(*) FILTER(WHERE o.stage='Viewing')::int AS viewing,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
     many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
@@ -217,10 +351,11 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     {code:'lead',label:'Lead',status:leadCounts.unassigned?'blocked':'current',count:leadCounts.leads,action:leadCounts.unassigned?(canCoordinateAssignment?`${leadCounts.unassigned} need assignment`:`${leadCounts.unassigned} awaiting manager assignment`):'Continue customer follow-up'},
     {code:'qualification',label:'Qualification',status:leadCounts.qualified?'current':'ready',count:leadCounts.qualified,action:'Complete requirements and approved qualification'},
     {code:'opportunity',label:'Opportunity',status:leadCounts.readyOpportunities?'ready':opportunityCounts.active?'current':'blocked',count:opportunityCounts.active,action:leadCounts.readyOpportunities?`${leadCounts.readyOpportunities} qualified lead${leadCounts.readyOpportunities===1?' is':'s are'} ready`:opportunityCounts.overdue?`${opportunityCounts.overdue} next action${opportunityCounts.overdue===1?' is':'s are'} overdue`:'Create from a qualified lead'},
-    {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Requires an active Opportunity'},
-    ...['Viewing','Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
+    {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.viewing?'completed':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Review explainable property matches'},
+    {code:'viewing',label:'Viewing',status:opportunityCounts.viewing?'current':opportunityCounts.matching?'ready':'blocked',count:opportunityCounts.viewing,action:opportunityCounts.matching?'Shortlist a property and schedule a viewing':'Record attendance, feedback and follow-up'},
+    ...['Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
   ];
-  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.1A enables connected guidance through Matching; later steps remain visibly unavailable'});
+  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.2 enables explainable matching and local viewing operations; Offer and later steps remain unavailable'});
 });
 
 export default r;

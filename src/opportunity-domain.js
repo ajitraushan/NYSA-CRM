@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 export const OPPORTUNITY_STAGES=['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Closed Won','Closed Lost'];
-export const R2_1_ENABLED_STAGES=['Requirements','Matching','Closed Lost'];
+export const R2_2_ENABLED_STAGES=['Requirements','Matching','Viewing','Closed Lost'];
 export const OPPORTUNITY_LOST_REASONS=['customer_withdrew','no_suitable_property','budget_or_finance','timing_changed','competitor','duplicate_pursuit','other'];
 export const OPPORTUNITY_TRANSACTION_TYPES=['Sale','Rental','Off-plan','Commercial'];
 
@@ -36,15 +36,20 @@ export function validateOpportunityCreate(body={}){
 
 export function validateOpportunityTransition(currentStage,toStage,{reasonCode,reason}={}){
   if(!OPPORTUNITY_STAGES.includes(currentStage)||!OPPORTUNITY_STAGES.includes(toStage))return {error:'Invalid opportunity stage'};
-  if(!R2_1_ENABLED_STAGES.includes(toStage))return {error:`${toStage} is not enabled in Release 2.1`};
+  if(!R2_2_ENABLED_STAGES.includes(toStage))return {error:`${toStage} is not enabled in Release 2.2`};
   if(currentStage==='Requirements'&&toStage==='Matching')return {value:{toStage,reasonCode:null,reason:null}};
   if(currentStage==='Matching'&&toStage==='Requirements'){
     if(!clean(reason))return {error:'A reason is required to return to Requirements'};
     return {value:{toStage,reasonCode:'requirements_reopened',reason:clean(reason)}};
   }
-  if(['Requirements','Matching'].includes(currentStage)&&toStage==='Closed Lost'){
+  if(currentStage==='Matching'&&toStage==='Viewing')return {value:{toStage,reasonCode:'viewing_scheduled',reason:clean(reason)||'Viewing scheduled for a shortlisted property'}};
+  if(currentStage==='Viewing'&&toStage==='Matching'){
+    if(!clean(reason))return {error:'A reason is required to return to Matching'};
+    return {value:{toStage,reasonCode:'viewing_returned_to_matching',reason:clean(reason)}};
+  }
+  if(['Requirements','Matching','Viewing'].includes(currentStage)&&toStage==='Closed Lost'){
     if(!OPPORTUNITY_LOST_REASONS.includes(reasonCode)||!clean(reason))return {error:'A controlled lost reason and explanation are required'};
     return {value:{toStage,reasonCode,reason:clean(reason)}};
   }
-  return {error:`Transition from ${currentStage} to ${toStage} is not enabled in Release 2.1`};
+  return {error:`Transition from ${currentStage} to ${toStage} is not enabled in Release 2.2`};
 }

@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('Release 2 opportunity migration is additive immutable and reconciliation-first',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.equal(migrations.at(-1),'039_release2_connected_operations.sql');
+  assert.equal(migrations.at(-1),'042_google_calendar_sync_reconciliation.sql');
   const sql=read('src/migrations/038_release2_opportunity_foundation.sql');
   for(const contract of ['CREATE TABLE opportunities','CREATE TABLE opportunity_stage_history','CREATE TABLE opportunity_attribution','CREATE TABLE opportunity_participants','CREATE TABLE r2_legacy_lead_review','CREATE VIEW r2_opportunity_reconciliation'])assert.match(sql,new RegExp(contract));
   assert.match(sql,/opportunity_attribution_immutable/);
@@ -33,7 +33,7 @@ test('opportunity API requires qualification scope attribution and optimistic co
   assert.match(routes,/expectedVersion/);
   assert.match(routes,/version=version\+1/);
   assert.match(routes,/automaticConversion:false/);
-  assert.match(domain,/Release 2\.1/);
+  assert.match(domain,/Release 2\.2/);
 });
 
 test('opportunity workspace is separate and states the Release 1.1 compatibility boundary',()=>{

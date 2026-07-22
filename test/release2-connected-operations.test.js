@@ -9,7 +9,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 
 test('R2.1A migration adds immutable Opportunity ownership history without rewriting Release 1.1 lifecycle data',()=>{
   const migrations=readdirSync(join(root,'src','migrations')).filter(x=>x.endsWith('.sql')).sort();
-  assert.equal(migrations.at(-1),'039_release2_connected_operations.sql');
+  assert.ok(migrations.includes('039_release2_connected_operations.sql'));
   const sql=read('src/migrations/039_release2_connected_operations.sql');
   for(const marker of ['CREATE TABLE opportunity_assignment_history','change_scope','opportunity_assignment_history_immutable','Initial owner captured from the qualified lead','OpportunityAssignment'])assert.match(sql,new RegExp(marker));
   assert.doesNotMatch(sql,/UPDATE\s+leads\s+SET\s+stage/i);
@@ -36,7 +36,7 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(dashboard,/actionHint/);
   assert.doesNotMatch(dashboard,/data\.releaseBoundary/);
   assert.match(routes,/Available in a later Release 2 slice/);
-  assert.match(routes,/R2\.1A enables connected guidance through Matching/);
+  assert.match(routes,/R2\.2 enables explainable matching and local viewing operations/);
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
   assert.match(routes,/LIMIT 50/);

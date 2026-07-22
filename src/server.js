@@ -16,6 +16,7 @@ import filesProposalRoutes from './routes/files-proposals.js';
 import dashboardRoutes from './routes/dashboards.js';
 import aiRoutes from './routes/ai.js';
 import opportunityRoutes from './routes/opportunities.js';
+import integrationRoutes from './routes/integrations.js';
 import { migrate, closeDatabase } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,7 @@ app.mount('/api', filesProposalRoutes);
 app.mount('/api', dashboardRoutes);
 app.mount('/api', aiRoutes);
 app.mount('/api', opportunityRoutes);
+app.mount('/api', integrationRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;

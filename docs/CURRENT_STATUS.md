@@ -1,5 +1,39 @@
 # NYSA CORE Current Status
 
+## R2.2 scope confirmation and Google Calendar/Meet extension — 2026-07-22
+
+- D-042 formally keeps the Google Calendar/Meet work inside R2.2 while preserving two acceptance
+  gates: first the authoritative local matching/viewing workflow, then the optional adapter.
+- Local version `2.0.0-dev.16` implements OAuth connection, encrypted refresh-token storage,
+  explicit Google event/Meet creation, attendee invitations, stable viewing linkage and Join/Open
+  buttons. The complete automated suite passes 175/175.
+- At the dev.16 checkpoint the adapter was incomplete: governed reschedule/cancellation sync and
+  retry/reconciliation handling were still open.
+- Local version `2.0.0-dev.17` adds governed viewing reschedule synchronization, automatic linked
+  event cancellation, visible retryable sync failures and an explicit reconciliation operation.
+  The remaining gates are isolated PostgreSQL rehearsal, secure CRM Test OAuth configuration and
+  cross-role UAT; no deployment has occurred.
+
+## Release 2.2 matching and viewing local build — 2026-07-22
+
+- Version `2.0.0-dev.15` begins the next additive Release 2 slice after the accepted R2.1A CRM
+  Test UAT. It has not been packaged or deployed.
+- Migration `040_release2_matching_viewing.sql` enables the Opportunity `Viewing` stage and adds
+  explainable property matches, immutable shortlist-decision history, local viewings, attendees
+  and immutable viewing-status history. It does not update Release 1.1 Lead or Listing records.
+- Authorized Opportunity operators can record an approved property against the exact requirement
+  version with a fit status, rationale and visible exceptions; shortlist or reject it with governed
+  evidence; and schedule a viewing only after shortlisting.
+- Scheduling is atomic: it creates the viewing and default customer/Agent attendees, selects the
+  authoritative Listing by reference, advances the Opportunity from Matching to Viewing, updates
+  the next action, and records stage/audit history. Matching never changes inventory.
+- Scheduled viewings support a provider-neutral `.ics` download. Completed viewings require an
+  outcome and feedback; optional follow-up requires both an action and deadline. External calendar
+  synchronization remains outside Release 2 under the existing integration gate.
+- Offer, Negotiation, Booking and Deal remain unavailable pending R2.3 and R2.4. CRM Test migration
+  rehearsal, data reconciliation, cross-role functional UAT and explicit acceptance are still
+  required before R2.2 can be treated as stable.
+
 ## Release 2.1A CRM Test deployment and Agent-guidance correction — 2026-07-22
 
 - Version `2.0.0-dev.2` implements the approved D-039/D-040 connected operating experience on

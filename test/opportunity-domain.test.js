@@ -12,13 +12,15 @@ test('opportunity creation requires governed identity and next action fields',()
   assert.equal(checked.value.priority,'high');
 });
 
-test('Release 2.1 exposes only Requirements Matching and reasoned Closed Lost',()=>{
+test('Release 2.2 exposes Requirements Matching Viewing and reasoned Closed Lost',()=>{
   assert.deepEqual(OPPORTUNITY_STAGES,['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Closed Won','Closed Lost']);
   assert.equal(validateOpportunityTransition('Requirements','Matching').value.toStage,'Matching');
   assert.match(validateOpportunityTransition('Matching','Requirements').error,/reason is required/i);
   assert.equal(validateOpportunityTransition('Matching','Requirements',{reason:'Customer requirements changed'}).value.reasonCode,'requirements_reopened');
-  assert.match(validateOpportunityTransition('Matching','Viewing').error,/not enabled in Release 2.1/);
-  assert.match(validateOpportunityTransition('Matching','Closed Won').error,/not enabled in Release 2.1/);
+  assert.equal(validateOpportunityTransition('Matching','Viewing').value.reasonCode,'viewing_scheduled');
+  assert.match(validateOpportunityTransition('Viewing','Matching').error,/reason is required/i);
+  assert.equal(validateOpportunityTransition('Viewing','Matching',{reason:'Customer requested alternatives'}).value.reasonCode,'viewing_returned_to_matching');
+  assert.match(validateOpportunityTransition('Matching','Closed Won').error,/not enabled in Release 2.2/);
   assert.match(validateOpportunityTransition('Requirements','Closed Lost',{reasonCode:'other',reason:''}).error,/controlled lost reason/);
   assert.equal(validateOpportunityTransition('Matching','Closed Lost',{reasonCode:'no_suitable_property',reason:'Reviewed approved inventory'}).value.toStage,'Closed Lost');
 });

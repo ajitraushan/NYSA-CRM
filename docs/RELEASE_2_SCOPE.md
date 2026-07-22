@@ -91,7 +91,7 @@ areas. The flow is an interactive working guide, not a decorative lifecycle grap
 | Convert a qualified lead without retyping customer or requirement data | Contact, versioned lead requirements and qualification assessments exist | Create the opportunity transactionally from an in-scope qualified lead and snapshot/link the exact current requirement and qualification evidence |
 | One qualified lead may produce multiple opportunities | Planned relationship is one-to-many; no tables or API exist | Permit multiple active property pursuits, with duplicate-open-pursuit protection for the same lead/listing/business line |
 | Buyer-to-property matching | Requirements and governed inventory exist; manual proposal selection is not a match register | Add explainable match records with requirement version, listing, fit status, source, rationale, exceptions and actor/time |
-| Viewing scheduling, attendance, feedback and follow-up | Viewing is only an activity/lead-stage label; calendar is `.ics` fallback | Add viewing and attendee records; use local scheduling and `.ics` fallback until a Release 3 calendar adapter is approved |
+| Viewing scheduling, attendance, feedback and follow-up | Viewing is only an activity/lead-stage label; calendar is `.ics` fallback | Add authoritative local viewing and attendee records with `.ics`; D-042 additionally permits a bounded Google Calendar/Meet adapter within R2.2 while CORE remains authoritative |
 | Offers and negotiation history | Offer-letter document versions can exist, but there is no commercial offer ledger | Add offer, immutable revision and negotiation-event records; sent-document actions must link the exact document version |
 | Booking and reservation records | Roadmap requires them, but the planned entity list omitted them | Add explicit `bookings` and `booking_status_history`; do not model booking only as an opportunity stage |
 | Closed-won and closed-lost deals | Existing Won/Lost are lead stages, not authoritative transactions | Add governed opportunity closure and a deal record; Closed Lost requires a controlled reason, while Closed Won requires transaction validation |
@@ -172,8 +172,13 @@ replacement labels and drill-downs.
   status, outcome, feedback, follow-up action/due time, calendar UID and timestamps.
 - `viewing_attendees`: viewing, canonical participant reference or bounded guest identity,
   attendee role, invitation/attendance status and feedback visibility.
-- Initial scheduling is provider-neutral and supports `.ics` download. External create/update/
-  cancel synchronization is not implied and remains gated by `ENH-CALENDAR-001`.
+- Initial scheduling is provider-neutral and supports `.ics` download.
+- Under D-042, R2.2 additionally includes a replaceable Google Calendar/Meet adapter for CRM Test.
+  CORE remains authoritative for the viewing. The adapter stores only protected connection state
+  and stable external event/link references, invites the permitted customer and responsible Agent,
+  prevents duplicate creation, synchronizes governed reschedules and cancellations, records
+  failures for safe retry, audits every external action and never exposes credentials to browser
+  code. If Google is unavailable or disconnected, local scheduling and `.ics` remain usable.
 
 ### Offers and negotiations
 
@@ -239,7 +244,8 @@ Material stage, match, viewing, offer, booking, party, checklist and closure cha
    transactional Lead/selected-Opportunity reassignment with immutable history, and role-guided
    Agent/Manager flows with a clear current step, blocker and primary next action.
 4. **R2.2 matching and viewing**: explainable shortlist, local scheduling, attendees, attendance,
-   feedback, follow-up and `.ics` fallback.
+   feedback, follow-up and `.ics` fallback. D-042 adds the bounded Google Calendar/Meet extension;
+   base matching/viewing acceptance is proved first, followed by adapter-specific acceptance.
 5. **R2.3 offers, negotiation and booking**: immutable revisions, exact document links,
    negotiation timeline, reservation records and inventory conflict handling.
 6. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
@@ -252,11 +258,16 @@ Each slice needs committed requirements, migrations, API authorization, audit co
 automated tests, CRM Test deployment instructions and explicit acceptance before the next slice
 may treat it as stable.
 
-Implementation checkpoint on 2026-07-22: D-038 and the design portion of R2.0 are complete;
-migration 038, the scoped Opportunity API, immutable attribution/history and separate workspace are
-implemented locally for R2.1. All 164 automated tests pass. The isolated PostgreSQL migration
-rehearsal, reconciliation evidence, CRM Test deployment and explicit functional acceptance remain
-open, so neither R2.0 nor R2.1 is accepted or deployable yet.
+Implementation checkpoint on 2026-07-22: R2.0, R2.1 and R2.1A have completed CRM Test deployment
+and functional acceptance. The next local-only build, version `2.0.0-dev.15`, implements the R2.2
+matching and viewing boundary in migration 040 with explainable property matching, governed
+shortlisting, local scheduling, attendees, outcomes, feedback, follow-up and provider-neutral
+`.ics` export. It has not been deployed. PostgreSQL rehearsal, reconciliation, CRM Test UAT and
+explicit R2.2 acceptance remain required before R2.3 begins. Version `2.0.0-dev.16` adds the first
+local Google Calendar/Meet adapter increment under D-042: OAuth connection, encrypted refresh-token
+storage, explicit event creation, invitations and stored Meet links. Reschedule/cancellation sync,
+failure retry/reconciliation and complete CRM Test acceptance are still open, so the adapter is not
+yet an accepted R2.2 capability.
 
 ## Acceptance baseline
 
@@ -284,6 +295,12 @@ open, so neither R2.0 nor R2.1 is accepted or deployable yet.
   inventory.
 - Viewings preserve timezone, attendees, attendance, feedback and required follow-up; calendar
   fallback is accurately labelled.
+- The base R2.2 flow passes independently with Google disconnected. When connected, one explicit
+  action creates at most one Google event per viewing, invites only permitted participants and
+  exposes Join/Open links without leaking credentials.
+- A governed viewing reschedule or cancellation updates the linked Google event or records a
+  visible retryable failure; retries are idempotent, and reconciliation identifies any divergence
+  between CORE and Google Calendar. `.ics` remains available throughout.
 - Every sent offer/negotiation action resolves to the exact immutable offer and document version.
 - Booking/reservation conflicts cannot reserve the same governed inventory incompatibly, and a
   failed transaction leaves neither module partially updated.
