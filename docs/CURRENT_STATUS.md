@@ -133,7 +133,10 @@
   active SLA policy exists. Agent priority cards show the authoritative offer time and acceptance
   deadline. Existing malformed offers are not silently rewritten; an Administrator, Director or
   responsible Manager can select the same agent and team with a reason to append an audited renewal.
-  This is application-only, has no migration and remains pending CRM Test packaging and UAT.
+  This is application-only and has no migration. The complete cumulative dev.13 package is built
+  from exact source commit `dbce067` as `nysa-core-r2-1a-uat-refresh-dbce067.zip` with SHA-256
+  `238373c1e9ada700e8afe76f11e06dd604ef8a29fdc486b65fcf2de08551e8fa`; CRM Test deployment and
+  UAT remain pending.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
