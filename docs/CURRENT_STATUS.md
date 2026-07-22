@@ -1,5 +1,21 @@
 # NYSA CORE Current Status
 
+## Campaign management release allocation — 2026-07-22
+
+- The NYSA owner approved the planning boundary recorded as D-037 and
+  `ENH-CAMPAIGN-001`: Release 2 preserves immutable campaign/source attribution through
+  Opportunity, Booking and Deal; Release 3A delivers governed campaign management before Release
+  3B channel automation; Release 6 adds reconciled CPL, CPA and marketing ROI.
+- Release 2 records original-enquiry campaign, advert, form, landing-page, source and property
+  identifiers as provenance only. It does not create campaign budgets, infer multi-touch credit or
+  claim financial marketing return.
+- Release 3A owns campaign identity, owner, objective, properties, audience, channels, dates,
+  budgets, status, source identifiers, targets and operational performance. Release 3B providers,
+  landing pages, communications, nurture and advertising consume those governed identities.
+- This is a requirements/design allocation only. No feature implementation or deployment was
+  performed; testing and deployment remain restricted to `https://crm-test.nysarealty.com/` and
+  production remains unauthorized.
+
 ## Release 2 requirements reconciliation and design — 2026-07-22
 
 - Release 2 design work began from continuity commit `6588047` on the separate

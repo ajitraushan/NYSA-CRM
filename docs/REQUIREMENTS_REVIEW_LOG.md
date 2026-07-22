@@ -905,3 +905,20 @@ Development remains gated on approval of lifecycle presentation, multi-opportuni
 transition and closure policy, initial checklists, booking/inventory behavior, party rules,
 commercial visibility and legacy backfill treatment. Testing and deployment remain restricted to
 CRM Test, and the held Release 1.1 production candidate is outside this workstream.
+
+### RR-014: Campaign Management Release Allocation
+
+**Status:** Allocation approved 2026-07-22 under D-037; implementation pending
+
+**Detailed planning record:** `PLANNED_ENHANCEMENTS.md` / `ENH-CAMPAIGN-001`
+
+Campaign management is split at authoritative module boundaries rather than left as an
+unallocated future feature. Release 2 preserves immutable original-enquiry source/campaign
+provenance through Opportunity, Booking and Deal. Release 3A delivers the governed campaign
+master and operational performance reporting before Release 3B channel integrations and
+automation consume it. Release 6 adds CPL, CPA and ROI only when reconciled spend, authoritative
+deal outcomes, revenue and commissions share the same campaign and property identities.
+
+This allocation does not authorize provider connections or production deployment. Provider/account
+ownership, privacy basis, field mappings, sandbox credentials and measurable CRM Test acceptance
+criteria remain separate gates.

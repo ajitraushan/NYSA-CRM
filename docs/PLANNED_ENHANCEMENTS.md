@@ -4,6 +4,35 @@ These records capture approved planning inputs that are not implemented by the c
 Release 1.1 correction packages. Release allocation, provider selection, credentials,
 privacy/compliance review and implementation approval remain separate gates.
 
+## ENH-CAMPAIGN-001: Governed campaign management and outcome attribution
+
+- Requested: 2026-07-21; release allocation approved under D-037 on 2026-07-22.
+- Current behavior: CORE retains lead source and campaign codes and reports operational lead
+  response/conversion, but it has no campaign master, governed budget, channel execution record or
+  authoritative deal-based acquisition/return calculation.
+- Release 2 foundation: Preserve immutable original-enquiry source, campaign, advert, form,
+  landing-page and property identifiers from Lead through Opportunity, Booking and Deal. Record
+  provenance and reconciliation only; do not infer multi-touch credit, spend, CPL, CPA or ROI.
+- Release 3A requirement: Deliver the governed campaign master with stable identity, owner,
+  objective, applicable properties, audience, channels, dates, budget, status, source identifiers,
+  performance targets and operational lead/qualification/deal-conversion reporting.
+- Release 3B consumption: Communications, calendars, lead providers, landing pages, nurture and
+  dynamic advertisements use governed campaign identities and retain provider event mappings,
+  failures, retries and reconciliation instead of creating free-text campaign labels.
+- Release 6 analytics: Add CPL, CPA and marketing ROI only after channel spend, authoritative
+  Release 2 outcomes and applicable revenue/commission records reconcile to the same campaign and
+  property identities.
+- Controls: API-enforced role scope; versioned/retired controlled identities; immutable intake
+  provenance; consent and privacy basis; audited budget/status changes; idempotent provider
+  mappings; data-as-of and contributing-record drill-down; no financial return inferred from
+  proposal values, free text or a lead-stage label.
+- Status: Allocated; design boundary approved, not implemented. Testing and deployment remain
+  restricted to CRM Test and require separately approved acceptance criteria.
+- Acceptance condition: Reconcile one controlled campaign identifier from enquiry to Lead,
+  Opportunity, Booking and Deal without duplication or mutation; prove unrelated-role denial;
+  reconcile Release 3 operational campaign counts to their source records; and keep financial
+  return explicitly unavailable until Release 6 source gates pass.
+
 ## ENH-COMMS-001: Provider-neutral communication actions and automatic history
 
 - Requested: 2026-07-21
@@ -77,10 +106,12 @@ privacy/compliance review and implementation approval remain separate gates.
 
 ## Planning sequence
 
-1. Finish and explicitly accept the open Release 1/1.1 CRM Test findings.
-2. Approve release allocation and business owner for each enhancement.
-3. Decide providers, account ownership, data residency, retention and consent/legal-basis rules.
-4. Approve adapter contracts and sandbox credentials; never begin with production credentials.
-5. Implement provider-neutral activity/calendar interfaces before individual connectors.
-6. Add authenticated integration, permission, idempotency, failure/retry and reconciliation tests.
-7. Deploy and test only on CRM Test before any separately authorized production promotion.
+1. Preserve Release 2 campaign/source provenance through accepted Opportunity and Deal outcomes.
+2. Approve the Release 3A campaign business owner, controlled fields, budget policy, targets and
+   operational reporting definitions.
+3. Implement and accept the provider-neutral campaign master before channel-specific automation.
+4. Decide providers, account ownership, data residency, retention and consent/legal-basis rules.
+5. Approve adapter contracts and sandbox credentials; never begin with production credentials.
+6. Implement provider-neutral activity/calendar interfaces before individual connectors.
+7. Add authenticated integration, permission, idempotency, failure/retry and reconciliation tests.
+8. Deploy and test only on CRM Test before any separately authorized production promotion.

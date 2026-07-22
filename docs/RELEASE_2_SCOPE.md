@@ -47,6 +47,7 @@ Customer -> Lead -> Qualification -> Opportunity -> Match -> Viewing -> Offer
 | Buyer/seller/landlord/tenant/broker/property/developer relationships | Contact roles, external companies and listings exist; transaction parties do not | Add dated, role-specific deal parties linked to canonical contacts/companies/listings without duplicating identities |
 | Configurable sale and rental completion checklists | Checklist names are planned for later documents/compliance scope | Bring operational checklist templates and instantiated deal checklists into Release 2; sensitive document content and advanced compliance remain Release 6 |
 | Sequential Agent workspace | Release 1.1 dashboard shows an accepted lead-stage aggregate | Add opportunity work queues and next actions progressively; preserve the accepted lead dashboard until compatibility acceptance approves its replacement |
+| Campaign management and outcome attribution | Leads already retain source/campaign codes, while no governed campaign master or authoritative deal outcome exists | Preserve immutable original-enquiry attribution through Opportunity, Booking and Deal; implement the campaign master in Release 3A and defer reconciled CPL/CPA/ROI to Release 6 under D-037 |
 
 ## Lifecycle ownership and compatibility
 
@@ -95,6 +96,10 @@ replacement labels and drill-downs.
   transaction type, owner/team, current stage, priority, current requirement version,
   qualification evidence, primary listing when selected, next action/due time, opened/closed
   metadata and optimistic update version.
+- `opportunity_attribution`: opportunity, originating lead/integration event, source and stable
+  campaign/advert/form/landing-page/property identifiers, capture time, attribution basis and an
+  immutable normalized snapshot of the original enquiry identifiers. Release 2 records
+  provenance only; it does not create campaign budgets or infer multi-touch credit.
 - `opportunity_stage_history`: prior/new stable stage code, reason, actor and timestamp.
 - Opening is allowed only from an authorized, qualified in-scope lead with a current structured
   requirement. It reuses identities and references evidence; it does not copy editable customer
@@ -141,6 +146,9 @@ replacement labels and drill-downs.
 
 - `deals`: opportunity, booking where applicable, listing, deal type, current status, agreed
   value/currency, target/actual completion, closed-won/lost metadata, approver and audit version.
+- A deal resolves campaign provenance through its originating opportunity attribution. Later
+  campaign-master mapping may attach a governed campaign identity to the same stable external
+  code, but must never rewrite the captured original-enquiry snapshot.
 - `deal_parties`: deal, canonical contact or external company, controlled role, side,
   representation, primary flag, effective dates and source evidence.
 - `checklist_templates` and `checklist_template_items`: versioned sale/rental template,
@@ -182,8 +190,8 @@ Material stage, match, viewing, offer, booking, party, checklist and closure cha
 5. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
    checklist instantiation, approvals and authoritative closed outcomes.
 6. **R2.5 reconciliation and release candidate**: cross-role UAT, reports/count reconciliation,
-   migration/rollback rehearsal, package identity and CRM Test acceptance. Production remains a
-   separately authorized action.
+   source/campaign attribution reconciliation, migration/rollback rehearsal, package identity and
+   CRM Test acceptance. Production remains a separately authorized action.
 
 Each slice needs committed requirements, migrations, API authorization, audit coverage,
 automated tests, CRM Test deployment instructions and explicit acceptance before the next slice
@@ -212,6 +220,9 @@ may treat it as stable.
   completion, exception and evidence history.
 - Opportunity, pipeline and deal reports reconcile to underlying scoped records and display a
   clear data-as-of time.
+- A controlled enquiry retains the same stable campaign/source provenance through Lead,
+  Opportunity, Booking and Deal; retries or multiple opportunities do not duplicate or silently
+  change the original attribution. Release 2 does not claim CPL, CPA or ROI.
 - Forward migration, legacy reconciliation and rollback are rehearsed against an isolated
   sanitized/restored database before CRM Test deployment.
 - The complete existing suite plus new Release 2 syntax, migration, permission, transaction,
@@ -238,6 +249,11 @@ These are not silently assumed by this design:
    Manager, Director and Accountant.
 8. Approve the legacy lead classification/backfill rules and exception owner after a CRM Test
    rehearsal reports exact counts; no automatic Won-to-deal conversion is recommended.
+
+Campaign release allocation is approved under D-037. Before Release 2 implementation, the field
+contract still requires approval for the stable campaign, advert, form, landing-page and property
+identifiers supplied by each existing intake path. Provider-specific campaign configuration and
+credentials remain Release 3 gates.
 
 Until these decisions are approved and recorded in `DECISIONS.md`, work is limited to further
 requirements reconciliation, prototypes that do not alter business data, and migration/test

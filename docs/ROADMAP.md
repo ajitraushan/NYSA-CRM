@@ -114,8 +114,24 @@ acceptance criteria and decisions required before development are defined in
 - Closed-won and closed-lost deals
 - Buyer, seller, landlord, tenant, broker, property, and developer relationships
 - Configurable sale and rental completion checklists
+- Preserve immutable original-enquiry campaign, advert, form, landing-page, source and property
+  attribution from Lead through Opportunity, Booking and Deal, without introducing campaign
+  management, spend or ROI calculations in Release 2
 
-## Release 3: Communications and External Lead Channels
+## Release 3: Campaign Management, Communications and External Lead Channels
+
+Release 3 is intentionally sequenced as:
+
+1. **Release 3A — Campaign Management MVP:** governed campaign master, ownership, objectives,
+   properties, audiences, channels, dates, budgets, status, source identifiers, targets and
+   operational lead/qualification/conversion reporting using the Release 2 attribution chain.
+2. **Release 3B — Channels and Automation:** approved communications, calendars, lead providers,
+   landing pages, advertisements, nurture and provider reconciliation consume the governed
+   campaign identities rather than creating disconnected campaign labels.
+
+Release 3 reporting may show lead volume, response, qualification and accepted deal conversion.
+Financially authoritative CPL, CPA and ROI remain Release 6 until governed spend, revenue and
+commission sources reconcile.
 
 - Governed campaign management covering campaign identity, owner, objective,
   applicable properties, audience, channels, dates, budget, status, source identifiers

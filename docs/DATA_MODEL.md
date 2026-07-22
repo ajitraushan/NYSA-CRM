@@ -341,6 +341,7 @@ also have typed columns.
 ### Opportunity and deal
 
 - `opportunities` and `opportunity_stage_history`
+- `opportunity_attribution`
 - `property_matches`
 - `viewings` and `viewing_attendees`
 - `offers`, `offer_revisions` and `negotiation_events`
@@ -353,8 +354,23 @@ The field-level design, lifecycle ownership, compatibility rules and authorizati
 in `RELEASE_2_SCOPE.md`. In particular, the roadmap requires explicit booking/reservation records;
 booking must not exist only as a stage label. Checklist configuration and operational completion
 move into Release 2, while sensitive document management and advanced compliance remain Release 6.
+`opportunity_attribution` preserves the original lead/integration source plus stable campaign,
+advert, form, landing-page and property identifiers as immutable provenance. Deals resolve that
+provenance through their originating opportunity. Release 3 may map the stable identifiers to a
+governed campaign master without rewriting history; campaign spend and ROI are not Release 2 data.
 
 ## Later Entities
+
+### Campaign management (Release 3A)
+
+- `campaigns` and `campaign_status_history`
+- `campaign_properties`, `campaign_audiences` and `campaign_channels`
+- `campaign_source_identifiers`, `campaign_targets` and governed budget records
+
+The campaign master owns maintained business identity, ownership, objective, scope, dates, budget,
+status and targets. It consumes rather than replaces the immutable Release 2 attribution chain.
+Provider execution/reconciliation remains in Release 3B; authoritative cost/acquisition/return
+analytics remain Release 6.
 
 ### Finance operations
 
