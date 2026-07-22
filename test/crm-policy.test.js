@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  canReadOpportunity,canWriteOpportunity,canCreateOpportunity,leadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
+  canReadOpportunity,canWriteOpportunity,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -71,6 +71,14 @@ test('SQL scopes are parameterized and deny accountants',()=>{
   const contact=contactScopeSql('c',accountant,[]);
   assert.equal(contact.clause,'1=0');
   assert.deepEqual(contact.params,[]);
+});
+
+test('Agent work areas contain assigned Leads only while governed management scopes remain unchanged',()=>{
+  const agentWork=agentWorkLeadScopeSql('l',agent,[]),managerWork=agentWorkLeadScopeSql('l',manager,[]);
+  assert.equal(agentWork.clause,'l.assigned_to=$1');
+  assert.deepEqual(agentWork.params,['u']);
+  assert.doesNotMatch(agentWork.clause,/created_by/);
+  assert.match(managerWork.clause,/team_memberships/);
 });
 
 test('Sales Agents can list customers they own or serve through a scoped lead',()=>{

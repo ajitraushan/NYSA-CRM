@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-3"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.1a-4"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -267,7 +267,7 @@ test('campaign filter is a role-scoped source-dependent dropdown on every dashbo
   assert.match(ui,/loadCampaignOptions\(defaults\.source,defaults\.campaignCode\)/);
   assert.match(ui,/dashboard-source.*addEventListener\('change'/s);
   assert.match(routes,/\/crm\/dashboard\/filter-options/);
-  assert.match(routes,/leadScopeSql\('l',req\.broker,params\)/);
+  assert.match(routes,/agentWorkLeadScopeSql\('l',req\.broker,params\)/);
   assert.match(routes,/if\(req\.query\.source\).*l\.source=/s);
 });
 
@@ -281,8 +281,8 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.1a-3/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-3/);
+  assert.match(page,/app\.js\?v=r2\.1a-4/);
+  assert.match(page,/dashboard-ui\.js\?v=r2\.1a-4/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

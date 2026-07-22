@@ -17,11 +17,10 @@ reconcile the Release 1.1 control counts and the existing R2 Opportunity populat
 1. Sign in as a maintained Sales Agent and open the normal dashboard.
 2. Confirm **My operating sequence** shows Customer through Deal in order, with later slices
    visibly unavailable rather than missing.
-3. Identify one next case, its owner, current step, blocker and next action without opening a
-   separate report.
-4. For an unassigned visible case, confirm the Agent sees **Await assignment by [manager]** and
-   **Manager-controlled; open Lead context only**, never an instruction to assign or reassign a
-   colleague.
+3. Confirm no unassigned Lead appears in Agent counts, lifecycle, next cases, filters or exported
+   dashboard data. A Lead enters the Agent work area only after governed assignment to that Agent.
+4. Identify one assigned next case, its owner, current step, blocker and next action without
+   opening a separate report.
 5. Open that case and confirm Customer, Lead, qualification, Opportunity and property context are
    linked rather than re-entered.
 6. Confirm the Agent cannot see governed reassignment controls.

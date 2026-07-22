@@ -1,14 +1,14 @@
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,leadScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,agentWorkLeadScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
 import { dashboardTypeFor,buildRoleDashboardPresentation,buildAgentLifecycle,AGENT_LIFECYCLE_STAGES } from '../dashboard-domain.js';
 import { DASHBOARD_METRICS } from '../admin-governance.js';
 
 const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM dashboards are restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 function filters(req,alias='l',dateColumn=`${alias}.created_at`){
-  const params=[],scope=leadScopeSql(alias,req.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};
+  const params=[],scope=agentWorkLeadScopeSql(alias,req.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};
   const now=new Date(),end=req.query.dateTo?new Date(req.query.dateTo):now,start=req.query.dateFrom?new Date(req.query.dateFrom):new Date(end.getTime()-30*86400000);
   if(Number.isNaN(start.valueOf())||Number.isNaN(end.valueOf())||start>end)return {error:'Invalid date range'};
   add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(end.getTime()+86400000));
@@ -18,7 +18,7 @@ function filters(req,alias='l',dateColumn=`${alias}.created_at`){
   if(req.query.agentId)add(`${alias}.assigned_to=?`,req.query.agentId);if(req.query.businessType)add(`${alias}.business_type=?`,req.query.businessType);if(req.query.stage)add(`${alias}.stage=?`,req.query.stage);
   return {params,where:where.join(' AND '),start,end,selected:{dateFrom:start.toISOString().slice(0,10),dateTo:end.toISOString().slice(0,10),source:req.query.source||null,campaignCode:req.query.campaignCode||null,teamId:req.query.teamId||null,managerId:req.query.managerId||null,agentId:req.query.agentId||null,businessType:req.query.businessType||null,stage:req.query.stage||null}};
 }
-function priorWhere(base,alias='l',dateColumn=`${alias}.created_at`){const days=Math.max(1,Math.ceil((base.end-base.start)/86400000)+1),end=new Date(base.start.getTime()-1),start=new Date(end.getTime()-(days-1)*86400000);const params=[],scope=leadScopeSql(alias,base.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(base.start));if(base.selected.source)add(`${alias}.source=?`,base.selected.source);if(base.selected.campaignCode)add(`${alias}.campaign_code=?`,base.selected.campaignCode);if(base.selected.teamId)add(`${alias}.assigned_team_id=?`,base.selected.teamId);if(base.selected.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,base.selected.managerId);if(base.selected.agentId)add(`${alias}.assigned_to=?`,base.selected.agentId);if(base.selected.businessType)add(`${alias}.business_type=?`,base.selected.businessType);if(base.selected.stage)add(`${alias}.stage=?`,base.selected.stage);return {where:where.join(' AND '),params,start,end};}
+function priorWhere(base,alias='l',dateColumn=`${alias}.created_at`){const days=Math.max(1,Math.ceil((base.end-base.start)/86400000)+1),end=new Date(base.start.getTime()-1),start=new Date(end.getTime()-(days-1)*86400000);const params=[],scope=agentWorkLeadScopeSql(alias,base.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(base.start));if(base.selected.source)add(`${alias}.source=?`,base.selected.source);if(base.selected.campaignCode)add(`${alias}.campaign_code=?`,base.selected.campaignCode);if(base.selected.teamId)add(`${alias}.assigned_team_id=?`,base.selected.teamId);if(base.selected.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,base.selected.managerId);if(base.selected.agentId)add(`${alias}.assigned_to=?`,base.selected.agentId);if(base.selected.businessType)add(`${alias}.business_type=?`,base.selected.businessType);if(base.selected.stage)add(`${alias}.stage=?`,base.selected.stage);return {where:where.join(' AND '),params,start,end};}
 
 async function loadProposalApprovalQueue(req,selected={},search='',page=1,pageSize=20){
   if(!isProposalApprover(req.broker))return {rows:[],count:0,page:1,pageSize};
@@ -52,7 +52,7 @@ async function loadOrganizationContext(broker,type){
 }
 
 r.get('/crm/dashboard/filter-options',async(req,res)=>{
-  const params=[],scope=leadScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`l.campaign_code IS NOT NULL`,`BTRIM(l.campaign_code)<>''`];
+  const params=[],scope=agentWorkLeadScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`l.campaign_code IS NOT NULL`,`BTRIM(l.campaign_code)<>''`];
   if(req.query.source){params.push(req.query.source);where.push(`l.source=$${params.length}`);}
   const campaigns=await many(`SELECT l.campaign_code AS value,l.campaign_code AS label,COUNT(*)::int AS lead_count FROM leads l WHERE ${where.join(' AND ')} GROUP BY l.campaign_code ORDER BY l.campaign_code`,params);
   res.json({campaigns});

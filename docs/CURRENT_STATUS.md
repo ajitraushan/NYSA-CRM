@@ -49,6 +49,11 @@
   from exact source commit `76c12d9` as `nysa-core-r2-1a-uat-corrections-76c12d9.zip` with SHA-256
   `4c99634a950c888faec308bc3bd78ef0ee879fe62835e3d3bcb673f35ae3ab06`; the package is
   application-only and restricted to CRM Test.
+- The owner clarified finding `R2.1A-UAT-001` through approved D-041: an unassigned Lead must not
+  appear anywhere in the Agent dashboard or guided work area. Version `2.0.0-dev.5` applies an
+  assigned-only operational scope to Agent dashboard counts, lifecycle, next cases, filters and
+  dashboard export. Manager and company assignment scopes remain unchanged, and the underlying
+  Release 1.1 Lead record/history is not altered. This supersedes the pending dev.4 package.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22

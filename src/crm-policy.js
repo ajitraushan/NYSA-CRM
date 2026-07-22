@@ -81,6 +81,14 @@ export function leadScopeSql(alias, broker, params = []) {
   return { clause:`(${alias}.assigned_to=${id} OR ${alias}.created_by=${id})`, params };
 }
 
+export function agentWorkLeadScopeSql(alias,broker,params=[]){
+  if(hasInternalCrmIdentity(broker)&&['sales_agent','listing_agent'].includes(broker.jobRole)){
+    const id=bind(params,broker.id);
+    return {clause:`${alias}.assigned_to=${id}`,params};
+  }
+  return leadScopeSql(alias,broker,params);
+}
+
 export function opportunityScopeSql(alias, broker, params = []) {
   if (isCompanyReader(broker)) return {clause:'1=1',params};
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return {clause:'1=0',params};
