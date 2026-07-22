@@ -29,6 +29,8 @@ const LEAD_SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social medi
 const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
 const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
 const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
+const OPPORTUNITY_STAGES = ['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Closed Won','Closed Lost'];
+const OPPORTUNITY_LOST_REASONS = {customer_withdrew:'Customer withdrew',no_suitable_property:'No suitable property',budget_or_finance:'Budget or finance',timing_changed:'Timing changed',competitor:'Completed elsewhere',duplicate_pursuit:'Duplicate pursuit',other:'Other'};
 const JOB_ROLES = { admin:'Administrator', admin_assistant:'Admin Assistant', sales_agent:'Sales Agent', listing_agent:'Listing Executive', manager:'Manager', director:'Director', accountant:'Accountant' };
 const LISTING_WORKFLOW_LABELS={draft:'Draft',in_review:'Awaiting review',approved:'Approved',changes_requested:'Changes requested',blocked:'Blocked'};
 const COMPANY_TYPES = { developer:'Developer', agency:'Agency', corporate_client:'Corporate Client', landlord_company:'Landlord Company', vendor:'Vendor', other:'Other' };
@@ -36,6 +38,7 @@ const hasCrmAccess = () => ME && ['admin','internal_broker'].includes(ME.role);
 const isCrmLeader = () => ME && (ME.role === 'admin' || ME.jobRole === 'manager');
 const isProposalApprover = () => ME && (ME.role === 'admin' || ['manager','director'].includes(ME.jobRole));
 const canWriteCrm = () => ME && !['director','accountant'].includes(ME.jobRole);
+const canCreateOpportunity = () => ME && (ME.role==='admin'||['sales_agent','manager'].includes(ME.jobRole));
 
 async function api(path, opts = {}) {
   const res = await fetch('/api' + path, {
@@ -378,6 +381,7 @@ function renderCrm() {
     <div><div class="eyebrow">CRM / RELEASE 1</div><h2>Lead pipeline</h2><p>Capture, assign, qualify, and follow every customer conversation.</p></div>
     <div class="dashboard-actions">
       ${canWriteCrm() ? '<button class="btn btn-primary" id="crm-add">+ Add lead</button>' : ''}
+      ${ME.jobRole!=='accountant'?'<button class="btn" id="crm-opportunities">Opportunities</button>':''}
       <button class="btn" id="crm-companies">Companies</button><button class="btn" id="crm-reports">Reports</button><button class="btn" id="crm-mortgage">Mortgage calculator</button>
       <button class="btn" id="crm-queue">Assignment queue</button>
       <button class="btn" id="crm-sla">SLA queue</button><button class="btn" id="crm-tasks">Task queue</button>
@@ -395,6 +399,7 @@ function renderCrm() {
   </div>
   <div id="crm-results"><div class="loading-state">Loading leads...</div></div>`;
   $('#crm-add')?.addEventListener('click', openNewLeadForm);
+  $('#crm-opportunities')?.addEventListener('click', openOpportunityWorkspace);
   $('#crm-companies').addEventListener('click', openCompanies);
   $('#crm-reports').addEventListener('click', openCrmReports);
   $('#crm-mortgage').addEventListener('click', openMortgageCalculator);
@@ -534,6 +539,7 @@ async function openLead(id,{afterStageChange=null}={}) {
       <button class="btn btn-sm" id="lead-assignments">Assignment history</button><button class="btn btn-sm" id="lead-requirements">Structured requirements</button><button class="btn btn-sm" id="lead-tasks">Tasks</button>
       <button class="btn btn-sm" id="lead-finance">Saved financial scenarios</button>
       <button class="btn btn-sm" id="lead-documents">Documents</button><button class="btn btn-primary btn-sm" id="lead-proposals">Proposal builder</button>
+      ${canCreateOpportunity()&&['Qualified','Viewing','Negotiation','Won'].includes(lead.stage)?'<button class="btn btn-primary btn-sm" id="lead-opportunity">Create / review opportunities</button>':''}
       ${canWriteCrm()?'<button class="btn btn-sm" id="lead-brief">Create value brief</button><button class="btn btn-sm" id="lead-briefs">View value briefs</button>':''}
     </div>
     <div class="comments"><h3>Activity timeline</h3><div id="activity-list">${activityHTML(activities)}</div>
@@ -551,6 +557,7 @@ async function openLead(id,{afterStageChange=null}={}) {
   $('#lead-tasks',o).addEventListener('click',()=>openLeadTasks(lead));
   $('#lead-assess',o)?.addEventListener('click',()=>openQualificationQuestionnaire(lead,o));$('#lead-finance',o).addEventListener('click',()=>openFinancialScenarios(lead,listings));
   $('#lead-documents',o).addEventListener('click',()=>openLeadDocuments(lead));$('#lead-proposals',o).addEventListener('click',()=>openProposals(lead,listings));
+  $('#lead-opportunity',o)?.addEventListener('click',()=>openCreateOpportunity(lead,listings,o));
   $('#lead-customer-record',o).addEventListener('click',()=>{o.remove();switchTab('customers');setTimeout(()=>openCustomer(lead.contactId),0);});
   $('#lead-brief',o)?.addEventListener('click',()=>openValueBriefForm(lead,listings,o));
   $('#lead-briefs',o)?.addEventListener('click',()=>openValueBriefs(lead,o));
@@ -558,6 +565,37 @@ async function openLead(id,{afterStageChange=null}={}) {
   o.querySelectorAll('[data-complete-activity]').forEach(b=>b.addEventListener('click',async()=>{try{await api('/crm/activities/'+b.dataset.completeActivity,{method:'PATCH',body:{completed:true}});o.remove();openLead(id);}catch(err){toast(err.message);}}));
   o.querySelectorAll('[data-correct-activity]').forEach(b=>b.addEventListener('click',async()=>{const details=prompt('Corrected details');if(details===null)return;const correctionReason=prompt('Correction reason');if(!correctionReason)return;try{await api(`/crm/activities/${b.dataset.correctActivity}/correct`,{method:'PATCH',body:{details,correctionReason}});o.remove();openLead(id);}catch(err){toast(err.message);}}));
   o.querySelectorAll('[data-void-activity]').forEach(b=>b.addEventListener('click',async()=>{const reason=prompt('Why should this activity be voided?');if(!reason)return;try{await api(`/crm/activities/${b.dataset.voidActivity}`,{method:'DELETE',body:{reason}});o.remove();openLead(id);}catch(err){toast(err.message);}}));
+}
+
+async function openOpportunityWorkspace(){
+  let opportunities;try{({opportunities}=await api('/crm/opportunities'));}catch(err){return toast(err.message);}
+  const leader=ME.role==='admin'||['manager','director'].includes(ME.jobRole);
+  const o=overlay(`<div class="modal lead-modal opportunity-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">RELEASE 2 / ADDITIVE WORKSPACE</div><h2>Opportunity pipeline</h2><p>Qualified property pursuits are separate from the accepted Release 1.1 lead lifecycle.</p></div>${leader?'<button class="btn btn-sm" id="opportunity-legacy-review">Legacy review ledger</button>':''}</div><div class="opportunity-safety-note"><b>Release 1.1 remains unchanged</b><span>No lead stage or historical record is converted automatically.</span></div><div class="pipeline-table-wrap"><table class="pipeline-table opportunity-table"><tr><th>Reference / customer</th><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Next action</th></tr>${opportunities.map(x=>`<tr data-opportunity-id="${esc(x.id)}"><td><b>${esc(x.opportunityReference)}</b><small>${esc(x.contactName)} · ${esc(x.leadTitle)}</small></td><td>${esc(x.title)}<small>${esc(x.transactionType)} · Requirement v${esc(x.requirementVersion)}${x.listingProject?` · ${esc(x.listingProject)}`:''}</small></td><td><span class="lead-stage opportunity-stage-${esc(x.stage.toLowerCase().replaceAll(' ','-'))}">${esc(x.stage)}</span></td><td>${esc(x.ownerName)}<small>${esc(x.teamName||'No team')}</small></td><td class="${new Date(x.nextActionDueAt)<new Date()&&!x.stage.startsWith('Closed')?'overdue':''}">${esc(x.nextAction)}<small>${fmtDate(x.nextActionDueAt)}</small></td></tr>`).join('')}</table>${opportunities.length?'':'<div class="empty">No opportunities are in your permitted scope. Open a qualified lead to create one.</div>'}</div></div>`);
+  o.querySelectorAll('[data-opportunity-id]').forEach(row=>row.addEventListener('click',()=>{o.remove();openOpportunityDetail(row.dataset.opportunityId);}));
+  $('#opportunity-legacy-review',o)?.addEventListener('click',()=>openLegacyOpportunityReview());
+}
+
+async function openCreateOpportunity(lead,listings,parent){
+  let existing=[];try{({opportunities:existing}=await api(`/crm/opportunities?leadId=${encodeURIComponent(lead.id)}`));}catch(err){return toast(err.message);}
+  const approved=listings.filter(x=>x.workflowStatus==='approved'&&!x.deletedAt);
+  const o=overlay(`<div class="modal"><button class="close-x">×</button><div class="eyebrow">QUALIFIED LEAD / RELEASE 2</div><h2>Create property opportunity</h2><p class="tool-note">Customer identity, the current structured requirement, qualification evidence and original campaign attribution are referenced automatically. Nothing is retyped or removed from the lead.</p>${existing.length?`<div class="opportunity-existing"><b>Existing opportunities for this lead</b>${existing.map(x=>`<button class="text-btn" data-existing-opportunity="${x.id}">${esc(x.opportunityReference)} · ${esc(x.title)} · ${esc(x.stage)}</button>`).join('')}</div>`:''}<form id="opportunity-create-form" class="form-grid"><div class="span2"><label>Opportunity title *</label><input name="title" required value="${esc(lead.title)}"></div><div><label>Transaction type *</label><select name="transactionType">${opts(BUSINESS_TYPES,lead.businessType)}</select></div><div><label>Priority</label><select name="priority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></div><div class="span2"><label>Selected approved property</label><select name="listingId"><option value="">Continue requirements before selecting property</option>${approved.map(x=>`<option value="${x.id}" ${lead.listingId===x.id?'selected':''}>${esc(x.inventoryReference||x.project)} · ${esc(x.project)} · ${fmtPrice(x.price,x.currency)}</option>`).join('')}</select></div><div class="span2"><label>Next action *</label><input name="nextAction" required placeholder="For example: Review matching inventory with customer"></div><div><label>Next-action due *</label><input name="nextActionDueAt" type="datetime-local" required></div><div class="span3 opportunity-safety-note"><b>Additive creation</b><span>The lead remains at ${esc(lead.stage)}. Release 1.1 dashboards and history are not changed.</span></div><button class="btn btn-primary">Create opportunity</button></form></div>`);
+  o.querySelectorAll('[data-existing-opportunity]').forEach(b=>b.addEventListener('click',()=>{o.remove();openOpportunityDetail(b.dataset.existingOpportunity);}));
+  $('#opportunity-create-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),submit=$('button[type="submit"]',e.target)||$('button.btn-primary',e.target);try{submit.disabled=true;const created=await api(`/crm/leads/${lead.id}/opportunities`,{method:'POST',body:{...f,listingId:f.listingId||null}});toast(`Opportunity created: ${created.opportunityReference}`);o.remove();parent?.remove();openOpportunityDetail(created.id);}catch(err){toast(`Opportunity not created: ${err.message}`,7000);}finally{if(o.isConnected)submit.disabled=false;}});
+}
+
+async function openOpportunityDetail(id){
+  let opportunity,stageHistory;try{({opportunity,stageHistory}=await api(`/crm/opportunities/${id}`));}catch(err){return toast(err.message);}
+  const writable=canWriteCrm()&&ME.jobRole!=='listing_agent',nextStages=opportunity.stage==='Requirements'?['Matching','Closed Lost']:opportunity.stage==='Matching'?['Requirements','Closed Lost']:[];
+  const o=overlay(`<div class="modal lead-modal opportunity-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">${esc(opportunity.opportunityReference)} · ${esc(opportunity.transactionType)}</div><h2>${esc(opportunity.title)}</h2><p>${esc(opportunity.contactName)} · Source lead remains ${esc(opportunity.leadStage)}</p></div><span class="lead-stage">${esc(opportunity.stage)}</span></div><div class="opportunity-safety-note"><b>Original attribution · immutable</b><span>${esc(opportunity.attributionSource)}${opportunity.campaignCode?` · Campaign ${esc(opportunity.campaignCode)}`:''} · SHA-256 ${esc(String(opportunity.provenanceHash).slice(0,12))}…</span></div><div class="kv-grid"><div><b>Owner</b>${esc(opportunity.ownerName)}</div><div><b>Team</b>${esc(opportunity.teamName||'—')}</div><div><b>Requirement evidence</b>Version ${esc(opportunity.requirementVersion)}</div><div><b>Qualification evidence</b>${esc(opportunity.qualificationTemperature)}</div><div><b>Selected property</b>${esc(opportunity.listingProject||'Not selected')}</div><div><b>Version</b>${esc(opportunity.version)}</div><div class="span3"><b>Next action</b>${esc(opportunity.nextAction)} · ${fmtDate(opportunity.nextActionDueAt)}</div></div>${writable&&!opportunity.stage.startsWith('Closed')?`<form id="opportunity-next-action" class="form-grid opportunity-inline-form"><div class="span2"><label>Next action *</label><input name="nextAction" required value="${esc(opportunity.nextAction)}"></div><div><label>Due *</label><input name="nextActionDueAt" type="datetime-local" required></div><button class="btn btn-sm">Update next action</button></form>`:''}${writable&&nextStages.length?`<form id="opportunity-stage-form" class="form-grid opportunity-inline-form"><div><label>Move opportunity</label><select name="toStage">${opts(nextStages)}</select></div><div id="opportunity-lost-code" class="hidden"><label>Lost reason</label><select name="reasonCode">${Object.entries(OPPORTUNITY_LOST_REASONS).map(([code,label])=>`<option value="${code}">${esc(label)}</option>`).join('')}</select></div><div class="span2" id="opportunity-stage-reason"><label>Reason / explanation</label><textarea name="reason" rows="2"></textarea></div><button class="btn btn-primary btn-sm">Apply governed movement</button></form>`:''}<div class="comments"><h3>Opportunity stage history</h3>${stageHistory.map(h=>`<div class="activity-row"><div class="activity-marker">O</div><div><b>${esc(h.fromStage||'Created')} → ${esc(h.toStage)}</b><small>${esc(h.changedByName)} · ${fmtDate(h.changedAt)}</small>${h.reason?`<p>${esc(h.reason)}</p>`:''}</div></div>`).join('')}</div></div>`);
+  const dueField=$('#opportunity-next-action',o)?.elements.nextActionDueAt;if(dueField){const date=new Date(opportunity.nextActionDueAt);dueField.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+  const stageForm=$('#opportunity-stage-form',o),syncStageReason=()=>{if(!stageForm)return;const target=stageForm.elements.toStage.value,isLost=target==='Closed Lost';$('#opportunity-lost-code',o).classList.toggle('hidden',!isLost);stageForm.elements.reason.required=isLost||target==='Requirements';};stageForm?.elements.toStage.addEventListener('change',syncStageReason);syncStageReason();
+  stageForm?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/opportunities/${id}/stage`,{method:'POST',body:{...f,reasonCode:f.toStage==='Closed Lost'?f.reasonCode:null,expectedVersion:opportunity.version}});toast('Opportunity stage updated');o.remove();openOpportunityDetail(id);}catch(err){toast(err.message,7000);}});
+  $('#opportunity-next-action',o)?.addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/opportunities/${id}/next-action`,{method:'PATCH',body:{...f,expectedVersion:opportunity.version}});toast('Opportunity next action updated');o.remove();openOpportunityDetail(id);}catch(err){toast(err.message,7000);}});
+}
+
+async function openLegacyOpportunityReview(){
+  let records,automaticConversion;try{({records,automaticConversion}=await api('/crm/release2/legacy-lead-review'));}catch(err){return toast(err.message);}
+  overlay(`<div class="modal lead-modal"><button class="close-x">×</button><div class="eyebrow">R2.0 MIGRATION REHEARSAL</div><h2>Legacy lead review ledger</h2><div class="opportunity-safety-note"><b>Automatic conversion: ${automaticConversion?'enabled':'disabled'}</b><span>These records remain unchanged until a permitted user explicitly reviews the source lead.</span></div><div class="pipeline-table-wrap"><table><tr><th>Customer / lead</th><th>Legacy stage</th><th>Review reason</th><th>Status</th><th>Owner</th></tr>${records.map(x=>`<tr><td>${esc(x.contactName)}<small>${esc(x.title)}</small></td><td>${esc(x.legacyStage)}</td><td>${esc(x.reviewReason)}</td><td>${esc(x.reviewStatus.replaceAll('_',' '))}</td><td>${esc(x.ownerName||x.teamName||'Unassigned')}</td></tr>`).join('')}</table>${records.length?'':'<div class="empty">No legacy lead records require review.</div>'}</div></div>`);
 }
 
 function activityHTML(activities) {

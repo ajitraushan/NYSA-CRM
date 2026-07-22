@@ -152,6 +152,50 @@ Verification evidence:
 3. Dependency audit, verified pre-deployment backup, and production smoke tests
 4. Final deployed-commit documentation and release-note reconciliation
 
+## Release 2.0/2.1 Opportunity Foundation — Local Implementation
+
+Approval and compatibility:
+
+- D-038 authorizes the recommended additive defaults.
+- Every behavior accepted through Release 1.1 remains unchanged unless the NYSA owner explicitly
+  approves a documented amendment.
+- The frozen Release 1.1 production candidate is outside the Release 2 branch and package scope.
+
+Implementation files:
+
+- `src/migrations/038_release2_opportunity_foundation.sql`
+- `src/opportunity-domain.js` and Opportunity helpers in `src/crm-policy.js`
+- `src/routes/opportunities.js` mounted separately by `src/server.js`
+- additive Opportunity workspace and lead action in `public/app.js`, with styles in
+  `public/index.html`
+
+Implemented contracts:
+
+- Qualified, assigned, in-scope Lead plus exact current Requirement and latest Qualification
+  Assessment are mandatory for explicit Opportunity creation.
+- Customer, Lead, Requirement, Qualification and Listing identities are referenced rather than
+  duplicated; Lead stages and history are never updated by Opportunity creation.
+- Stable `NYSA-OP-YYYYMM-NNNNNN` references, owner/team scope, explicit participants, immutable
+  stage history, optimistic concurrency and required next action are enforced.
+- Original source, campaign, external source, form, page and originating property provenance is
+  captured once with SHA-256 identity and a database trigger blocking mutation/deletion.
+- Duplicate open lead/listing/transaction pursuits are blocked. One unselected Requirements-stage
+  pursuit per lead/transaction type is the safe default.
+- R2.1 enables Requirements to Matching, a reasoned return to Requirements, and controlled/reasoned
+  Closed Lost. Viewing, Offer, Negotiation, Booking and Closed Won remain inaccessible.
+- Legacy Viewing, Negotiation, Won and ambiguous Lost leads enter a review ledger only. Migration
+  038 contains no Lead-stage rewrite and no automatic Opportunity/Deal insertion from Leads.
+
+Verification evidence:
+
+- 164/164 automated tests pass, including the complete 156-test Release 1.1 regression baseline.
+- JavaScript syntax validation and `git diff --check` pass.
+- Live PostgreSQL migration and reconciliation remain open because no isolated PostgreSQL runtime
+  or credentials are configured in this worktree. Before CRM Test packaging, run migration 038 on
+  an isolated restored/sanitized database and record `r2_opportunity_reconciliation`, constraints,
+  permission denials, creation, duplicate, concurrency, transition and rollback evidence.
+- No CRM Test or production deployment has been performed.
+
 ### Acceptance hardening
 
 Implementation files:

@@ -99,6 +99,10 @@ Status: Authorized to begin by the NYSA owner on 2026-07-22. The accepted Releas
 frozen in a separately checksummed production candidate on HOLD; Release 2 changes must remain
 outside that candidate.
 
+R2.0/R2.1 opportunity foundation is implemented locally on 2026-07-22 with 164 passing automated
+tests. Isolated PostgreSQL migration/reconciliation, CRM Test deployment and explicit functional
+acceptance remain open; no Release 2 feature is deployed or accepted yet.
+
 Requirements reconciliation, lifecycle compatibility, proposed data contracts, delivery slices,
 acceptance criteria and decisions required before development are defined in
 `RELEASE_2_SCOPE.md`.

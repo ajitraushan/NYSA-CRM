@@ -102,6 +102,13 @@ for listing identity and availability. Cross-module creation, reservation and cl
 must be transactional, conflict-safe and audited; an opportunity stage must never silently rewrite
 inventory or manufacture a deal. The detailed compatibility design is in `RELEASE_2_SCOPE.md`.
 
+R2.1 implements the first additive boundary in migration 038 and `src/routes/opportunities.js`.
+Opportunity creation references the exact Lead, Customer, current Requirement and latest
+Qualification Assessment; it does not copy or mutate their authoritative business data. The
+original enquiry attribution is a trigger-protected immutable snapshot. API scope is resolved from
+Opportunity owner/team or explicit participation, and optimistic versions reject stale writes.
+Later-stage transitions remain disabled until their owning modules are implemented and accepted.
+
 ## Request and Authorization Flow
 
 1. TLS terminates at the hosting proxy.

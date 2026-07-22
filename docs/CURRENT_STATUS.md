@@ -1,5 +1,45 @@
 # NYSA CORE Current Status
 
+## Release 2.0/2.1 Opportunity foundation implemented locally — 2026-07-22
+
+- The additive R2.0/R2.1 foundation is implemented locally on `agent/release-2-design`.
+  Migration `038_release2_opportunity_foundation.sql` creates Opportunity identity, scoped owner
+  and participant records, immutable stage history, immutable original-enquiry attribution,
+  duplicate-open-pursuit protection, optimistic concurrency, a legacy-lead review ledger and
+  reconciliation view. It never updates a Release 1.1 lead stage or creates an Opportunity from a
+  legacy lead automatically.
+- `src/routes/opportunities.js` provides scope-enforced list/detail/create, next-action and stage
+  APIs. Creation requires an assigned qualified lead, current structured requirement and recorded
+  qualification assessment. R2.1 permits Requirements, Matching, reasoned return and reasoned
+  Closed Lost only; Viewing through Closed Won remain inaccessible.
+- The existing Lead pipeline and lifecycle remain intact. A separate Opportunity workspace and an
+  explicit `Create / review opportunities` action were added without replacing Release 1.1
+  screens, stages, counts, APIs or history.
+- The full automated suite passes 164/164 tests: all 156 prior assertions plus eight Release 2
+  domain, permission, migration, attribution, concurrency, UI-boundary and documentation checks.
+- A live migration rehearsal is not claimed: this worktree has no configured isolated PostgreSQL
+  credentials/runtime or PostgreSQL client. Migration 038 must run first against an isolated
+  restored or sanitized database, with `r2_opportunity_reconciliation` evidence recorded, before
+  any CRM Test deployment package is prepared.
+- No deployment was performed. Testing/deployment remain restricted to
+  `https://crm-test.nysarealty.com/`; production and the frozen Release 1.1 candidate remain
+  unchanged and excluded.
+
+## Release 2 recommended defaults and build authorization — 2026-07-22
+
+- The NYSA owner approved D-038 and authorized the R2.0/R2.1 build using the recommended defaults
+  in `docs/RELEASE_2_SCOPE.md`.
+- Every behavior accepted through Release 1.1 is a compatibility invariant and remains unchanged
+  unless the owner explicitly approves a documented amendment. Release 2 begins as additive
+  schema, scoped APIs and a separate Opportunity workspace.
+- R2.1 enables Opportunity Requirements, Matching, reasoned return and Closed Lost only. Later
+  stages remain unavailable until their viewing, offer, booking, party and completion modules are
+  implemented and accepted.
+- Legacy Viewing, Negotiation, Won and ambiguous Lost leads are review-ledger candidates only; no
+  lead stage, history or dashboard population is automatically rewritten or converted.
+- Testing and any deployment remain restricted to `https://crm-test.nysarealty.com/`. Production
+  and the frozen Release 1.1 candidate remain excluded.
+
 ## Campaign management release allocation — 2026-07-22
 
 - The NYSA owner approved the planning boundary recorded as D-037 and

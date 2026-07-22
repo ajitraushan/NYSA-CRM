@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  leadScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
+  canReadOpportunity,canWriteOpportunity,canCreateOpportunity,leadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -94,4 +94,25 @@ test('team selectors expose company scope to directors managed scope to managers
   assert.equal(directorScope.clause,'1=1');
   assert.match(managerScope.clause,/team_memberships/);assert.deepEqual(managerScope.params,['m']);
   assert.match(agentScope.clause,/t\.id=\$1/);assert.deepEqual(agentScope.params,['t1']);
+});
+
+test('opportunity scope follows owner team participation and finance boundaries',()=>{
+  const owned={ownerId:'u',assignedTeamId:'t1',createdBy:'other',participantIds:[]};
+  const managed={ownerId:'someone',assignedTeamId:'t3',createdBy:'other',participantIds:[]};
+  const participated={ownerId:'someone',assignedTeamId:'t2',createdBy:'other',participantIds:['listing-user']};
+  const listing={id:'listing-user',role:'internal_broker',jobRole:'listing_agent'};
+  assert.equal(canReadOpportunity(agent,owned),true);
+  assert.equal(canWriteOpportunity(agent,owned),true);
+  assert.equal(canReadOpportunity(manager,managed),true);
+  assert.equal(canWriteOpportunity(manager,managed),true);
+  assert.equal(canReadOpportunity(director,managed),true);
+  assert.equal(canWriteOpportunity(director,managed),false);
+  assert.equal(canReadOpportunity(accountant,managed),false);
+  assert.equal(canReadOpportunity(listing,participated),true);
+  assert.equal(canWriteOpportunity(listing,participated),false);
+  assert.equal(canCreateOpportunity(agent,{assignedTo:'u',createdBy:'other',assignedTeamId:'t1'}),true);
+  assert.equal(canCreateOpportunity(listing,{assignedTo:'listing-user',createdBy:'other',assignedTeamId:'t1'}),false);
+  assert.match(opportunityScopeSql('o',manager,[]).clause,/team_memberships/);
+  assert.match(opportunityScopeSql('o',listing,[]).clause,/opportunity_participants/);
+  assert.equal(opportunityScopeSql('o',accountant,[]).clause,'1=0');
 });

@@ -17,6 +17,11 @@ role migration is released.
 
 API authorization is authoritative. Hiding a button is not a security control.
 
+R2.1 implements the Opportunity subset additively: Administrator/company scope, Sales Agent own
+scope, Manager managed-team scope, Director company-wide read-only scope, Listing Executive
+explicit-participation read-only scope, and no Accountant Opportunity access. Later Deal finance
+scope is not implied by the R2.1 Opportunity API.
+
 ## Proposed Matrix
 
 | Capability | Admin | Sales Agent | Listing Agent | Manager / Team Lead | Director | Accountant |

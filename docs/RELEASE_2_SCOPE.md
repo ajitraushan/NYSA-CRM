@@ -197,6 +197,12 @@ Each slice needs committed requirements, migrations, API authorization, audit co
 automated tests, CRM Test deployment instructions and explicit acceptance before the next slice
 may treat it as stable.
 
+Implementation checkpoint on 2026-07-22: D-038 and the design portion of R2.0 are complete;
+migration 038, the scoped Opportunity API, immutable attribution/history and separate workspace are
+implemented locally for R2.1. All 164 automated tests pass. The isolated PostgreSQL migration
+rehearsal, reconciliation evidence, CRM Test deployment and explicit functional acceptance remain
+open, so neither R2.0 nor R2.1 is accepted or deployable yet.
+
 ## Acceptance baseline
 
 - A qualified lead creates an opportunity without retyping or duplicating customer data and
@@ -228,32 +234,44 @@ may treat it as stable.
 - The complete existing suite plus new Release 2 syntax, migration, permission, transaction,
   concurrency, workflow and reporting tests passes on the exact committed source.
 
-## Decisions required before development
+## Approved recommended defaults — D-038
 
-These are not silently assumed by this design:
+The NYSA owner approved these defaults on 2026-07-22 and authorized the R2.0/R2.1 build:
 
-1. Approve the exact target lead statuses and the Release 1.1 dashboard compatibility/replacement
-   presentation after opportunity separation.
-2. Confirm whether one qualified lead may have several simultaneous opportunities and approve
-   the duplicate-open-pursuit key (recommended: lead + listing + transaction type, with an
-   exception path before a listing is selected).
-3. Approve sale and rental opportunity transition guards, lost reasons, booking statuses and deal
-   closure/approval thresholds.
-4. Provide the initial sale and rental completion checklists, responsible roles, required evidence
-   and permitted waiver/exception approvers.
-5. Confirm booking/reservation behavior for unit inventory versus a Bulk Deal parent, including
-   expiry, release, deposit/refund evidence and inventory status synchronization.
-6. Confirm which party roles are mandatory by sale/rental deal type and whether an internal NYSA
-   agent is represented as a user participation record rather than a customer/external party.
-7. Approve commercial-field visibility and export policy for Sales Agent, Listing Executive,
-   Manager, Director and Accountant.
-8. Approve the legacy lead classification/backfill rules and exception owner after a CRM Test
-   rehearsal reports exact counts; no automatic Won-to-deal conversion is recommended.
+1. The accepted Release 1.1 lead stages, lifecycle presentation, dashboard counts, APIs and
+   historical records remain unchanged. Release 2 adds a separate Opportunity workspace; any
+   later replacement requires an explicit documented amendment and CRM Test acceptance.
+2. One qualified lead may have several simultaneous opportunities. One open opportunity is
+   permitted for the same lead, listing and transaction type; before a listing is selected, one
+   open Requirements-stage opportunity per lead and transaction type is the safe default.
+3. R2.1 enables `Requirements -> Matching`, a reasoned return to Requirements and reasoned
+   `Closed Lost`. Later stages remain schema-ready but cannot be entered until their owning slice
+   is implemented and accepted. Closed Won is unavailable before booking, deal-party and
+   completion gates exist.
+4. Sale/rental completion checklists are introduced only in R2.4. Until approved templates exist,
+   no opportunity can be represented as an authoritative completed deal.
+5. Booking never changes inventory implicitly. R2.3 must use an explicit transactional reservation
+   action with unit/Bulk Deal conflict protection, expiry/release rules and audit evidence.
+6. Internal NYSA staff are participation records, not duplicated customer/external parties.
+   Mandatory buyer/seller/landlord/tenant/developer/broker roles are validated by deal type in
+   R2.4; missing parties block closure.
+7. Sales Agents receive commercial access only to owned opportunities; Managers to managed-team
+   records; Directors company-wide read/approval scope; Listing Executives only explicit
+   participation; Accountants only accepted Deal finance fields, not Opportunity communications.
+8. Legacy Viewing, Negotiation, Won and ambiguous Lost leads enter a read-only review ledger.
+   Nothing is automatically converted, relabelled or backfilled into an Opportunity or Deal.
 
-Campaign release allocation is approved under D-037. Before Release 2 implementation, the field
-contract still requires approval for the stable campaign, advert, form, landing-page and property
-identifiers supplied by each existing intake path. Provider-specific campaign configuration and
-credentials remain Release 3 gates.
+### Release 1.1 compatibility invariant
+
+Every behavior accepted through Release 1.1 remains unchanged unless the NYSA owner explicitly
+approves a documented amendment. Release 2 must be additive, keep the frozen candidate untouched,
+retain all existing regression tests, and prove its own schema, permissions, workflow and UI on
+CRM Test before any accepted behavior can be reconsidered.
+
+Campaign release allocation is approved under D-037. R2.1 preserves the existing stable source,
+campaign, external-source, form, page and originating-property identifiers without changing intake
+behavior. New provider-specific fields, campaign configuration and credentials remain Release 3
+gates.
 
 Until these decisions are approved and recorded in `DECISIONS.md`, work is limited to further
 requirements reconciliation, prototypes that do not alter business data, and migration/test

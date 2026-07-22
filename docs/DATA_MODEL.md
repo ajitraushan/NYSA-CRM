@@ -336,12 +336,14 @@ also have typed columns.
 - Provider, external object type/ID, internal entity type/ID, mapping version,
   active status, and last reconciliation time
 
-## Release 2 Planned Entities
+## Release 2 Entities
 
 ### Opportunity and deal
 
-- `opportunities` and `opportunity_stage_history`
-- `opportunity_attribution`
+- `opportunities`, `opportunity_stage_history`, `opportunity_attribution`,
+  `opportunity_participants`, `opportunity_number_counters`, `r2_legacy_lead_review` and
+  `r2_opportunity_reconciliation` — R2.0/R2.1 implemented locally in migration 038; database
+  rehearsal and CRM Test acceptance pending
 - `property_matches`
 - `viewings` and `viewing_attendees`
 - `offers`, `offer_revisions` and `negotiation_events`
@@ -354,6 +356,7 @@ The field-level design, lifecycle ownership, compatibility rules and authorizati
 in `RELEASE_2_SCOPE.md`. In particular, the roadmap requires explicit booking/reservation records;
 booking must not exist only as a stage label. Checklist configuration and operational completion
 move into Release 2, while sensitive document management and advanced compliance remain Release 6.
+The remaining records in this section are planned for later Release 2 slices.
 `opportunity_attribution` preserves the original lead/integration source plus stable campaign,
 advert, form, landing-page and property identifiers as immutable provenance. Deals resolve that
 provenance through their originating opportunity. Release 3 may map the stable identifiers to a
