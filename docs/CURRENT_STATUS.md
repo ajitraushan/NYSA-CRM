@@ -109,7 +109,10 @@
   visually blank. Version `2.0.0-dev.11` presents the submitted masked ID type, final four, expiry
   and submitted notes as non-editable review evidence, provides explicit **Approve KYC**,
   **Reject KYC** and **Mark expired** decisions, requires notes for adverse decisions, preserves
-  submitted evidence server-side and audits the decision separately. This supersedes dev.10.
+  submitted evidence server-side and audits the decision separately. This supersedes dev.10. The
+  complete cumulative dev.11 package is built from exact source commit `97db53e` as
+  `nysa-core-r2-1a-uat-kyc-97db53e.zip` with SHA-256
+  `53591507f14937e31db3594b9400b3e40f65d18e78fd5bdcfe3dc4df26eb50f4`.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
