@@ -1,5 +1,24 @@
 # NYSA CORE Current Status
 
+## Release 2.1A connected operations local build complete — 2026-07-22
+
+- Version `2.0.0-dev.2` implements the approved D-039/D-040 connected operating experience locally.
+  It adds a role-scoped guided operating sequence to Agent and Manager dashboards and a connected
+  case view showing Customer, Lead, qualification, active Opportunities, ownership, blockers and
+  next action without re-entering authoritative data.
+- Administrator, Director and managed-scope Manager users receive an explicit **Review
+  reassignment** action. It previews the Lead and each open Opportunity separately, requires a
+  reason, validates an active eligible Sales Agent and commits only the selected records atomically.
+- Migration `039_release2_connected_operations.sql` adds immutable Opportunity ownership history
+  and safely backfills the initial owner of existing Opportunities. Lead assignment history remains
+  authoritative and unchanged; Opportunity creation now records its initial owner directly.
+- The complete automated suite passes 168/168 tests, including all 164 prior tests plus four new
+  migration, transaction/history, guided-flow and documentation contracts; the existing permission
+  contract now reflects the approved Administrator reassignment amendment.
+- No deployment has occurred for R2.1A. Migration rehearsal, exact-commit packaging, CRM Test role
+  walkthroughs and usability acceptance in `RELEASE_2_1A_TEST_PLAN.md` remain required. Production
+  and the frozen Release 1.1 candidate remain untouched and excluded.
+
 ## Release 2 connected operations direction approved — 2026-07-22
 
 - The NYSA owner directed that Release 2 operate as one clear linked flow without repeated entry,

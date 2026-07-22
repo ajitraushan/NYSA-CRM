@@ -56,9 +56,16 @@ r.get('/crm/opportunities',async(req,res)=>{
 
 r.get('/crm/opportunities/:id',async(req,res)=>{
   const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
-  const stageHistory=await many(`SELECT h.*,b.name AS changed_by_name FROM opportunity_stage_history h
-    JOIN brokers b ON b.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id]);
-  res.json({opportunity,stageHistory});
+  const [stageHistory,assignmentHistory]=await Promise.all([
+    many(`SELECT h.*,b.name AS changed_by_name FROM opportunity_stage_history h
+      JOIN brokers b ON b.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id]),
+    many(`SELECT h.*,old_owner.name AS from_owner_name,new_owner.name AS to_owner_name,old_team.name AS from_team_name,
+      new_team.name AS to_team_name,actor.name AS changed_by_name FROM opportunity_assignment_history h
+      LEFT JOIN brokers old_owner ON old_owner.id=h.from_owner_id JOIN brokers new_owner ON new_owner.id=h.to_owner_id
+      LEFT JOIN teams old_team ON old_team.id=h.from_team_id LEFT JOIN teams new_team ON new_team.id=h.to_team_id
+      JOIN brokers actor ON actor.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id])
+  ]);
+  res.json({opportunity,stageHistory,assignmentHistory});
 });
 
 r.post('/crm/leads/:id/opportunities',async(req,res)=>{
@@ -90,6 +97,9 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         VALUES($1,$2,'Requirements','opportunity_created','Created explicitly from an approved qualified lead',$3)`,[uuid(),id,req.broker.id],client);
       await execute(`INSERT INTO opportunity_participants(id,opportunity_id,broker_id,participation_role,added_by)
         VALUES($1,$2,$3,'owner',$4)`,[uuid(),id,lead.assignedTo,req.broker.id],client);
+      await execute(`INSERT INTO opportunity_assignment_history(id,opportunity_id,to_team_id,to_owner_id,change_scope,reason,changed_by)
+        VALUES($1,$2,$3,$4,'opportunity_only','Initial owner captured from the qualified lead when the opportunity was created',$5)`,
+        [uuid(),id,lead.assignedTeamId,lead.assignedTo,req.broker.id],client);
       const attribution=buildOpportunityAttribution(lead);
       const attributionId=uuid();
       await execute(`INSERT INTO opportunity_attribution(id,opportunity_id,originating_lead_id,source,campaign_code,external_source_id,source_page,source_form,
@@ -155,6 +165,47 @@ r.get('/crm/release2/legacy-lead-review',async(req,res)=>{
     LEFT JOIN brokers owner ON owner.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id
     WHERE ${scope.clause} ORDER BY CASE review.review_status WHEN 'pending' THEN 0 ELSE 1 END,review.created_at`,params);
   res.json({count:records.length,records,automaticConversion:false});
+});
+
+r.get('/crm/operations/guided-work',async(req,res)=>{
+  const leadParams=[],leadScope=leadScopeSql('l',req.broker,leadParams),opportunityParams=[],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams),
+    nextParams=[],nextLeadScope=leadScopeSql('l',req.broker,nextParams),nextOpportunityScope=opportunityScopeSql('x',req.broker,nextParams);
+  const [leadCounts,opportunityCounts,nextCases]=await Promise.all([
+    one(`SELECT COUNT(DISTINCT l.contact_id)::int AS customers,COUNT(*)::int AS leads,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL))::int AS requirements,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id))::int AS qualified,
+      COUNT(*) FILTER(WHERE l.assigned_to IS NULL AND l.stage NOT IN ('Won','Lost'))::int AS unassigned,
+      COUNT(*) FILTER(WHERE l.assigned_to IS NOT NULL AND l.stage IN ('Qualified','Viewing','Negotiation','Won')
+        AND EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL)
+        AND EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)
+        AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')))::int AS ready_opportunities
+      FROM leads l WHERE ${leadScope.clause}`,leadScope.params),
+    one(`SELECT COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost'))::int AS active,
+      COUNT(*) FILTER(WHERE o.stage='Requirements')::int AS requirements,
+      COUNT(*) FILTER(WHERE o.stage='Matching')::int AS matching,
+      COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
+      FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
+    many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,
+      b.name AS owner_name,o.id AS opportunity_id,o.opportunity_reference,o.stage AS opportunity_stage,
+      COALESCE(o.next_action,CASE WHEN l.assigned_to IS NULL THEN 'Assign a responsible agent'
+        WHEN NOT EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL) THEN 'Record structured requirements'
+        WHEN NOT EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id) THEN 'Complete qualification'
+        WHEN l.stage IN ('Qualified','Viewing','Negotiation','Won') THEN 'Create or review Opportunity'
+        ELSE 'Continue Lead follow-up' END) AS next_action,
+      COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) AS due_at
+      FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
+      LEFT JOIN LATERAL (SELECT x.* FROM opportunities x WHERE x.lead_id=l.id AND ${nextOpportunityScope.clause} AND x.stage NOT IN ('Closed Won','Closed Lost') ORDER BY x.next_action_due_at LIMIT 1) o ON TRUE
+      WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost') ORDER BY COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) NULLS FIRST LIMIT 12`,nextLeadScope.params)
+  ]);
+  const steps=[
+    {code:'customer',label:'Customer',status:'completed',count:leadCounts.customers,action:'Open the linked customer record'},
+    {code:'lead',label:'Lead',status:leadCounts.unassigned?'blocked':'current',count:leadCounts.leads,action:leadCounts.unassigned?`${leadCounts.unassigned} need assignment`:'Continue customer follow-up'},
+    {code:'qualification',label:'Qualification',status:leadCounts.qualified?'current':'ready',count:leadCounts.qualified,action:'Complete requirements and approved qualification'},
+    {code:'opportunity',label:'Opportunity',status:leadCounts.readyOpportunities?'ready':opportunityCounts.active?'current':'blocked',count:opportunityCounts.active,action:leadCounts.readyOpportunities?`${leadCounts.readyOpportunities} qualified lead${leadCounts.readyOpportunities===1?' is':'s are'} ready`:opportunityCounts.overdue?`${opportunityCounts.overdue} next action${opportunityCounts.overdue===1?' is':'s are'} overdue`:'Create from a qualified lead'},
+    {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Requires an active Opportunity'},
+    ...['Viewing','Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
+  ];
+  res.json({role:req.broker.jobRole,steps,nextCases,dataAsOf:new Date(),releaseBoundary:'R2.1A enables connected guidance through Matching; later steps remain visibly unavailable'});
 });
 
 export default r;

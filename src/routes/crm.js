@@ -6,7 +6,7 @@ import { SOURCES, BUSINESS_TYPES, STAGES, TEMPERATURES, CONTACT_TYPES, CHANNELS,
   validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues,
   activityStageTransition } from '../crm-domain.js';
 import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
-  canWriteLead, canAssignLead, leadScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
+  canWriteLead, canAssignLead, leadScopeSql, opportunityScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
 import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.js';
 
@@ -612,6 +612,95 @@ r.post('/crm/leads/:id/assign', async (req,res)=>{
       VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[uuid(),lead.id,next.n,teamId,assignedTo||null,assignedTo?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
     await audit('Lead',lead.id,'reassigned',req.broker.id,{from:lead.assignedTo,to:assignedTo||null,teamId},client);return row;
   });res.json(updated);
+});
+
+r.get('/crm/leads/:id/operating-context',async(req,res)=>{
+  const lead=await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
+    b.name AS assigned_to_name,t.name AS assigned_team_name
+    FROM leads l JOIN contacts c ON c.id=l.contact_id
+    LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id
+    WHERE l.id=$1`,[req.params.id]);
+  if(!lead)return res.status(404).json({error:'Lead not found'});
+  if(!canReadLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your permitted scope'});
+  const opportunityParams=[lead.id],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams);
+  const [requirement,qualification,opportunities]=await Promise.all([
+    one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL',[lead.id]),
+    one('SELECT * FROM qualification_assessments WHERE lead_id=$1 ORDER BY assessed_at DESC LIMIT 1',[lead.id]),
+    many(`SELECT o.id,o.opportunity_reference,o.title,o.stage,o.owner_id,o.assigned_team_id,o.next_action,o.next_action_due_at,o.version,
+      b.name AS owner_name,t.name AS team_name,li.project AS listing_project
+      FROM opportunities o JOIN brokers b ON b.id=o.owner_id LEFT JOIN teams t ON t.id=o.assigned_team_id
+      LEFT JOIN listings li ON li.id=o.listing_id WHERE o.lead_id=$1 AND ${opportunityScope.clause} ORDER BY o.created_at`,opportunityScope.params)
+  ]);
+  const active=opportunities.filter(x=>!['Closed Won','Closed Lost'].includes(x.stage));
+  const opportunityReady=Boolean(lead.assignedTo&&requirement&&qualification&&['Qualified','Viewing','Negotiation','Won'].includes(lead.stage));
+  const currentOpportunity=active[0]||null;
+  const steps=[
+    {code:'customer',label:'Customer',status:'completed',action:'Customer identity is reused from the Customer Master'},
+    {code:'lead',label:'Lead',status:qualification?'completed':'current',action:qualification?'Enquiry and ownership retained':'Complete contact and qualification work'},
+    {code:'qualification',label:'Qualification',status:qualification?'completed':requirement?'current':'blocked',action:qualification?`${qualification.finalTemperature} qualification recorded`:requirement?'Complete the approved qualification':'Record structured requirements first'},
+    {code:'opportunity',label:'Opportunity',status:currentOpportunity?'completed':opportunityReady?'ready':'blocked',action:currentOpportunity?currentOpportunity.opportunityReference:opportunityReady?'Create the qualified property pursuit':'Assignment, requirements and qualification are required'},
+    {code:'matching',label:'Match',status:currentOpportunity?.stage==='Matching'?'current':currentOpportunity?.stage==='Requirements'?'ready':'not_available',action:currentOpportunity?.stage==='Requirements'?'Review matching inventory':currentOpportunity?.stage==='Matching'?currentOpportunity.nextAction:'Create an Opportunity first'},
+    ...['Viewing','Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',action:'Available in a later Release 2 slice'}))
+  ];
+  res.json({lead,requirement,qualification,opportunities,steps,currentOpportunity,
+    canCoordinateAssignment:canAssignLead(req.broker,lead),authoritativeSources:{customer:'Customer identity and contact details',lead:'Enquiry, source, campaign, requirement and qualification',opportunity:'Pursuit stage, owner and next action',listing:'Property facts and availability'}});
+});
+
+r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
+  const b=req.body||{},assignedTo=b.assignedTo||null,assignedTeamId=b.assignedTeamId||null,
+    includeLead=b.includeLead!==false,opportunityIds=[...new Set(Array.isArray(b.opportunityIds)?b.opportunityIds:[])],reason=clean(b.reason);
+  if(!assignedTo||!assignedTeamId)return res.status(400).json({error:'An active team and responsible agent are required'});
+  if(!includeLead&&!opportunityIds.length)return res.status(400).json({error:'Select the Lead or at least one open Opportunity'});
+  if(!reason)return res.status(400).json({error:'A reassignment reason is required'});
+  if(opportunityIds.length>100)return res.status(400).json({error:'No more than 100 Opportunities may be reassigned together'});
+  const result=await transaction(async client=>{
+    const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id],client);
+    if(!lead)return {code:404,error:'Lead not found'};
+    if(!canAssignLead(req.broker,lead))return {code:403,error:'Administrator, responsible Team Manager or Director reassignment access required'};
+    if(b.expectedLeadUpdatedAt&&new Date(lead.updatedAt).toISOString()!==new Date(b.expectedLeadUpdatedAt).toISOString())return {code:409,error:'This Lead changed after the reassignment preview; reopen it before saving'};
+    const assignee=await one(`SELECT b.id,b.name FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker'
+      AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)`,[assignedTo,assignedTeamId],client);
+    if(!assignee)return {code:400,error:'Responsible agent must be an eligible active member of the selected team'};
+    const team=await one('SELECT id,name FROM teams WHERE id=$1 AND active=1',[assignedTeamId],client);
+    if(!team)return {code:400,error:'Selected team is not active'};
+    if(req.broker.jobRole==='manager'&&!(req.broker.managedTeamIds||[]).includes(assignedTeamId))return {code:403,error:'Team Managers can reassign only within their managed teams'};
+    const selectedParams=[lead.id,opportunityIds],selectedScope=opportunityScopeSql('opportunities',req.broker,selectedParams);
+    const selected=opportunityIds.length?await many(`SELECT * FROM opportunities WHERE lead_id=$1 AND id=ANY($2::uuid[]) AND ${selectedScope.clause} FOR UPDATE`,selectedScope.params,client):[];
+    if(selected.length!==opportunityIds.length)return {code:409,error:'One or more selected Opportunities no longer belong to this Lead or permitted scope'};
+    if(selected.some(x=>['Closed Won','Closed Lost'].includes(x.stage)))return {code:409,error:'Closed Opportunities cannot be reassigned'};
+    const expectedVersions=b.opportunityVersions&&typeof b.opportunityVersions==='object'?b.opportunityVersions:{};
+    if(selected.some(x=>Number(expectedVersions[x.id])!==Number(x.version)))return {code:409,error:'An Opportunity changed after the reassignment preview; reopen it before saving'};
+    let leadChanged=false;
+    if(includeLead&&(lead.assignedTo!==assignedTo||lead.assignedTeamId!==assignedTeamId)){
+      const deadlines=await calculateDeadlines(new Date(),client);
+      await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
+      const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
+      const assignmentId=uuid();
+      await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by,response_reason)
+        VALUES($1,$2,$3,$4,$5,'offered',$6,$7,$8)`,[assignmentId,lead.id,next.n,assignedTeamId,assignedTo,deadlines.acceptanceDueAt,req.broker.id,reason],client);
+      await execute(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,assignment_status='assigned',
+        assignment_due_at=$3,reassigned_at=NOW(),reassigned_by=$4,updated_at=NOW() WHERE id=$5`,[assignedTo,assignedTeamId,deadlines.acceptanceDueAt,req.broker.id,lead.id],client);
+      await audit('LeadAssignment',assignmentId,'coordinated_reassignment',req.broker.id,{leadId:lead.id,fromOwnerId:lead.assignedTo,toOwnerId:assignedTo,fromTeamId:lead.assignedTeamId,toTeamId:assignedTeamId,reason},client);
+      leadChanged=true;
+    }
+    const opportunityChanges=[];
+    for(const opportunity of selected){
+      if(opportunity.ownerId===assignedTo&&opportunity.assignedTeamId===assignedTeamId)continue;
+      const historyId=uuid();
+      await execute(`UPDATE opportunities SET owner_id=$1,assigned_team_id=$2,version=version+1,updated_at=NOW() WHERE id=$3`,[assignedTo,assignedTeamId,opportunity.id],client);
+      await execute(`UPDATE opportunity_participants SET active=FALSE,ended_at=NOW() WHERE opportunity_id=$1 AND participation_role='owner' AND active=TRUE AND broker_id<>$2`,[opportunity.id,assignedTo],client);
+      await execute(`INSERT INTO opportunity_participants(id,opportunity_id,broker_id,participation_role,active,added_by)
+        VALUES($1,$2,$3,'owner',TRUE,$4) ON CONFLICT(opportunity_id,broker_id,participation_role)
+        DO UPDATE SET active=TRUE,ended_at=NULL,added_by=EXCLUDED.added_by,added_at=NOW()`,[uuid(),opportunity.id,assignedTo,req.broker.id],client);
+      await execute(`INSERT INTO opportunity_assignment_history(id,opportunity_id,from_team_id,to_team_id,from_owner_id,to_owner_id,change_scope,reason,changed_by)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[historyId,opportunity.id,opportunity.assignedTeamId,assignedTeamId,opportunity.ownerId,assignedTo,includeLead?'lead_and_opportunity':'opportunity_only',reason,req.broker.id],client);
+      await audit('OpportunityAssignment',historyId,'reassigned',req.broker.id,{opportunityId:opportunity.id,fromOwnerId:opportunity.ownerId,toOwnerId:assignedTo,fromTeamId:opportunity.assignedTeamId,toTeamId:assignedTeamId,reason},client);
+      opportunityChanges.push(opportunity.id);
+    }
+    return {leadId:lead.id,leadChanged,opportunityIds:opportunityChanges,assignedTo,assignedToName:assignee.name,assignedTeamId,assignedTeamName:team.name,reason};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
 });
 
 r.post('/crm/leads/:id/activities', async (req,res)=>{

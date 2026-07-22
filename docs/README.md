@@ -8,6 +8,7 @@ describe.
 
 - [Current status](CURRENT_STATUS.md) - live state, latest verification, and next action
 - [Product requirements](PRODUCT_REQUIREMENTS.md) - approved business scope and requirements
+- [Release 2.1A CRM Test plan](RELEASE_2_1A_TEST_PLAN.md) - connected Agent/Manager flow, coordinated reassignment and reconciliation acceptance
 - [Roadmap](ROADMAP.md) - phased delivery sequence
 - [Planned enhancements](PLANNED_ENHANCEMENTS.md) - approved planning inputs not yet implemented
 - [Decisions](DECISIONS.md) - approved decisions and unresolved items

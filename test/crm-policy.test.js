@@ -36,14 +36,14 @@ test('lead access follows company, team, and own-record scope',()=>{
   assert.equal(canReadLead(accountant,teamLead),false);
 });
 
-test('directors have assignment intervention while routine writes remain restricted',()=>{
+test('administrators and directors have assignment intervention while routine director writes remain restricted',()=>{
   const teamLead={assignedTo:'someone',assignedTeamId:'t1',createdBy:'other'};
   assert.equal(canWriteLead(director,teamLead),false);
   assert.equal(canAssignLead(director,teamLead),true);
   assert.equal(canWriteLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,{...teamLead,assignedTeamId:'t2'}),false);
-  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),false);
+  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),true);
 });
 
 test('proposal approval is team-scoped for managers and company-wide for directors',()=>{
