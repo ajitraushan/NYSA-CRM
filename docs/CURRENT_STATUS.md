@@ -54,6 +54,19 @@
   CRM Test serves both Revision 4 bundle keys and reports database-ready health. Production
   remains on hold pending the separate consolidated Release 1.1 promotion gates and authority.
 
+## Release 1.1 held production candidate and Release 2 transition — 2026-07-22
+
+- The accepted Release 1.1 source at commit `1001906` is frozen as the held production candidate
+  `nysa-core-r1-1-production-candidate-1001906.zip`, SHA-256
+  `d77192894c6d9996a84c6c928784d0b3280986f6eec4b969687e2194c6d11fe5`.
+- The archive contains 138 tracked allowlisted entries, includes migrations through 037 and
+  excludes environment files, dependencies, outputs, uploads, logs, dumps and release artifacts.
+  The complete 156-test suite passes and extracted JavaScript syntax validation passes.
+- The candidate is build-only and remains on HOLD. No production deployment is authorized or
+  performed; later promotion must use the recorded candidate and complete the production gates.
+- The NYSA owner authorized Release 2 work to begin while Release 1.1 production promotion is
+  deferred. Release 2 changes must not be added to or overwrite the frozen Release 1.1 candidate.
+
 ## Release 1.1 Sales Agent customers and lead lifecycle — 2026-07-21
 
 - R1.1-AMD-008 / R1.1-UAT-021 isolates customer permission resolution from the
@@ -492,10 +505,9 @@ reconciliation, timed proposal, and remaining production workflow gates stay ope
 
 ## Next Approved Workstream
 
-Complete the remaining Release 1 acceptance gates in
-`docs/RELEASE_1_ACCEPTANCE_STATUS.md`, then implement the approved Release 1.1 scope
-in `docs/RELEASE_1_1_SCOPE.md`. Do not start Release 2 until Release 1 acceptance,
-Release 1.1, and the applicable business sign-offs are complete.
+Begin Release 2 from the committed roadmap and requirements, while preserving the exact held
+Release 1.1 production candidate recorded above. Production promotion remains a separate gated
+workstream and must not absorb Release 2 changes.
 
 ## Handoff Prompt for a New Task
 

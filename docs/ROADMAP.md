@@ -95,6 +95,10 @@ Release 4 scope.
 
 ## Release 2: Opportunity and Deal Pipeline
 
+Status: Authorized to begin by the NYSA owner on 2026-07-22. The accepted Release 1.1 source is
+frozen in a separately checksummed production candidate on HOLD; Release 2 changes must remain
+outside that candidate.
+
 - Reorganize the Agent workspace into a clear operational sequence from Customer
   creation to Lead generation, inventory matching, contact/qualification, viewing,
   offer, negotiation and outcome, without merging the customer and lead records

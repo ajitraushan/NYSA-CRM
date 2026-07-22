@@ -2,15 +2,16 @@
 
 This is a preparation record, not production deployment authorization. Testing and deployment
 remain limited to `https://crm-test.nysarealty.com/`. Do not run production deployment commands
-until R1.1-UAT-030 is accepted on CRM Test, every remaining Release 1/1.1 gate is reconciled,
-the exact commit is approved for `main`, and the NYSA owner separately authorizes production.
+until every remaining Release 1/1.1 gate is reconciled, the exact commit is approved for `main`,
+and the NYSA owner separately authorizes production. R1.1-UAT-030 is accepted, but that
+finding-level acceptance does not by itself authorize production.
 
 ## Candidate identity
 
-- Status: Superseded by `R1.1-AMD-016 Revision 4`; do not deploy this production candidate.
-- Source commit: `4c8266b`
-- File: `nysa-core-r1-1-production-candidate-4c8266b.zip`
-- SHA-256: `39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf`
+- Status: Built and verified; HOLD — do not deploy without separate production authorization.
+- Source commit: `1001906`
+- File: `nysa-core-r1-1-production-candidate-1001906.zip`
+- SHA-256: `d77192894c6d9996a84c6c928784d0b3280986f6eec4b969687e2194c6d11fe5`
 - Archive policy: explicit tracked-source allowlist; `.git`, `.env`, `node_modules`, output,
   release artifacts, dumps and logs excluded
 - Entries: 138
@@ -37,8 +38,8 @@ After separate production authorization, use the production runbook and these re
 ```bash
 APP_ROOT="/home/nysareal/nysa-crm"
 NODE_BIN="/home/nysareal/nodevenv/nysa-crm/24/bin/node"
-PACKAGE="/home/nysareal/nysa-core-r1-1-production-candidate-4c8266b.zip"
-STAGE_DIR="/home/nysareal/nysa-r1-1-production-4c8266b-stage"
+PACKAGE="/home/nysareal/nysa-core-r1-1-production-candidate-1001906.zip"
+STAGE_DIR="/home/nysareal/nysa-r1-1-production-1001906-stage"
 ```
 
 Verify the package before any backup or file change:
@@ -50,7 +51,7 @@ sha256sum "$PACKAGE"
 Expected SHA-256:
 
 ```text
-39cf70b695ebde22ff3d0801c46fcfe44e6fbadc4c15542fee6ef4fb3f73dfaf
+d77192894c6d9996a84c6c928784d0b3280986f6eec4b969687e2194c6d11fe5
 ```
 
 The separately authorized production run must then follow `docs/DEPLOYMENT_RUNBOOK.md` in
