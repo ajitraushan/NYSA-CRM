@@ -43,6 +43,9 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(routes,/nextCaseResponsibility/);
   assert.match(routes,/l\.assigned_to IS NULL AND l\.assignment_status IN \('unassigned','reassignment_due'\)/);
   assert.match(dashboard,/manager action required/);
+  assert.ok(dashboard.indexOf('id="dashboard-guided-flow"')<dashboard.indexOf('class="executive-tabs"'),'guided operating sequence must appear above workspace tabs');
+  assert.match(dashboard,/likelyType==='manager'&&activeDashboardView==='Team performance'/);
+  assert.match(dashboard,/showingProposalApprovals=defaults\.view==='Proposal approvals'/);
   assert.doesNotMatch(dashboard,/slice\(0,6\)/);
 });
 

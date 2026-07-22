@@ -113,6 +113,11 @@
   complete cumulative dev.11 package is built from exact source commit `97db53e` as
   `nysa-core-r2-1a-uat-kyc-97db53e.zip` with SHA-256
   `53591507f14937e31db3594b9400b3e40f65d18e78fd5bdcfe3dc4df26eb50f4`.
+- Manager workspace UAT identified `R2.1A-UAT-008`: the Team operating sequence appeared below the
+  workspace tabs and was repeated inside Proposal approvals, confusing operating work with approval
+  work. Version `2.0.0-dev.12` places the guided operating sequence above the tabs and renders it
+  only on Team performance. Proposal, KYC, Listing and Media approval tabs open directly into their
+  dedicated queues. This supersedes dev.11 without a migration or data change.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
