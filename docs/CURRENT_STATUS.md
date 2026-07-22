@@ -83,7 +83,9 @@
   makes **Accept assignment** the first action for every unaccepted Agent offer, orders cases by
   acceptance then due time, and presents up to 50 priority cases in a bounded scrollable second
   column with an explicit route to the complete Lead register. This supersedes the pending dev.7
-  package; no Release 1.1 Lead data or history is rewritten.
+  package; no Release 1.1 Lead data or history is rewritten. The complete dev.8 package is built
+  from exact source commit `df7bf3a` as `nysa-core-r2-1a-uat-dashboard-df7bf3a.zip` with SHA-256
+  `2c70cadc977ed368ad26eb3d81575cc5920776da408358f4122d128a105378ec`.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
