@@ -86,6 +86,12 @@
   package; no Release 1.1 Lead data or history is rewritten. The complete dev.8 package is built
   from exact source commit `df7bf3a` as `nysa-core-r2-1a-uat-dashboard-df7bf3a.zip` with SHA-256
   `2c70cadc977ed368ad26eb3d81575cc5920776da408358f4122d128a105378ec`.
+- Agent UAT identified `R2.1A-UAT-005`: accepting an assignment opened a browser prompt requesting
+  another next-action deadline even though the governed first-contact SLA was already established
+  at assignment. Version `2.0.0-dev.9` makes acceptance a single action, automatically schedules
+  the first-contact task and Lead follow-up at the existing governed SLA deadline, and resets both
+  acceptance and first-contact timers consistently on every governed reassignment path. This
+  supersedes the deployed dev.8 package without a migration or any historical-data rewrite.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22

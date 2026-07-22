@@ -610,7 +610,8 @@ r.post('/crm/leads/:id/assign', async (req,res)=>{
     const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
     const row=await one(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,
       assignment_status=CASE WHEN $1::uuid IS NULL THEN 'unassigned' ELSE 'assigned' END,assignment_due_at=$3,
-      reassigned_at=NOW(),reassigned_by=$4,updated_at=NOW() WHERE id=$5 RETURNING *`,[assignedTo||null,teamId,deadlines.acceptanceDueAt,req.broker.id,lead.id],client);
+      acceptance_due_at=$3,first_contact_due_at=$4,accepted_at=NULL,first_contact_at=NULL,
+      reassigned_at=NOW(),reassigned_by=$5,updated_at=NOW() WHERE id=$6 RETURNING *`,[assignedTo||null,teamId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,req.broker.id,lead.id],client);
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[uuid(),lead.id,next.n,teamId,assignedTo||null,assignedTo?'offered':'queued',deadlines.acceptanceDueAt,req.broker.id],client);
     await audit('Lead',lead.id,'reassigned',req.broker.id,{from:lead.assignedTo,to:assignedTo||null,teamId},client);return row;
@@ -682,7 +683,8 @@ r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
       await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by,response_reason)
         VALUES($1,$2,$3,$4,$5,'offered',$6,$7,$8)`,[assignmentId,lead.id,next.n,assignedTeamId,assignedTo,deadlines.acceptanceDueAt,req.broker.id,reason],client);
       await execute(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,assignment_status='assigned',
-        assignment_due_at=$3,reassigned_at=NOW(),reassigned_by=$4,updated_at=NOW() WHERE id=$5`,[assignedTo,assignedTeamId,deadlines.acceptanceDueAt,req.broker.id,lead.id],client);
+        assignment_due_at=$3,acceptance_due_at=$3,first_contact_due_at=$4,accepted_at=NULL,first_contact_at=NULL,
+        reassigned_at=NOW(),reassigned_by=$5,updated_at=NOW() WHERE id=$6`,[assignedTo,assignedTeamId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,req.broker.id,lead.id],client);
       await audit('LeadAssignment',assignmentId,'coordinated_reassignment',req.broker.id,{leadId:lead.id,fromOwnerId:lead.assignedTo,toOwnerId:assignedTo,fromTeamId:lead.assignedTeamId,toTeamId:assignedTeamId,reason},client);
       leadChanged=true;
     }

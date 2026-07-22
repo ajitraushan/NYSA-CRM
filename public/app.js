@@ -572,7 +572,7 @@ async function openLead(id,{afterStageChange=null}={}) {
   });
   $('#lead-holding',o).addEventListener('change',async e=>{try{await api(`/crm/leads/${id}/holding-status`,{method:'POST',body:{holdingStatus:e.target.value}});toast('Timer state updated under active SLA policy');}catch(err){toast(err.message);e.target.value=lead.holdingStatus;}});
   $('#lead-coordinated-assign',o)?.addEventListener('click',()=>openCoordinatedReassignment(operatingContext,teams,staff,o));
-  $('#lead-accept',o)?.addEventListener('click',async()=>{const nextActionDue=prompt('Next action due (ISO date/time)');if(!nextActionDue)return;try{await api(`/crm/leads/${id}/assignment/accept`,{method:'POST',body:{nextActionDue}});toast('Assignment accepted');o.remove();openLead(id);}catch(err){toast(err.message);}});
+  $('#lead-accept',o)?.addEventListener('click',async()=>{try{const result=await api(`/crm/leads/${id}/assignment/accept`,{method:'POST',body:{}});toast(`Assignment accepted · first contact due ${fmtDate(result.firstContactDueAt)}`);o.remove();openLead(id);}catch(err){toast(err.message);}});
   $('#lead-reject',o)?.addEventListener('click',async()=>{const reason=prompt('Rejection reason');if(!reason)return;try{await api(`/crm/leads/${id}/assignment/reject`,{method:'POST',body:{reason}});toast('Assignment rejected');o.remove();openLead(id);}catch(err){toast(err.message);}});
   $('#lead-assignments',o).addEventListener('click',()=>openLeadAssignments(id));
   $('#lead-requirements',o).addEventListener('click',()=>openLeadRequirements(lead));

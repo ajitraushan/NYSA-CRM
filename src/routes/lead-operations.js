@@ -174,7 +174,6 @@ r.post('/crm/imports/leads',async(req,res)=>{
 });
 
 async function respondToAssignment(req,res,status){
-  if(status==='accepted'&&Number.isNaN(new Date(req.body?.nextActionDue).valueOf()))return res.status(400).json({error:'Valid nextActionDue is required when accepting a lead'});
   const result=await transaction(async client=>{
     const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id],client);
     if(!lead)return {code:404,error:'Lead not found'};
@@ -184,15 +183,16 @@ async function respondToAssignment(req,res,status){
     if(new Date(assignment.acceptanceDueAt)<=new Date())return {code:409,error:'Assignment offer has expired'};
     const reason=text(req.body?.reason);
     if(status==='rejected'&&!reason)return {code:400,error:'Rejection reason is required'};
-    if(status==='accepted'&&!req.body?.nextActionDue)return {code:400,error:'nextActionDue is required when accepting a lead'};
     await execute('UPDATE lead_assignments SET status=$1,responded_at=NOW(),response_reason=$2 WHERE id=$3',[status,reason,assignment.id],client);
+    let firstContactDueAt=null;
     if(status==='accepted') {
-      await execute("UPDATE leads SET assignment_status='assigned',accepted_at=NOW(),next_follow_up_at=$2,updated_at=NOW() WHERE id=$1",[lead.id,req.body.nextActionDue],client);
+      firstContactDueAt=lead.firstContactDueAt||lead.assignmentDueAt||new Date();
+      await execute("UPDATE leads SET assignment_status='assigned',accepted_at=NOW(),next_follow_up_at=$2,updated_at=NOW() WHERE id=$1",[lead.id,firstContactDueAt],client);
       await execute(`INSERT INTO tasks(id,lead_id,contact_id,subject,assignee_id,priority,due_at,created_by)
-        VALUES($1,$2,$3,$4,$5,'high',$6,$5)`,[uuid(),lead.id,lead.contactId,text(req.body.nextActionSubject)||'Contact newly accepted lead',req.broker.id,req.body.nextActionDue],client);
+        VALUES($1,$2,$3,$4,$5,'high',$6,$5)`,[uuid(),lead.id,lead.contactId,'Contact newly accepted lead',req.broker.id,firstContactDueAt],client);
     }
     else await execute("UPDATE leads SET assignment_status='reassignment_due',assigned_to=NULL,updated_at=NOW() WHERE id=$1",[lead.id],client);
-    await audit('LeadAssignment',assignment.id,status,req.broker.id,{reason},client);return {assignmentId:assignment.id,status};
+    await audit('LeadAssignment',assignment.id,status,req.broker.id,{reason,firstContactDueAt},client);return {assignmentId:assignment.id,status,firstContactDueAt};
   });
   if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 }
