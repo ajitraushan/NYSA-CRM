@@ -25,6 +25,9 @@ reconcile the Release 1.1 control counts and the existing R2 Opportunity populat
 5. Open that case and confirm Customer, Lead, qualification, Opportunity and property context are
    linked rather than re-entered.
 6. Confirm the Agent cannot see governed reassignment controls.
+7. Move a controlled Lead from Negotiation back to Viewing and confirm Viewing alone is current;
+   Negotiation and Won must return to pending styling while the immutable stage history remains
+   available below.
 
 ### Manager
 

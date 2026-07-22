@@ -163,6 +163,9 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
   assert.match(ui,/Customer.*Lead.*Contacted.*Qualified.*Viewing.*Negotiation.*Won/s);
   assert.match(ui,/One customer may have several leads, and each lead can be at a different stage\./);
   assert.match(ui,/lead\.stage==='Lost'/);
+  assert.match(ui,/terminalFromStage/);
+  assert.match(ui,/i<activeIndex/);
+  assert.doesNotMatch(ui,/new Set\(\['Customer','New',\.\.\.\(stageHistory/);
   assert.match(ui,/aria-current="step"/);
   assert.match(styles,/\.lead-lifecycle-step\.current/);
   assert.match(styles,/\.lead-lifecycle-lost\.current/);

@@ -506,8 +506,14 @@ async function openNewLeadForm(preselectedCustomerId=null) {
 
 function leadLifecycleHTML(lead,stageHistory=[]){
   const activeIndex=LEAD_LIFECYCLE_STAGES.findIndex(step=>step.stage===lead.stage),isLost=lead.stage==='Lost';
-  const reached=new Set(['Customer','New',...(stageHistory||[]).map(change=>change.toStage).filter(Boolean)]);
-  if(!isLost&&activeIndex>=0)for(let i=0;i<=activeIndex;i++)reached.add(LEAD_LIFECYCLE_STAGES[i].stage);
+  const reached=new Set(['Customer']);
+  if(isLost){
+    const terminalFromStage=(stageHistory||[]).slice().reverse().find(change=>change.toStage==='Lost')?.fromStage;
+    const terminalFromIndex=LEAD_LIFECYCLE_STAGES.findIndex(step=>step.stage===terminalFromStage);
+    for(let i=0;i<=terminalFromIndex;i++)reached.add(LEAD_LIFECYCLE_STAGES[i].stage);
+  }else if(activeIndex>=0){
+    for(let i=0;i<activeIndex;i++)reached.add(LEAD_LIFECYCLE_STAGES[i].stage);
+  }
   const steps=LEAD_LIFECYCLE_STAGES.map((step,index)=>{
     const current=!isLost&&step.stage===lead.stage,complete=!current&&reached.has(step.stage);
     return `<li class="lead-lifecycle-step ${current?'current':complete?'complete':'future'}" ${current?'aria-current="step"':''}><span>${index+1}</span><b>${esc(step.label)}</b></li>`;

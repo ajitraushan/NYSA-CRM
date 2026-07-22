@@ -40,6 +40,12 @@
   packaged as `nysa-core-r2-1a-agent-guidance-f7e17d3.zip` with SHA-256
   `a46f5c5c09a0eb86ff4e8d76d1eff2fcd6179734f3aaf24ace23e188a465226d`; it contains no new
   migration and must be deployed only to CRM Test.
+- Agent UAT then identified `R2.1A-UAT-002`: the selected Lead lifecycle used every historical
+  stage visit as completed styling, so a governed backward move from Negotiation to Viewing left
+  Negotiation green. Version `2.0.0-dev.4` makes the current Lead stage authoritative for the
+  visual path: stages before Viewing are complete, Viewing is current, and later stages return to
+  pending; immutable stage history is preserved. This correction supersedes the pending dev.3
+  package, which must not be uploaded or deployed.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
