@@ -1,5 +1,19 @@
 # NYSA CORE Current Status
 
+## Release 2 connected operations direction approved — 2026-07-22
+
+- The NYSA owner directed that Release 2 operate as one clear linked flow without repeated entry,
+  hidden ownership changes, duplicate pursuits or loss of history. D-039 records this as the
+  governing connected-operating-experience requirement.
+- R2.1A is inserted before matching/viewing. It will provide guided Customer-to-Lead-to-Opportunity
+  context, authoritative-data reuse, related-record navigation, duplicate warnings, ownership and
+  next-action visibility, plus transactional Lead/selected-open-Opportunity reassignment.
+- Administrator and Director receive company-wide governed reassignment; Manager/Team Lead remains
+  limited to managed teams. The action must preview affected records, require an explicit selection,
+  validate active team membership and append immutable assignment/audit history atomically.
+- This direction is additive. It does not rewrite Release 1.1 data or authorize production. Build,
+  testing and acceptance remain restricted to `https://crm-test.nysarealty.com/`.
+
 ## Release 2.0/2.1 Opportunity foundation migration rehearsal passed — 2026-07-22
 
 - The additive R2.0/R2.1 foundation is implemented locally on `agent/release-2-design`.

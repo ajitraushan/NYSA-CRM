@@ -25,6 +25,33 @@ Customer -> Lead -> Qualification -> Opportunity -> Match -> Viewing -> Offer
          -> Negotiation -> Booking/Reservation -> Closed Won or Closed Lost
 ```
 
+### Connected operating experience — D-039
+
+The records remain separate for audit and reporting, but the user experience must present them as
+one connected case. A user opens the customer or active work item once and can see the responsible
+team/agent, current lifecycle position, requirement, qualification, active opportunities, selected
+or matched properties, next action and material history without searching several unrelated screens.
+
+- Enter a business fact once in its authoritative record and reuse it everywhere else by reference.
+  Customer identity/contact details belong to Customer; enquiry provenance and qualification belong
+  to Lead; pursuit stage and next action belong to Opportunity; property facts belong to Listing.
+- Do not create a second editable customer, requirement, source, campaign or property record when an
+  Opportunity is opened. Preserve exact evidence through stable links and immutable snapshots only
+  where historical reproducibility requires them.
+- Creation actions show what will be reused, what is missing and what new record will be created.
+  Existing matching records are shown before a user can create a duplicate pursuit.
+- Every workspace shows a plain-language path back to its originating Customer and Lead and forward
+  to its Opportunities, properties and later Deal. Internal identifiers remain secondary.
+- Ownership is visible at every step. An authorized reassignment action must offer an impact preview
+  and an explicit choice of Lead only or Lead plus selected open Opportunities. The chosen changes
+  commit atomically and append immutable assignment/audit history; no Opportunity changes owner merely
+  because a Lead was edited through another action.
+- Administrator and Director may perform company-wide governed reassignment; Manager/Team Lead may
+  reassign within managed-team scope. Assignees must be active and eligible for the selected team.
+  Existing Sales Agent, Listing Executive and Accountant access boundaries remain unchanged.
+- Summary cards and guided actions use business language and disclose incomplete or conflicting data.
+  They must not conceal exceptions, silently overwrite another module or infer missing facts.
+
 - Customer is the canonical person or company and may have several leads.
 - Lead owns source, routing, assignment, SLA, contact and qualification history.
 - Opportunity owns a specific qualified property pursuit and its post-qualification stage.
@@ -183,13 +210,16 @@ Material stage, match, viewing, offer, booking, party, checklist and closure cha
    queries. No user-facing feature deployment.
 2. **R2.1 opportunity foundation**: opportunity creation from qualified leads, separate lifecycle,
    history, scope enforcement, work queue and compatibility dashboard evidence.
-3. **R2.2 matching and viewing**: explainable shortlist, local scheduling, attendees, attendance,
+3. **R2.1A connected operations and ownership**: guided Customer-to-Lead-to-Opportunity context,
+   authoritative-data reuse, related-record navigation, duplicate warnings, ownership visibility
+   and transactional Lead/selected-Opportunity reassignment with immutable history.
+4. **R2.2 matching and viewing**: explainable shortlist, local scheduling, attendees, attendance,
    feedback, follow-up and `.ics` fallback.
-4. **R2.3 offers, negotiation and booking**: immutable revisions, exact document links,
+5. **R2.3 offers, negotiation and booking**: immutable revisions, exact document links,
    negotiation timeline, reservation records and inventory conflict handling.
-5. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
+6. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
    checklist instantiation, approvals and authoritative closed outcomes.
-6. **R2.5 reconciliation and release candidate**: cross-role UAT, reports/count reconciliation,
+7. **R2.5 reconciliation and release candidate**: cross-role UAT, reports/count reconciliation,
    source/campaign attribution reconciliation, migration/rollback rehearsal, package identity and
    CRM Test acceptance. Production remains a separately authorized action.
 
@@ -207,6 +237,13 @@ open, so neither R2.0 nor R2.1 is accepted or deployable yet.
 
 - A qualified lead creates an opportunity without retyping or duplicating customer data and
   retains the exact requirement/qualification evidence used.
+- From Customer, Lead or Opportunity, a permitted user can understand the same case, ownership,
+  lifecycle position, related records and next action without re-entering an authoritative fact.
+- Reassignment previews affected records, updates only the explicitly selected Lead and open
+  Opportunities in one transaction, rejects invalid assignees and preserves prior ownership in
+  immutable assignment and audit history. A failed change leaves every record unchanged.
+- Administrator and Director can govern company-wide reassignment; Manager/Team Lead remains
+  limited to managed-team scope, and all existing non-management access boundaries remain intact.
 - Cross-agent and cross-team reads and writes are denied by the API, with Manager, Director,
   Listing Executive and Accountant behavior matching the approved matrix.
 - Invalid lifecycle transitions and stale concurrent updates are rejected; valid changes append
