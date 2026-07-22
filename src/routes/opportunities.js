@@ -169,6 +169,7 @@ r.get('/crm/release2/legacy-lead-review',async(req,res)=>{
 
 r.get('/crm/operations/guided-work',async(req,res)=>{
   const canCoordinateAssignment=req.broker.role==='admin'||['director','manager'].includes(req.broker.jobRole);
+  const nextCaseResponsibility=req.broker.jobRole==='manager'?"AND l.assigned_to IS NULL AND l.assignment_status IN ('unassigned','reassignment_due')":'';
   const leadParams=[],leadScope=agentWorkLeadScopeSql('l',req.broker,leadParams),opportunityParams=[],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams),
     nextParams=[],nextLeadScope=agentWorkLeadScopeSql('l',req.broker,nextParams),nextOpportunityScope=opportunityScopeSql('x',req.broker,nextParams);
   const [leadCounts,opportunityCounts,nextCases]=await Promise.all([
@@ -199,7 +200,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
       LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers manager ON manager.id=t.manager_id
       LEFT JOIN LATERAL (SELECT x.* FROM opportunities x WHERE x.lead_id=l.id AND ${nextOpportunityScope.clause} AND x.stage NOT IN ('Closed Won','Closed Lost') ORDER BY x.next_action_due_at LIMIT 1) o ON TRUE
-      WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost')
+      WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost') ${nextCaseResponsibility}
       ORDER BY CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 0 ELSE 1 END,
         CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN l.acceptance_due_at ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
         l.updated_at DESC LIMIT 50`,nextLeadScope.params)

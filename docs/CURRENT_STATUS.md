@@ -95,6 +95,12 @@
   complete dev.9 package is built from exact source commit `6b39e4c` as
   `nysa-core-r2-1a-uat-acceptance-6b39e4c.zip` with SHA-256
   `7ff7880c3abf605a56c9714482e93be0abae8b5eb7e56ab03ee6f65f03d7d36d`.
+- Manager UAT identified `R2.1A-UAT-006`: the team priority column correctly excluded assigned
+  Leads from the unassigned count but still displayed the Agent's personal **Accept assignment**
+  action. Version `2.0.0-dev.10` separates responsibility: Manager priority cases contain only
+  unassigned or reassignment-due Leads requiring Manager action, while Agent acceptance and
+  execution actions remain only in the assigned Agent's priority queue. Managers retain complete
+  team monitoring through the full Lead register. This supersedes the pending dev.9 package.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22

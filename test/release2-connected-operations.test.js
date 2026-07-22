@@ -40,6 +40,9 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
   assert.match(routes,/LIMIT 50/);
+  assert.match(routes,/nextCaseResponsibility/);
+  assert.match(routes,/l\.assigned_to IS NULL AND l\.assignment_status IN \('unassigned','reassignment_due'\)/);
+  assert.match(dashboard,/manager action required/);
   assert.doesNotMatch(dashboard,/slice\(0,6\)/);
 });
 
