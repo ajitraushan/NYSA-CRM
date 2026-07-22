@@ -15,9 +15,13 @@
 - The complete automated suite passes 168/168 tests, including all 164 prior tests plus four new
   migration, transaction/history, guided-flow and documentation contracts; the existing permission
   contract now reflects the approved Administrator reassignment amendment.
-- No deployment has occurred for R2.1A. Migration rehearsal, exact-commit packaging, CRM Test role
-  walkthroughs and usability acceptance in `RELEASE_2_1A_TEST_PLAN.md` remain required. Production
-  and the frozen Release 1.1 candidate remain untouched and excluded.
+- Exact-commit CRM Test package `nysa-core-r2-1a-crm-test-9cb226d.zip` was built from source commit
+  `9cb226d` with SHA-256
+  `3a8a00faa7d767484786522ec4e471d1814fa3a3b8ddc02d55b54a6af1fa4edc`. Migration 039 inside the
+  package has SHA-256 `1ce6d5e63ddee1a2ef381cfad23c3f132c897d88a3adb0ff8da752fbcd6dc281`.
+- No deployment has occurred for R2.1A. Migration rehearsal, CRM Test role walkthroughs and
+  usability acceptance in `RELEASE_2_1A_TEST_PLAN.md` remain required. Production and the frozen
+  Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
 
