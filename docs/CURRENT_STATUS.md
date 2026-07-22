@@ -28,8 +28,14 @@
   duplicate, concurrency, transition and browser workflow checks remain required on CRM Test.
 - Exact-commit CRM Test package `nysa-core-r2-0-r2-1-crm-test-488e811.zip` was built from
   rehearsal-evidence commit `488e811` with SHA-256
-  `05f3aee1194ae55d174a486528f72b1a6174d6c811a160332128fd05fe260386`. It has not been uploaded,
-  installed or deployed.
+  `05f3aee1194ae55d174a486528f72b1a6174d6c811a160332128fd05fe260386` and deployed only to
+  `https://crm-test.nysarealty.com/`, using the isolated rehearsal database. Health returned HTTP
+  200 with database ready; post-start counts and reconciliation remained unchanged.
+- Authenticated read-only browser verification passed for the Release 1.1 dashboard and 25-lead
+  pipeline, the empty additive Opportunity workspace, and the five-record legacy review ledger
+  with automatic conversion disabled. No browser console error or record mutation was observed.
+- Opportunity creation, duplicate/concurrency enforcement, stage movement and role-denial tests
+  remain open. Production and the original CRM Test database remain unchanged and excluded.
 - No deployment was performed. Testing/deployment remain restricted to
   `https://crm-test.nysarealty.com/`; production and the frozen Release 1.1 candidate remain
   unchanged and excluded.
