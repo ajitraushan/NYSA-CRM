@@ -91,7 +91,10 @@
   at assignment. Version `2.0.0-dev.9` makes acceptance a single action, automatically schedules
   the first-contact task and Lead follow-up at the existing governed SLA deadline, and resets both
   acceptance and first-contact timers consistently on every governed reassignment path. This
-  supersedes the deployed dev.8 package without a migration or any historical-data rewrite.
+  supersedes the deployed dev.8 package without a migration or any historical-data rewrite. The
+  complete dev.9 package is built from exact source commit `6b39e4c` as
+  `nysa-core-r2-1a-uat-acceptance-6b39e4c.zip` with SHA-256
+  `7ff7880c3abf605a56c9714482e93be0abae8b5eb7e56ab03ee6f65f03d7d36d`.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
