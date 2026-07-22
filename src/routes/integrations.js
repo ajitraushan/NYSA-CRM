@@ -3,10 +3,10 @@ import { Router } from '../lib/http-kit.js';
 import { one,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { canReadOpportunity,canWriteOpportunity } from '../crm-policy.js';
-import { googleConfigured,googleAuthorizationUrl,exchangeGoogleCode,googleProfile,encryptSecret,decryptSecret,refreshGoogleToken,createGoogleViewingEvent } from '../google-calendar.js';
+import { googleConfigured,googleAuthorizationUrl,exchangeGoogleCode,googleProfile,encryptSecret,decryptSecret,refreshGoogleToken,createGoogleViewingEvent,isGoogleOAuthCallbackPath } from '../google-calendar.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
 
-const r=Router();r.use((req,res,next)=>req.path==='/integrations/google-calendar/callback'?next():requireAuth(req,res,next));
+const r=Router();r.use((req,res,next)=>isGoogleOAuthCallbackPath(req.path)?next():requireAuth(req,res,next));
 const isAdmin=req=>req.broker.role==='admin'&&req.broker.jobRole==='admin';
 r.get('/integrations/google-calendar/status',async(req,res)=>{const row=await one("SELECT account_email,calendar_id,connected_at FROM calendar_connections WHERE provider='google_calendar' AND disconnected_at IS NULL");res.json({configured:googleConfigured(),connected:Boolean(row),accountEmail:row?.accountEmail||null,calendarId:row?.calendarId||null,connectedAt:row?.connectedAt||null});});
 r.get('/integrations/google-calendar/connect',async(req,res)=>{if(!isAdmin(req))return res.status(403).json({error:'Administrator access required'});if(!googleConfigured())return res.status(503).json({error:'Google Calendar OAuth environment settings are incomplete'});const state=crypto.randomBytes(32).toString('base64url'),hash=crypto.createHash('sha256').update(state).digest('hex');await execute("DELETE FROM integration_oauth_states WHERE expires_at<NOW()");await execute("INSERT INTO integration_oauth_states(state_hash,provider,broker_id,expires_at) VALUES($1,'google_calendar',$2,NOW()+INTERVAL '10 minutes')",[hash,req.broker.id]);res.statusCode=302;res.setHeader('Location',googleAuthorizationUrl(state));res.end();});

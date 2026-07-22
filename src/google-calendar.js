@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 const required=name=>{const value=process.env[name];if(!value)throw new Error(`${name} is not configured`);return value;};
 const key=()=>crypto.createHash('sha256').update(required('INTEGRATION_ENCRYPTION_KEY')).digest();
 export const googleConfigured=()=>Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID&&process.env.GOOGLE_CALENDAR_CLIENT_SECRET&&process.env.GOOGLE_CALENDAR_REDIRECT_URI&&process.env.INTEGRATION_ENCRYPTION_KEY);
+export const isGoogleOAuthCallbackPath=pathname=>pathname==='/api/integrations/google-calendar/callback';
 
 export function encryptSecret(value){const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key(),iv),data=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);return [iv,cipher.getAuthTag(),data].map(x=>x.toString('base64url')).join('.');}
 export function decryptSecret(value){const [iv,tag,data]=value.split('.').map(x=>Buffer.from(x,'base64url')),decipher=crypto.createDecipheriv('aes-256-gcm',key(),iv);decipher.setAuthTag(tag);return Buffer.concat([decipher.update(data),decipher.final()]).toString('utf8');}
