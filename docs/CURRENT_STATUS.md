@@ -54,6 +54,10 @@
   assigned-only operational scope to Agent dashboard counts, lifecycle, next cases, filters and
   dashboard export. Manager and company assignment scopes remain unchanged, and the underlying
   Release 1.1 Lead record/history is not altered. This supersedes the pending dev.4 package.
+  The complete dev.5 UAT correction is packaged from exact source commit `186217f` as
+  `nysa-core-r2-1a-uat-corrections-186217f.zip` with SHA-256
+  `ae335fe6456cee9eb7dd1d8991a12408ce398bba58fbf95cd39269f9a9638cf4`; only this latest
+  correction package may proceed to CRM Test.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
