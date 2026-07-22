@@ -71,7 +71,10 @@
   producing empty Agent dropdowns. Version `2.0.0-dev.7` replaces the table with readable case
   cards and an explicit Destination team → Responsible Sales Agent action. Eligible options come
   from active memberships; an empty team explains the maintenance gap, and the server now enforces
-  active `sales_agent` role plus selected-team membership. This supersedes the pending dev.6 package.
+  active `sales_agent` role plus selected-team membership. The complete dev.7 package is built from
+  exact source commit `f2e3de5` as `nysa-core-r2-1a-uat-assignment-queue-f2e3de5.zip` with SHA-256
+  `e67057a93f223baa61182746189af2e301b9fbfa60d1f4dadb654a3b62bfba65`; it supersedes the pending
+  dev.6 package and all earlier R2.1A correction packages.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
