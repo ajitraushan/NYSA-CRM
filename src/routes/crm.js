@@ -682,7 +682,10 @@ r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
     const expectedVersions=b.opportunityVersions&&typeof b.opportunityVersions==='object'?b.opportunityVersions:{};
     if(selected.some(x=>Number(expectedVersions[x.id])!==Number(x.version)))return {code:409,error:'An Opportunity changed after the reassignment preview; reopen it before saving'};
     let leadChanged=false;
-    if(includeLead&&(lead.assignedTo!==assignedTo||lead.assignedTeamId!==assignedTeamId)){
+    const currentOffer=includeLead?await one("SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL AND status='offered' FOR UPDATE",[lead.id],client):null;
+    const renewOffer=includeLead&&lead.assignedTo===assignedTo&&lead.assignedTeamId===assignedTeamId&&!lead.acceptedAt&&
+      (!currentOffer||!currentOffer.acceptanceDueAt||new Date(currentOffer.acceptanceDueAt)<=new Date());
+    if(includeLead&&(lead.assignedTo!==assignedTo||lead.assignedTeamId!==assignedTeamId||renewOffer)){
       const deadlines=await calculateDeadlines(new Date(),client);
       await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE lead_id=$1 AND superseded_at IS NULL",[lead.id],client);
       const next=await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client);
@@ -692,7 +695,7 @@ r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
       await execute(`UPDATE leads SET previous_assignee_id=assigned_to,assigned_to=$1,assigned_team_id=$2,assignment_status='assigned',
         assignment_due_at=$3,acceptance_due_at=$3,first_contact_due_at=$4,accepted_at=NULL,first_contact_at=NULL,
         reassigned_at=NOW(),reassigned_by=$5,updated_at=NOW() WHERE id=$6`,[assignedTo,assignedTeamId,deadlines.acceptanceDueAt,deadlines.firstContactDueAt,req.broker.id,lead.id],client);
-      await audit('LeadAssignment',assignmentId,'coordinated_reassignment',req.broker.id,{leadId:lead.id,fromOwnerId:lead.assignedTo,toOwnerId:assignedTo,fromTeamId:lead.assignedTeamId,toTeamId:assignedTeamId,reason},client);
+      await audit('LeadAssignment',assignmentId,renewOffer?'assignment_offer_renewed':'coordinated_reassignment',req.broker.id,{leadId:lead.id,fromOwnerId:lead.assignedTo,toOwnerId:assignedTo,fromTeamId:lead.assignedTeamId,toTeamId:assignedTeamId,reason},client);
       leadChanged=true;
     }
     const opportunityChanges=[];

@@ -49,6 +49,22 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.doesNotMatch(dashboard,/slice\(0,6\)/);
 });
 
+test('workspace mutations refresh in place and assignment offers use visible governed timing',()=>{
+  const app=read('public/app.js'),dashboard=read('public/dashboard-ui.js'),operations=read('src/routes/lead-operations.js'),routes=read('src/routes/opportunities.js');
+  assert.match(app,/refreshActiveWorkspace\(\)/);
+  assert.match(app,/window\.refreshActiveCrmDashboard/);
+  assert.match(app,/!\['GET','HEAD'\]\.includes/);
+  assert.match(dashboard,/window\.refreshActiveCrmDashboard=/);
+  assert.match(dashboard,/personal follow-ups, accepted-lead contact work, overdue tasks and proposal corrections/);
+  assert.match(dashboard,/Offered \$\{fmtDate\(x\.assignmentOfferedAt\)\} · Accept by/);
+  assert.match(routes,/assignment_offer\.offered_at AS assignment_offered_at/);
+  assert.match(routes,/COALESCE\(assignment_offer\.acceptance_due_at,l\.acceptance_due_at\)/);
+  assert.match(operations,/acceptanceDueAt:new Date\(receivedAt\.getTime\(\)\+30\*60000\)/);
+  assert.match(operations,/firstContactDueAt:new Date\(receivedAt\.getTime\(\)\+120\*60000\)/);
+  assert.match(operations,/Assignment offer has no acceptance deadline/);
+  assert.match(read('src/routes/crm.js'),/renewOffer[\s\S]*assignment_offer_renewed/);
+});
+
 test('D-039 and D-040 make connected operations and guided usability acceptance gates',()=>{
   const decisions=read('docs/DECISIONS.md'),scope=read('docs/RELEASE_2_SCOPE.md'),status=read('docs/CURRENT_STATUS.md');
   for(const marker of ['D-039','D-040'])assert.match(decisions,new RegExp(marker));

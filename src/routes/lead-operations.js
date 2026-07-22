@@ -180,7 +180,8 @@ async function respondToAssignment(req,res,status){
     if(lead.assignedTo!==req.broker.id)return {code:403,error:'Only the offered agent can respond'};
     const assignment=await one("SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL AND status='offered' FOR UPDATE",[lead.id],client);
     if(!assignment)return {code:409,error:'No pending assignment offer'};
-    if(new Date(assignment.acceptanceDueAt)<=new Date())return {code:409,error:'Assignment offer has expired'};
+    if(!assignment.acceptanceDueAt)return {code:409,error:'Assignment offer has no acceptance deadline; ask a Manager or Administrator to renew it'};
+    if(new Date(assignment.acceptanceDueAt)<=new Date())return {code:409,error:`Assignment offer expired at ${new Date(assignment.acceptanceDueAt).toISOString()}; ask a Manager or Administrator to renew it`};
     const reason=text(req.body?.reason);
     if(status==='rejected'&&!reason)return {code:400,error:'Rejection reason is required'};
     await execute('UPDATE lead_assignments SET status=$1,responded_at=NOW(),response_reason=$2 WHERE id=$3',[status,reason,assignment.id],client);
@@ -325,7 +326,7 @@ r.get('/crm/sla-queue',async(req,res)=>{
 });
 
 export async function calculateDeadlines(receivedAt,client){
-  const policy=await activePolicy(client);if(!policy)return {policy:null,acceptanceDueAt:null,firstContactDueAt:null};
+  const policy=await activePolicy(client);if(!policy)return {policy:null,acceptanceDueAt:new Date(receivedAt.getTime()+30*60000),firstContactDueAt:new Date(receivedAt.getTime()+120*60000)};
   return {policy,acceptanceDueAt:addBusinessMinutes(receivedAt,policy.acceptanceMinutes,calendar(policy)),firstContactDueAt:addBusinessMinutes(receivedAt,policy.firstContactMinutes,calendar(policy))};
 }
 

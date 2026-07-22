@@ -6,6 +6,13 @@ let ME = null;
 let currentTab = 'dashboard';
 let lastListings = [];
 let listingAreas = null;
+let workspaceRefreshTimer = null;
+
+function refreshActiveWorkspace() {
+  if (currentTab !== 'dashboard' || typeof window.refreshActiveCrmDashboard !== 'function') return;
+  clearTimeout(workspaceRefreshTimer);
+  workspaceRefreshTimer = setTimeout(() => window.refreshActiveCrmDashboard(), 120);
+}
 
 const PROPERTY_TYPES = ['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'];
 const BEDROOMS = ['Studio','1','2','3','4','5+'];
@@ -51,6 +58,7 @@ async function api(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && ME) { logout(false); throw new Error('Session expired — please sign in again'); }
   if (!res.ok) { const error=new Error(data.error || 'Request failed'); error.status=res.status; error.data=data; throw error; }
+  if (!['GET','HEAD'].includes(String(opts.method || 'GET').toUpperCase())) refreshActiveWorkspace();
   return data;
 }
 

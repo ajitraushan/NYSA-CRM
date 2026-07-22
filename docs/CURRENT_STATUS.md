@@ -121,6 +121,19 @@
   cumulative dev.12 package is built from exact source commit `3ca5ac0` as
   `nysa-core-r2-1a-uat-workspace-3ca5ac0.zip` with SHA-256
   `0e88c73b3ed1e6709fe052bc79c420ea45f994445bac83451be26dccb2f06025`.
+- Manager and Agent UAT identified `R2.1A-UAT-009`: successful decisions generally required a
+  manual browser refresh before their dashboard queues and counts changed, the purpose of **My
+  tasks** was unclear beside dedicated approval tabs, and a direct assignment created without an
+  active SLA policy could have a null deadline that the browser interpreted as already expired.
+  Version `2.0.0-dev.13` refreshes the active role workspace after every successful mutation while
+  retaining its view and filters, defines My tasks as the signed-in user's personal follow-ups,
+  accepted-lead contact work, overdue tasks and proposal corrections, and keeps decisions on other
+  users' submissions in dedicated approval tabs. Direct/coordinated assignments now use the same
+  30-minute acceptance and 120-minute first-contact fallbacks as the assignment queue when no
+  active SLA policy exists. Agent priority cards show the authoritative offer time and acceptance
+  deadline. Existing malformed offers are not silently rewritten; an Administrator, Director or
+  responsible Manager can select the same agent and team with a reason to append an audited renewal.
+  This is application-only, has no migration and remains pending CRM Test packaging and UAT.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
