@@ -45,7 +45,10 @@
   Negotiation green. Version `2.0.0-dev.4` makes the current Lead stage authoritative for the
   visual path: stages before Viewing are complete, Viewing is current, and later stages return to
   pending; immutable stage history is preserved. This correction supersedes the pending dev.3
-  package, which must not be uploaded or deployed.
+  package, which must not be uploaded or deployed. The combined dev.4 corrections are packaged
+  from exact source commit `76c12d9` as `nysa-core-r2-1a-uat-corrections-76c12d9.zip` with SHA-256
+  `4c99634a950c888faec308bc3bd78ef0ee879fe62835e3d3bcb673f35ae3ab06`; the package is
+  application-only and restricted to CRM Test.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
