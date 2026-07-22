@@ -18,7 +18,7 @@ test('R2.1A migration adds immutable Opportunity ownership history without rewri
 
 test('coordinated reassignment locks and validates the linked case then updates only explicit selections atomically',()=>{
   const routes=read('src/routes/crm.js'),opportunities=read('src/routes/opportunities.js');
-  for(const marker of ["/crm/leads/:id/operating-context","/crm/leads/:id/coordinated-reassignment","FOR UPDATE","expectedLeadUpdatedAt","opportunityVersions","Select the Lead or at least one open Opportunity","eligible active member","Closed Opportunities cannot be reassigned","opportunity_assignment_history","lead_and_opportunity","OpportunityAssignment"])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ["/crm/leads/:id/operating-context","/crm/leads/:id/coordinated-reassignment","FOR UPDATE","expectedLeadUpdatedAt","opportunityVersions","Select the Lead or at least one open Opportunity","eligible active Sales Agent","Closed Opportunities cannot be reassigned","opportunity_assignment_history","lead_and_opportunity","OpportunityAssignment"])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(routes,/transaction\(async client=>/);
   assert.match(routes,/UPDATE opportunity_participants SET active=FALSE/);
   assert.match(routes,/ON CONFLICT\(opportunity_id,broker_id,participation_role\)/);

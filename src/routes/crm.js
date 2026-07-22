@@ -92,9 +92,12 @@ r.get('/crm/overview', async (req, res) => {
 r.get('/crm/staff', async (req, res) => {
   const params=[];let scope='id=$1';params.push(req.broker.id);
   if(isCompanyReader(req.broker)||req.broker.jobRole==='admin_assistant'){scope="role IN ('admin','internal_broker')";params.length=0;}
-  else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships tm
-    WHERE tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL AND tm.team_id=brokers.team_id))`;}
-  const staff = await many(`SELECT id,name,email,team_id,job_title,job_role FROM brokers
+  else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships managed
+    JOIN team_memberships member ON member.team_id=managed.team_id AND member.ends_at IS NULL
+    WHERE managed.broker_id=$1 AND managed.membership_role='manager' AND managed.ends_at IS NULL AND member.broker_id=brokers.id))`;}
+  const staff = await many(`SELECT id,name,email,team_id,job_title,job_role,
+    COALESCE(ARRAY(SELECT tm.team_id::text FROM team_memberships tm WHERE tm.broker_id=brokers.id AND tm.ends_at IS NULL ORDER BY tm.team_id),ARRAY[]::text[]) AS team_ids
+    FROM brokers
     WHERE (${scope}) AND role IN ('admin','internal_broker') AND status='active' ORDER BY name`,params);
   res.json({ staff });
 });
@@ -658,9 +661,9 @@ r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
     if(!lead)return {code:404,error:'Lead not found'};
     if(!canAssignLead(req.broker,lead))return {code:403,error:'Administrator, responsible Team Manager or Director reassignment access required'};
     if(b.expectedLeadUpdatedAt&&new Date(lead.updatedAt).toISOString()!==new Date(b.expectedLeadUpdatedAt).toISOString())return {code:409,error:'This Lead changed after the reassignment preview; reopen it before saving'};
-    const assignee=await one(`SELECT b.id,b.name FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker'
+    const assignee=await one(`SELECT b.id,b.name FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND b.job_role='sales_agent'
       AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)`,[assignedTo,assignedTeamId],client);
-    if(!assignee)return {code:400,error:'Responsible agent must be an eligible active member of the selected team'};
+    if(!assignee)return {code:400,error:'Responsible agent must be an eligible active Sales Agent in the selected team'};
     const team=await one('SELECT id,name FROM teams WHERE id=$1 AND active=1',[assignedTeamId],client);
     if(!team)return {code:400,error:'Selected team is not active'};
     if(req.broker.jobRole==='manager'&&!(req.broker.managedTeamIds||[]).includes(assignedTeamId))return {code:403,error:'Team Managers can reassign only within their managed teams'};

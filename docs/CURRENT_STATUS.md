@@ -66,6 +66,12 @@
   `nysa-core-r2-1a-uat-corrections-da3c376.zip` with SHA-256
   `6fda7d020e16435e8025a88e88f89038508ce4cc47b6bc2c217a18e8d463e96b` and supersedes all
   earlier pending correction packages.
+- Administrator UAT identified `R2.1A-UAT-003`: the company assignment queue used a dense table and
+  filtered Agents by one primary broker team rather than authoritative active team memberships,
+  producing empty Agent dropdowns. Version `2.0.0-dev.7` replaces the table with readable case
+  cards and an explicit Destination team → Responsible Sales Agent action. Eligible options come
+  from active memberships; an empty team explains the maintenance gap, and the server now enforces
+  active `sales_agent` role plus selected-team membership. This supersedes the pending dev.6 package.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22

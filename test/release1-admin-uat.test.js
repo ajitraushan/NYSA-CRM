@@ -40,10 +40,12 @@ test('password recovery is private administrator-governed and revokes existing s
 });
 
 test('assignment queue supports scoped visibility atomic claim and repeat-cycle deadlines',()=>{
-  const source=read('src/routes/lead-operations.js'),crm=read('src/routes/crm.js'),website=read('src/routes/website-intake.js'),ui=read('public/app.js'),migration=read('src/migrations/018_team_queue_only_lead_intake.sql');
+  const source=read('src/routes/lead-operations.js'),crm=read('src/routes/crm.js'),website=read('src/routes/website-intake.js'),ui=read('public/app.js'),styles=read('public/index.html'),migration=read('src/migrations/018_team_queue_only_lead_intake.sql');
   assert.match(source,/\/crm\/assignment-queue/);
   assert.match(source,/FOR UPDATE/);
   assert.match(source,/self_claimed/);
+  assert.match(source,/b\.job_role='sales_agent'/);
+  assert.match(source,/eligible active Sales Agent in the selected team/);
   assert.match(source,/queue_cycle_no=queue_cycle_no\+1/);
   assert.match(source,/first_contact_due_at=\$4,accepted_at=NULL,first_contact_at=NULL/);
   assert.match(source,/self-claim is available only after SLA recycling/);
@@ -54,7 +56,13 @@ test('assignment queue supports scoped visibility atomic claim and repeat-cycle 
   assert.doesNotMatch(ui,/Assign broker/);
   assert.doesNotMatch(ui,/Named agent \(optional\)/);
   assert.doesNotMatch(crm,/\/crm\/leads\/:id\/claim/);
-  assert.match(ui,/A team lead or Director assigns the lead from the Pending Assignment Queue/);
+  assert.match(ui,/Choose the destination team first/);
+  assert.match(ui,/Destination team/);
+  assert.match(ui,/Responsible Sales Agent/);
+  assert.match(ui,/No active Sales Agent membership is maintained for this team/);
+  assert.match(ui,/s\.teamIds\.includes\(teamId\)/);
+  assert.match(crm,/AS team_ids/);
+  assert.match(styles,/\.assignment-queue-card/);
   assert.match(crm,/Broker must be an eligible active member of the selected team/);
   assert.match(migration,/routing_rules_team_queue_only_ck/);
   for(const team of ['Dubai Rental Team','Dubai Off-plan Team','Dubai Secondary Sales Team'])assert.match(source,new RegExp(team));
