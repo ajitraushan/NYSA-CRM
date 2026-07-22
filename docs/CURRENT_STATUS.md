@@ -58,6 +58,10 @@
   `nysa-core-r2-1a-uat-corrections-186217f.zip` with SHA-256
   `ae335fe6456cee9eb7dd1d8991a12408ce398bba58fbf95cd39269f9a9638cf4`; only this latest
   correction package may proceed to CRM Test.
+- CRM Test Agent UAT passed the assigned-only scope and corrected backward-stage display. The owner
+  requested removal of the redundant release-boundary sentence below the guided flow; locked future
+  steps already communicate availability. Version `2.0.0-dev.6` removes only that displayed line
+  and leaves the endpoint boundary metadata and all governed behavior unchanged.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22
