@@ -143,8 +143,8 @@
   Directors continue to see **My Direct Reports**. This changes presentation only and does not
   change the maintained reporting hierarchy, permissions or record scope. Dev.14 supersedes the
   pending dev.13 package and remains application-only with no migration. The complete cumulative
-  dev.14 package is built from exact source commit `6fc1aee` as
-  `nysa-core-r2-1a-uat-refresh-labels-6fc1aee.zip` with SHA-256
+  dev.14 package is built from exact source commit `6fc1aee` and stored as
+  `release-artifacts/release-2/r2.1a/nysa-core-r2-1a-uat-refresh-labels-6fc1aee.zip` with SHA-256
   `d2902506e534fe3e3c5de222315700f03a2f0ec2adc13b339911bc3c22f775f5`; CRM Test deployment and
   UAT remain pending.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
