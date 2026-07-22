@@ -1,6 +1,6 @@
 # NYSA CORE Current Status
 
-## Release 2.0/2.1 Opportunity foundation implemented locally — 2026-07-22
+## Release 2.0/2.1 Opportunity foundation migration rehearsal passed — 2026-07-22
 
 - The additive R2.0/R2.1 foundation is implemented locally on `agent/release-2-design`.
   Migration `038_release2_opportunity_foundation.sql` creates Opportunity identity, scoped owner
@@ -17,10 +17,15 @@
   screens, stages, counts, APIs or history.
 - The full automated suite passes 164/164 tests: all 156 prior assertions plus eight Release 2
   domain, permission, migration, attribution, concurrency, UI-boundary and documentation checks.
-- A live migration rehearsal is not claimed: this worktree has no configured isolated PostgreSQL
-  credentials/runtime or PostgreSQL client. Migration 038 must run first against an isolated
-  restored or sanitized database, with `r2_opportunity_reconciliation` evidence recorded, before
-  any CRM Test deployment package is prepared.
+- The CRM Test database was backed up to
+  `nysacrm-r1test-pre-r2-20260722.dump` (SHA-256
+  `cb4dc2790f94e2e696ed1b1aa9794d8ea5ba4fa2607b9707cf62d2ed91556e0e`) and restored into the
+  isolated `nysareal_nysa_r2_rehearsal` database. Migration 038 ran atomically and was recorded
+  exactly once. Release 1.1 control counts remained brokers 11, contacts 32, leads 25, listings
+  12 and audit log 377; reconciliation returned `5,5,0,0,0`, proving that all five legacy
+  candidates entered review and no Opportunity was created automatically.
+- The live migration/reconciliation gate has passed. Authenticated permissions, creation,
+  duplicate, concurrency, transition and browser workflow checks remain required on CRM Test.
 - No deployment was performed. Testing/deployment remain restricted to
   `https://crm-test.nysarealty.com/`; production and the frozen Release 1.1 candidate remain
   unchanged and excluded.

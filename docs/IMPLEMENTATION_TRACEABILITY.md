@@ -190,10 +190,12 @@ Verification evidence:
 
 - 164/164 automated tests pass, including the complete 156-test Release 1.1 regression baseline.
 - JavaScript syntax validation and `git diff --check` pass.
-- Live PostgreSQL migration and reconciliation remain open because no isolated PostgreSQL runtime
-  or credentials are configured in this worktree. Before CRM Test packaging, run migration 038 on
-  an isolated restored/sanitized database and record `r2_opportunity_reconciliation`, constraints,
-  permission denials, creation, duplicate, concurrency, transition and rollback evidence.
+- Live PostgreSQL migration and reconciliation passed on 2026-07-22 against
+  `nysareal_nysa_r2_rehearsal`, restored from the verified CRM Test snapshot. Migration 038 was
+  recorded exactly once, Release 1.1 control counts remained unchanged and
+  `r2_opportunity_reconciliation` returned `5,5,0,0,0`.
+- Authenticated constraint, permission-denial, creation, duplicate, concurrency, transition and
+  browser workflow evidence remain open for CRM Test.
 - No CRM Test or production deployment has been performed.
 
 ### Acceptance hardening

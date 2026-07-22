@@ -100,8 +100,10 @@ frozen in a separately checksummed production candidate on HOLD; Release 2 chang
 outside that candidate.
 
 R2.0/R2.1 opportunity foundation is implemented locally on 2026-07-22 with 164 passing automated
-tests. Isolated PostgreSQL migration/reconciliation, CRM Test deployment and explicit functional
-acceptance remain open; no Release 2 feature is deployed or accepted yet.
+tests. The isolated PostgreSQL migration/reconciliation passed against a restored CRM Test
+snapshot with Release 1.1 counts unchanged and no automatic Opportunity creation. CRM Test
+deployment and explicit functional acceptance remain open; no Release 2 feature is deployed or
+accepted yet.
 
 Requirements reconciliation, lifecycle compatibility, proposed data contracts, delivery slices,
 acceptance criteria and decisions required before development are defined in
