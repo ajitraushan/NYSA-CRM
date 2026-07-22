@@ -43,6 +43,9 @@ ledger entries and did not infer or create an Opportunity or Deal.
 
 ## Remaining gate
 
-Prepare and verify an exact-commit CRM Test package, then run authenticated permission, creation,
+Exact-commit CRM Test package `nysa-core-r2-0-r2-1-crm-test-488e811.zip` was prepared from commit
+`488e811` with SHA-256
+`05f3aee1194ae55d174a486528f72b1a6174d6c811a160332128fd05fe260386`. It has not been uploaded or
+deployed. After controlled CRM Test installation, run authenticated permission, creation,
 duplicate, concurrency, transition, reconciliation and browser tests only at
 `https://crm-test.nysarealty.com/`. Production deployment remains unauthorized.

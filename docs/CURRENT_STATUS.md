@@ -26,6 +26,10 @@
   candidates entered review and no Opportunity was created automatically.
 - The live migration/reconciliation gate has passed. Authenticated permissions, creation,
   duplicate, concurrency, transition and browser workflow checks remain required on CRM Test.
+- Exact-commit CRM Test package `nysa-core-r2-0-r2-1-crm-test-488e811.zip` was built from
+  rehearsal-evidence commit `488e811` with SHA-256
+  `05f3aee1194ae55d174a486528f72b1a6174d6c811a160332128fd05fe260386`. It has not been uploaded,
+  installed or deployed.
 - No deployment was performed. Testing/deployment remain restricted to
   `https://crm-test.nysarealty.com/`; production and the frozen Release 1.1 candidate remain
   unchanged and excluded.
