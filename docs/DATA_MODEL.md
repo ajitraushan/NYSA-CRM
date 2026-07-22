@@ -336,20 +336,25 @@ also have typed columns.
 - Provider, external object type/ID, internal entity type/ID, mapping version,
   active status, and last reconciliation time
 
-## Later Entities
+## Release 2 Planned Entities
 
 ### Opportunity and deal
 
-- `opportunities`
-- `opportunity_stage_history`
+- `opportunities` and `opportunity_stage_history`
 - `property_matches`
-- `viewings`
-- `viewing_attendees`
-- `offers`
-- `offer_revisions`
-- `negotiation_events`
-- `deals`
-- `deal_parties`
+- `viewings` and `viewing_attendees`
+- `offers`, `offer_revisions` and `negotiation_events`
+- `bookings` and `booking_status_history`
+- `deals` and `deal_parties`
+- `checklist_templates`, `checklist_template_items`, `deal_checklists` and
+  `deal_checklist_items`
+
+The field-level design, lifecycle ownership, compatibility rules and authorization baseline are
+in `RELEASE_2_SCOPE.md`. In particular, the roadmap requires explicit booking/reservation records;
+booking must not exist only as a stage label. Checklist configuration and operational completion
+move into Release 2, while sensitive document management and advanced compliance remain Release 6.
+
+## Later Entities
 
 ### Finance operations
 
@@ -362,10 +367,6 @@ also have typed columns.
 ### Documents and compliance
 
 - `document_access`
-- `checklist_templates`
-- `checklist_template_items`
-- `deal_checklists`
-- `deal_checklist_items`
 
 ### Integrations
 

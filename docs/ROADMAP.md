@@ -99,6 +99,10 @@ Status: Authorized to begin by the NYSA owner on 2026-07-22. The accepted Releas
 frozen in a separately checksummed production candidate on HOLD; Release 2 changes must remain
 outside that candidate.
 
+Requirements reconciliation, lifecycle compatibility, proposed data contracts, delivery slices,
+acceptance criteria and decisions required before development are defined in
+`RELEASE_2_SCOPE.md`.
+
 - Reorganize the Agent workspace into a clear operational sequence from Customer
   creation to Lead generation, inventory matching, contact/qualification, viewing,
   offer, negotiation and outcome, without merging the customer and lead records

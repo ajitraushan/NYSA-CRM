@@ -26,6 +26,7 @@ describe.
 - [Release 1.1 provider-mapping CRM Test deployment](CRM_TEST_R1_1_PROVIDER_MAPPING_DEPLOYMENT.md) - cPanel deployment and retest instructions for R1.1-AMD-014
 - [Release 1.1 Agent lifecycle CRM Test deployment](CRM_TEST_R1_1_AGENT_LIFECYCLE_DEPLOYMENT.md) - cPanel deployment and retest instructions for R1.1-AMD-016
 - [Release 1.1 production candidate](PRODUCTION_R1_1_RELEASE_CANDIDATE.md) - held production-candidate identity and promotion gates
+- [Release 2 scope](RELEASE_2_SCOPE.md) - reconciled Opportunity and Deal Pipeline design, compatibility boundary, delivery slices, acceptance baseline and approval gates
 - [Requirements review log](REQUIREMENTS_REVIEW_LOG.md) - gaps found during field and label review
 - [Deployment runbook](DEPLOYMENT_RUNBOOK.md) - production release and recovery procedure
 - [Deployment history](DEPLOYMENT_HISTORY.md) - exact deployed commits, hotfixes, and verification evidence

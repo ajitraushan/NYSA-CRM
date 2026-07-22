@@ -1,5 +1,27 @@
 # NYSA CORE Current Status
 
+## Release 2 requirements reconciliation and design — 2026-07-22
+
+- Release 2 design work began from continuity commit `6588047` on the separate
+  `agent/release-2-design` branch. No Release 1.1 source, candidate archive or production system
+  was changed.
+- `docs/RELEASE_2_SCOPE.md` reconciles the roadmap with the implemented Release 1.1 lead,
+  requirements, qualification, activity, document and inventory foundations. It defines distinct
+  Customer, Lead, Opportunity, Listing and Deal ownership; proposed data contracts; API-enforced
+  authorization; delivery slices; acceptance criteria and migration/reconciliation gates.
+- The principal compatibility issue is explicit: Release 1.1 accepted Viewing, Negotiation, Won
+  and Lost as lead stages, while the approved target model assigns post-qualification execution
+  to a separate opportunity. Historical lead-stage evidence must remain immutable, and no Won
+  lead may be converted automatically into an authoritative deal.
+- The reconciliation adds explicit booking and booking-history records omitted from the earlier
+  entity list, and brings configurable operational sale/rental checklists into Release 2 while
+  retaining sensitive document/compliance work in Release 6.
+- Development is gated on the eight business decisions in `docs/RELEASE_2_SCOPE.md`, including
+  lifecycle presentation, multi-opportunity rules, transition/closure policy, checklists,
+  booking/inventory behavior, party rules, commercial visibility and legacy backfill approval.
+- Testing and deployment remain limited to `https://crm-test.nysarealty.com/`. Production and the
+  held Release 1.1 candidate remain untouched and unauthorized for deployment.
+
 ## Release 1.1 listing workflow-history layout correction — 2026-07-21
 
 - Amendment `R1.1-AMD-015` / finding `R1.1-UAT-029` records the CRM Test observation

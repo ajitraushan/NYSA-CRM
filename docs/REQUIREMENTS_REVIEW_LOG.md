@@ -877,3 +877,31 @@ approved permitted-use media can satisfy readiness or enter customer proposals.
 
 Live Property Finder, Bayut/dubizzle and other portal publication/reconciliation
 connectors remain Release 4 scope.
+
+### RR-013: Release 2 Opportunity and Deal Pipeline Reconciliation
+
+**Status:** Design baseline recorded 2026-07-22; business decisions pending before development
+
+**Detailed scope:** `RELEASE_2_SCOPE.md`
+
+Release 2 must separate the post-qualification Opportunity lifecycle from Customer and Lead
+without rewriting the accepted Release 1.1 lead-stage history. The implemented Release 1.1 model
+currently uses Viewing, Negotiation, Won and Lost as lead stages, while approved decision D-005
+and the product requirements assign post-qualification execution to Opportunities.
+
+The reconciliation preserves historical evidence and requires a rehearsed compatibility migration
+and exception queue. A Qualified lead may open a property pursuit using the exact current
+requirement and qualification evidence. Viewing/Negotiation legacy records are review candidates
+only when their property evidence is identifiable, and a Won lead can never manufacture an
+authoritative Deal without reviewed parties, terms, property and completion evidence.
+
+The roadmap/data-model review also found that booking and reservation records were required by
+Release 2 but absent from the planned entity list. Explicit booking and booking-status history are
+now part of the proposed contract. Operational sale/rental checklist templates and instantiated
+deal checklists move into Release 2; sensitive document access and advanced compliance stay in
+Release 6.
+
+Development remains gated on approval of lifecycle presentation, multi-opportunity uniqueness,
+transition and closure policy, initial checklists, booking/inventory behavior, party rules,
+commercial visibility and legacy backfill treatment. Testing and deployment remain restricted to
+CRM Test, and the held Release 1.1 production candidate is outside this workstream.

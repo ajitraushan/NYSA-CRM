@@ -95,6 +95,13 @@ Each module owns its validation and business rules. Cross-module operations use
 database transactions where consistency is required, such as converting a lead
 to an opportunity or closing a deal and creating commission expectations.
 
+For Release 2, Lead Operations remains authoritative for source, routing, assignment, SLA and
+qualification. Opportunity and Deals becomes authoritative only after qualification for matches,
+viewings, offers, negotiations, bookings and transaction outcome. Inventory remains authoritative
+for listing identity and availability. Cross-module creation, reservation and closure operations
+must be transactional, conflict-safe and audited; an opportunity stage must never silently rewrite
+inventory or manufacture a deal. The detailed compatibility design is in `RELEASE_2_SCOPE.md`.
+
 ## Request and Authorization Flow
 
 1. TLS terminates at the hosting proxy.
