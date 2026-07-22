@@ -75,6 +75,15 @@
   exact source commit `f2e3de5` as `nysa-core-r2-1a-uat-assignment-queue-f2e3de5.zip` with SHA-256
   `e67057a93f223baa61182746189af2e301b9fbfa60d1f4dadb654a3b62bfba65`; it supersedes the pending
   dev.6 package and all earlier R2.1A correction packages.
+- Manager and Agent UAT identified `R2.1A-UAT-004`: a Manager operating workspace included Leads
+  merely created by that Manager even when routed outside the Manager's active managed teams; the
+  next-action resolver also allowed requirements work to outrank an unaccepted assignment, and the
+  six-row unbounded-page presentation would not scale to a normal Agent portfolio. Version
+  `2.0.0-dev.8` scopes Manager operations to owned Leads and active managed-team memberships,
+  makes **Accept assignment** the first action for every unaccepted Agent offer, orders cases by
+  acceptance then due time, and presents up to 50 priority cases in a bounded scrollable second
+  column with an explicit route to the complete Lead register. This supersedes the pending dev.7
+  package; no Release 1.1 Lead data or history is rewritten.
 - Production and the frozen Release 1.1 candidate remain untouched and excluded.
 
 ## Release 2 connected operations direction approved — 2026-07-22

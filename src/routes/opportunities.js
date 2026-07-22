@@ -186,20 +186,25 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       COUNT(*) FILTER(WHERE o.stage='Matching')::int AS matching,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
-    many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,
+    many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
       b.name AS owner_name,manager.name AS responsible_manager_name,o.id AS opportunity_id,o.opportunity_reference,o.stage AS opportunity_stage,
-      COALESCE(o.next_action,CASE WHEN l.assigned_to IS NULL THEN 'Assignment requires manager action'
+      CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 'Accept assignment'
+        ELSE COALESCE(o.next_action,CASE WHEN l.assigned_to IS NULL THEN 'Assignment requires manager action'
         WHEN NOT EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL) THEN 'Record structured requirements'
         WHEN NOT EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id) THEN 'Complete qualification'
         WHEN l.stage IN ('Qualified','Viewing','Negotiation','Won') THEN 'Create or review Opportunity'
-        ELSE 'Continue Lead follow-up' END) AS next_action,
-      COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) AS due_at
+        ELSE 'Continue Lead follow-up' END) END AS next_action,
+      CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN l.acceptance_due_at
+        ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END AS due_at
       FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
       LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers manager ON manager.id=t.manager_id
       LEFT JOIN LATERAL (SELECT x.* FROM opportunities x WHERE x.lead_id=l.id AND ${nextOpportunityScope.clause} AND x.stage NOT IN ('Closed Won','Closed Lost') ORDER BY x.next_action_due_at LIMIT 1) o ON TRUE
-      WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost') ORDER BY COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) NULLS FIRST LIMIT 12`,nextLeadScope.params)
+      WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost')
+      ORDER BY CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 0 ELSE 1 END,
+        CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN l.acceptance_due_at ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
+        l.updated_at DESC LIMIT 50`,nextLeadScope.params)
   ]);
-  const guidedCases=nextCases.map(item=>item.assignedTo?{...item,actionHint:'Open connected case'}:{
+  const guidedCases=nextCases.map(item=>item.assignedTo?{...item,actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
     ...item,
     nextAction:canCoordinateAssignment?'Assign a responsible agent':`Await assignment by ${item.responsibleManagerName||'your manager'}`,
     actionHint:canCoordinateAssignment?'Open Lead and review reassignment':'Manager-controlled; open Lead context only'

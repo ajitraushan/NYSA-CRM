@@ -86,6 +86,12 @@ export function agentWorkLeadScopeSql(alias,broker,params=[]){
     const id=bind(params,broker.id);
     return {clause:`${alias}.assigned_to=${id}`,params};
   }
+  if(hasInternalCrmIdentity(broker)&&broker.jobRole==='manager'){
+    const id=bind(params,broker.id);
+    return {clause:`(${alias}.assigned_to=${id} OR EXISTS (
+      SELECT 1 FROM team_memberships tm WHERE tm.broker_id=${id} AND tm.team_id=${alias}.assigned_team_id
+        AND tm.membership_role='manager' AND tm.ends_at IS NULL))`,params};
+  }
   return leadScopeSql(alias,broker,params);
 }
 

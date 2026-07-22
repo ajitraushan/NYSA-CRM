@@ -73,12 +73,13 @@ test('SQL scopes are parameterized and deny accountants',()=>{
   assert.deepEqual(contact.params,[]);
 });
 
-test('Agent work areas contain assigned Leads only while governed management scopes remain unchanged',()=>{
+test('Agent and Manager work areas exclude unrelated Leads created outside their operational scope',()=>{
   const agentWork=agentWorkLeadScopeSql('l',agent,[]),managerWork=agentWorkLeadScopeSql('l',manager,[]);
   assert.equal(agentWork.clause,'l.assigned_to=$1');
   assert.deepEqual(agentWork.params,['u']);
   assert.doesNotMatch(agentWork.clause,/created_by/);
   assert.match(managerWork.clause,/team_memberships/);
+  assert.doesNotMatch(managerWork.clause,/created_by/);
 });
 
 test('Sales Agents can list customers they own or serve through a scoped lead',()=>{
