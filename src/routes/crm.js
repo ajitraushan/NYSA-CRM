@@ -648,9 +648,10 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
   const currentOpportunity=active[0]||null;
   const steps=[
     {code:'customer',label:'Customer',status:'completed',action:'Customer identity is reused from the Customer Master'},
-    {code:'lead',label:'Lead',status:qualification?'completed':'current',action:qualification?'Enquiry and ownership retained':'Complete contact and qualification work'},
-    {code:'qualification',label:'Qualification',status:qualification?'completed':requirement?'current':'blocked',action:qualification?`${qualification.finalTemperature} qualification recorded`:requirement?'Complete the approved qualification':'Record structured requirements first'},
-    {code:'opportunity',label:'Opportunity',status:currentOpportunity?'completed':opportunityReady?'ready':'blocked',action:currentOpportunity?currentOpportunity.opportunityReference:opportunityReady?'Create the qualified property pursuit':'Assignment, requirements and qualification are required'},
+    {code:'lead',label:'Lead',status:'completed',action:'Enquiry, source and responsible ownership are retained'},
+    {code:'qualification',label:'Qualification',status:qualification?'completed':'current',action:qualification?`${qualification.finalTemperature} qualification recorded`:'Complete the approved qualification'},
+    {code:'requirements',label:'Requirements',status:requirement?'completed':qualification?'current':'blocked',action:requirement?`Structured requirement version ${requirement.versionNo} recorded`:qualification?'Collect the customer property requirements':'Complete qualification first'},
+    {code:'opportunity',label:'Opportunity',status:currentOpportunity?'completed':opportunityReady?'ready':'blocked',action:currentOpportunity?currentOpportunity.opportunityReference:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and requirements are required'},
     {code:'matching',label:'Match',status:currentOpportunity?.stage==='Matching'?'current':currentOpportunity?.stage==='Requirements'?'ready':'not_available',action:currentOpportunity?.stage==='Requirements'?'Review matching inventory':currentOpportunity?.stage==='Matching'?currentOpportunity.nextAction:'Create an Opportunity first'},
     ...['Viewing','Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',action:'Available in a later Release 2 slice'}))
   ];

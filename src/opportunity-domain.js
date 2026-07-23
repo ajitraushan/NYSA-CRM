@@ -24,14 +24,16 @@ export function buildOpportunityAttribution(lead){
 }
 
 export function validateOpportunityCreate(body={}){
-  const title=clean(body.title),nextAction=clean(body.nextAction),transactionType=body.transactionType;
+  const title=clean(body.title),nextAction=clean(body.nextAction),transactionType=body.transactionType,serviceOpportunityReason=clean(body.serviceOpportunityReason);
+  if(body.serviceOpportunityConfirmed!==true)return {error:'Confirm that this is a genuine opportunity for NYSA to serve the customer'};
+  if(!serviceOpportunityReason)return {error:'Explain why NYSA has a genuine opportunity to serve this customer'};
   if(!title)return {error:'Opportunity title is required'};
   if(!OPPORTUNITY_TRANSACTION_TYPES.includes(transactionType))return {error:'Select a valid transaction type'};
   if(!nextAction)return {error:'Next action is required for an active opportunity'};
   const due=new Date(body.nextActionDueAt);
   if(!body.nextActionDueAt||Number.isNaN(due.valueOf()))return {error:'A valid next-action due time is required'};
   if(body.priority&&!['low','normal','high','urgent'].includes(body.priority))return {error:'Select a valid opportunity priority'};
-  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:body.listingId||null}};
+  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:body.listingId||null,serviceOpportunityReason}};
 }
 
 export function validateOpportunityTransition(currentStage,toStage,{reasonCode,reason}={}){

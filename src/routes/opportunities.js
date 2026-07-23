@@ -223,7 +223,7 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         [id,opportunityReference,lead.id,lead.contactId,requirement.id,assessment.id,input.listingId,lead.assignedTeamId,lead.assignedTo,
           input.title,input.transactionType,input.priority,input.nextAction,input.nextActionDueAt,['Viewing','Negotiation','Won'].includes(lead.stage)?lead.stage:null,req.broker.id],client);
       await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,to_stage,reason_code,reason,changed_by)
-        VALUES($1,$2,'Requirements','opportunity_created','Created explicitly from an approved qualified lead',$3)`,[uuid(),id,req.broker.id],client);
+        VALUES($1,$2,'Requirements','opportunity_created',$3,$4)`,[uuid(),id,input.serviceOpportunityReason,req.broker.id],client);
       await execute(`INSERT INTO opportunity_participants(id,opportunity_id,broker_id,participation_role,added_by)
         VALUES($1,$2,$3,'owner',$4)`,[uuid(),id,lead.assignedTo,req.broker.id],client);
       await execute(`INSERT INTO opportunity_assignment_history(id,opportunity_id,to_team_id,to_owner_id,change_scope,reason,changed_by)
@@ -237,7 +237,7 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
           attribution.originatingListingId,JSON.stringify(attribution.provenanceSnapshot),attribution.provenanceHash],client);
       await execute(`UPDATE r2_legacy_lead_review SET review_status='linked_after_review',linked_opportunity_id=$1,reviewed_by=$2,
         reviewed_at=NOW(),review_note='Opportunity created explicitly after scoped review' WHERE lead_id=$3 AND review_status='pending'`,[id,req.broker.id,lead.id],client);
-      await audit('Opportunity',id,'created',req.broker.id,{leadId:lead.id,opportunityReference,requirementId:requirement.id,qualificationAssessmentId:assessment.id,legacyLeadStage:lead.stage},client);
+      await audit('Opportunity',id,'created',req.broker.id,{leadId:lead.id,opportunityReference,requirementId:requirement.id,qualificationAssessmentId:assessment.id,legacyLeadStage:lead.stage,serviceOpportunityConfirmed:true,serviceOpportunityReason:input.serviceOpportunityReason},client);
       await audit('OpportunityAttribution',attributionId,'captured',req.broker.id,{opportunityId:id,provenanceHash:attribution.provenanceHash,attributionBasis:'original_enquiry'},client);
       return opportunity;
     });

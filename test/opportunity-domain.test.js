@@ -2,14 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../src/opportunity-domain.js';
 
-test('opportunity creation requires governed identity and next action fields',()=>{
-  assert.equal(validateOpportunityCreate({}).error,'Opportunity title is required');
-  assert.match(validateOpportunityCreate({title:'Marina home',transactionType:'Unknown',nextAction:'Review',nextActionDueAt:'2026-07-23'}).error,/transaction type/);
-  const checked=validateOpportunityCreate({title:' Marina home ',transactionType:'Sale',priority:'high',nextAction:' Review shortlist ',nextActionDueAt:'2026-07-23T10:00:00+04:00'});
+test('opportunity creation requires an explicit genuine service decision and next action',()=>{
+  assert.match(validateOpportunityCreate({}).error,/genuine opportunity/);
+  assert.match(validateOpportunityCreate({serviceOpportunityConfirmed:true}).error,/Explain why/);
+  assert.match(validateOpportunityCreate({serviceOpportunityConfirmed:true,serviceOpportunityReason:'Inventory fit',title:'Marina home',transactionType:'Unknown',nextAction:'Review',nextActionDueAt:'2026-07-23'}).error,/transaction type/);
+  const checked=validateOpportunityCreate({serviceOpportunityConfirmed:true,serviceOpportunityReason:'Approved inventory fits the customer requirement',title:' Marina home ',transactionType:'Sale',priority:'high',nextAction:' Review shortlist ',nextActionDueAt:'2026-07-23T10:00:00+04:00'});
   assert.equal(checked.error,undefined);
   assert.equal(checked.value.title,'Marina home');
   assert.equal(checked.value.nextAction,'Review shortlist');
   assert.equal(checked.value.priority,'high');
+  assert.equal(checked.value.serviceOpportunityReason,'Approved inventory fits the customer requirement');
 });
 
 test('Release 2.2 exposes Requirements Matching Viewing and reasoned Closed Lost',()=>{
