@@ -34,10 +34,10 @@ first Google connection; changing it makes the stored refresh token unreadable.
 bash deploy-crm-test-r2-2-dev17.sh /absolute/path/package.zip <PACKAGE_SHA256>
 ```
 
-4. Restart the CRM Test Node.js application. Startup must apply migrations 040–043 atomically.
+4. Restart the CRM Test Node.js application. Startup must apply migrations 040 through 044 atomically.
 5. Confirm `/api/health` returns HTTP 200 and database ready.
 6. Confirm the latest `schema_migrations.version` is
-   `043_activity_google_meet.sql` and reconcile brokers, contacts, leads, listings,
+   `044_viewing_client_message.sql` and reconcile brokers, contacts, leads, listings,
    opportunities and audit counts against the pre-deployment snapshot.
 
 ## Connect Google

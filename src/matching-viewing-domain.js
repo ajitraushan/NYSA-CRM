@@ -21,14 +21,15 @@ export function validateMatchDecision(body={}){
 }
 
 export function validateViewingCreate(body={}){
-  const propertyMatchId=clean(body.propertyMatchId),timezone=clean(body.timezone),location=clean(body.location),instructions=clean(body.instructions);
+  const propertyMatchId=clean(body.propertyMatchId),timezone=clean(body.timezone),location=clean(body.location),instructions=clean(body.instructions),clientMessage=clean(body.clientMessage);
   const startsAt=new Date(body.startsAt),endsAt=new Date(body.endsAt);
   if(!propertyMatchId)return {error:'Select a shortlisted property'};
   if(Number.isNaN(startsAt.valueOf())||Number.isNaN(endsAt.valueOf())||endsAt<=startsAt)return {error:'The viewing time could not be understood. Re-enter the start date and duration'};
   if(!timezone||!location||!instructions)return {error:'Property address and meeting point are required'};
+  if(clientMessage&&clientMessage.length>1000)return {error:'The client message must be 1,000 characters or fewer'};
   const attendees=Array.isArray(body.attendees)?body.attendees:[];
   if(attendees.length>20)return {error:'A viewing can include at most 20 attendees'};
-  return {value:{propertyMatchId,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),timezone,location,instructions,attendees}};
+  return {value:{propertyMatchId,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),timezone,location,instructions,clientMessage,attendees}};
 }
 
 export function validateViewingOutcome(body={}){
@@ -49,6 +50,6 @@ const icsDate=value=>new Date(value).toISOString().replace(/[-:]/g,'').replace(/
 export function buildViewingIcs(viewing){
   return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NYSA CORE//R2.2 Viewing//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
     `UID:${icsText(viewing.calendarUid)}`,`DTSTAMP:${icsDate(new Date())}`,`DTSTART:${icsDate(viewing.startsAt)}`,`DTEND:${icsDate(viewing.endsAt)}`,
-    `SUMMARY:${icsText(`Property viewing - ${viewing.listingProject}`)}`,`LOCATION:${icsText(viewing.location)}`,
-    `DESCRIPTION:${icsText(viewing.instructions||`Viewing for ${viewing.opportunityReference}`)}`,'END:VEVENT','END:VCALENDAR',''].join('\r\n');
+    `SUMMARY:${icsText('NYSA Realty – Property Viewing Confirmation')}`,`LOCATION:${icsText(viewing.location)}`,
+    `DESCRIPTION:${icsText([`Meeting point: ${viewing.instructions||viewing.location}`,viewing.clientMessage?`Message from NYSA: ${viewing.clientMessage}`:null].filter(Boolean).join('\n'))}`,'END:VEVENT','END:VCALENDAR',''].join('\r\n');
 }

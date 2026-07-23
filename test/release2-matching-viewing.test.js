@@ -18,16 +18,19 @@ test('R2.2 match rationale and exception evidence are explicit',()=>{
 test('R2.2 viewing validation requires bounded scheduling and complete outcomes',()=>{
   assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T09:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby'}).error,/start date and duration/);
   assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina'}).error,/address and meeting point/);
-  const viewing=validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby',attendees:[{guestName:'Owner'}]});
+  const viewing=validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby',clientMessage:'Please arrive ten minutes early.',attendees:[{guestName:'Owner'}]});
   assert.equal(viewing.value.attendees.length,1);
+  assert.equal(viewing.value.clientMessage,'Please arrive ten minutes early.');
+  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby',clientMessage:'x'.repeat(1001)}).error,/1,000 characters/);
   assert.match(validateViewingOutcome({status:'completed',expectedVersion:1}).error,/outcome and feedback/);
   assert.match(validateViewingOutcome({status:'completed',outcome:'Interested',feedback:'Customer requested terms',expectedVersion:1}).error,/follow-up/);
   assert.equal(validateViewingOutcome({status:'completed',outcome:'Interested',feedback:'Customer requested terms',followUpAction:'Prepare options',followUpDueAt:'2026-07-25',attendance:[{id:'a1',attendanceStatus:'attended'}],expectedVersion:1}).value.status,'completed');
 });
 
 test('R2.2 calendar export is provider-neutral and escaped',()=>{
-  const ics=buildViewingIcs({calendarUid:'view-1@nysarealty.com',startsAt:'2026-07-24T06:00:00Z',endsAt:'2026-07-24T07:00:00Z',listingProject:'Marina, Tower',location:'Lobby; desk',instructions:'Ask for concierge',opportunityReference:'NYSA-OP-1'});
-  for(const marker of ['BEGIN:VCALENDAR','BEGIN:VEVENT','UID:view-1@nysarealty.com','DTSTART:20260724T060000Z','Marina\\, Tower','Lobby\\; desk'])assert.match(ics,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  const ics=buildViewingIcs({calendarUid:'view-1@nysarealty.com',startsAt:'2026-07-24T06:00:00Z',endsAt:'2026-07-24T07:00:00Z',listingProject:'Private Tower',location:'Lobby; desk',instructions:'Ask for concierge',clientMessage:'Please bring photo ID.',opportunityReference:'NYSA-OP-1'});
+  for(const marker of ['BEGIN:VCALENDAR','BEGIN:VEVENT','UID:view-1@nysarealty.com','DTSTART:20260724T060000Z','NYSA Realty – Property Viewing Confirmation','Lobby\\; desk','Meeting point: Ask for concierge','Message from NYSA: Please bring photo ID.'])assert.match(ics,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.doesNotMatch(ics,/Private Tower|NYSA-OP-1/);
 });
 
 test('R2.2 migration and API preserve inventory authority and audit history',()=>{
