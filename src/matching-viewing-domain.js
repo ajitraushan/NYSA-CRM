@@ -25,7 +25,7 @@ export function validateViewingCreate(body={}){
   const startsAt=new Date(body.startsAt),endsAt=new Date(body.endsAt);
   if(!propertyMatchId)return {error:'Select a shortlisted property'};
   if(Number.isNaN(startsAt.valueOf())||Number.isNaN(endsAt.valueOf())||endsAt<=startsAt)return {error:'The viewing time could not be understood. Re-enter the start date and duration'};
-  if(!timezone||!location)return {error:'Timezone and viewing location are required'};
+  if(!timezone||!location||!instructions)return {error:'Property address and meeting point are required'};
   const attendees=Array.isArray(body.attendees)?body.attendees:[];
   if(attendees.length>20)return {error:'A viewing can include at most 20 attendees'};
   return {value:{propertyMatchId,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),timezone,location,instructions,attendees}};

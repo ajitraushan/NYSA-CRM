@@ -71,12 +71,15 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       JOIN brokers creator ON creator.id=pm.created_by WHERE pm.opportunity_id=$1 ORDER BY
       CASE pm.shortlist_status WHEN 'shortlisted' THEN 0 WHEN 'considering' THEN 1 ELSE 2 END,pm.created_at`,[opportunity.id]),
     many(`SELECT v.*,li.project AS listing_project,li.inventory_reference,organizer.name AS organizer_name,
+      customer.full_name AS customer_name,customer.email AS customer_email,owner.name AS owner_name,owner.phone AS owner_phone,
       cal.event_url AS google_event_url,cal.meeting_url AS google_meeting_url,cal.sync_status AS google_sync_status,cal.last_error AS google_last_error,cal.retry_count AS google_retry_count,
       COALESCE((SELECT json_agg(json_build_object('id',va.id,'contactId',va.contact_id,'brokerId',va.broker_id,
         'guestName',va.guest_name,'attendeeRole',va.attendee_role,'invitationStatus',va.invitation_status,
         'attendanceStatus',va.attendance_status,'displayName',COALESCE((SELECT c.full_name FROM contacts c WHERE c.id=va.contact_id),
         (SELECT b.name FROM brokers b WHERE b.id=va.broker_id),va.guest_name))) FROM viewing_attendees va WHERE va.viewing_id=v.id),'[]'::json) AS attendees
       FROM viewings v JOIN listings li ON li.id=v.listing_id JOIN brokers organizer ON organizer.id=v.organizer_id
+      JOIN opportunities viewing_opportunity ON viewing_opportunity.id=v.opportunity_id
+      JOIN contacts customer ON customer.id=viewing_opportunity.contact_id JOIN brokers owner ON owner.id=viewing_opportunity.owner_id
       LEFT JOIN viewing_calendar_events cal ON cal.viewing_id=v.id AND cal.provider='google_calendar'
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);

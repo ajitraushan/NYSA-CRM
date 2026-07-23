@@ -16,8 +16,9 @@ test('R2.2 match rationale and exception evidence are explicit',()=>{
 });
 
 test('R2.2 viewing validation requires bounded scheduling and complete outcomes',()=>{
-  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T09:00:00+04:00',timezone:'Asia/Dubai',location:'Lobby'}).error,/start date and duration/);
-  const viewing=validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Tower lobby',attendees:[{guestName:'Owner'}]});
+  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T09:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby'}).error,/start date and duration/);
+  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina'}).error,/address and meeting point/);
+  const viewing=validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby',attendees:[{guestName:'Owner'}]});
   assert.equal(viewing.value.attendees.length,1);
   assert.match(validateViewingOutcome({status:'completed',expectedVersion:1}).error,/outcome and feedback/);
   assert.match(validateViewingOutcome({status:'completed',outcome:'Interested',feedback:'Customer requested terms',expectedVersion:1}).error,/follow-up/);
