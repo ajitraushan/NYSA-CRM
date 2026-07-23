@@ -16,7 +16,7 @@ test('R2.2 match rationale and exception evidence are explicit',()=>{
 });
 
 test('R2.2 viewing validation requires bounded scheduling and complete outcomes',()=>{
-  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T09:00:00+04:00',timezone:'Asia/Dubai',location:'Lobby'}).error,/valid viewing/);
+  assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T09:00:00+04:00',timezone:'Asia/Dubai',location:'Lobby'}).error,/start date and duration/);
   const viewing=validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Tower lobby',attendees:[{guestName:'Owner'}]});
   assert.equal(viewing.value.attendees.length,1);
   assert.match(validateViewingOutcome({status:'completed',expectedVersion:1}).error,/outcome and feedback/);
@@ -35,4 +35,5 @@ test('R2.2 migration and API preserve inventory authority and audit history',()=
   assert.doesNotMatch(sql,/UPDATE listings/i);
   for(const marker of ["workflow_status='approved'",'Property automatically shortlisted when its viewing was scheduled','property_match_history','viewing_status_history','Record attendance for every viewing attendee','calendar.ics','buildViewingIcs'])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['1. Property options','You do not need a separate shortlist step','Confirm property viewing','Confirm viewing','Download .ics','Record viewing outcome','Attendance'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(ui,/startsAt=start\.toISOString\(\)/);
 });
