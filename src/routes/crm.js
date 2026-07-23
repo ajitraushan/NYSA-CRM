@@ -541,6 +541,9 @@ r.patch('/crm/leads/:id', async (req,res)=>{
     invalidEnum(b.stage,STAGES,'stage')||invalidEnum(b.temperature,TEMPERATURES,'temperature');
   if(enumError) return res.status(400).json({error:enumError});
   if (b.stage !== undefined) {
+    const activeOpportunity=await one(`SELECT opportunity_reference,stage FROM opportunities
+      WHERE lead_id=$1 AND stage NOT IN ('Closed Won','Closed Lost') ORDER BY updated_at DESC LIMIT 1`,[lead.id]);
+    if(activeOpportunity)return res.status(409).json({error:`Track this pursuit in Opportunity ${activeOpportunity.opportunityReference} (${activeOpportunity.stage}); the connected Lead stage is retained as history`});
     const stageError = validateLeadStage(b.stage, b.lostReason || lead.lostReason);
     if (stageError) return res.status(400).json({error:stageError});
     if(b.stage==='Lost'&&!['lost','unqualified','duplicate'].includes(b.resolutionCode||lead.resolutionCode))return res.status(400).json({error:'Lost leads require resolutionCode: lost, unqualified, or duplicate'});

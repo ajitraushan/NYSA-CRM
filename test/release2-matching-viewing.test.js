@@ -33,6 +33,6 @@ test('R2.2 migration and API preserve inventory authority and audit history',()=
   const sql=read('src/migrations/040_release2_matching_viewing.sql'),routes=read('src/routes/opportunities.js'),ui=read('public/app.js');
   for(const marker of ['CREATE TABLE property_matches','CREATE TABLE property_match_history','CREATE TABLE viewings','CREATE TABLE viewing_attendees','CREATE TABLE viewing_status_history','opportunities_r2_2_enabled_stage_ck'])assert.match(sql,new RegExp(marker));
   assert.doesNotMatch(sql,/UPDATE listings/i);
-  for(const marker of ["workflow_status='approved'",'Shortlist the approved property before scheduling a viewing','property_match_history','viewing_status_history','Record attendance for every viewing attendee','calendar.ics','buildViewingIcs'])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  for(const marker of ['Explainable property shortlist','Matching never edits inventory','Schedule viewing','Download .ics','Record viewing outcome','Attendance'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ["workflow_status='approved'",'Property automatically shortlisted when its viewing was scheduled','property_match_history','viewing_status_history','Record attendance for every viewing attendee','calendar.ics','buildViewingIcs'])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['Explainable property shortlist','Matching never edits inventory','single authoritative viewing action','Confirm viewing in Opportunity','Download .ics','Record viewing outcome','Attendance'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

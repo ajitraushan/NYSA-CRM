@@ -139,8 +139,15 @@ r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
     if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
     if(!['Matching','Viewing'].includes(opportunity.stage))return {code:409,error:'A viewing can be scheduled only after matching starts and before offers begin'};
     const v=checked.value,match=await one(`SELECT pm.*,li.project FROM property_matches pm JOIN listings li ON li.id=pm.listing_id
-      WHERE pm.id=$1 AND pm.opportunity_id=$2 FOR SHARE`,[v.propertyMatchId,opportunity.id],client);
-    if(!match||match.shortlistStatus!=='shortlisted')return {code:409,error:'Shortlist the approved property before scheduling a viewing'};
+      WHERE pm.id=$1 AND pm.opportunity_id=$2 FOR UPDATE OF pm`,[v.propertyMatchId,opportunity.id],client);
+    if(!match||match.shortlistStatus==='rejected')return {code:409,error:'Select a considered or shortlisted property for the viewing'};
+    if(match.shortlistStatus==='considering'){
+      await execute(`UPDATE property_matches SET shortlist_status='shortlisted',shortlisted_at=NOW(),updated_by=$1,updated_at=NOW(),version=version+1 WHERE id=$2`,
+        [req.broker.id,match.id],client);
+      await execute(`INSERT INTO property_match_history(id,property_match_id,from_status,to_status,reason,changed_by)
+        VALUES($1,$2,'considering','shortlisted','Property automatically shortlisted when its viewing was scheduled',$3)`,[uuid(),match.id,req.broker.id],client);
+      await audit('PropertyMatch',match.id,'shortlist_decision',req.broker.id,{from:'considering',to:'shortlisted',reason:'Viewing scheduled for this property'},client);
+    }
     const id=uuid(),calendarUid=`${id}@nysarealty.com`;
     const viewing=await one(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,organizer_id,starts_at,ends_at,timezone,location,instructions,calendar_uid,created_by,updated_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$5,$5) RETURNING *`,[id,opportunity.id,match.id,match.listingId,req.broker.id,v.startsAt,v.endsAt,v.timezone,v.location,v.instructions,calendarUid],client);
@@ -154,7 +161,7 @@ r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
     await execute(`UPDATE opportunities SET stage='Viewing',listing_id=COALESCE(listing_id,$1),next_action='Complete viewing and record feedback',next_action_due_at=$2,version=version+1,updated_at=NOW() WHERE id=$3`,[match.listingId,v.endsAt,opportunity.id],client);
     if(opportunity.stage==='Matching')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
       VALUES($1,$2,'Matching','Viewing','viewing_scheduled',$3,$4)`,[uuid(),opportunity.id,`Viewing scheduled for ${match.project}`,req.broker.id],client);
-    await audit('Viewing',id,'scheduled',req.broker.id,{opportunityId:opportunity.id,propertyMatchId:match.id,listingId:match.listingId,startsAt:v.startsAt,endsAt:v.endsAt,timezone:v.timezone},client);
+    await audit('Viewing',id,'scheduled',req.broker.id,{opportunityId:opportunity.id,propertyMatchId:match.id,listingId:match.listingId,startsAt:v.startsAt,endsAt:v.endsAt,timezone:v.timezone,propertyAutomaticallyShortlisted:match.shortlistStatus==='considering'},client);
     return viewing;
   });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
 });
