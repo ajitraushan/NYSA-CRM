@@ -37,9 +37,9 @@ test('opportunity API requires qualification scope attribution and optimistic co
   assert.match(domain,/Release 2\.2/);
 });
 
-test('opportunity workspace is separate and states the Release 1.1 compatibility boundary',()=>{
+test('opportunity workspace makes the active pursuit primary and preserves the source Lead boundary',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
-  for(const contract of ['Opportunity pipeline','Release 1.1 remains unchanged','No lead stage or historical record is converted automatically','Create opportunity','Qualification and requirements are complete','Confirm qualification and requirements','Confirm the service opportunity','Set the first customer action','Original attribution · immutable','Legacy lead review ledger','Automatic conversion:'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const contract of ['Opportunity pipeline','Opportunity is the active tracking record','Source Lead history','Open opportunity','Create opportunity','Qualification and requirements are complete','Confirm qualification and requirements','Confirm the service opportunity','Set the first customer action','Original attribution · immutable','Legacy lead review ledger','Automatic conversion:','Correct or close Opportunity stage','Return to Requirements','Close Opportunity as Lost'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/openOpportunityWorkspace/);
   assert.match(ui,/openOpportunityDetail/);
   assert.match(ui,/openCreateOpportunity\(lead,listings,o,operatingContext\)/);

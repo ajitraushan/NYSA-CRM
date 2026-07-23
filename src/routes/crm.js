@@ -398,11 +398,21 @@ r.get('/crm/leads', async (req, res) => {
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
   if (req.query.q) { params.push(`%${req.query.q}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
+  const opportunityScope=opportunityScopeSql('o',req.broker,params);
   const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,
+    active_opportunity.id AS active_opportunity_id,active_opportunity.opportunity_reference AS active_opportunity_reference,
+    active_opportunity.title AS active_opportunity_title,active_opportunity.stage AS active_opportunity_stage,
+    active_opportunity.next_action AS active_opportunity_next_action,active_opportunity.next_action_due_at AS active_opportunity_next_action_due_at,
     (SELECT COUNT(*)::int FROM activities a WHERE a.lead_id=l.id) AS activity_count
     FROM leads l JOIN contacts c ON c.id=l.contact_id
     LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN listings x ON x.id=l.listing_id
+    LEFT JOIN LATERAL (
+      SELECT o.id,o.opportunity_reference,o.title,o.stage,o.next_action,o.next_action_due_at
+      FROM opportunities o
+      WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost') AND ${opportunityScope.clause}
+      ORDER BY o.updated_at DESC,o.created_at DESC LIMIT 1
+    ) active_opportunity ON TRUE
     WHERE ${where.join(' AND ')} ORDER BY
       CASE l.temperature WHEN 'Hot' THEN 1 WHEN 'Warm' THEN 2 ELSE 3 END,l.updated_at DESC LIMIT 500`,params);
   res.json({ count: leads.length, leads });
