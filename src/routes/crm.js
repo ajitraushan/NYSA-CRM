@@ -418,8 +418,9 @@ r.get('/crm/leads/:id', async (req, res) => {
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
   if (!canReadLead(req.broker,lead)) return res.status(403).json({ error:'Lead is outside your permitted scope' });
   const [activities,stageHistory] = await Promise.all([
-    many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name FROM activities a
+    many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name,cal.event_url AS google_event_url,cal.meeting_url AS google_meeting_url,cal.sync_status AS google_sync_status FROM activities a
       JOIN brokers b ON b.id=a.owner_id JOIN brokers x ON x.id=a.created_by
+      LEFT JOIN activity_calendar_events cal ON cal.activity_id=a.id AND cal.provider='google_calendar'
       WHERE a.lead_id=$1 ORDER BY COALESCE(a.due_at,a.created_at) DESC`,[lead.id]),
     many(`SELECT h.from_stage,h.to_stage,h.reason_code,h.changed_at,b.name AS changed_by_name
       FROM lead_stage_history h JOIN brokers b ON b.id=h.changed_by
@@ -726,6 +727,7 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   if(!ACTIVITY_TYPES.includes(b.activityType)) return res.status(400).json({error:'Invalid activityType'});
   if(!clean(b.subject)) return res.status(400).json({error:'subject is required'});
   if(b.durationSeconds!==undefined&&b.durationSeconds!==null&&(!Number.isInteger(Number(b.durationSeconds))||Number(b.durationSeconds)<0))return res.status(400).json({error:'durationSeconds must be a non-negative integer'});
+  if(b.activityType==='Meeting'&&(!b.dueAt||!Number.isInteger(Number(b.meetingDurationMinutes||30))||Number(b.meetingDurationMinutes||30)<15||Number(b.meetingDurationMinutes||30)>480))return res.status(400).json({error:'Meeting date/time and a duration from 15 to 480 minutes are required'});
   if(b.followUpRequired&&!b.dueAt)return res.status(400).json({error:'A due date is required when follow-up is required'});
   if(b.direction==='Outbound'&&['Call','Email','WhatsApp'].includes(b.activityType)){
     const contact=await one('SELECT do_not_contact FROM contacts WHERE id=$1',[lead.contactId]);
@@ -745,9 +747,9 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   const id=uuid();
   const activity=await transaction(async client=>{
     const row=await one(`INSERT INTO activities (id,lead_id,contact_id,activity_type,subject,details,direction,outcome,due_at,completed_at,owner_id,created_by,reminder_at,calendar_uid,document_version_id,
-      duration_seconds,follow_up_required,lead_stage_snapshot,qualification_snapshot)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
-      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null,b.durationSeconds??null,b.followUpRequired?1:0,lead.stage,lead.temperature],client);
+      duration_seconds,follow_up_required,lead_stage_snapshot,qualification_snapshot,meeting_duration_minutes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
+      [id,lead.id,lead.contactId,b.activityType,clean(b.subject),clean(b.details),b.direction||null,clean(b.outcome),b.dueAt||null,b.completed?new Date():null,ownerId,req.broker.id,b.reminderAt||b.dueAt||null,`${id}@crm.nysarealty.com`,b.documentVersionId||null,b.durationSeconds??null,b.followUpRequired?1:0,lead.stage,lead.temperature,b.activityType==='Meeting'?Number(b.meetingDurationMinutes||30):null],client);
     const isContact=b.activityType==='Call'||b.direction==='Outbound'&&['Email','WhatsApp','Meeting'].includes(b.activityType),nextStage=activityStageTransition(lead.stage,b.activityType);
     await execute(`UPDATE leads SET next_follow_up_at=CASE WHEN $1::boolean THEN $2 ELSE next_follow_up_at END,
       first_contact_at=CASE WHEN $3::boolean THEN COALESCE(first_contact_at,NOW()) ELSE first_contact_at END,

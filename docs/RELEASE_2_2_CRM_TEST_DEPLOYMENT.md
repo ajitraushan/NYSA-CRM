@@ -5,7 +5,7 @@
 - Target: `https://crm-test.nysarealty.com/` only.
 - Version: `2.0.0-dev.17`.
 - Production and frozen Release 1.1 candidate `1001906` must not change.
-- Full application package; migrations 040, 041 and 042 apply forward on startup.
+- Full application package; migrations 040 through 043 apply forward on startup.
 - Never place the downloaded Google OAuth JSON, client secret, refresh token or integration
   encryption key inside the package, Git repository or deployment evidence.
 
@@ -34,10 +34,10 @@ first Google connection; changing it makes the stored refresh token unreadable.
 bash deploy-crm-test-r2-2-dev17.sh /absolute/path/package.zip <PACKAGE_SHA256>
 ```
 
-4. Restart the CRM Test Node.js application. Startup must apply migrations 040–042 atomically.
+4. Restart the CRM Test Node.js application. Startup must apply migrations 040–043 atomically.
 5. Confirm `/api/health` returns HTTP 200 and database ready.
 6. Confirm the latest `schema_migrations.version` is
-   `042_google_calendar_sync_reconciliation.sql` and reconcile brokers, contacts, leads, listings,
+   `043_activity_google_meet.sql` and reconcile brokers, contacts, leads, listings,
    opportunities and audit counts against the pre-deployment snapshot.
 
 ## Connect Google
@@ -55,7 +55,8 @@ bash deploy-crm-test-r2-2-dev17.sh /absolute/path/package.zip <PACKAGE_SHA256>
   follow-up using `.ics` only.
 - Connect Google, create one Meet for a scheduled viewing and confirm exactly one event, customer
   and Agent invitations, Join Google Meet and Open Calendar controls.
-- Repeat Create Google Meet and confirm no duplicate event.
+- Create a lead Meeting activity, then create Google Meet and confirm no duplicate event.
+- Add a property Viewing to Google Calendar and confirm it remains a physical appointment without a Meet link.
 - Reschedule the viewing and confirm the Google event time/location update.
 - Cancel the viewing and confirm the linked Google event is cancelled.
 - Force a recoverable sync failure, confirm the visible error, restore connectivity and use Retry
@@ -67,5 +68,5 @@ bash deploy-crm-test-r2-2-dev17.sh /absolute/path/package.zip <PACKAGE_SHA256>
 
 Stop the application, restore the application tarball and PostgreSQL custom dump created in the
 reported backup directory, restore the unchanged secure environment, restart and verify health.
-Database rollback is required because migrations 040–042 are forward-only; do not delete their
+Database rollback is required because migrations 040–043 are forward-only; do not delete their
 tables manually. Production remains out of scope.
