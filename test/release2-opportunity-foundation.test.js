@@ -42,6 +42,8 @@ test('opportunity workspace is separate and states the Release 1.1 compatibility
   for(const contract of ['Opportunity pipeline','Release 1.1 remains unchanged','No lead stage or historical record is converted automatically','Create opportunity','Qualification and requirements are complete','Confirm qualification and requirements','Confirm the service opportunity','Set the first customer action','Original attribution · immutable','Legacy lead review ledger','Automatic conversion:'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/openOpportunityWorkspace/);
   assert.match(ui,/openOpportunityDetail/);
+  assert.match(ui,/openCreateOpportunity\(lead,listings,o,operatingContext\)/);
+  assert.match(ui,/function openCreateOpportunity\(lead,listings,parent,operatingContext\)/);
   assert.match(styles,/\.opportunity-safety-note/);
   assert.match(styles,/\.opportunity-table/);
 });
