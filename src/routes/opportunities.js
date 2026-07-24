@@ -146,6 +146,8 @@ r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
     const v=checked.value,match=await one(`SELECT pm.*,li.project FROM property_matches pm JOIN listings li ON li.id=pm.listing_id
       WHERE pm.id=$1 AND pm.opportunity_id=$2 FOR UPDATE OF pm`,[v.propertyMatchId,opportunity.id],client);
     if(!match||match.shortlistStatus==='rejected')return {code:409,error:'Select a considered or shortlisted property for the viewing'};
+    const duplicate=await one("SELECT id FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2 AND starts_at=$3 AND ends_at=$4 AND status='scheduled' LIMIT 1",[opportunity.id,match.id,v.startsAt,v.endsAt],client);
+    if(duplicate)return {code:409,error:'This viewing is already confirmed. Review the confirmed viewing before scheduling another'};
     if(match.shortlistStatus==='considering'){
       await execute(`UPDATE property_matches SET shortlist_status='shortlisted',shortlisted_at=NOW(),updated_by=$1,updated_at=NOW(),version=version+1 WHERE id=$2`,
         [req.broker.id,match.id],client);

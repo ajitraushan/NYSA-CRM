@@ -38,10 +38,12 @@ test('opportunity API requires qualification scope attribution and optimistic co
 });
 
 test('opportunity workspace makes the active pursuit primary and preserves the source Lead boundary',()=>{
-  const ui=read('public/app.js'),styles=read('public/index.html');
+  const ui=read('public/app.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js');
   for(const contract of ['Opportunity pipeline','Opportunity is the active tracking record','Source Lead history','Open opportunity','Create opportunity','Qualification and requirements are complete','Confirm qualification and requirements','Confirm the service opportunity','Set the first customer action','Original attribution · immutable','Legacy lead review ledger','Automatic conversion:','More actions: correct or close Opportunity','Return to Requirements','Close Opportunity as Lost','Historical Lead stage (not an appointment)','No confirmed viewing is recorded in this Opportunity yet','confirmed appointment'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/openOpportunityWorkspace/);
   assert.match(ui,/openOpportunityDetail/);
+  for(const contract of ['confirmedViewings','confirmed-viewing-summary','Review confirmed viewings','Schedule another viewing','Confirm another viewing','detailTitle.textContent=opportunity.contactName'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(routes,/This viewing is already confirmed\. Review the confirmed viewing before scheduling another/);
   assert.match(ui,/openCreateOpportunity\(lead,listings,o,operatingContext\)/);
   assert.match(ui,/function openCreateOpportunity\(lead,listings,parent,operatingContext\)/);
   assert.match(read('src/routes/crm.js'),/the connected Lead stage is retained as history/);
