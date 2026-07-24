@@ -864,14 +864,16 @@ Use:
 - My Diary `2.0.0-dev.38.2` is accepted on CRM Test.
 - Offer and Negotiation `2.0.0-dev.39.2` is deployed on CRM Test with migration
   `045_release2_offer_negotiation.sql`; the user accepted the initial UAT corrections.
-- A cumulative `2.0.0-dev.39.4` correction supersedes the undeployed dev.39.3
-  package and is prepared for the latest UAT findings:
+- A cumulative `2.0.0-dev.39.5` correction supersedes the undeployed dev.39.3
+  and dev.39.4 packages and is prepared for the latest UAT findings:
   the Opportunity screen follows Inventory selection, Viewing and feedback, Offer,
   then Negotiation; completed feedback is shown as visible evidence; offer
   eligibility and every later mutation require feedback recorded before offer
   creation; older non-compliant UAT offers are audit-only except withdrawal; and
   negotiation events are ordered latest first. The operating-sequence controls are
   functional workflow filters: each click shows only that step's records and actions.
+  Opportunities is also a primary navigation tab immediately after My Diary; Leads
+  remains the enquiry, qualification and source-history workspace.
 - Production and the frozen Release 1.1 production candidate remain unchanged.
 ## Release 1.1 area-import duplicate handling
 

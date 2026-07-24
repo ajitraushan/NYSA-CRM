@@ -221,6 +221,7 @@ function renderShell() {
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
+    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="opportunities">Opportunities</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="crm">Leads</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="customers">Customers</button>' : ''}
     <button data-tab="listings">${ME.jobRole==='listing_agent'?'My inventory workspace':'Inventory'}</button>
@@ -232,7 +233,7 @@ function renderShell() {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : currentTab === 'diary' ? renderDiary() : renderListings();
+     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'opportunities' ? renderOpportunities() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : currentTab === 'diary' ? renderDiary() : renderListings();
    }));
   renderDashboard();
 }
@@ -292,7 +293,7 @@ async function renderDashboard() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : renderListings();
+  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'opportunities' ? renderOpportunities() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : renderListings();
 }
 
 async function renderListingExecutiveDashboard(){
@@ -702,12 +703,14 @@ async function openLead(id,{afterStageChange=null}={}) {
   o.querySelectorAll('[data-void-activity]').forEach(b=>b.addEventListener('click',async()=>{const reason=prompt('Why should this activity be voided?');if(!reason)return;try{await api(`/crm/activities/${b.dataset.voidActivity}`,{method:'DELETE',body:{reason}});o.remove();openLead(id);}catch(err){toast(err.message);}}));
 }
 
-async function openOpportunityWorkspace(){
+function openOpportunityWorkspace(){switchTab('opportunities');}
+
+async function renderOpportunities(){
   let opportunities;try{({opportunities}=await api('/crm/opportunities'));}catch(err){return toast(err.message);}
   const leader=ME.role==='admin'||['manager','director'].includes(ME.jobRole);
-  const o=overlay(`<div class="modal lead-modal opportunity-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">RELEASE 2 / ACTIVE SALES WORKSPACE</div><h2>Opportunity pipeline</h2><p>After an Opportunity is created, its status is the active pursuit status. The connected Lead remains available as source history.</p></div>${leader?'<button class="btn btn-sm" id="opportunity-legacy-review">Legacy review ledger</button>':''}</div><div class="opportunity-safety-note"><b>Opportunity is the active tracking record</b><span>Matching remains current until a shortlisted property viewing is scheduled. Scheduling the viewing automatically changes the Opportunity to Viewing.</span></div><div class="pipeline-table-wrap"><table class="pipeline-table opportunity-table"><tr><th>Reference / customer</th><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Next action</th><th></th></tr>${opportunities.map(x=>`<tr data-opportunity-id="${esc(x.id)}"><td><b>${esc(x.opportunityReference)}</b><small>${esc(x.contactName)} · Source Lead: ${esc(x.leadTitle)}</small></td><td>${esc(x.title)}<small>${esc(x.transactionType)} · Requirement v${esc(x.requirementVersion)}${x.listingProject?` · ${esc(x.listingProject)}`:''}</small></td><td><span class="lead-stage opportunity-stage-${esc(x.stage.toLowerCase().replaceAll(' ','-'))}">${esc(x.stage)}</span></td><td>${esc(x.ownerName)}<small>${esc(x.teamName||'No team')}</small></td><td class="${new Date(x.nextActionDueAt)<new Date()&&!x.stage.startsWith('Closed')?'overdue':''}">${esc(x.nextAction)}<small>${fmtDate(x.nextActionDueAt)}</small></td><td><button class="btn btn-primary btn-sm" data-open-opportunity="${esc(x.id)}">Open opportunity</button></td></tr>`).join('')}</table>${opportunities.length?'':'<div class="empty">No opportunities are in your permitted scope. Open a qualified lead to create one.</div>'}</div></div>`);
-  o.querySelectorAll('[data-opportunity-id]').forEach(row=>row.addEventListener('click',()=>{o.remove();openOpportunityDetail(row.dataset.opportunityId);}));
-  o.querySelectorAll('[data-open-opportunity]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();o.remove();openOpportunityDetail(button.dataset.openOpportunity);}));
+  const o=$('#view');o.innerHTML=`<section class="opportunity-register"><div class="detail-head"><div><div class="eyebrow">RELEASE 2 / ACTIVE SALES WORKSPACE</div><h2>Opportunity pipeline</h2><p>After an Opportunity is created, its status is the active pursuit status. The connected Lead remains available as source history.</p></div>${leader?'<button class="btn btn-sm" id="opportunity-legacy-review">Legacy review ledger</button>':''}</div><div class="opportunity-safety-note"><b>Opportunity is the active tracking record</b><span>Open an Opportunity to work through Inventory, Viewing and feedback, Offer, then Negotiation.</span></div><div class="pipeline-table-wrap"><table class="pipeline-table opportunity-table"><tr><th>Reference / customer</th><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Next action</th><th></th></tr>${opportunities.map(x=>`<tr data-opportunity-id="${esc(x.id)}"><td><b>${esc(x.opportunityReference)}</b><small>${esc(x.contactName)} · Source Lead: ${esc(x.leadTitle)}</small></td><td>${esc(x.title)}<small>${esc(x.transactionType)} · Requirement v${esc(x.requirementVersion)}${x.listingProject?` · ${esc(x.listingProject)}`:''}</small></td><td><span class="lead-stage opportunity-stage-${esc(x.stage.toLowerCase().replaceAll(' ','-'))}">${esc(x.stage)}</span></td><td>${esc(x.ownerName)}<small>${esc(x.teamName||'No team')}</small></td><td class="${new Date(x.nextActionDueAt)<new Date()&&!x.stage.startsWith('Closed')?'overdue':''}">${esc(x.nextAction)}<small>${fmtDate(x.nextActionDueAt)}</small></td><td><button class="btn btn-primary btn-sm" data-open-opportunity="${esc(x.id)}">Open opportunity</button></td></tr>`).join('')}</table>${opportunities.length?'':'<div class="empty">No opportunities are in your permitted scope. Open a qualified lead to create one.</div>'}</div></section>`;
+  o.querySelectorAll('[data-opportunity-id]').forEach(row=>row.addEventListener('click',()=>openOpportunityDetail(row.dataset.opportunityId)));
+  o.querySelectorAll('[data-open-opportunity]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();openOpportunityDetail(button.dataset.openOpportunity);}));
   $('#opportunity-legacy-review',o)?.addEventListener('click',()=>openLegacyOpportunityReview());
 }
 

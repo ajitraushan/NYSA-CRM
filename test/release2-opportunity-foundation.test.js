@@ -41,6 +41,11 @@ test('opportunity workspace makes the active pursuit primary and preserves the s
   const ui=read('public/app.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js');
   for(const contract of ['Opportunity pipeline','Opportunity is the active tracking record','Source Lead history','Open opportunity','Create opportunity','Qualification and requirements are complete','Confirm qualification and requirements','Confirm the service opportunity','Set the first customer action','Original attribution · immutable','Legacy lead review ledger','Automatic conversion:','More actions: correct or close Opportunity','Return to Requirements','Close Opportunity as Lost','Historical Lead stage (not an appointment)','No confirmed viewing is recorded in this Opportunity yet','confirmed appointment'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/openOpportunityWorkspace/);
+  assert.match(ui,/data-tab="opportunities">Opportunities/);
+  assert.match(ui,/currentTab === 'opportunities' \? renderOpportunities\(\)/);
+  assert.match(ui,/function openOpportunityWorkspace\(\)\{switchTab\('opportunities'\);\}/);
+  assert.match(ui,/async function renderOpportunities\(\)/);
+  assert.match(ui,/class="opportunity-register"/);
   assert.match(ui,/openOpportunityDetail/);
   for(const contract of ['confirmedViewings','confirmed-viewing-summary','Review confirmed viewings','Schedule another viewing','Confirm another viewing','detailTitle.textContent=opportunity.contactName'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.doesNotMatch(ui,/Schedule another property viewing/);
