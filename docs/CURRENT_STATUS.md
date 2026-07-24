@@ -2,8 +2,8 @@
 
 ## Release 2.3A offer and negotiation local build — 2026-07-24
 
-- Version `2.0.0-dev.39` implements the approved offer and negotiation slice locally while My
-  Diary dev.38 is under CRM Test UAT. It has not been deployed.
+- Version `2.0.0-dev.39.1` integrates the approved offer and negotiation slice with the accepted
+  My Diary dev.38.2 behavior and layout. It has not been deployed.
 - Migration `045_release2_offer_negotiation.sql` enables Opportunity Offer and Negotiation stages
   and adds commercial offers, immutable numbered revisions, exact generated document-version
   links and immutable chronological negotiation events.
@@ -23,10 +23,11 @@
 
 ## Release 2.3 My Diary CRM Test UAT — 2026-07-24
 
-- My Diary version `2.0.0-dev.38`, commit `506a922`, is installed only on CRM Test. Migration
-  baseline remains `044_viewing_client_message.sql`.
+- My Diary version `2.0.0-dev.38.2`, commit `0a0f797`, is installed and accepted only on CRM Test.
+  Migration baseline remains `044_viewing_client_message.sql`.
 - CRM Test restarted successfully and returned HTTP 200 with `{"ok":true,"database":"ready"}`.
-  Functional role UAT is in progress; no Production deployment is authorized.
+  The accepted priority wording, overlay navigation and full-width card layout are now carried
+  forward into dev.39.1; no Production deployment is authorized.
 
 ## R2.2 scope confirmation and Google Calendar/Meet extension — 2026-07-22
 

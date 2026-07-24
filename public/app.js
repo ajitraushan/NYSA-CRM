@@ -220,9 +220,9 @@ function renderShell() {
   </header>
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
+    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="crm">Leads</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="customers">Customers</button>' : ''}
-    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
     <button data-tab="listings">${ME.jobRole==='listing_agent'?'My inventory workspace':'Inventory'}</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
   </nav>
@@ -346,6 +346,7 @@ const diaryAddDays=(date,days)=>{const d=new Date(`${date}T12:00:00Z`);d.setUTCD
 const diaryWeekStart=date=>{const d=new Date(`${date}T12:00:00Z`),offset=(d.getUTCDay()+6)%7;return diaryAddDays(date,-offset);};
 const diaryTime=value=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
 const diaryDayLabel=value=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(value));
+const diaryDateTimeLabel=value=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',dateStyle:'full',timeStyle:'short'}).format(new Date(value));
 const diaryState={mode:'today',anchor:diaryDateKey(new Date()),agentId:null,filters:new Set(['call','meeting','viewing','task']),items:[],metadata:null};
 
 function diaryRange(){
@@ -357,31 +358,52 @@ function drawDiary(){
   const root=$('#diary-schedule');if(!root)return;
   const visible=diaryState.items.filter(item=>diaryState.filters.has(item.category)),groups=new Map();
   visible.forEach(item=>{const key=diaryDateKey(item.startsAt);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});
-  const statusLabel={upcoming:'Upcoming',completed:'Completed',overdue:'Overdue',cancelled:'Cancelled'},deliveryLabel={synced:'Calendar invitation sent',not_sent:'Invitation not sent',error:'Calendar synchronization error',crm_only:'CRM authoritative record'};
+  const statusMeta={
+    overdue:{label:'Overdue',explanation:'The appointment end has passed, or a call/task is more than 30 minutes past its due time.'},
+    due_now:{label:'Due now',explanation:'The item starts within 30 minutes, is in progress, or is within 30 minutes after a call/task due time.'},
+    due_later:{label:'Due later',explanation:'The scheduled time is more than 30 minutes from now.'},
+    completed:{label:'Completed',explanation:'Completion is recorded in CORE.'},
+    cancelled:{label:'Cancelled',explanation:'Cancellation or no-show is recorded in CORE.'}
+  },statusOrder=['overdue','due_now','due_later','completed','cancelled'],
+    deliveryLabel={synced:'The Google Calendar invitation has been sent.',not_sent:'The Google Calendar invitation has not been sent.',error:'Google Calendar synchronization has failed.',crm_only:'No Google Calendar invitation applies to this CRM due item.'};
+  const counts=Object.fromEntries(statusOrder.map(status=>[status,visible.filter(item=>item.status===status).length]));
   $('#diary-count').textContent=`${visible.length} scheduled item${visible.length===1?'':'s'}${visible.some(x=>x.conflict)?` · ${visible.filter(x=>x.conflict).length} conflict${visible.filter(x=>x.conflict).length===1?'':'s'}`:''}`;
-  root.innerHTML=[...groups.entries()].map(([day,items])=>`<section class="diary-day"><header><h3>${esc(diaryDayLabel(`${day}T12:00:00+04:00`))}</h3><span>${items.length} item${items.length===1?'':'s'}</span></header><div class="diary-day-list">${items.map(item=>{
+  $('#diary-priority-summary').innerHTML=statusOrder.slice(0,3).map(status=>`<article class="diary-priority diary-priority-${status}"><span>${esc(statusMeta[status].label)}</span><strong>${counts[status]}</strong><small>${esc(statusMeta[status].explanation)}</small></article>`).join('');
+  const itemHTML=item=>{
     const duration=item.durationMinutes?`${Number(item.durationMinutes)} minutes`:'Duration not recorded',time=item.endsAt?`${diaryTime(item.startsAt)}–${diaryTime(item.endsAt)}`:diaryTime(item.startsAt);
-    const detail=item.category==='viewing'?`${item.location||'Address not recorded'}${item.instructions?` · Meet at ${item.instructions}`:''}`:item.leadTitle||item.details||'';
+    const scheduledWord=['meeting','viewing'].includes(item.category)?'Scheduled':'Due',
+      itemStatusExplanation=item.status==='completed'
+        ?`${item.appointmentType==='Email'?'Email has been sent':`${item.appointmentType} has been completed`} and completion is recorded in CORE.`
+        :item.status==='cancelled'?`${item.appointmentType} has been cancelled or recorded as a no-show in CORE.`
+        :statusMeta[item.status]?.explanation||'',
+      detailRows=[`<p class="diary-due-date"><b>${scheduledWord}:</b> ${esc(diaryDateTimeLabel(item.startsAt))} (Dubai time).</p>`];
+    if(item.leadTitle)detailRows.push(`<p><b>Lead:</b> ${esc(item.leadTitle)}</p>`);
+    if(item.category==='viewing')detailRows.push(`<p><b>Property appointment:</b> ${esc(item.location||'Address not recorded')}${item.instructions?` · Meet at ${esc(item.instructions)}`:''}</p>`);
+    if(item.details)detailRows.push(`<p><b>Details:</b> ${esc(item.details)}</p>`);
+    if(item.googleMeetingUrl)detailRows.push('<p class="diary-external-note"><b>Google Meet:</b> The video-room application does not show the full CORE appointment record. Review the customer, date and details here; use Google Calendar for the external event details.</p>');
     return `<article class="diary-item diary-status-${esc(item.status)} ${item.conflict?'diary-conflict':''} ${item.calendarDeliveryStatus==='not_sent'?'diary-invitation-missing':''}">
       <div class="diary-time"><b>${esc(time)}</b><span>${esc(duration)}</span></div>
       <div class="diary-item-main"><div class="diary-item-heading"><span class="diary-type diary-type-${esc(item.category)}">${esc(item.appointmentType)}</span><strong>${esc(item.subject||item.opportunityTitle||item.listingProject)}</strong>${item.conflict?'<span class="diary-conflict-label">Scheduling conflict</span>':''}</div>
-        <h4>${esc(item.customerName)}</h4><p>${esc(detail)}</p>${item.clientMessage?`<p><b>Client message:</b> ${esc(item.clientMessage)}</p>`:''}
+        <h4>${esc(item.customerName)}</h4>${detailRows.join('')}${item.clientMessage?`<p><b>Client message:</b> ${esc(item.clientMessage)}</p>`:''}
         <div class="diary-contact"><span>${esc(item.customerPhone||'Phone not recorded')}</span><span>${esc(item.customerEmail||'Email not recorded')}</span><span>Assigned: ${esc(item.agentName)}</span></div>
-        <div class="diary-state-row"><span class="diary-state diary-state-${esc(item.status)}">${esc(statusLabel[item.status]||item.status)}</span><span class="diary-delivery diary-delivery-${esc(item.calendarDeliveryStatus)}">${esc(deliveryLabel[item.calendarDeliveryStatus])}</span></div>
+        <div class="diary-state-row"><span class="diary-state diary-state-${esc(item.status)}">${esc(statusMeta[item.status]?.label||item.status)}</span><span class="diary-state-explanation">${esc(itemStatusExplanation)}</span><span class="diary-delivery diary-delivery-${esc(item.calendarDeliveryStatus)}">${esc(deliveryLabel[item.calendarDeliveryStatus])}</span></div>
       </div>
       <div class="diary-actions">
-        <button class="btn btn-sm" data-diary-customer="${esc(item.customerId)}">Open Customer</button>
-        ${item.opportunityId?`<button class="btn btn-sm" data-diary-opportunity="${esc(item.opportunityId)}">Open Opportunity</button>`:item.leadId?`<button class="btn btn-sm" data-diary-lead="${esc(item.leadId)}">Open Lead</button>`:''}
-        ${item.customerPhone?`<a class="btn btn-sm" href="tel:${esc(item.customerPhone)}">Call customer</a>`:''}
-        ${item.googleMeetingUrl?`<a class="btn btn-primary btn-sm" href="${esc(item.googleMeetingUrl)}" target="_blank" rel="noopener">Join Google Meet</a>`:''}
-        ${item.googleEventUrl?`<a class="btn btn-sm" href="${esc(item.googleEventUrl)}" target="_blank" rel="noopener">Open Google Calendar</a>`:''}
+        <button class="btn btn-sm" data-diary-customer="${esc(item.customerId)}">View Customer over Diary</button>
+        ${item.opportunityId?`<button class="btn btn-sm" data-diary-opportunity="${esc(item.opportunityId)}">View Opportunity over Diary</button>`:item.leadId?`<button class="btn btn-sm" data-diary-lead="${esc(item.leadId)}">View Lead over Diary</button>`:''}
+        ${item.customerPhone?`<button class="btn btn-sm" data-copy-diary-phone="${esc(item.customerPhone)}">Copy phone number</button><a class="btn btn-sm" href="tel:${esc(item.customerPhone)}">Open phone app to call</a>`:''}
+        ${item.googleMeetingUrl?`<a class="btn btn-primary btn-sm" href="${esc(item.googleMeetingUrl)}" target="_blank" rel="noopener">Open Google Meet video room</a>`:''}
+        ${item.googleEventUrl?`<a class="btn btn-sm" href="${esc(item.googleEventUrl)}" target="_blank" rel="noopener">Open Google Calendar event details</a>`:''}
         ${item.category==='call'&&!['completed','cancelled'].includes(item.status)?`<button class="btn btn-primary btn-sm" data-diary-outcome-lead="${esc(item.leadId)}">Record call outcome</button>`:''}
         ${item.category==='viewing'&&item.recordStatus==='scheduled'?`<button class="btn btn-primary btn-sm" data-diary-outcome-opportunity="${esc(item.opportunityId)}">Record viewing outcome</button>`:''}
       </div>
-    </article>`;}).join('')}</div></section>`).join('')||'<div class="empty diary-empty"><b>No scheduled appointments in this view.</b><span>Only authoritative CRM activities, tasks and Opportunity viewings with a specific date and time appear here.</span></div>';
-  root.querySelectorAll('[data-diary-customer]').forEach(b=>b.addEventListener('click',()=>{switchTab('customers');setTimeout(()=>openCustomer(b.dataset.diaryCustomer),0);}));
-  root.querySelectorAll('[data-diary-lead],[data-diary-outcome-lead]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.diaryLead||b.dataset.diaryOutcomeLead;switchTab('crm');setTimeout(()=>openLead(id),0);}));
+    </article>`;
+  };
+  root.innerHTML=[...groups.entries()].map(([day,items])=>`<section class="diary-day"><header><div><h3>${esc(diaryDayLabel(`${day}T12:00:00+04:00`))}</h3><p>Every item below is scheduled or due on this date in Asia/Dubai time.</p></div><span>${items.length} item${items.length===1?'':'s'}</span></header>${statusOrder.map(status=>{const bucket=items.filter(item=>item.status===status);return bucket.length?`<section class="diary-priority-group diary-priority-group-${status}"><header><h4>${esc(statusMeta[status].label)}</h4><span>${bucket.length}</span></header><div class="diary-day-list">${bucket.map(itemHTML).join('')}</div></section>`:'';}).join('')}</section>`).join('')||'<div class="empty diary-empty"><b>No scheduled appointments in this view.</b><span>Only authoritative CRM activities, tasks and Opportunity viewings with a specific date and time appear here.</span></div>';
+  root.querySelectorAll('[data-diary-customer]').forEach(b=>b.addEventListener('click',()=>openCustomer(b.dataset.diaryCustomer)));
+  root.querySelectorAll('[data-diary-lead],[data-diary-outcome-lead]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.diaryLead||b.dataset.diaryOutcomeLead;openLead(id);}));
   root.querySelectorAll('[data-diary-opportunity],[data-diary-outcome-opportunity]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.diaryOpportunity||b.dataset.diaryOutcomeOpportunity;openOpportunityDetail(id);}));
+  root.querySelectorAll('[data-copy-diary-phone]').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.dataset.copyDiaryPhone);toast('Customer phone number copied');}catch{toast('Copy was blocked by the browser; select the displayed number and copy it manually');}}));
 }
 
 async function loadDiary(){
@@ -397,10 +419,11 @@ async function loadDiary(){
 }
 
 async function renderDiary(){
-  $('#view').innerHTML=`<section class="dashboard-head diary-head"><div><div class="eyebrow">R2.3 / PERSONAL OPERATING SCHEDULE</div><h2>My Diary</h2><p>One chronological Dubai-time schedule from authoritative CRM activities, tasks and physical property viewings.</p></div><div class="diary-timezone"><b>Asia/Dubai</b><span>UTC+4 · Google Calendar is delivery status only</span></div></section>
+  $('#view').innerHTML=`<section class="dashboard-head diary-head"><div><div class="eyebrow">R2.3 / PERSONAL OPERATING SCHEDULE</div><h2>My Diary</h2><p>One Dubai-time schedule from authoritative CRM activities, tasks and physical property viewings, prioritized by what needs attention first.</p><p class="tool-note">Customer, Lead and Opportunity records open over this Diary. Close the record with × to return here without losing the selected date, view, owner or filters.</p></div><div class="diary-timezone"><b>Asia/Dubai</b><span>UTC+4 · Google Calendar reports external delivery only</span></div></section>
   <section class="diary-toolbar"><div class="diary-view-toggle"><button class="btn btn-sm ${diaryState.mode==='today'?'btn-primary':''}" data-diary-mode="today">Today</button><button class="btn btn-sm ${diaryState.mode==='week'?'btn-primary':''}" data-diary-mode="week">Week</button></div><div class="diary-navigation"><button class="btn btn-sm" id="diary-previous">← Previous</button><button class="btn btn-sm" id="diary-today">Today</button><button class="btn btn-sm" id="diary-next">Next →</button></div><strong id="diary-range-label"></strong><label>Appointment owner<select id="diary-agent"></select></label></section>
   <section class="diary-filterbar"><div><b>Show</b>${[['call','Calls'],['meeting','Meetings'],['viewing','Viewings'],['task','Tasks & follow-ups']].map(([value,label])=>`<label><input type="checkbox" data-diary-filter="${value}" ${diaryState.filters.has(value)?'checked':''}> ${label}</label>`).join('')}</div><span id="diary-count"></span></section>
-  <section class="diary-legend"><span class="diary-state diary-state-upcoming">Upcoming</span><span class="diary-state diary-state-completed">Completed</span><span class="diary-state diary-state-overdue">Overdue</span><span class="diary-state diary-state-cancelled">Cancelled</span><span class="diary-delivery diary-delivery-not_sent">Invitation not sent</span><span class="diary-conflict-label">Scheduling conflict</span></section>
+  <section id="diary-priority-summary" class="diary-priority-summary"></section>
+  <section class="diary-legend"><div><b>Status definitions</b><span><strong>Due now:</strong> starts within 30 minutes, is in progress, or a call/task is within 30 minutes after its due time.</span><span><strong>Due later:</strong> more than 30 minutes remains.</span><span><strong>Overdue:</strong> the appointment end or 30-minute call/task window has passed without completion.</span></div><div><span class="diary-delivery diary-delivery-not_sent">The Google Calendar invitation has not been sent.</span><span class="diary-conflict-label">Scheduling conflict</span></div></section>
   <div id="diary-schedule"></div>`;
   document.querySelectorAll('[data-diary-mode]').forEach(b=>b.addEventListener('click',()=>{diaryState.mode=b.dataset.diaryMode;renderDiary();}));
   $('#diary-previous').addEventListener('click',()=>{diaryState.anchor=diaryAddDays(diaryState.anchor,diaryState.mode==='week'?-7:-1);loadDiary();});
