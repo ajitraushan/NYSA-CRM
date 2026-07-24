@@ -42,7 +42,7 @@ class PdfDoc{
 }
 
 function canvas(){const c=[];return{c,rect(x,y,w,h,fill=C.pale,stroke=null){c.push(`${color(fill)} rg${stroke?` ${color(stroke)} RG`:''} ${x} ${PAGE.height-y-h} ${w} ${h} re ${stroke?'B':'f'}`);},circle(x,y,r,fill=C.gold){const k=.55228475*r,py=PAGE.height-y;c.push(`${color(fill)} rg ${x+r} ${py} m ${x+r} ${py+k} ${x+k} ${py+r} ${x} ${py+r} c ${x-k} ${py+r} ${x-r} ${py+k} ${x-r} ${py} c ${x-r} ${py-k} ${x-k} ${py-r} ${x} ${py-r} c ${x+k} ${py-r} ${x+r} ${py-k} ${x+r} ${py} c f`);},line(x1,y1,x2,y2,stroke=C.line,width=1){c.push(`${color(stroke)} RG ${width} w ${x1} ${PAGE.height-y1} m ${x2} ${PAGE.height-y2} l S`);},text(value,x,y,{size=10,bold=false,fill=C.ink}={}){c.push(`${color(fill)} rg BT /F${bold?'2':'1'} ${size} Tf ${x} ${PAGE.height-y-size} Td (${pdfText(value)}) Tj ET`);},paragraph(value,x,y,width,{size=10,bold=false,fill=C.ink,leading=size*1.32,maxLines=99}={}){const lines=wrap(value,width,size).slice(0,maxLines);lines.forEach((line,i)=>this.text(line,x,y+i*leading,{size,bold,fill}));return lines.length*leading;},image(name,img,x,y,w,h){const scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale,dx=x+(w-dw)/2,dy=PAGE.height-y-(h+dh)/2;c.push(`q ${dw} 0 0 ${dh} ${dx} ${dy} cm /${name} Do Q`);}};}
-function header(draw,organization,logo,pageNo,total){if(logo)draw.image('Logo',logo,PAGE.margin,28,70,46);draw.text(organization.displayName||'NYSA Realty',logo?122:PAGE.margin,36,{size:13,bold:true});draw.text('PRIVATE BUYER PROPOSAL',logo?122:PAGE.margin,56,{size:7,bold:true,fill:C.gold});draw.text(`Page ${pageNo} of ${total}`,500,47,{size:7,fill:C.muted});draw.line(PAGE.margin,86,PAGE.width-PAGE.margin,86,C.gold,1.5);}
+function header(draw,organization,logo,pageNo,total,subtitle='PRIVATE BUYER PROPOSAL'){if(logo)draw.image('Logo',logo,PAGE.margin,28,70,46);draw.text(organization.displayName||'NYSA Realty',logo?122:PAGE.margin,36,{size:13,bold:true});draw.text(subtitle,logo?122:PAGE.margin,56,{size:7,bold:true,fill:C.gold});draw.text(`Page ${pageNo} of ${total}`,500,47,{size:7,fill:C.muted});draw.line(PAGE.margin,86,PAGE.width-PAGE.margin,86,C.gold,1.5);}
 function footer(draw,organization,disclaimer){draw.line(PAGE.margin,790,PAGE.width-PAGE.margin,790,C.line,.7);draw.paragraph(disclaimer,PAGE.margin,798,390,{size:6.5,fill:C.muted,maxLines:2,leading:8});draw.text(organization.proposalFooter||`${organization.displayName} | Private customer proposal`,405,809,{size:6.5,fill:C.muted});}
 function chipWidth(value){return Math.min(178,Math.max(48,clean(value).length*4.6+18));}
 function chip(draw,value,x,y){const width=chipWidth(value);draw.rect(x,y,width,22,C.pale,C.line);draw.text(value,x+9,y+6,{size:7.2});return width;}
@@ -83,3 +83,5 @@ export function makeProposalPdf(data){
   });
   return doc.finish();
 }
+
+export { PdfDoc,canvas,header,footer,C };

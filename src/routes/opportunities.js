@@ -8,7 +8,7 @@ import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,valid
 import { syncGoogleViewing } from '../calendar-sync.js';
 import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
 import { makeOfferPdf } from '../offer-pdf.js';
-import { savePrivate,removePrivate } from '../private-files.js';
+import { savePrivate,removePrivate,readPrivate } from '../private-files.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -230,7 +230,7 @@ r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>
 async function offerContext(req,offerId,client){
   const offer=await one(`SELECT f.*,o.lead_id,o.contact_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
     o.assigned_team_id,o.opportunity_reference,o.title AS opportunity_title,o.stage AS opportunity_stage,
-    c.full_name AS customer_name,c.email AS customer_email,li.project AS listing_project,li.inventory_reference
+    c.full_name AS customer_name,c.email AS customer_email,c.phone AS customer_phone,li.project AS listing_project,li.inventory_reference
     FROM offers f JOIN opportunities o ON o.id=f.opportunity_id JOIN contacts c ON c.id=o.contact_id
     JOIN listings li ON li.id=f.listing_id WHERE f.id=$1`,[offerId],client);
   if(!offer)return {error:[404,'Offer not found']};
@@ -240,8 +240,11 @@ async function offerContext(req,offerId,client){
 }
 
 async function createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input,revisionNumber,supersedesRevisionId}){
-  const revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
-    pdf=makeOfferPdf({offer,revision,opportunity,customer,listing,agent:req.broker}),storageKey=await savePrivate(pdf,'.pdf'),
+  const organization=await one("SELECT * FROM organization_settings WHERE status='active' LIMIT 1",[],client);
+  if(!organization)throw Object.assign(new Error('Activate the approved NYSA organization profile before generating an offer letter'),{status:409});
+  const logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:null,
+    revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
+    pdf=makeOfferPdf({offer,revision,opportunity,customer,listing,agent:req.broker,organization,logo}),storageKey=await savePrivate(pdf,'.pdf'),
     fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=`${offer.offerReference}-R${revisionNumber}.pdf`;
   try{
     await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
@@ -278,6 +281,10 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
         WHERE li.id=$1 AND pm.opportunity_id=$2 AND pm.shortlist_status<>'rejected' AND li.deleted_at IS NULL AND li.workflow_status='approved'
         LIMIT 1`,[listingId,opportunity.id],client);
       if(!listing)return {code:409,error:'Select an approved considered or shortlisted property from this Opportunity'};
+      const completedViewing=await one(`SELECT id FROM viewings WHERE opportunity_id=$1 AND listing_id=$2
+        AND status='completed' AND NULLIF(BTRIM(feedback),'') IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
+        [opportunity.id,listing.id],client);
+      if(!completedViewing)return {code:409,error:'Complete the property viewing and record customer feedback before creating an offer for this property'};
       const customer=await one('SELECT * FROM contacts WHERE id=$1',[opportunity.contactId],client),period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
         counter=await one(`INSERT INTO offer_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
           DO UPDATE SET last_value=offer_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),
@@ -298,7 +305,7 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
       return {...offer,currentRevisionId:revision.id,revision};
     });
     if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
-  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});if(error.code==='23505')return res.status(409).json({error:'An active offer already exists for this Opportunity, property and offer type'});throw error;}
+  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});if(error.status)return res.status(error.status).json({error:error.message});if(error.code==='23505')return res.status(409).json({error:'An active offer already exists for this Opportunity, property and offer type'});throw error;}
 });
 
 r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
@@ -327,12 +334,19 @@ r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
       return {...updated,revision};
     });
     if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
-  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});throw error;}
+  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});if(error.status)return res.status(error.status).json({error:error.message});throw error;}
 });
 
 r.post('/crm/offers/:offerId/send',async(req,res)=>{
-  const recipient=clean(req.body?.recipient),deliveryChannel=clean(req.body?.deliveryChannel),
+  const recipientName=clean(req.body?.recipientName),recipientEmail=clean(req.body?.recipientEmail)?.toLowerCase(),
+    recipientPhone=clean(req.body?.recipientPhone),legacyRecipient=clean(req.body?.recipient),
+    recipient=[recipientName,recipientEmail,recipientPhone].filter(Boolean).join(' | ')||legacyRecipient,
+    deliveryChannel=clean(req.body?.deliveryChannel),
     counterpartyRole=req.body?.counterpartyRole,expectedVersion=Number(req.body?.expectedVersion);
+  if(!recipientName&&!legacyRecipient)return res.status(400).json({error:'Recipient name is required'});
+  if(!recipientEmail&&!recipientPhone&&!legacyRecipient)return res.status(400).json({error:'Recipient email or phone is required'});
+  if(/^email$/i.test(deliveryChannel)&&!recipientEmail&&!legacyRecipient)return res.status(400).json({error:'Recipient email is required for Email delivery'});
+  if(/^whatsapp$/i.test(deliveryChannel)&&!recipientPhone&&!legacyRecipient)return res.status(400).json({error:'Recipient phone is required for WhatsApp delivery'});
   if(!recipient||!deliveryChannel||!OFFER_COUNTERPARTY_ROLES.includes(counterpartyRole))return res.status(400).json({error:'Recipient, delivery channel and counterparty are required'});
   const result=await transaction(async client=>{
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};

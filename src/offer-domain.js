@@ -1,3 +1,5 @@
+import { parseBusinessAmount } from './crm-domain.js';
+
 export const OFFER_TYPES=['purchase','rental','off_plan','commercial'];
 export const OFFER_STATUSES=['draft','sent','viewed','countered','accepted','rejected','expired','withdrawn'];
 export const OFFER_EVENT_TYPES=['viewed','acknowledged','countered','accepted','rejected','expired','withdrawn'];
@@ -6,7 +8,7 @@ export const OFFER_COUNTERPARTY_ROLES=['customer','seller','landlord','developer
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 const amount=value=>{
   if(value===null||value===undefined||value==='')return null;
-  const number=Number(value);return Number.isFinite(number)?number:null;
+  const number=parseBusinessAmount(value);return Number.isFinite(number)?number:null;
 };
 
 export function validateOfferRevision(body={},revisionNumber=1){
@@ -44,7 +46,7 @@ export function validateOfferEvent(currentStatus,body={}){
   if(!OFFER_COUNTERPARTY_ROLES.includes(counterpartyRole))return {error:'Select the counterparty role'};
   if(!['outbound','inbound','internal'].includes(direction))return {error:'Select a valid negotiation direction'};
   return {value:{eventType,reason,summary:summary||{
-    viewed:'Offer viewed by counterparty',acknowledged:'Offer acknowledged by counterparty',
+    viewed:'Agent recorded that the counterparty viewed the offer',acknowledged:'Agent recorded that the customer confirmed receipt of the offer',
     countered:'Counterparty returned a counter position',accepted:'Exact offer revision accepted',
     rejected:'Offer rejected',expired:'Offer validity expired',withdrawn:'Offer withdrawn'
   }[eventType],counterpartyRole,direction}};

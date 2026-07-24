@@ -2,8 +2,19 @@
 
 ## Release 2.3A offer and negotiation local build — 2026-07-24
 
-- Version `2.0.0-dev.39.1` integrates the approved offer and negotiation slice with the accepted
-  My Diary dev.38.2 behavior and layout. It has not been deployed.
+- Version `2.0.0-dev.39.2` corrects the first dev.39.1 CRM Test UAT findings while retaining the
+  accepted My Diary dev.38.2 behavior and layout.
+- Offer and deposit inputs accept business shorthand and comma formatting, including `1.2M`,
+  `1.2m`, `1.2k` and `1,200,000`, and display the interpreted formatted amount.
+- An offer can be created only after the same property's viewing is completed with customer
+  feedback. Recipient name, email and phone default from the connected Customer record.
+- Generated offer letters use the active organization identity, address, footer and approved
+  logo. Every immutable revision and its exact PDF are visible together.
+- Draft, sent and response states explain the next action. Customer acknowledgement is explicitly
+  an agent-recorded confirmation, and response choices appear only after the exact current
+  revision is recorded as sent.
+- R2.3A explicitly states that an offer does not block inventory. Accepted-offer reservation and
+  visible blocked/reserved inventory remain the governed R2.3B flow and never occur silently.
 - Migration `045_release2_offer_negotiation.sql` enables Opportunity Offer and Negotiation stages
   and adds commercial offers, immutable numbered revisions, exact generated document-version
   links and immutable chronological negotiation events.
@@ -15,8 +26,8 @@
 - Expired revisions cannot be sent or accepted, and an offer cannot be marked expired before its
   recorded validity time. Acceptance retains the exact accepted revision; it does not reserve
   inventory or enable Booking.
-- The complete automated suite passes 190/190 tests. PostgreSQL migration rehearsal, CRM Test
-  deployment, cross-role UAT and explicit acceptance remain open. Production and the frozen
+- The complete automated suite passes 190/190 tests. CRM Test deployment, cross-role UAT and
+  explicit acceptance remain open. Production and the frozen
   Release 1.1 candidate remain untouched.
 - R2.3B remains a separate next slice: accepted-offer reservation, amount/dates/expiry/evidence,
   inventory conflict protection and explicit release, expiry or cancellation.
