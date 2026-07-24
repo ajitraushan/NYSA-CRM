@@ -222,6 +222,7 @@ function renderShell() {
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="crm">Leads</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="customers">Customers</button>' : ''}
+    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
     <button data-tab="listings">${ME.jobRole==='listing_agent'?'My inventory workspace':'Inventory'}</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
   </nav>
@@ -231,7 +232,7 @@ function renderShell() {
     document.querySelectorAll('nav.tabs button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : renderListings();
+     currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : currentTab === 'diary' ? renderDiary() : renderListings();
    }));
   renderDashboard();
 }
@@ -291,7 +292,7 @@ async function renderDashboard() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : renderListings();
+  tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : renderListings();
 }
 
 async function renderListingExecutiveDashboard(){
@@ -336,6 +337,78 @@ window.renderTaskWorkspace=renderTaskWorkspace;
 async function renderTasks(){
   $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / PERSONAL WORK QUEUE</div><h2>My tasks</h2><p>Actions assigned to you, including customer follow-ups and proposals returned for correction.</p></div></section><div id="standalone-task-workspace"></div>`;
   renderTaskWorkspace($('#standalone-task-workspace'));
+}
+
+/* ============ MY DIARY ============ */
+const diaryDateParts=value=>Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+const diaryDateKey=value=>{const p=diaryDateParts(value);return `${p.year}-${p.month}-${p.day}`;};
+const diaryAddDays=(date,days)=>{const d=new Date(`${date}T12:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
+const diaryWeekStart=date=>{const d=new Date(`${date}T12:00:00Z`),offset=(d.getUTCDay()+6)%7;return diaryAddDays(date,-offset);};
+const diaryTime=value=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+const diaryDayLabel=value=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(value));
+const diaryState={mode:'today',anchor:diaryDateKey(new Date()),agentId:null,filters:new Set(['call','meeting','viewing','task']),items:[],metadata:null};
+
+function diaryRange(){
+  const startDate=diaryState.mode==='week'?diaryWeekStart(diaryState.anchor):diaryState.anchor,endDate=diaryAddDays(startDate,diaryState.mode==='week'?7:1);
+  return {startDate,endDate,from:new Date(`${startDate}T00:00:00+04:00`),to:new Date(`${endDate}T00:00:00+04:00`)};
+}
+
+function drawDiary(){
+  const root=$('#diary-schedule');if(!root)return;
+  const visible=diaryState.items.filter(item=>diaryState.filters.has(item.category)),groups=new Map();
+  visible.forEach(item=>{const key=diaryDateKey(item.startsAt);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);});
+  const statusLabel={upcoming:'Upcoming',completed:'Completed',overdue:'Overdue',cancelled:'Cancelled'},deliveryLabel={synced:'Calendar invitation sent',not_sent:'Invitation not sent',error:'Calendar synchronization error',crm_only:'CRM authoritative record'};
+  $('#diary-count').textContent=`${visible.length} scheduled item${visible.length===1?'':'s'}${visible.some(x=>x.conflict)?` · ${visible.filter(x=>x.conflict).length} conflict${visible.filter(x=>x.conflict).length===1?'':'s'}`:''}`;
+  root.innerHTML=[...groups.entries()].map(([day,items])=>`<section class="diary-day"><header><h3>${esc(diaryDayLabel(`${day}T12:00:00+04:00`))}</h3><span>${items.length} item${items.length===1?'':'s'}</span></header><div class="diary-day-list">${items.map(item=>{
+    const duration=item.durationMinutes?`${Number(item.durationMinutes)} minutes`:'Duration not recorded',time=item.endsAt?`${diaryTime(item.startsAt)}–${diaryTime(item.endsAt)}`:diaryTime(item.startsAt);
+    const detail=item.category==='viewing'?`${item.location||'Address not recorded'}${item.instructions?` · Meet at ${item.instructions}`:''}`:item.leadTitle||item.details||'';
+    return `<article class="diary-item diary-status-${esc(item.status)} ${item.conflict?'diary-conflict':''} ${item.calendarDeliveryStatus==='not_sent'?'diary-invitation-missing':''}">
+      <div class="diary-time"><b>${esc(time)}</b><span>${esc(duration)}</span></div>
+      <div class="diary-item-main"><div class="diary-item-heading"><span class="diary-type diary-type-${esc(item.category)}">${esc(item.appointmentType)}</span><strong>${esc(item.subject||item.opportunityTitle||item.listingProject)}</strong>${item.conflict?'<span class="diary-conflict-label">Scheduling conflict</span>':''}</div>
+        <h4>${esc(item.customerName)}</h4><p>${esc(detail)}</p>${item.clientMessage?`<p><b>Client message:</b> ${esc(item.clientMessage)}</p>`:''}
+        <div class="diary-contact"><span>${esc(item.customerPhone||'Phone not recorded')}</span><span>${esc(item.customerEmail||'Email not recorded')}</span><span>Assigned: ${esc(item.agentName)}</span></div>
+        <div class="diary-state-row"><span class="diary-state diary-state-${esc(item.status)}">${esc(statusLabel[item.status]||item.status)}</span><span class="diary-delivery diary-delivery-${esc(item.calendarDeliveryStatus)}">${esc(deliveryLabel[item.calendarDeliveryStatus])}</span></div>
+      </div>
+      <div class="diary-actions">
+        <button class="btn btn-sm" data-diary-customer="${esc(item.customerId)}">Open Customer</button>
+        ${item.opportunityId?`<button class="btn btn-sm" data-diary-opportunity="${esc(item.opportunityId)}">Open Opportunity</button>`:item.leadId?`<button class="btn btn-sm" data-diary-lead="${esc(item.leadId)}">Open Lead</button>`:''}
+        ${item.customerPhone?`<a class="btn btn-sm" href="tel:${esc(item.customerPhone)}">Call customer</a>`:''}
+        ${item.googleMeetingUrl?`<a class="btn btn-primary btn-sm" href="${esc(item.googleMeetingUrl)}" target="_blank" rel="noopener">Join Google Meet</a>`:''}
+        ${item.googleEventUrl?`<a class="btn btn-sm" href="${esc(item.googleEventUrl)}" target="_blank" rel="noopener">Open Google Calendar</a>`:''}
+        ${item.category==='call'&&!['completed','cancelled'].includes(item.status)?`<button class="btn btn-primary btn-sm" data-diary-outcome-lead="${esc(item.leadId)}">Record call outcome</button>`:''}
+        ${item.category==='viewing'&&item.recordStatus==='scheduled'?`<button class="btn btn-primary btn-sm" data-diary-outcome-opportunity="${esc(item.opportunityId)}">Record viewing outcome</button>`:''}
+      </div>
+    </article>`;}).join('')}</div></section>`).join('')||'<div class="empty diary-empty"><b>No scheduled appointments in this view.</b><span>Only authoritative CRM activities, tasks and Opportunity viewings with a specific date and time appear here.</span></div>';
+  root.querySelectorAll('[data-diary-customer]').forEach(b=>b.addEventListener('click',()=>{switchTab('customers');setTimeout(()=>openCustomer(b.dataset.diaryCustomer),0);}));
+  root.querySelectorAll('[data-diary-lead],[data-diary-outcome-lead]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.diaryLead||b.dataset.diaryOutcomeLead;switchTab('crm');setTimeout(()=>openLead(id),0);}));
+  root.querySelectorAll('[data-diary-opportunity],[data-diary-outcome-opportunity]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.diaryOpportunity||b.dataset.diaryOutcomeOpportunity;openOpportunityDetail(id);}));
+}
+
+async function loadDiary(){
+  const range=diaryRange(),params=new URLSearchParams({from:range.from.toISOString(),to:range.to.toISOString()});
+  if(diaryState.agentId)params.set('agentId',diaryState.agentId);
+  $('#diary-schedule').innerHTML='<div class="loading-state">Loading the authoritative CRM schedule...</div>';
+  try{
+    const data=await api(`/crm/diary?${params}`);diaryState.metadata=data;diaryState.items=data.items;diaryState.agentId=data.selectedAgentId;
+    const selector=$('#diary-agent');selector.innerHTML=`${data.companyView?'<option value="all">All company appointments</option>':''}${data.allowedAgents.map(x=>`<option value="${esc(x.id)}">${x.id===ME.id?'My diary · ':''}${esc(x.name)}</option>`).join('')}`;selector.value=data.selectedAgentId;selector.closest('label').classList.toggle('hidden',!data.companyView&&data.allowedAgents.length===1);
+    const labelRange=diaryState.mode==='today'?diaryDayLabel(range.from):`${diaryDayLabel(range.from)} – ${diaryDayLabel(new Date(range.to.getTime()-1))}`;
+    $('#diary-range-label').textContent=labelRange;drawDiary();
+  }catch(err){$('#diary-schedule').innerHTML=`<div class="error-msg">${esc(err.message)}</div>`;}
+}
+
+async function renderDiary(){
+  $('#view').innerHTML=`<section class="dashboard-head diary-head"><div><div class="eyebrow">R2.3 / PERSONAL OPERATING SCHEDULE</div><h2>My Diary</h2><p>One chronological Dubai-time schedule from authoritative CRM activities, tasks and physical property viewings.</p></div><div class="diary-timezone"><b>Asia/Dubai</b><span>UTC+4 · Google Calendar is delivery status only</span></div></section>
+  <section class="diary-toolbar"><div class="diary-view-toggle"><button class="btn btn-sm ${diaryState.mode==='today'?'btn-primary':''}" data-diary-mode="today">Today</button><button class="btn btn-sm ${diaryState.mode==='week'?'btn-primary':''}" data-diary-mode="week">Week</button></div><div class="diary-navigation"><button class="btn btn-sm" id="diary-previous">← Previous</button><button class="btn btn-sm" id="diary-today">Today</button><button class="btn btn-sm" id="diary-next">Next →</button></div><strong id="diary-range-label"></strong><label>Appointment owner<select id="diary-agent"></select></label></section>
+  <section class="diary-filterbar"><div><b>Show</b>${[['call','Calls'],['meeting','Meetings'],['viewing','Viewings'],['task','Tasks & follow-ups']].map(([value,label])=>`<label><input type="checkbox" data-diary-filter="${value}" ${diaryState.filters.has(value)?'checked':''}> ${label}</label>`).join('')}</div><span id="diary-count"></span></section>
+  <section class="diary-legend"><span class="diary-state diary-state-upcoming">Upcoming</span><span class="diary-state diary-state-completed">Completed</span><span class="diary-state diary-state-overdue">Overdue</span><span class="diary-state diary-state-cancelled">Cancelled</span><span class="diary-delivery diary-delivery-not_sent">Invitation not sent</span><span class="diary-conflict-label">Scheduling conflict</span></section>
+  <div id="diary-schedule"></div>`;
+  document.querySelectorAll('[data-diary-mode]').forEach(b=>b.addEventListener('click',()=>{diaryState.mode=b.dataset.diaryMode;renderDiary();}));
+  $('#diary-previous').addEventListener('click',()=>{diaryState.anchor=diaryAddDays(diaryState.anchor,diaryState.mode==='week'?-7:-1);loadDiary();});
+  $('#diary-next').addEventListener('click',()=>{diaryState.anchor=diaryAddDays(diaryState.anchor,diaryState.mode==='week'?7:1);loadDiary();});
+  $('#diary-today').addEventListener('click',()=>{diaryState.anchor=diaryDateKey(new Date());loadDiary();});
+  $('#diary-agent').addEventListener('change',e=>{diaryState.agentId=e.target.value;loadDiary();});
+  document.querySelectorAll('[data-diary-filter]').forEach(input=>input.addEventListener('change',()=>{input.checked?diaryState.filters.add(input.dataset.diaryFilter):diaryState.filters.delete(input.dataset.diaryFilter);drawDiary();}));
+  loadDiary();
 }
 
 /* ============ CUSTOMERS ============ */

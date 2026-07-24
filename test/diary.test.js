@@ -1,0 +1,48 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname,join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { validateDiaryRange,diaryStatus,markDiaryConflicts,calendarDeliveryStatus } from '../src/diary-domain.js';
+
+const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+const read=path=>readFileSync(join(root,path),'utf8');
+
+test('diary accepts Today and Week boundaries but rejects wider or invalid ranges',()=>{
+  assert.equal(validateDiaryRange('2026-07-24T00:00:00+04:00','2026-07-25T00:00:00+04:00').error,undefined);
+  assert.equal(validateDiaryRange('2026-07-20T00:00:00+04:00','2026-07-27T00:00:00+04:00').error,undefined);
+  assert.match(validateDiaryRange('2026-07-20T00:00:00+04:00','2026-07-29T00:00:00+04:00').error,/eight days/);
+  assert.match(validateDiaryRange('bad','2026-07-29T00:00:00+04:00').error,/Valid from and to/);
+});
+
+test('diary status and delivery labels remain derived from authoritative records',()=>{
+  const now=new Date('2026-07-24T08:00:00Z');
+  assert.equal(diaryStatus({startsAt:'2026-07-24T09:00:00Z'},now),'upcoming');
+  assert.equal(diaryStatus({startsAt:'2026-07-24T07:00:00Z'},now),'overdue');
+  assert.equal(diaryStatus({startsAt:'2026-07-24T07:00:00Z',completedAt:'2026-07-24T07:30:00Z'},now),'completed');
+  assert.equal(diaryStatus({startsAt:'2026-07-24T09:00:00Z',recordStatus:'cancelled'},now),'cancelled');
+  assert.equal(calendarDeliveryStatus({category:'meeting',googleEventUrl:null}),'not_sent');
+  assert.equal(calendarDeliveryStatus({category:'viewing',googleEventUrl:'https://calendar.google.com/x',calendarSyncStatus:'active'}),'synced');
+  assert.equal(calendarDeliveryStatus({category:'meeting',calendarSyncStatus:'error'}),'error');
+  assert.equal(calendarDeliveryStatus({category:'call'}),'crm_only');
+});
+
+test('diary flags only active overlapping appointments for the same agent',()=>{
+  const items=markDiaryConflicts([
+    {id:'a',agentId:'agent-1',startsAt:'2026-07-24T08:00:00Z',endsAt:'2026-07-24T09:00:00Z',status:'upcoming'},
+    {id:'b',agentId:'agent-1',startsAt:'2026-07-24T08:30:00Z',endsAt:'2026-07-24T09:30:00Z',status:'upcoming'},
+    {id:'c',agentId:'agent-2',startsAt:'2026-07-24T08:30:00Z',endsAt:'2026-07-24T09:30:00Z',status:'upcoming'},
+    {id:'d',agentId:'agent-1',startsAt:'2026-07-24T08:15:00Z',endsAt:'2026-07-24T08:45:00Z',status:'cancelled'}
+  ]);
+  assert.deepEqual(Object.fromEntries(items.map(x=>[x.id,x.conflict])),{a:true,b:true,c:false,d:false});
+});
+
+test('My Diary combines CRM schedules with role scope and direct operating actions',()=>{
+  const route=read('src/routes/diary.js'),server=read('src/server.js'),ui=read('public/app.js'),page=read('public/index.html');
+  for(const contract of ['activities','tasks','viewings','activity_calendar_events','viewing_calendar_events','selectedAgentId','allowedAgents','Asia/Dubai','Company diary access is restricted'])assert.match(route,new RegExp(contract));
+  assert.match(server,/diaryRoutes/);
+  for(const contract of ['My Diary','Today','Week','All company appointments','Calls','Meetings','Viewings','Tasks & follow-ups','Scheduling conflict','Invitation not sent','Open Customer','Open Lead','Open Opportunity','Join Google Meet','Open Google Calendar','Record call outcome','Record viewing outcome'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(page,/\.diary-item/);
+  assert.match(page,/\.diary-conflict/);
+  assert.match(page,/app\.js\?v=r2\.3-dev38/);
+});
