@@ -1,4 +1,5 @@
 const DAY_MS=24*60*60*1000;
+export const DUE_NOW_WINDOW_MS=30*60*1000;
 
 export function validateDiaryRange(fromValue,toValue){
   const from=new Date(fromValue),to=new Date(toValue);
@@ -11,7 +12,11 @@ export function validateDiaryRange(fromValue,toValue){
 export function diaryStatus(item,now=new Date()){
   if(item.cancelledAt||['cancelled','no_show'].includes(item.recordStatus))return 'cancelled';
   if(item.completedAt||item.recordStatus==='completed')return 'completed';
-  return new Date(item.startsAt)<now?'overdue':'upcoming';
+  const startsAt=new Date(item.startsAt),recordedEnd=item.endsAt?new Date(item.endsAt):null,
+    dueWindowEnd=recordedEnd&&recordedEnd>startsAt?recordedEnd:new Date(startsAt.getTime()+DUE_NOW_WINDOW_MS);
+  if(now>dueWindowEnd)return 'overdue';
+  if(now>=new Date(startsAt.getTime()-DUE_NOW_WINDOW_MS))return 'due_now';
+  return 'due_later';
 }
 
 export function markDiaryConflicts(items){

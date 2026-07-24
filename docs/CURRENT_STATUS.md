@@ -1,5 +1,25 @@
 # NYSA CORE Current Status
 
+## R2.3 My Diary CRM Test UAT correction — 2026-07-24
+
+- My Diary dev.38 is deployed only to CRM Test. Selectors and filters passed initial UAT, while
+  the NYSA owner identified clarity and navigation corrections before acceptance.
+- Version `2.0.0-dev.38.1` is isolated from deployed commit `506a922`; it does not contain the
+  separately built R2.3A dev.39 offer/negotiation work.
+- `Upcoming` is replaced by defined operational priorities: **Due now** begins within 30 minutes
+  or is in progress, **Due later** is more than 30 minutes away, and **Overdue** begins after the
+  appointment end or the 30-minute call/task action window. Completed and cancelled items remain
+  visibly separate.
+- Each day and item now states the full Dubai due/scheduled date. Completion and Calendar delivery
+  wording uses complete sentences, including **Email has been sent** where applicable.
+- Customer, Lead and Opportunity records open as overlays over the Diary; closing × returns to the
+  preserved Diary selection. My Diary is positioned immediately after Dashboard.
+- Google Meet is identified as an external video room while CORE retains the visible appointment
+  details; Google Calendar opens separately for external event details. Calling offers a copied
+  phone number or an explicitly labelled phone-application action.
+- Automated verification and CRM Test deployment/UAT of dev.38.1 remain pending. Production and
+  the frozen Release 1.1 candidate remain excluded.
+
 ## R2.2 scope confirmation and Google Calendar/Meet extension — 2026-07-22
 
 - D-042 formally keeps the Google Calendar/Meet work inside R2.2 while preserving two acceptance
