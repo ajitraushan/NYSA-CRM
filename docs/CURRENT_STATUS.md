@@ -858,6 +858,19 @@ Use:
 > Read `docs/README.md`, `docs/CURRENT_STATUS.md`, `docs/DECISIONS.md`, and the
 > latest Git history. Reconcile them with the current code before making changes,
 > then continue the named NYSA CRM workstream.
+
+## Release 2.3A offer UAT
+
+- My Diary `2.0.0-dev.38.2` is accepted on CRM Test.
+- Offer and Negotiation `2.0.0-dev.39.2` is deployed on CRM Test with migration
+  `045_release2_offer_negotiation.sql`; the user accepted the initial UAT corrections.
+- A focused `2.0.0-dev.39.3` correction is prepared for the latest UAT findings:
+  the Opportunity screen follows Inventory selection, Viewing and feedback, Offer,
+  then Negotiation; completed feedback is shown as visible evidence; offer
+  eligibility and every later mutation require feedback recorded before offer
+  creation; older non-compliant UAT offers are audit-only except withdrawal; and
+  negotiation events are ordered latest first.
+- Production and the frozen Release 1.1 production candidate remain unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in

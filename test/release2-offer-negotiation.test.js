@@ -50,6 +50,10 @@ test('R2.3A migration and API preserve immutable exact-document negotiation evid
   assert.match(routes,/Only the current draft revision can be sent/);
   assert.match(routes,/exact generated document/);
   assert.match(routes,/Complete the property viewing and record customer feedback/);
+  assert.match(routes,/v\.updated_at<=f\.created_at/);
+  assert.match(routes,/viewing_feedback_recorded/);
+  assert.match(routes,/ORDER BY e\.offer_id,e\.occurred_at DESC,e\.id DESC/);
+  assert.match(routes,/Only withdrawal is available because this offer has no viewing feedback evidence/);
   assert.match(routes,/organization_settings WHERE status='active'/);
   assert.match(routes,/must contain an approved JPEG or PNG logo/);
   assert.match(routes,/recipientName/);
@@ -57,9 +61,10 @@ test('R2.3A migration and API preserve immutable exact-document negotiation evid
 
 test('Opportunity UI presents one clear immutable offer and negotiation flow',()=>{
   const ui=read('public/offer-ui.js'),page=read('public/index.html'),app=read('public/app.js');
-  for(const marker of ['Create Offer Revision 1 and branded PDF','Review Revision','Record sending this exact revision','Material correction / revision reason','Chronological negotiation timeline','Reason (required for rejection or withdrawal)','All immutable offer revisions','Draft - not sent','Customer confirmed receipt (recorded by agent)','Recipient name','recipientEmail','recipientPhone','Inventory remains available','R2.3B','No property is ready for an offer'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['Create Offer Revision 1 and branded PDF','Review Revision','Record sending this exact revision','Material correction / revision reason','Negotiation timeline - latest first','Reason (required for rejection or withdrawal)','All immutable offer revisions','Draft - not sent','Customer confirmed receipt (recorded by agent)','Recipient name','recipientEmail','recipientPhone','Inventory remains available','R2.3B','No property is ready for an offer','Viewing-feedback prerequisite confirmed','Offer created without prior viewing-feedback evidence','writable&&governedEvidence&&offer.status'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/data-business-amount/);
   assert.match(ui,/completedViewingListings/);
-  assert.match(page,/offer-ui\.js\?v=r2\.3a-dev39-2/);
+  assert.match(page,/offer-ui\.js\?v=r2\.3a-dev39-3/);
   assert.match(app,/bindOfferWorkspace/);
+  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','opportunity-flow-sequence','Viewing completed - customer feedback recorded','This property cannot proceed to Offer until customer feedback is saved'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

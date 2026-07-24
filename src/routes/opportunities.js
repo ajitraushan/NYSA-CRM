@@ -89,15 +89,20 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       LEFT JOIN viewing_calendar_events cal ON cal.viewing_id=v.id AND cal.provider='google_calendar'
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
-  const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name
+  const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
+    evidence.id AS viewing_feedback_id,evidence.feedback AS viewing_feedback,evidence.updated_at AS viewing_feedback_at
     FROM offers f JOIN listings li ON li.id=f.listing_id JOIN brokers owner ON owner.id=f.owner_id
+    LEFT JOIN LATERAL (SELECT v.id,v.feedback,v.updated_at FROM viewings v
+      WHERE v.opportunity_id=f.opportunity_id AND v.listing_id=f.listing_id AND v.status='completed'
+        AND NULLIF(BTRIM(v.feedback),'') IS NOT NULL AND v.updated_at<=f.created_at
+      ORDER BY v.updated_at DESC LIMIT 1) evidence ON TRUE
     WHERE f.opportunity_id=$1 ORDER BY f.created_at DESC`,[opportunity.id]);
   if(offers.length){
     const ids=offers.map(x=>x.id),[revisions,events]=await Promise.all([
       many(`SELECT r.*,v.file_name,v.file_hash FROM offer_revisions r JOIN document_versions v ON v.id=r.document_version_id
         WHERE r.offer_id=ANY($1::uuid[]) ORDER BY r.offer_id,r.revision_number`,[ids]),
       many(`SELECT e.*,actor.name AS actor_name FROM negotiation_events e JOIN brokers actor ON actor.id=e.actor_id
-        WHERE e.offer_id=ANY($1::uuid[]) ORDER BY e.offer_id,e.occurred_at,e.id`,[ids])
+        WHERE e.offer_id=ANY($1::uuid[]) ORDER BY e.offer_id,e.occurred_at DESC,e.id DESC`,[ids])
     ]);
     for(const offer of offers){offer.revisions=revisions.filter(x=>x.offerId===offer.id);offer.events=events.filter(x=>x.offerId===offer.id);}
   }
@@ -230,7 +235,9 @@ r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>
 async function offerContext(req,offerId,client){
   const offer=await one(`SELECT f.*,o.lead_id,o.contact_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
     o.assigned_team_id,o.opportunity_reference,o.title AS opportunity_title,o.stage AS opportunity_stage,
-    c.full_name AS customer_name,c.email AS customer_email,c.phone AS customer_phone,li.project AS listing_project,li.inventory_reference
+    c.full_name AS customer_name,c.email AS customer_email,c.phone AS customer_phone,li.project AS listing_project,li.inventory_reference,
+    EXISTS(SELECT 1 FROM viewings v WHERE v.opportunity_id=f.opportunity_id AND v.listing_id=f.listing_id
+      AND v.status='completed' AND NULLIF(BTRIM(v.feedback),'') IS NOT NULL AND v.updated_at<=f.created_at) AS viewing_feedback_recorded
     FROM offers f JOIN opportunities o ON o.id=f.opportunity_id JOIN contacts c ON c.id=o.contact_id
     JOIN listings li ON li.id=f.listing_id WHERE f.id=$1`,[offerId],client);
   if(!offer)return {error:[404,'Offer not found']};
@@ -317,6 +324,7 @@ r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
     const result=await transaction(async client=>{
       const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
       if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+      if(!offer.viewingFeedbackRecorded)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
       if(['accepted','rejected','expired','withdrawn'].includes(offer.status))return {code:409,error:'A terminal offer cannot receive another revision'};
       if(Number(req.body?.expectedVersion)!==offer.version)return {code:409,error:'This offer changed after it was opened; reload before revising it'};
       const prior=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
@@ -354,6 +362,7 @@ r.post('/crm/offers/:offerId/send',async(req,res)=>{
   const result=await transaction(async client=>{
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+    if(!offer.viewingFeedbackRecorded)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
     if(offer.status!=='draft'||offer.version!==expectedVersion)return {code:409,error:'Only the current draft revision can be sent; reload before sending'};
     const revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client);
     if(!revision||revision.direction!=='outbound')return {code:409,error:'Create an outbound revision before sending'};
@@ -378,6 +387,7 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
   const result=await transaction(async client=>{
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+    if(!offer.viewingFeedbackRecorded&&req.body?.eventType!=='withdrawn')return {code:409,error:'Only withdrawal is available because this offer has no viewing feedback evidence recorded before creation'};
     if(offer.version!==expectedVersion)return {code:409,error:'This offer changed after it was opened; reload before recording the negotiation event'};
     const checked=validateOfferEvent(offer.status,req.body||{});if(checked.error)return {code:409,error:checked.error};
     const v=checked.value,revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
