@@ -36,7 +36,7 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(dashboard,/actionHint/);
   assert.doesNotMatch(dashboard,/data\.releaseBoundary/);
   assert.match(routes,/Available in a later Release 2 slice/);
-  assert.match(routes,/R2\.2 enables explainable matching and local viewing operations/);
+  assert.match(routes,/R2\.3A enables immutable offers and chronological negotiation/);
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
   assert.match(routes,/LIMIT 50/);

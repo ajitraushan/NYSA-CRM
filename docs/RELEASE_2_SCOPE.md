@@ -246,11 +246,13 @@ Material stage, match, viewing, offer, booking, party, checklist and closure cha
 4. **R2.2 matching and viewing**: explainable shortlist, local scheduling, attendees, attendance,
    feedback, follow-up and `.ics` fallback. D-042 adds the bounded Google Calendar/Meet extension;
    base matching/viewing acceptance is proved first, followed by adapter-specific acceptance.
-5. **R2.3 offers, negotiation and booking**: immutable revisions, exact document links,
-   negotiation timeline, reservation records and inventory conflict handling.
-6. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
+5. **R2.3A offers and negotiation**: active-Opportunity offers, immutable revisions, exact sent
+   document links, governed commercial states and a chronological negotiation timeline.
+6. **R2.3B booking and reservation**: accepted-offer handoff, reservation amount/dates/expiry
+   and evidence, inventory conflict handling, and explicit release/expiry/cancellation.
+7. **R2.4 deals, parties and completion**: governed deal creation, sale/rental parties,
    checklist instantiation, approvals and authoritative closed outcomes.
-7. **R2.5 reconciliation and release candidate**: cross-role UAT, reports/count reconciliation,
+8. **R2.5 reconciliation and release candidate**: cross-role UAT, reports/count reconciliation,
    source/campaign attribution reconciliation, migration/rollback rehearsal, package identity and
    CRM Test acceptance. Production remains a separately authorized action.
 
@@ -268,6 +270,14 @@ local Google Calendar/Meet adapter increment under D-042: OAuth connection, encr
 storage, explicit event creation, invitations and stored Meet links. Reschedule/cancellation sync,
 failure retry/reconciliation and complete CRM Test acceptance are still open, so the adapter is not
 yet an accepted R2.2 capability.
+
+Implementation checkpoint on 2026-07-24: My Diary dev.38 is deployed only to CRM Test and under
+UAT. Local version `2.0.0-dev.39` implements R2.3A through migration 045, immutable offer
+revisions, exact generated PDF document-version linkage, chronological negotiation events,
+governed sent/viewed/acknowledged/countered/accepted/rejected/expired/withdrawn outcomes and
+reason requirements for rejection, withdrawal and later material revisions. All 190 automated
+tests pass. It has not been deployed. Acceptance records the exact accepted revision but does not
+reserve inventory; that transaction remains exclusively in R2.3B.
 
 ## Acceptance baseline
 

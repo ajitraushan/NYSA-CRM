@@ -99,11 +99,11 @@ Status: Authorized to begin by the NYSA owner on 2026-07-22. The accepted Releas
 frozen in a separately checksummed production candidate on HOLD; Release 2 changes must remain
 outside that candidate.
 
-R2.0/R2.1 opportunity foundation is implemented locally on 2026-07-22 with 164 passing automated
-tests. The isolated PostgreSQL migration/reconciliation passed against a restored CRM Test
-snapshot with Release 1.1 counts unchanged and no automatic Opportunity creation. CRM Test
-deployment and explicit functional acceptance remain open; no Release 2 feature is deployed or
-accepted yet.
+R2.0/R2.1A and R2.2 have progressed through their gated CRM Test work. My Diary dev.38 is deployed
+only to CRM Test and is under UAT. R2.3A offer and negotiation is implemented locally as dev.39
+with 190 passing automated tests; migration rehearsal, CRM Test deployment and explicit acceptance
+remain open. R2.3B booking/reservation has not begun. Production and the frozen Release 1.1
+candidate remain unchanged.
 
 Requirements reconciliation, lifecycle compatibility, proposed data contracts, delivery slices,
 acceptance criteria and decisions required before development are defined in

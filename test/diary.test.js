@@ -44,5 +44,5 @@ test('My Diary combines CRM schedules with role scope and direct operating actio
   for(const contract of ['My Diary','Today','Week','All company appointments','Calls','Meetings','Viewings','Tasks & follow-ups','Scheduling conflict','Invitation not sent','Open Customer','Open Lead','Open Opportunity','Join Google Meet','Open Google Calendar','Record call outcome','Record viewing outcome'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(page,/\.diary-item/);
   assert.match(page,/\.diary-conflict/);
-  assert.match(page,/app\.js\?v=r2\.3-dev38/);
+  assert.match(page,/app\.js\?v=r2\.3a-dev39/);
 });

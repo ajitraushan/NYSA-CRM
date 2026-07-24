@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
@@ -5,6 +6,9 @@ import { hasInternalCrmIdentity,canReadLead,canCreateOpportunity,canReadOpportun
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
+import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
+import { makeOfferPdf } from '../offer-pdf.js';
+import { savePrivate,removePrivate } from '../private-files.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -85,7 +89,19 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       LEFT JOIN viewing_calendar_events cal ON cal.viewing_id=v.id AND cal.provider='google_calendar'
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
-  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings});
+  const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name
+    FROM offers f JOIN listings li ON li.id=f.listing_id JOIN brokers owner ON owner.id=f.owner_id
+    WHERE f.opportunity_id=$1 ORDER BY f.created_at DESC`,[opportunity.id]);
+  if(offers.length){
+    const ids=offers.map(x=>x.id),[revisions,events]=await Promise.all([
+      many(`SELECT r.*,v.file_name,v.file_hash FROM offer_revisions r JOIN document_versions v ON v.id=r.document_version_id
+        WHERE r.offer_id=ANY($1::uuid[]) ORDER BY r.offer_id,r.revision_number`,[ids]),
+      many(`SELECT e.*,actor.name AS actor_name FROM negotiation_events e JOIN brokers actor ON actor.id=e.actor_id
+        WHERE e.offer_id=ANY($1::uuid[]) ORDER BY e.offer_id,e.occurred_at,e.id`,[ids])
+    ]);
+    for(const offer of offers){offer.revisions=revisions.filter(x=>x.offerId===offer.id);offer.events=events.filter(x=>x.offerId===offer.id);}
+  }
+  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers});
 });
 
 r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{
@@ -211,6 +227,164 @@ r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>
   res.setHeader('Content-Type','text/calendar; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="nysa-viewing-${viewing.id}.ics"`);res.end(buildViewingIcs(viewing));
 });
 
+async function offerContext(req,offerId,client){
+  const offer=await one(`SELECT f.*,o.lead_id,o.contact_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
+    o.assigned_team_id,o.opportunity_reference,o.title AS opportunity_title,o.stage AS opportunity_stage,
+    c.full_name AS customer_name,c.email AS customer_email,li.project AS listing_project,li.inventory_reference
+    FROM offers f JOIN opportunities o ON o.id=f.opportunity_id JOIN contacts c ON c.id=o.contact_id
+    JOIN listings li ON li.id=f.listing_id WHERE f.id=$1`,[offerId],client);
+  if(!offer)return {error:[404,'Offer not found']};
+  offer.participantIds=(await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active',[offer.opportunityId],client)).map(x=>x.brokerId);
+  if(!canReadOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {error:[403,'Offer is outside your permitted scope']};
+  return {offer};
+}
+
+async function createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input,revisionNumber,supersedesRevisionId}){
+  const revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
+    pdf=makeOfferPdf({offer,revision,opportunity,customer,listing,agent:req.broker}),storageKey=await savePrivate(pdf,'.pdf'),
+    fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=`${offer.offerReference}-R${revisionNumber}.pdf`;
+  try{
+    await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
+      VALUES($1,$2,'Offer Letter',$3,$8,'private','active',$4,$4,$5,$6,$7)`,
+      [documentId,`${offer.offerReference}-R${revisionNumber}`,`${offer.offerReference} - Revision ${revisionNumber}`,req.broker.id,opportunity.contactId,opportunity.leadId,listing.id,input.direction==='inbound'?'Inbound':'Outbound'],client);
+    await execute(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by)
+      VALUES($1,$2,1,$3,'application/pdf',$4,$5,$6,1,'generated','private','generated',$7,$7)`,
+      [documentVersionId,documentId,fileName,pdf.length,storageKey,fileHash,req.broker.id],client);
+    await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by)
+      VALUES($1,$2,'Lead',$3,$4),($5,$2,'Opportunity',$6,$4),($7,$2,'Offer',$8,$4),($9,$2,'OfferRevision',$10,$4)`,
+      [uuid(),documentId,opportunity.leadId,req.broker.id,uuid(),opportunity.id,uuid(),offer.id,uuid(),revisionId],client);
+    const row=await one(`INSERT INTO offer_revisions(id,offer_id,revision_number,supersedes_revision_id,direction,proposer_role,
+      amount,currency,deposit_amount,financing_method,payment_terms,conditions,validity_expires_at,material_correction_reason,
+      document_version_id,created_by,created_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+      [revisionId,offer.id,revisionNumber,supersedesRevisionId,input.direction,input.proposerRole,input.amount,input.currency,
+        input.depositAmount,input.financingMethod,input.paymentTerms,input.conditions,input.validityExpiresAt,input.materialCorrectionReason,
+        documentVersionId,req.broker.id,createdAt],client);
+    return {...row,fileName,fileHash,storageKey};
+  }catch(error){await removePrivate(storageKey).catch(()=>{});throw error;}
+}
+
+r.post('/crm/opportunities/:id/offers',async(req,res)=>{
+  let storageKey;
+  try{
+    const result=await transaction(async client=>{
+      await one('SELECT id FROM opportunities WHERE id=$1 FOR UPDATE',[req.params.id],client);
+      const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
+      if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
+      if(['Closed Won','Closed Lost','Booking'].includes(opportunity.stage))return {code:409,error:'Create offers only from an active pre-booking Opportunity'};
+      const checked=validateOfferRevision(req.body||{},1);if(checked.error)return {code:400,error:checked.error};
+      const listingId=req.body?.listingId||opportunity.listingId;
+      const listing=await one(`SELECT li.* FROM listings li JOIN property_matches pm ON pm.listing_id=li.id
+        WHERE li.id=$1 AND pm.opportunity_id=$2 AND pm.shortlist_status<>'rejected' AND li.deleted_at IS NULL AND li.workflow_status='approved'
+        LIMIT 1`,[listingId,opportunity.id],client);
+      if(!listing)return {code:409,error:'Select an approved considered or shortlisted property from this Opportunity'};
+      const customer=await one('SELECT * FROM contacts WHERE id=$1',[opportunity.contactId],client),period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
+        counter=await one(`INSERT INTO offer_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
+          DO UPDATE SET last_value=offer_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),
+        offerReference=`NYSA-OF-${period}-${String(counter.lastValue).padStart(6,'0')}`,offerId=uuid(),
+        offer=await one(`INSERT INTO offers(id,offer_reference,opportunity_id,listing_id,offer_type,currency,owner_id,created_by)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+          [offerId,offerReference,opportunity.id,listing.id,checked.value.offerType,checked.value.currency,opportunity.ownerId,req.broker.id],client);
+      const revision=await createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input:checked.value,revisionNumber:1,supersedesRevisionId:null});storageKey=revision.storageKey;
+      await execute('UPDATE offers SET current_revision_id=$1,updated_at=NOW() WHERE id=$2',[revision.id,offer.id],client);
+      await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,actor_id)
+        VALUES($1,$2,$3,$4,'created','internal',$5,$6,$7)`,
+        [uuid(),offer.id,revision.id,revision.documentVersionId,checked.value.proposerRole,'Offer created with immutable Revision 1 and exact generated document',req.broker.id],client);
+      await execute(`UPDATE opportunities SET stage='Offer',listing_id=$1,next_action='Review and send the exact offer revision',
+        next_action_due_at=LEAST(next_action_due_at,NOW()+INTERVAL '1 day'),version=version+1,updated_at=NOW() WHERE id=$2`,[listing.id,opportunity.id],client);
+      if(opportunity.stage!=='Offer')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Offer','offer_created',$4,$5)`,[uuid(),opportunity.id,opportunity.stage,`Offer ${offerReference} created for ${listing.project}`,req.broker.id],client);
+      await audit('Offer',offer.id,'created',req.broker.id,{opportunityId:opportunity.id,listingId:listing.id,offerReference,revisionId:revision.id,documentVersionId:revision.documentVersionId,fileHash:revision.fileHash},client);
+      return {...offer,currentRevisionId:revision.id,revision};
+    });
+    if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});if(error.code==='23505')return res.status(409).json({error:'An active offer already exists for this Opportunity, property and offer type'});throw error;}
+});
+
+r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
+  let storageKey;
+  try{
+    const result=await transaction(async client=>{
+      const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
+      if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+      if(['accepted','rejected','expired','withdrawn'].includes(offer.status))return {code:409,error:'A terminal offer cannot receive another revision'};
+      if(Number(req.body?.expectedVersion)!==offer.version)return {code:409,error:'This offer changed after it was opened; reload before revising it'};
+      const prior=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
+        revisionNumber=prior.revisionNumber+1,checked=validateOfferRevision({...req.body,offerType:offer.offerType},revisionNumber);
+      if(checked.error)return {code:400,error:checked.error};
+      const opportunity=await opportunityWithParticipants(offer.opportunityId,client),listing=await one('SELECT * FROM listings WHERE id=$1',[offer.listingId],client),
+        customer=await one('SELECT * FROM contacts WHERE id=$1',[offer.contactId],client),
+        revision=await createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input:checked.value,revisionNumber,supersedesRevisionId:prior.id});storageKey=revision.storageKey;
+      const status=offerStatusAfterRevision(checked.value.direction),updated=await one(`UPDATE offers SET current_revision_id=$1,status=$2,
+        version=version+1,updated_at=NOW() WHERE id=$3 AND version=$4 RETURNING *`,[revision.id,status,offer.id,offer.version],client);
+      await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [uuid(),offer.id,revision.id,revision.documentVersionId,'material_correction',checked.value.direction,checked.value.proposerRole,
+          `Immutable Revision ${revisionNumber} created`,checked.value.materialCorrectionReason,req.broker.id],client);
+      if(checked.value.direction==='inbound')await execute(`UPDATE opportunities SET stage='Negotiation',next_action='Review counteroffer and record response',
+        next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$1`,[offer.opportunityId],client);
+      await audit('OfferRevision',revision.id,'created',req.broker.id,{offerId:offer.id,revisionNumber,direction:revision.direction,documentVersionId:revision.documentVersionId,fileHash:revision.fileHash,reason:revision.materialCorrectionReason},client);
+      return {...updated,revision};
+    });
+    if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+  }catch(error){if(storageKey)await removePrivate(storageKey).catch(()=>{});throw error;}
+});
+
+r.post('/crm/offers/:offerId/send',async(req,res)=>{
+  const recipient=clean(req.body?.recipient),deliveryChannel=clean(req.body?.deliveryChannel),
+    counterpartyRole=req.body?.counterpartyRole,expectedVersion=Number(req.body?.expectedVersion);
+  if(!recipient||!deliveryChannel||!OFFER_COUNTERPARTY_ROLES.includes(counterpartyRole))return res.status(400).json({error:'Recipient, delivery channel and counterparty are required'});
+  const result=await transaction(async client=>{
+    const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+    if(offer.status!=='draft'||offer.version!==expectedVersion)return {code:409,error:'Only the current draft revision can be sent; reload before sending'};
+    const revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client);
+    if(!revision||revision.direction!=='outbound')return {code:409,error:'Create an outbound revision before sending'};
+    if(new Date(revision.validityExpiresAt)<=new Date())return {code:409,error:'This revision has expired; create a new immutable revision before sending'};
+    const updated=await one(`UPDATE offers SET status='sent',sent_at=NOW(),version=version+1,updated_at=NOW()
+      WHERE id=$1 AND version=$2 RETURNING *`,[offer.id,offer.version],client);
+    await execute("UPDATE document_versions SET status='sent',sent_at=NOW(),recipient=$1,immutable=1 WHERE id=$2",[recipient,revision.documentVersionId],client);
+    await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,delivery_channel,delivery_recipient,actor_id)
+      VALUES($1,$2,$3,$4,'sent','outbound',$5,$6,$7,$8,$9)`,
+      [uuid(),offer.id,revision.id,revision.documentVersionId,counterpartyRole,`Exact Revision ${revision.revisionNumber} sent to ${recipient}`,deliveryChannel,recipient,req.broker.id],client);
+    await execute(`UPDATE opportunities SET stage='Negotiation',next_action='Confirm offer receipt and record negotiation response',
+      next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$1`,[offer.opportunityId],client);
+    if(offer.opportunityStage!=='Negotiation')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,$3,'Negotiation','offer_sent',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,`Offer ${offer.offerReference} Revision ${revision.revisionNumber} sent`,req.broker.id],client);
+    await audit('Offer',offer.id,'sent',req.broker.id,{revisionId:revision.id,documentVersionId:revision.documentVersionId,recipient,deliveryChannel,counterpartyRole},client);
+    return updated;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
+});
+
+r.post('/crm/offers/:offerId/events',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion);
+  const result=await transaction(async client=>{
+    const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+    if(offer.version!==expectedVersion)return {code:409,error:'This offer changed after it was opened; reload before recording the negotiation event'};
+    const checked=validateOfferEvent(offer.status,req.body||{});if(checked.error)return {code:409,error:checked.error};
+    const v=checked.value,revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
+      nextStatus=v.eventType==='acknowledged'?'viewed':v.eventType,terminalAt={
+        accepted:'accepted_at',rejected:'rejected_at',expired:'expired_at',withdrawn:'withdrawn_at',viewed:'viewed_at',acknowledged:'viewed_at'
+      }[v.eventType],sets=["status=$1","version=version+1","updated_at=NOW()"],params=[nextStatus];
+    const validityExpired=new Date(revision.validityExpiresAt)<=new Date();
+    if(v.eventType==='accepted'&&validityExpired)return {code:409,error:'This revision has expired and cannot be accepted'};
+    if(v.eventType==='expired'&&!validityExpired)return {code:409,error:'This revision remains valid; record withdrawal or rejection instead'};
+    if(terminalAt)sets.push(`${terminalAt}=NOW()`);
+    if(v.eventType==='accepted'){params.push(revision.id);sets.push(`accepted_revision_id=$${params.length}`);}
+    params.push(offer.id,offer.version);
+    const updated=await one(`UPDATE offers SET ${sets.join(',')} WHERE id=$${params.length-1} AND version=$${params.length} RETURNING *`,params,client);
+    await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [uuid(),offer.id,revision.id,revision.documentVersionId,v.eventType,v.direction,v.counterpartyRole,v.summary,v.reason,req.broker.id],client);
+    const nextAction=v.eventType==='accepted'?'Begin booking and reservation only after R2.3B is enabled':
+      ['rejected','expired','withdrawn'].includes(v.eventType)?'Review outcome and decide whether to create a new offer':'Continue negotiation and record the next exact revision';
+    await execute('UPDATE opportunities SET next_action=$1,next_action_due_at=NOW()+INTERVAL \'1 day\',version=version+1,updated_at=NOW() WHERE id=$2',[nextAction,offer.opportunityId],client);
+    await audit('NegotiationEvent',offer.id,v.eventType,req.broker.id,{offerRevisionId:revision.id,documentVersionId:revision.documentVersionId,reason:v.reason,counterpartyRole:v.counterpartyRole},client);
+    return updated;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
+});
+
 r.post('/crm/leads/:id/opportunities',async(req,res)=>{
   const checked=validateOpportunityCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   try{
@@ -333,6 +507,8 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       COUNT(*) FILTER(WHERE o.stage='Requirements')::int AS requirements,
       COUNT(*) FILTER(WHERE o.stage='Matching')::int AS matching,
       COUNT(*) FILTER(WHERE o.stage='Viewing')::int AS viewing,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id))::int AS offers,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted'))::int AS accepted_offers,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
     many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
@@ -367,9 +543,10 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     {code:'opportunity',label:'Opportunity',status:leadCounts.readyOpportunities?'ready':opportunityCounts.active?'current':'blocked',count:opportunityCounts.active,action:leadCounts.readyOpportunities?`${leadCounts.readyOpportunities} qualified lead${leadCounts.readyOpportunities===1?' is':'s are'} ready`:opportunityCounts.overdue?`${opportunityCounts.overdue} next action${opportunityCounts.overdue===1?' is':'s are'} overdue`:'Create from a qualified lead'},
     {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.viewing?'completed':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Review explainable property matches'},
     {code:'viewing',label:'Viewing',status:opportunityCounts.viewing?'current':opportunityCounts.matching?'ready':'blocked',count:opportunityCounts.viewing,action:opportunityCounts.matching?'Shortlist a property and schedule a viewing':'Record attendance, feedback and follow-up'},
-    ...['Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
+    {code:'offer',label:'Offer',status:opportunityCounts.acceptedOffers?'completed':opportunityCounts.offers?'current':opportunityCounts.viewing?'ready':'blocked',count:opportunityCounts.offers,action:opportunityCounts.acceptedOffers?'Accepted offer is ready for the separately controlled booking slice':opportunityCounts.offers?'Review exact revision and negotiation timeline':'Create immutable terms from an active Opportunity'},
+    ...['Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
   ];
-  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.2 enables explainable matching and local viewing operations; Offer and later steps remain unavailable'});
+  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.3A enables immutable offers and chronological negotiation; Booking and Deal remain unavailable'});
 });
 
 export default r;

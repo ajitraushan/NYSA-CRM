@@ -198,6 +198,31 @@ Verification evidence:
   browser workflow evidence remain open for CRM Test.
 - No CRM Test or production deployment has been performed.
 
+### Release 2.3A offer and negotiation
+
+Implementation files:
+
+- `src/migrations/045_release2_offer_negotiation.sql`
+- `src/offer-domain.js` and `src/offer-pdf.js`
+- offer APIs in `src/routes/opportunities.js`
+- `public/offer-ui.js` integrated into the Opportunity workspace
+
+Implemented contracts:
+
+- Offers originate only from an active, in-scope Opportunity and an approved considered or
+  shortlisted property.
+- Every revision has typed commercial terms, a numbered immutable row and an exact immutable PDF
+  document version. Every later revision requires a material correction/revision reason.
+- Sending records the exact revision, document version, recipient, delivery channel and
+  counterparty. Expired revisions cannot be sent or accepted.
+- Viewed, acknowledged, countered, accepted, rejected, expired and withdrawn events append to an
+  immutable chronological timeline. Rejection and withdrawal require a reason.
+- Acceptance retains the exact accepted revision and exposes only the future R2.3B handoff; it
+  neither reserves inventory nor enables Booking.
+- Record reads and writes reuse Opportunity scope enforcement and optimistic version checks.
+- Version `2.0.0-dev.39` passes all 190 automated tests. PostgreSQL rehearsal, CRM Test deployment,
+  cross-role UAT and explicit acceptance remain pending; Production is excluded.
+
 ### Acceptance hardening
 
 Implementation files:

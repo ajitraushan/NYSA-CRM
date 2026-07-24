@@ -22,7 +22,7 @@ test('Release 2.2 exposes Requirements Matching Viewing and reasoned Closed Lost
   assert.equal(validateOpportunityTransition('Matching','Viewing').value.reasonCode,'viewing_scheduled');
   assert.match(validateOpportunityTransition('Viewing','Matching').error,/reason is required/i);
   assert.equal(validateOpportunityTransition('Viewing','Matching',{reason:'Customer requested alternatives'}).value.reasonCode,'viewing_returned_to_matching');
-  assert.match(validateOpportunityTransition('Matching','Closed Won').error,/not enabled in Release 2.2/);
+  assert.match(validateOpportunityTransition('Matching','Closed Won').error,/not enabled in Release 2.3A/);
   assert.match(validateOpportunityTransition('Requirements','Closed Lost',{reasonCode:'other',reason:''}).error,/controlled lost reason/);
   assert.equal(validateOpportunityTransition('Matching','Closed Lost',{reasonCode:'no_suitable_property',reason:'Reviewed approved inventory'}).value.toStage,'Closed Lost');
 });

@@ -1,5 +1,33 @@
 # NYSA CORE Current Status
 
+## Release 2.3A offer and negotiation local build — 2026-07-24
+
+- Version `2.0.0-dev.39` implements the approved offer and negotiation slice locally while My
+  Diary dev.38 is under CRM Test UAT. It has not been deployed.
+- Migration `045_release2_offer_negotiation.sql` enables Opportunity Offer and Negotiation stages
+  and adds commercial offers, immutable numbered revisions, exact generated document-version
+  links and immutable chronological negotiation events.
+- Authorized Opportunity operators can create an offer for an approved considered property,
+  review the exact generated PDF, record its precise recipient/channel/counterparty when sent,
+  append inbound or outbound revisions, and record viewed, acknowledged, countered, accepted,
+  rejected, expired or withdrawn outcomes. Rejection, withdrawal and every later material
+  revision require a reason.
+- Expired revisions cannot be sent or accepted, and an offer cannot be marked expired before its
+  recorded validity time. Acceptance retains the exact accepted revision; it does not reserve
+  inventory or enable Booking.
+- The complete automated suite passes 190/190 tests. PostgreSQL migration rehearsal, CRM Test
+  deployment, cross-role UAT and explicit acceptance remain open. Production and the frozen
+  Release 1.1 candidate remain untouched.
+- R2.3B remains a separate next slice: accepted-offer reservation, amount/dates/expiry/evidence,
+  inventory conflict protection and explicit release, expiry or cancellation.
+
+## Release 2.3 My Diary CRM Test UAT — 2026-07-24
+
+- My Diary version `2.0.0-dev.38`, commit `506a922`, is installed only on CRM Test. Migration
+  baseline remains `044_viewing_client_message.sql`.
+- CRM Test restarted successfully and returned HTTP 200 with `{"ok":true,"database":"ready"}`.
+  Functional role UAT is in progress; no Production deployment is authorized.
+
 ## R2.2 scope confirmation and Google Calendar/Meet extension — 2026-07-22
 
 - D-042 formally keeps the Google Calendar/Meet work inside R2.2 while preserving two acceptance
