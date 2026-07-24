@@ -13,9 +13,10 @@ r.use(requireAuth,(req,res,next)=>{
 });
 
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
-const SELECT_OPPORTUNITY=`SELECT o.*,c.full_name AS contact_name,l.title AS lead_title,l.stage AS lead_stage,
+const SELECT_OPPORTUNITY=`SELECT o.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
+  c.postal_address AS contact_address,l.title AS lead_title,l.stage AS lead_stage,
   req.version_no AS requirement_version,qa.final_temperature AS qualification_temperature,
-  li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,t.name AS team_name,
+  li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,owner.phone AS owner_phone,t.name AS team_name,
   attr.source AS attribution_source,attr.campaign_code,attr.external_source_id,attr.source_page,attr.source_form,
   attr.originating_listing_id,attr.attribution_basis,attr.provenance_hash,attr.captured_at AS attribution_captured_at
   FROM opportunities o
@@ -71,7 +72,8 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       JOIN brokers creator ON creator.id=pm.created_by WHERE pm.opportunity_id=$1 ORDER BY
       CASE pm.shortlist_status WHEN 'shortlisted' THEN 0 WHEN 'considering' THEN 1 ELSE 2 END,pm.created_at`,[opportunity.id]),
     many(`SELECT v.*,li.project AS listing_project,li.inventory_reference,organizer.name AS organizer_name,
-      customer.full_name AS customer_name,customer.email AS customer_email,owner.name AS owner_name,owner.phone AS owner_phone,
+      customer.full_name AS customer_name,customer.email AS customer_email,customer.phone AS customer_phone,
+      customer.postal_address AS customer_address,owner.name AS owner_name,owner.phone AS owner_phone,
       cal.event_url AS google_event_url,cal.meeting_url AS google_meeting_url,cal.sync_status AS google_sync_status,cal.last_error AS google_last_error,cal.retry_count AS google_retry_count,
       COALESCE((SELECT json_agg(json_build_object('id',va.id,'contactId',va.contact_id,'brokerId',va.broker_id,
         'guestName',va.guest_name,'attendeeRole',va.attendee_role,'invitationStatus',va.invitation_status,
