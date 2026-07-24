@@ -864,7 +864,7 @@ Use:
 - My Diary `2.0.0-dev.38.2` is accepted on CRM Test.
 - Offer and Negotiation `2.0.0-dev.39.2` is deployed on CRM Test with migration
   `045_release2_offer_negotiation.sql`; the user accepted the initial UAT corrections.
-- A cumulative `2.0.0-dev.39.6` correction supersedes the earlier correction
+- A cumulative `2.0.0-dev.39.7` correction supersedes the earlier correction
   packages and is prepared for the latest UAT findings:
   the Opportunity screen follows Inventory selection, Viewing and feedback, Offer,
   then Negotiation; completed feedback is shown as visible evidence; offer
@@ -877,6 +877,8 @@ Use:
   Opportunity reminders are now explicitly separated from viewing status and feedback;
   the viewing record displays a prominent business status and a primary
   `Record viewing outcome and feedback` action.
+  The confirmed-viewing summary now activates the Viewing and feedback filter before
+  navigating, rather than scrolling toward a section hidden by another selected step.
 - Production and the frozen Release 1.1 production candidate remain unchanged.
 ## Release 1.1 area-import duplicate handling
 
