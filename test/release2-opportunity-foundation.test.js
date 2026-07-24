@@ -43,6 +43,7 @@ test('opportunity workspace makes the active pursuit primary and preserves the s
   assert.match(ui,/openOpportunityWorkspace/);
   assert.match(ui,/openOpportunityDetail/);
   for(const contract of ['confirmedViewings','confirmed-viewing-summary','Review confirmed viewings','Schedule another viewing','Confirm another viewing','detailTitle.textContent=opportunity.contactName'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.doesNotMatch(ui,/Schedule another property viewing/);
   assert.match(routes,/This viewing is already confirmed\. Review the confirmed viewing before scheduling another/);
   assert.match(ui,/openCreateOpportunity\(lead,listings,o,operatingContext\)/);
   assert.match(ui,/function openCreateOpportunity\(lead,listings,parent,operatingContext\)/);
