@@ -880,6 +880,28 @@ Use:
   The confirmed-viewing summary now activates the Viewing and feedback filter before
   navigating, rather than scrolling toward a section hidden by another selected step.
 - Production and the frozen Release 1.1 production candidate remain unchanged.
+
+## Release 2.3A CRM Test acceptance - 2026-07-25
+
+- The NYSA owner confirmed all focused dev.39.7 Opportunity, viewing-feedback, offer and
+  negotiation checks passed on CRM Test.
+- Accepted CRM Test version: `2.0.0-dev.39.7`; source commit `a911730`.
+- Migration baseline remains `045_release2_offer_negotiation.sql`.
+- R2.3A is accepted for continuation into R2.3B. Production remains unchanged and no
+  Production deployment is authorized.
+
+## Release 2.3B booking and reservation - local build
+
+- Version `2.0.0-dev.40` introduces explicit Booking as step 5 after an accepted exact
+  offer revision.
+- Migration `046_release2_booking_reservation.sql` adds booking references, typed amount,
+  dates, expiry, refundability, immutable evidence linkage and status history.
+- Reservation locks the governed listing and changes inventory to Reserved in the same
+  transaction. A partial failure changes neither module; a unique active-listing guard
+  prevents conflicting reservations.
+- Release, expiry and cancellation are explicit audited actions and restore the exact
+  prior inventory status. No silent inventory transition is permitted.
+- CRM Test deployment and UAT remain pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in

@@ -8,7 +8,8 @@ import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,valid
 import { syncGoogleViewing } from '../calendar-sync.js';
 import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
 import { makeOfferPdf } from '../offer-pdf.js';
-import { savePrivate,removePrivate,readPrivate } from '../private-files.js';
+import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
+import { validateBookingCreate,validateBookingTransition } from '../booking-domain.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -106,7 +107,17 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     ]);
     for(const offer of offers){offer.revisions=revisions.filter(x=>x.offerId===offer.id);offer.events=events.filter(x=>x.offerId===offer.id);}
   }
-  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers});
+  const bookings=await many(`SELECT b.*,f.offer_reference,r.revision_number AS accepted_revision_number,
+    li.project AS listing_project,li.inventory_reference,
+    dv.file_name AS evidence_file_name,dv.file_hash AS evidence_file_hash,owner.name AS owner_name,
+    COALESCE((SELECT json_agg(json_build_object('id',h.id,'fromStatus',h.from_status,'toStatus',h.to_status,
+      'reason',h.reason,'actorName',actor.name,'changedAt',h.changed_at) ORDER BY h.changed_at DESC,h.id DESC)
+      FROM booking_status_history h JOIN brokers actor ON actor.id=h.actor_id WHERE h.booking_id=b.id),'[]'::json) AS history
+    FROM bookings b JOIN offers f ON f.id=b.offer_id JOIN offer_revisions r ON r.id=b.accepted_offer_revision_id
+    JOIN listings li ON li.id=b.listing_id
+    JOIN document_versions dv ON dv.id=b.evidence_document_version_id JOIN brokers owner ON owner.id=b.owner_id
+    WHERE b.opportunity_id=$1 ORDER BY b.created_at DESC`,[opportunity.id]);
+  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers,bookings});
 });
 
 r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{
@@ -412,6 +423,98 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
   });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
+r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
+  const checked=validateBookingCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  const file=decodeAndValidateFile({...checked.value.evidence,maxBytes:10*1024*1024,
+    allowedTypes:['application/pdf','image/jpeg','image/png']});
+  if(file.error)return res.status(400).json({error:`Reservation evidence document is required: ${file.error}`});
+  const extension=file.fileName.includes('.')?file.fileName.slice(file.fileName.lastIndexOf('.')):'';
+  const storageKey=await savePrivate(file.buffer,extension);
+  try{
+    const result=await transaction(async client=>{
+      const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
+      if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+      const lockedOffer=await one('SELECT * FROM offers WHERE id=$1 FOR UPDATE',[offer.id],client);
+      if(lockedOffer.status!=='accepted'||!lockedOffer.acceptedRevisionId)return {code:409,error:'Only an accepted offer with its exact accepted revision can create a reservation'};
+      const listing=await one('SELECT * FROM listings WHERE id=$1 FOR UPDATE',[offer.listingId],client);
+      if(!['Available','Under offer'].includes(listing.status))return {code:409,error:`Inventory cannot be reserved because its current status is ${listing.status}`};
+      if(await one("SELECT id FROM bookings WHERE listing_id=$1 AND status='reserved' FOR UPDATE",[listing.id],client))return {code:409,error:'This inventory already has an active reservation'};
+      const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
+        counter=await one(`INSERT INTO booking_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
+          DO UPDATE SET last_value=booking_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),
+        bookingReference=`NYSA-BK-${period}-${String(counter.lastValue).padStart(6,'0')}`,
+        documentId=uuid(),documentVersionId=uuid(),bookingId=uuid();
+      await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
+        VALUES($1,$2,'reservation_evidence',$3,'Inbound','private','active',$4,$4,$5,$6,$7)`,
+        [documentId,`DOC-${Date.now()}-${documentId.slice(0,8)}`,`Reservation evidence ${bookingReference}`,req.broker.id,offer.contactId,offer.leadId,listing.id],client);
+      await execute(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by,received_at)
+        VALUES($1,$2,1,$3,$4,$5,$6,$7,1,'upload','private','received',$8,$8,NOW())`,
+        [documentVersionId,documentId,file.fileName,checked.value.evidence.mediaType,file.buffer.length,storageKey,file.fileHash,req.broker.id],client);
+      const booking=await one(`INSERT INTO bookings(id,booking_reference,opportunity_id,listing_id,offer_id,accepted_offer_revision_id,status,
+        booking_amount,currency,refundable_state,reservation_starts_at,expires_at,evidence_document_version_id,inventory_status_before,owner_id,created_by)
+        VALUES($1,$2,$3,$4,$5,$6,'reserved',$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+        [bookingId,bookingReference,offer.opportunityId,listing.id,offer.id,lockedOffer.acceptedRevisionId,checked.value.bookingAmount,
+          checked.value.currency,checked.value.refundableState,checked.value.reservationStartsAt,checked.value.expiresAt,documentVersionId,
+          listing.status,offer.opportunityOwnerId,req.broker.id],client);
+      await execute(`INSERT INTO booking_status_history(id,booking_id,to_status,reason,actor_id)
+        VALUES($1,$2,'reserved','Explicit reservation created from accepted offer',$3)`,[uuid(),booking.id,req.broker.id],client);
+      await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES
+        ($1,$2,'Booking',$3,$4),($5,$2,'Opportunity',$6,$4),($7,$2,'Offer',$8,$4)`,
+        [uuid(),documentId,booking.id,req.broker.id,uuid(),offer.opportunityId,uuid(),offer.id],client);
+      await execute("UPDATE listings SET status='Reserved',updated_at=NOW() WHERE id=$1",[listing.id],client);
+      await execute(`UPDATE opportunities SET stage='Booking',listing_id=$1,next_action='Monitor reservation expiry and complete booking requirements',
+        next_action_due_at=$2,version=version+1,updated_at=NOW() WHERE id=$3`,[listing.id,checked.value.expiresAt,offer.opportunityId],client);
+      if(offer.opportunityStage!=='Booking')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Booking','reservation_created',$4,$5)`,
+        [uuid(),offer.opportunityId,offer.opportunityStage,`Reservation ${bookingReference} explicitly blocked inventory`,req.broker.id],client);
+      await audit('Booking',booking.id,'reserved',req.broker.id,{bookingReference,offerId:offer.id,acceptedOfferRevisionId:lockedOffer.acceptedRevisionId,
+        listingId:listing.id,evidenceDocumentVersionId:documentVersionId,fileHash:file.fileHash,inventoryStatusFrom:listing.status,inventoryStatusTo:'Reserved'},client);
+      return booking;
+    });
+    if(result.error){await removePrivate(storageKey);return res.status(result.code).json({error:result.error});}
+    res.status(201).json(result);
+  }catch(error){
+    await removePrivate(storageKey);
+    if(error.code==='23505')return res.status(409).json({error:'This inventory or accepted offer already has an active reservation'});
+    throw error;
+  }
+});
+
+r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion);
+  const result=await transaction(async client=>{
+    const booking=await one(`SELECT b.*,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
+      o.assigned_team_id,o.stage AS opportunity_stage,li.status AS current_inventory_status
+      FROM bookings b JOIN opportunities o ON o.id=b.opportunity_id JOIN listings li ON li.id=b.listing_id
+      WHERE b.id=$1 FOR UPDATE OF b,li`,[req.params.bookingId],client);
+    if(!booking)return {code:404,error:'Booking not found'};
+    const opportunity=await opportunityWithParticipants(booking.opportunityId,client);
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Booking is outside your writable scope'};
+    if(booking.version!==expectedVersion)return {code:409,error:'This reservation changed after it was opened; reload before updating it'};
+    if(booking.currentInventoryStatus!=='Reserved')return {code:409,error:`Inventory is ${booking.currentInventoryStatus}; resolve that status conflict before changing this reservation`};
+    const checked=validateBookingTransition(booking.status,{...req.body,expiresAt:booking.expiresAt});
+    if(checked.error)return {code:409,error:checked.error};
+    const v=checked.value,column={released:'released_at',expired:'expired_at',cancelled:'cancelled_at'}[v.toStatus],
+      updated=await one(`UPDATE bookings SET status=$1,release_reason=$2,${column}=NOW(),version=version+1,updated_at=NOW()
+        WHERE id=$3 AND version=$4 RETURNING *`,[v.toStatus,v.reason,booking.id,booking.version],client);
+    await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,'reserved',$3,$4,$5)`,[uuid(),booking.id,v.toStatus,v.reason,req.broker.id],client);
+    await execute(`UPDATE listings SET status=$1,updated_at=NOW() WHERE id=$2 AND status='Reserved'`,
+      [booking.inventoryStatusBefore,booking.listingId],client);
+    await execute(`UPDATE opportunities SET stage='Negotiation',next_action=$1,next_action_due_at=NOW()+INTERVAL '1 day',
+      version=version+1,updated_at=NOW() WHERE id=$2`,
+      [`Reservation ${v.toStatus}; review accepted offer and next customer action`,booking.opportunityId],client);
+    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,$3,'Negotiation',$4,$5,$6)`,
+      [uuid(),booking.opportunityId,booking.opportunityStage,`reservation_${v.toStatus}`,v.reason||`Reservation reached ${v.toStatus}`,req.broker.id],client);
+    await audit('BookingStatus',booking.id,v.toStatus,req.broker.id,{from:'reserved',to:v.toStatus,reason:v.reason,
+      listingId:booking.listingId,inventoryStatusFrom:'Reserved',inventoryStatusTo:booking.inventoryStatusBefore},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
 r.post('/crm/leads/:id/opportunities',async(req,res)=>{
   const checked=validateOpportunityCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   try{
@@ -536,6 +639,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       COUNT(*) FILTER(WHERE o.stage='Viewing')::int AS viewing,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id))::int AS offers,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted'))::int AS accepted_offers,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM bookings b WHERE b.opportunity_id=o.id AND b.status='reserved'))::int AS bookings,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
     many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
@@ -570,10 +674,11 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     {code:'opportunity',label:'Opportunity',status:leadCounts.readyOpportunities?'ready':opportunityCounts.active?'current':'blocked',count:opportunityCounts.active,action:leadCounts.readyOpportunities?`${leadCounts.readyOpportunities} qualified lead${leadCounts.readyOpportunities===1?' is':'s are'} ready`:opportunityCounts.overdue?`${opportunityCounts.overdue} next action${opportunityCounts.overdue===1?' is':'s are'} overdue`:'Create from a qualified lead'},
     {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.viewing?'completed':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Review explainable property matches'},
     {code:'viewing',label:'Viewing',status:opportunityCounts.viewing?'current':opportunityCounts.matching?'ready':'blocked',count:opportunityCounts.viewing,action:opportunityCounts.matching?'Shortlist a property and schedule a viewing':'Record attendance, feedback and follow-up'},
-    {code:'offer',label:'Offer',status:opportunityCounts.acceptedOffers?'completed':opportunityCounts.offers?'current':opportunityCounts.viewing?'ready':'blocked',count:opportunityCounts.offers,action:opportunityCounts.acceptedOffers?'Accepted offer is ready for the separately controlled booking slice':opportunityCounts.offers?'Review exact revision and negotiation timeline':'Create immutable terms from an active Opportunity'},
-    ...['Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',count:0,action:'Available in a later Release 2 slice'}))
+    {code:'offer',label:'Offer',status:opportunityCounts.acceptedOffers?'completed':opportunityCounts.offers?'current':opportunityCounts.viewing?'ready':'blocked',count:opportunityCounts.offers,action:opportunityCounts.acceptedOffers?'Accepted offer is ready for explicit reservation':opportunityCounts.offers?'Review exact revision and negotiation timeline':'Create immutable terms from an active Opportunity'},
+    {code:'booking',label:'Booking',status:opportunityCounts.bookings?'current':opportunityCounts.acceptedOffers?'ready':'blocked',count:opportunityCounts.bookings,action:opportunityCounts.bookings?'Monitor expiry and complete the reservation requirements':opportunityCounts.acceptedOffers?'Create an explicit reservation with evidence':'An accepted exact offer revision is required'},
+    {code:'deal',label:'Deal',status:'not_available',count:0,action:'Available in a later Release 2 slice'}
   ];
-  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.3A enables immutable offers and chronological negotiation; Booking and Deal remain unavailable'});
+  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.3B enables explicit booking and reservation; Deal remains unavailable'});
 });
 
 export default r;

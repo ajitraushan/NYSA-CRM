@@ -652,6 +652,8 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
     one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL',[lead.id]),
     one('SELECT * FROM qualification_assessments WHERE lead_id=$1 ORDER BY assessed_at DESC LIMIT 1',[lead.id]),
     many(`SELECT o.id,o.opportunity_reference,o.title,o.stage,o.owner_id,o.assigned_team_id,o.next_action,o.next_action_due_at,o.version,
+      (SELECT COUNT(*)::int FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted') AS accepted_offer_count,
+      (SELECT COUNT(*)::int FROM bookings bk WHERE bk.opportunity_id=o.id AND bk.status='reserved') AS active_booking_count,
       b.name AS owner_name,t.name AS team_name,li.project AS listing_project
       FROM opportunities o JOIN brokers b ON b.id=o.owner_id LEFT JOIN teams t ON t.id=o.assigned_team_id
       LEFT JOIN listings li ON li.id=o.listing_id WHERE o.lead_id=$1 AND ${opportunityScope.clause} ORDER BY o.created_at`,opportunityScope.params)
@@ -659,14 +661,19 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
   const active=opportunities.filter(x=>!['Closed Won','Closed Lost'].includes(x.stage));
   const opportunityReady=Boolean(lead.assignedTo&&requirement&&qualification&&['Qualified','Viewing','Negotiation','Won'].includes(lead.stage));
   const currentOpportunity=active[0]||null;
+  const stageIndex=currentOpportunity?['Requirements','Matching','Viewing','Offer','Negotiation','Booking'].indexOf(currentOpportunity.stage):-1;
+  const sequenceStatus=(targetIndex,readyIndex)=>stageIndex===targetIndex?'current':stageIndex>targetIndex?'completed':stageIndex===readyIndex?'ready':'blocked';
   const steps=[
     {code:'customer',label:'Customer',status:'completed',action:'Customer identity is reused from the Customer Master'},
     {code:'lead',label:'Lead',status:'completed',action:'Enquiry, source and responsible ownership are retained'},
     {code:'qualification',label:'Qualification',status:qualification?'completed':'current',action:qualification?`${qualification.finalTemperature} qualification recorded`:'Complete the approved qualification'},
     {code:'requirements',label:'Requirements',status:requirement?'completed':qualification?'current':'blocked',action:requirement?`Structured requirement version ${requirement.versionNo} recorded`:qualification?'Collect the customer property requirements':'Complete qualification first'},
     {code:'opportunity',label:'Opportunity',status:currentOpportunity?'completed':opportunityReady?'ready':'blocked',action:currentOpportunity?currentOpportunity.opportunityReference:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and requirements are required'},
-    {code:'matching',label:'Match',status:currentOpportunity?.stage==='Matching'?'current':currentOpportunity?.stage==='Requirements'?'ready':'not_available',action:currentOpportunity?.stage==='Requirements'?'Review matching inventory':currentOpportunity?.stage==='Matching'?currentOpportunity.nextAction:'Create an Opportunity first'},
-    ...['Viewing','Offer','Booking','Deal'].map(label=>({code:label.toLowerCase(),label,status:'not_available',action:'Available in a later Release 2 slice'}))
+    {code:'matching',label:'Match',status:currentOpportunity?sequenceStatus(1,0):'blocked',action:currentOpportunity?.stage==='Requirements'?'Review matching inventory':currentOpportunity?.stage==='Matching'?currentOpportunity.nextAction:'Create an Opportunity first'},
+    {code:'viewing',label:'Viewing',status:currentOpportunity?sequenceStatus(2,1):'blocked',action:stageIndex<2?'Shortlist inventory before scheduling':'Record attendance and customer feedback'},
+    {code:'offer',label:'Offer',status:currentOpportunity?.acceptedOfferCount?'completed':currentOpportunity&&[3,4].includes(stageIndex)?'current':stageIndex===2?'ready':'blocked',action:currentOpportunity?.acceptedOfferCount?'Accepted exact revision is ready for reservation':'Create and negotiate immutable offer revisions'},
+    {code:'booking',label:'Booking',status:currentOpportunity?.activeBookingCount?'current':currentOpportunity?.acceptedOfferCount?'ready':'blocked',action:currentOpportunity?.activeBookingCount?'Monitor reservation expiry and evidence':currentOpportunity?.acceptedOfferCount?'Create an explicit reservation':'An accepted exact offer revision is required'},
+    {code:'deal',label:'Deal',status:'not_available',action:'Available in a later Release 2 slice'}
   ];
   res.json({lead,requirement,qualification,opportunities,steps,currentOpportunity,
     canCoordinateAssignment:canAssignLead(req.broker,lead),authoritativeSources:{customer:'Customer identity and contact details',lead:'Enquiry, source, campaign, requirement and qualification',opportunity:'Pursuit stage, owner and next action',listing:'Property facts and availability'}});
