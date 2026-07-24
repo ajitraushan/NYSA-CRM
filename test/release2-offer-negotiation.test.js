@@ -64,7 +64,9 @@ test('Opportunity UI presents one clear immutable offer and negotiation flow',()
   for(const marker of ['Create Offer Revision 1 and branded PDF','Review Revision','Record sending this exact revision','Material correction / revision reason','Negotiation timeline - latest first','Reason (required for rejection or withdrawal)','All immutable offer revisions','Draft - not sent','Customer confirmed receipt (recorded by agent)','Recipient name','recipientEmail','recipientPhone','Inventory remains available','R2.3B','No property is ready for an offer','Viewing-feedback prerequisite confirmed','Offer created without prior viewing-feedback evidence','writable&&governedEvidence&&offer.status'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/data-business-amount/);
   assert.match(ui,/completedViewingListings/);
-  assert.match(page,/offer-ui\.js\?v=r2\.3a-dev39-3/);
+  assert.match(page,/offer-ui\.js\?v=r2\.3a-dev39-4/);
   assert.match(app,/bindOfferWorkspace/);
-  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','opportunity-flow-sequence','Viewing completed - customer feedback recorded','This property cannot proceed to Offer until customer feedback is saved'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','4. Negotiation','opportunity-flow-sequence','data-flow-step="inventory"','data-flow-step="viewing"','data-flow-step="offer"','data-flow-step="negotiation"','showFlowStep','Viewing completed - customer feedback recorded','This property cannot proceed to Offer until customer feedback is saved'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['data-flow-pane="offer negotiation"','flow-offer-only','flow-negotiation-only'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(page,/offer-workspace\.flow-show-negotiation \.flow-offer-only/);
 });
