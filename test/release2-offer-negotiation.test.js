@@ -51,6 +51,7 @@ test('R2.3A migration and API preserve immutable exact-document negotiation evid
   assert.match(routes,/exact generated document/);
   assert.match(routes,/Complete the property viewing and record customer feedback/);
   assert.match(routes,/organization_settings WHERE status='active'/);
+  assert.match(routes,/must contain an approved JPEG or PNG logo/);
   assert.match(routes,/recipientName/);
 });
 

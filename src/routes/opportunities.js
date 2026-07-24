@@ -242,6 +242,9 @@ async function offerContext(req,offerId,client){
 async function createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input,revisionNumber,supersedesRevisionId}){
   const organization=await one("SELECT * FROM organization_settings WHERE status='active' LIMIT 1",[],client);
   if(!organization)throw Object.assign(new Error('Activate the approved NYSA organization profile before generating an offer letter'),{status:409});
+  if(!organization.logoStorageKey||!['image/jpeg','image/png'].includes(organization.logoMediaType)){
+    throw Object.assign(new Error('The active NYSA organization profile must contain an approved JPEG or PNG logo before generating an offer letter'),{status:409});
+  }
   const logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:null,
     revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
     pdf=makeOfferPdf({offer,revision,opportunity,customer,listing,agent:req.broker,organization,logo}),storageKey=await savePrivate(pdf,'.pdf'),
