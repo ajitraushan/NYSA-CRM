@@ -677,7 +677,7 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
     if(!roleAllowed)return{code:403,error:`This item is assigned to the ${item.responsibleRole.replaceAll('_',' ')} role`};
     if(status==='completed'&&item.evidenceRequired&&!evidenceReference)return{code:400,error:'Evidence reference is required to complete this item'};
     const updated=await one(`UPDATE deal_checklist_items SET status=$1,evidence_reference=$2,
-      completed_by=CASE WHEN $1='completed' THEN $3 ELSE NULL END,completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,
+      completed_by=CASE WHEN $1='completed' THEN $3::uuid ELSE NULL END,completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,
       version=version+1 WHERE id=$4 AND version=$5 RETURNING *`,
       [status,status==='completed'?evidenceReference:null,req.broker.id,item.id,item.version],client);
     await execute("UPDATE deals SET status='completion_in_progress',version=version+1,updated_at=NOW() WHERE id=$1 AND status='draft'",[deal.id],client);

@@ -45,6 +45,7 @@ test('R2.4A migration, API and workspace preserve exact commercial evidence and 
   assert.match(migration,/deal_parties/);
   assert.match(routes,/A Deal can only start from an active governed reservation/);
   assert.match(routes,/Complete mandatory Deal parties and completion checklist/);
+  assert.match(routes,/THEN \$3::uuid ELSE NULL END/);
   assert.match(ui,/Closure readiness/);
   assert.match(ui,/Closed Won is deliberately unavailable in R2\.4A/);
   assert.match(correction,/DROP CONSTRAINT opportunities_stage_check/);
