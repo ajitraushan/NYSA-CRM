@@ -48,6 +48,9 @@ test('R2.4A migration, API and workspace preserve exact commercial evidence and 
   assert.match(routes,/THEN \$3::uuid ELSE NULL END/);
   assert.match(ui,/Closure readiness/);
   assert.match(ui,/Closed Won is deliberately unavailable in R2\.4A/);
+  assert.match(ui,/dealEditable=writable&&\['draft','completion_in_progress'\]\.includes\(deal\.status\)/);
+  assert.match(ui,/More actions: add another transaction party \(optional\)/);
+  assert.match(ui,/Transaction parties are locked because this Deal has entered approval or closure/);
   assert.match(correction,/DROP CONSTRAINT opportunities_stage_check/);
   assert.match(correction,/'Deal'/);
   assert.match(app,/opportunity-source-evidence/);

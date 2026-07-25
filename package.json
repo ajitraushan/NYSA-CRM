@@ -1,6 +1,6 @@
 {
   "name": "nysa-crm",
-  "version": "2.0.0-dev.41.2",
+  "version": "2.0.0-dev.41.3",
   "description": "NYSA CORE Release 2 development - additive opportunity pipeline on the accepted Release 1.1 foundation",
   "type": "module",
   "main": "app.cjs",
