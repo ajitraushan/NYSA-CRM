@@ -123,11 +123,21 @@ r.get('/listings', async (req, res) => {
   };
   const rows = await many(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,
     b.team_id AS posted_by_team_id,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
+    reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    legacy_offer.opportunity_id AS legacy_reconciliation_opportunity_id,
+    legacy_offer.opportunity_reference AS legacy_reconciliation_opportunity_reference,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
     0::int AS incomplete_bulk_unit_count,
     (SELECT COUNT(*)::int FROM comments c WHERE c.listing_id = l.id AND c.deleted_at IS NULL) AS comment_count,
     (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
+      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT o.id AS opportunity_id,o.opportunity_reference FROM offers f
+      JOIN opportunities o ON o.id=f.opportunity_id WHERE f.listing_id=l.id AND f.status='accepted'
+      ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
     WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest}`, params);
   res.json({ count: rows.length, listings: rows.map(withDiscount) });
 });
@@ -176,10 +186,21 @@ r.get('/listings-approval-queue',async(req,res)=>{
 
 r.get('/listings/:id', async (req, res) => {
   const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
+    reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    legacy_offer.opportunity_id AS legacy_reconciliation_opportunity_id,
+    legacy_offer.opportunity_reference AS legacy_reconciliation_opportunity_reference,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
     0::int AS incomplete_bulk_unit_count,
     (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
-    FROM listings l JOIN brokers b ON b.id = l.posted_by WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
+    FROM listings l JOIN brokers b ON b.id = l.posted_by
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
+      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT o.id AS opportunity_id,o.opportunity_reference FROM offers f
+      JOIN opportunities o ON o.id=f.opportunity_id WHERE f.listing_id=l.id AND f.status='accepted'
+      ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
+    WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if(listing.workflowStatus!=='approved'&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This draft is outside your inventory scope'});
   const workflowHistory=await many(`SELECT a.action,a.timestamp,a.details,b.name AS performed_by_name FROM audit_log a JOIN brokers b ON b.id=a.performed_by
@@ -292,6 +313,8 @@ r.patch('/listings/:id/status', async (req, res) => {
   if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Submit and approve the listing before changing operational availability'});
   const { status, closedReason } = req.body || {};
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if(status==='Reserved')return res.status(409).json({error:'Reserved status is created only by the governed Booking workflow'});
+  if(listing.status==='Reserved')return res.status(409).json({error:'Reserved status cannot be cleared manually. Release the active Booking or use the manager-only legacy reconciliation shown in the Opportunity'});
   if (status === 'Closed' && !CLOSED_REASONS.includes(closedReason)) return res.status(400).json({ error: 'Closing requires a reason: Sold, Withdrawn or Expired' });
   let updated = status === 'Closed'
     ? await one('UPDATE listings SET status=$1, closed_reason=$2, closed_at=NOW(), updated_at=NOW() WHERE id=$3 RETURNING *', [status,closedReason,listing.id])

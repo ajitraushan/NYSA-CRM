@@ -17,8 +17,11 @@ test('booking transitions require active reservation reasons and actual expiry',
   assert.equal(validateBookingTransition('reserved',{toStatus:'released',reason:'Deposit refunded'}).value.toStatus,'released');
 });
 test('R2.3B migration and API make reservation explicit conflict-safe and auditable',()=>{
-  const sql=read('src/migrations/046_release2_booking_reservation.sql'),routes=read('src/routes/opportunities.js'),ui=read('public/offer-ui.js');
+  const sql=read('src/migrations/046_release2_booking_reservation.sql'),routes=read('src/routes/opportunities.js'),ui=read('public/offer-ui.js'),
+    listings=read('src/routes/listings.js'),app=read('public/app.js');
   for(const marker of ['CREATE TABLE bookings','CREATE TABLE booking_status_history','bookings_active_listing_uq','inventory_status_before','evidence_document_version_id','booking_status_history_immutable'])assert.match(sql,new RegExp(marker));
   for(const marker of ["/crm/offers/:offerId/bookings","/crm/bookings/:bookingId/status","/crm/offers/:offerId/reservation-reconciliation","legacy_reservation_reconciled","No active or historical governed Booking record","FOR UPDATE OF b,li","current_inventory_status","status='Reserved'","accepted_offer_revision_id","Reservation evidence document is required","active_booking_reference","active_booking_opportunity_id","Inventory is already reserved under","Only the maintained manager for this Opportunity","R2.3B enables explicit booking and reservation"])assert.match(routes,new RegExp(marker));
   for(const marker of ['Booking and reservation','Create explicit reservation','Reservation evidence','Release reservation','Cancel reservation','Inventory is reserved explicitly','Exact accepted offer revision','Inventory already reserved','Manager action required','Open blocking Opportunity','Legacy Reserved status has no Booking record','Reconcile legacy status','e.g. 20K or 20,000','installBusinessAmountInputs'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['active_booking_reference','legacy_reconciliation_opportunity_id','Reserved status is created only by the governed Booking workflow','Reserved status cannot be cleared manually'])assert.match(listings,new RegExp(marker));
+  for(const marker of ['Inventory blocked by governed reservation','Legacy Reserved status has no Booking record','inventory-open-booking-opportunity','inventory-open-reconciliation-opportunity'])assert.match(app,new RegExp(marker));
 });

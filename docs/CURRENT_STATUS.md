@@ -966,6 +966,21 @@ Use:
 - No database migration is required; the baseline remains
   `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
   pending. Production is unchanged.
+
+## Release 2.3B Inventory reservation alignment - local build
+
+- Version `2.0.0-dev.40.6` exposes the authoritative reservation condition in both
+  Inventory cards and Inventory details.
+- A governed reservation shows its Booking reference, owning Opportunity and expiry,
+  with a direct action to open the Opportunity for authorized CRM users. A legacy
+  Reserved flag is labelled separately with its manager-reconciliation destination.
+- Ordinary Inventory maintenance can no longer set or clear `Reserved`; the browser
+  removes that manual choice and the server rejects direct attempts. Only governed
+  Booking actions or the audited manager-only legacy reconciliation can change this
+  state.
+- No database migration is required; the baseline remains
+  `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
+  pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in

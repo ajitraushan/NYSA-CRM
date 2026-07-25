@@ -1100,6 +1100,9 @@ async function loadListings() {
 }
 
 function cardHTML(l) {
+  const reservationSummary=l.status==='Reserved'?(l.activeBookingReference
+    ?`<div class="proposal-readiness blocked"><b>Blocked by ${esc(l.activeBookingReference)}</b><span>Opportunity ${esc(l.activeBookingOpportunityReference)} · until ${fmtDate(l.activeBookingExpiresAt)}</span></div>`
+    :'<div class="proposal-readiness blocked"><b>Legacy Reserved status</b><span>No governed Booking exists · manager reconciliation required</span></div>'):'';
   return `
     <div class="card" data-id="${esc(l.id)}">
     ${l.discountPercent > 0 ? `<div class="discount-tag">−${l.discountPercent}% vs ref</div>` : ''}
@@ -1118,6 +1121,7 @@ function cardHTML(l) {
       <span class="badge">${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus||'Approved')}</span>
       ${l.paymentPlanType ? `<span class="badge">${esc(l.paymentPlanType)}</span>` : ''}
     </div>
+    ${reservationSummary}
     <div class="comment-ct"><span>${l.commentCount || 0} comments</span><span>Listed by ${esc(l.postedByName)}</span><b>View details →</b></div>
   </div>`;
 }
@@ -1142,6 +1146,9 @@ async function openDetail(id,{afterWorkflow=null}={}) {
     l.onHandoverPercent != null ? l.onHandoverPercent + '% on handover' : null,
     l.postHandoverYears != null ? l.postHandoverYears + ' yrs post-handover' : null
   ].filter(Boolean).join(' · ');
+  const reservationBanner=l.status==='Reserved'?(l.activeBookingReference
+    ?`<div class="proposal-readiness blocked"><b>Inventory blocked by governed reservation ${esc(l.activeBookingReference)}</b><span>Owning Opportunity ${esc(l.activeBookingOpportunityReference)} · expires ${fmtDate(l.activeBookingExpiresAt)}. Release, expiry or cancellation must be recorded in that Opportunity by its maintained manager.</span>${!['listing_agent','accountant'].includes(ME.jobRole)?`<button class="btn btn-sm" id="inventory-open-booking-opportunity">Open owning Opportunity</button>`:''}</div>`
+    :`<div class="proposal-readiness blocked"><b>Legacy Reserved status has no Booking record</b><span>This cannot be cleared through ordinary Inventory maintenance. The maintained manager must reconcile it from the accepted Opportunity with a reason.</span>${isCrmLeader()&&l.legacyReconciliationOpportunityId?`<button class="btn btn-sm" id="inventory-open-reconciliation-opportunity">Open Opportunity ${esc(l.legacyReconciliationOpportunityReference)}</button>`:''}</div>`):'';
   const o = overlay(`
   <div class="modal listing-detail-modal">
     <button class="close-x">✕</button>
@@ -1159,6 +1166,7 @@ async function openDetail(id,{afterWorkflow=null}={}) {
       <span class="badge status-${esc(l.status.replace(' ', '.'))}">${esc(l.status)}${l.closedReason ? ' · ' + esc(l.closedReason) : ''}</span>
       <span class="badge tier">${esc(l.exclusivityTier)}</span>
     </div>
+    ${reservationBanner}
       <span class="badge">${esc(LISTING_WORKFLOW_LABELS[l.workflowStatus]||l.workflowStatus||'Approved')}</span>
     <div class="kv-grid">
       <div><b>Type</b>${esc(l.propertyType)}</div>
@@ -1178,11 +1186,11 @@ async function openDetail(id,{afterWorkflow=null}={}) {
     ${canEditListing(l) ? `
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-sm" id="d-edit">Edit listing</button>
-      ${l.status !== 'Closed' ? `
+      ${l.status !== 'Closed'&&l.status!=='Reserved' ? `
         <select id="d-status" style="width:auto" class="btn-sm">
-          ${STATUSES.filter(s => s !== 'Closed').map(s => `<option ${s === l.status ? 'selected' : ''}>${s}</option>`).join('')}
+          ${STATUSES.filter(s => !['Closed','Reserved'].includes(s)).map(s => `<option ${s === l.status ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
-        <button class="btn btn-sm" id="d-close">Mark closed…</button>` : `<button class="btn btn-sm" id="d-reopen">Reopen as Available</button>`}
+        <button class="btn btn-sm" id="d-close">Mark closed…</button>` : l.status==='Closed'?`<button class="btn btn-sm" id="d-reopen">Reopen as Available</button>`:'<span class="tool-note">Reserved availability is controlled from Booking & reservation.</span>'}
       ${ME.role === 'admin' ? '<button class="btn btn-sm btn-danger" id="d-archive">Archive (soft delete)</button>' : ''}
     </div>` : ''}
     <div class="modal-actions" data-listing-workflow>
@@ -1204,6 +1212,8 @@ async function openDetail(id,{afterWorkflow=null}={}) {
   </div>`);
 
   $('#d-edit', o)?.addEventListener('click', () => { o.remove(); openListingForm(l); });
+  $('#inventory-open-booking-opportunity',o)?.addEventListener('click',()=>{o.remove();openOpportunityDetail(l.activeBookingOpportunityId);});
+  $('#inventory-open-reconciliation-opportunity',o)?.addEventListener('click',()=>{o.remove();openOpportunityDetail(l.legacyReconciliationOpportunityId);});
   o.querySelectorAll('[data-workflow]').forEach(button=>button.addEventListener('click',async()=>{const action=button.dataset.workflow,needsReason=['request_changes','block','restore'].includes(action),reason=needsReason?prompt(action==='request_changes'?'Required correction instructions':'Required review reason'):'';if(needsReason&&!reason)return;try{await api(`/listings/${l.id}/workflow`,{method:'PATCH',body:{action,reason}});toast(action==='submit'?'Listing submitted for review':action==='approve'?'Listing approved':action==='request_changes'?'Listing returned for correction':'Listing workflow updated');o.remove();if(afterWorkflow)return afterWorkflow();ME.jobRole==='listing_agent'&&currentTab==='dashboard'?renderListingExecutiveDashboard():loadListings();}catch(err){toast(err.message);}}));
   $('#d-media',o)?.addEventListener('click',()=>openPropertyMedia(l));
   $('#d-status', o)?.addEventListener('change', async (e) => {
