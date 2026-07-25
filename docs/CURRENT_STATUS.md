@@ -993,6 +993,23 @@ Use:
   Inventory visibility and prevention of manual Reserved changes.
 - R2.3B Booking and reservation UAT is accepted. Production and the frozen Release 1.1
   candidate remain unchanged; no Production deployment has been authorized.
+
+## Release 2.4A CRM Test acceptance
+
+- Version `2.0.0-dev.41.4`, commit `9d932a0`, is deployed on CRM Test with migration
+  baseline `048_release2_deal_stage_constraint.sql`.
+- On 2026-07-25 the NYSA owner closed UAT after confirming governed Deal creation from
+  the active reservation and exact accepted Offer revision; transaction parties;
+  versioned completion checklists; Sales Agent and Manager evidence completion; the
+  exclusive Deal workspace; and the manager-review boundary that removes party-editing
+  controls while preserving the recorded parties as audit evidence.
+- The final source passes all `198/198` automated tests. R2.4A Deal foundation UAT is
+  accepted and closed.
+- Manager/Director closure authorization and authoritative Closed Won remain explicitly
+  outside this accepted foundation and are the subsequent R2.4B slice.
+- Production and the frozen Release 1.1 candidate remain unchanged; no Production
+  deployment has been authorized.
+
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
