@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
-  canReadOpportunity,canWriteOpportunity,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
+  canReadOpportunity,canWriteOpportunity,canApproveDeal,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -62,6 +62,15 @@ test('proposal approval is team-scoped for managers and company-wide for directo
   assert.equal(proposalApprovalScopeSql('l',director,[]).clause,'1=1');
   assert.equal(proposalApprovalScopeSql('l',admin,[]).clause,'1=0');
   assert.equal(proposalApprovalScopeSql('l',agent,[]).clause,'1=0');
+});
+
+test('Deal closure approval is managed-team scoped and commercial closure is Director-only',()=>{
+  const managed={assignedTeamId:'t1'},other={assignedTeamId:'t2'};
+  assert.equal(canApproveDeal(manager,managed,{dealType:'sale'}),true);
+  assert.equal(canApproveDeal(manager,other,{dealType:'sale'}),false);
+  assert.equal(canApproveDeal(manager,managed,{dealType:'commercial_sale'}),false);
+  assert.equal(canApproveDeal(director,other,{dealType:'commercial_sale'}),true);
+  assert.equal(canApproveDeal(admin,managed,{dealType:'sale'}),false);
 });
 
 test('SQL scopes are parameterized and deny accountants',()=>{

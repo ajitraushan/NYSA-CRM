@@ -9,7 +9,7 @@ r.use(requireAuth);
 
 const STATUSES = ['Available','Reserved','Under offer','Closed'];
 const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
-const CLOSED_REASONS = ['Sold','Withdrawn','Expired'];
+const CLOSED_REASONS = ['Sold','Rented','Withdrawn','Expired'];
 const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
 const EDITABLE = ['project','developer','areaId','community','propertyType','bedrooms','sizeSqft','price','referencePrice',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
@@ -315,7 +315,7 @@ r.patch('/listings/:id/status', async (req, res) => {
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
   if(status==='Reserved')return res.status(409).json({error:'Reserved status is created only by the governed Booking workflow'});
   if(listing.status==='Reserved')return res.status(409).json({error:'Reserved status cannot be cleared manually. Release the active Booking or use the manager-only legacy reconciliation shown in the Opportunity'});
-  if (status === 'Closed' && !CLOSED_REASONS.includes(closedReason)) return res.status(400).json({ error: 'Closing requires a reason: Sold, Withdrawn or Expired' });
+  if (status === 'Closed' && !CLOSED_REASONS.includes(closedReason)) return res.status(400).json({ error: 'Closing requires a reason: Sold, Rented, Withdrawn or Expired' });
   let updated = status === 'Closed'
     ? await one('UPDATE listings SET status=$1, closed_reason=$2, closed_at=NOW(), updated_at=NOW() WHERE id=$3 RETURNING *', [status,closedReason,listing.id])
     : await one('UPDATE listings SET status=$1, closed_reason=NULL, closed_at=NULL, updated_at=NOW() WHERE id=$2 RETURNING *', [status,listing.id]);

@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,canApproveDeal,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
@@ -10,7 +10,7 @@ import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offer
 import { makeOfferPdf } from '../offer-pdf.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
 import { validateBookingCreate,validateBookingTransition } from '../booking-domain.js';
-import { validateDealCreate,validateDealParty,dealClosureGates } from '../deal-domain.js';
+import { validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -124,12 +124,14 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     JOIN listings li ON li.id=b.listing_id
     JOIN document_versions dv ON dv.id=b.evidence_document_version_id JOIN brokers owner ON owner.id=b.owner_id
     WHERE b.opportunity_id=$1 ORDER BY b.created_at DESC`,[opportunity.id]);
-  const deals=await many(`SELECT d.*,b.booking_reference,f.offer_reference,r.revision_number AS accepted_revision_number,
-    li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
+  const deals=await many(`SELECT d.*,b.booking_reference,b.status AS booking_status,f.offer_reference,r.revision_number AS accepted_revision_number,
+    li.project AS listing_project,li.inventory_reference,li.status AS listing_status,owner.name AS owner_name,
+    approver.name AS approved_by_name,closer.name AS closed_by_name,
     dc.id AS checklist_id,dc.template_version_no,dc.status AS checklist_status,ct.name AS checklist_name
     FROM deals d JOIN bookings b ON b.id=d.booking_id JOIN offers f ON f.id=d.offer_id
     JOIN offer_revisions r ON r.id=d.accepted_offer_revision_id JOIN listings li ON li.id=d.listing_id
-    JOIN brokers owner ON owner.id=d.owner_id LEFT JOIN deal_checklists dc ON dc.deal_id=d.id
+    JOIN brokers owner ON owner.id=d.owner_id LEFT JOIN brokers approver ON approver.id=d.approved_by
+    LEFT JOIN brokers closer ON closer.id=d.closed_by LEFT JOIN deal_checklists dc ON dc.deal_id=d.id
     LEFT JOIN checklist_templates ct ON ct.id=dc.template_id
     WHERE d.opportunity_id=$1 ORDER BY d.created_at DESC`,[opportunity.id]);
   for(const deal of deals){
@@ -647,6 +649,9 @@ r.post('/crm/deals/:dealId/parties',async(req,res)=>{
     const {opportunity,error}=await scopedOpportunity(req,deal.opportunityId,client);if(error)return{code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your writable scope'};
     if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:'Parties cannot be changed after the Deal enters approval'};
+    if(await one(`SELECT i.id FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
+      WHERE c.deal_id=$1 AND i.required AND i.responsible_role IN ('manager','director') AND i.status='completed' LIMIT 1`,[deal.id],client))
+      return{code:409,error:'Transaction parties are locked after the Manager or Director completion review'};
     const v=checked.value;
     if(v.contactId){const params=[v.contactId],scope=contactScopeSql('c',req.broker,params);
       if(!await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params,client))return{code:400,error:'Selected Contact is unavailable or outside your scope'};}
@@ -668,7 +673,8 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
   const result=await transaction(async client=>{
     const deal=await one('SELECT * FROM deals WHERE id=$1',[req.params.dealId],client);if(!deal)return{code:404,error:'Deal not found'};
     const {opportunity,error}=await scopedOpportunity(req,deal.opportunityId,client);if(error)return{code:error[0],error:error[1]};
-    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your writable scope'};
+    if(!canWriteOpportunity(req.broker,opportunity)&&req.broker.jobRole!=='director')return{code:403,error:'Deal is outside your writable scope'};
+    if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:'Checklist evidence is locked after closure approval'};
     const item=await one(`SELECT i.* FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
       WHERE i.id=$1 AND c.deal_id=$2 FOR UPDATE OF i`,[req.params.itemId,deal.id],client);
     if(!item)return{code:404,error:'Checklist item not found'};
@@ -682,6 +688,150 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
       [status,status==='completed'?evidenceReference:null,req.broker.id,item.id,item.version],client);
     await execute("UPDATE deals SET status='completion_in_progress',version=version+1,updated_at=NOW() WHERE id=$1 AND status='draft'",[deal.id],client);
     await audit('DealChecklistItem',item.id,status,req.broker.id,{dealId:deal.id,evidenceReference:status==='completed'?evidenceReference:null},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
+r.post('/crm/deals/:dealId/approval',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion),checked=validateDealApproval(req.body||{});
+  if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
+  if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    const deal=await one(`SELECT d.*,b.status AS booking_status FROM deals d JOIN bookings b ON b.id=d.booking_id
+      WHERE d.id=$1 FOR UPDATE OF d,b`,[req.params.dealId],client);
+    if(!deal)return{code:404,error:'Deal not found'};
+    const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
+    if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
+      'Commercial Deal closure approval requires a Director':'Only the managed-team Manager or a Director may approve this Deal for closure'};
+    if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
+    if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before approving'};
+    const [parties,items]=await Promise.all([
+      many('SELECT * FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL',[deal.id],client),
+      many(`SELECT i.* FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
+        WHERE c.deal_id=$1 ORDER BY i.display_order`,[deal.id],client)
+    ]);
+    const blockers=dealClosureGates({deal,parties,items}).filter(x=>['terms','reservation','parties','checklist'].includes(x.code)&&!x.complete);
+    if(blockers.length)return{code:409,error:`Deal is not ready for closure approval: ${blockers.map(x=>x.label).join('; ')}`};
+    const updated=await one(`UPDATE deals SET status='approved',approved_by=$1,approved_at=NOW(),approval_reason=$2,
+      approval_evidence_reference=$3,version=version+1,updated_at=NOW()
+      WHERE id=$4 AND version=$5 RETURNING *`,
+      [req.broker.id,checked.value.reason,checked.value.evidenceReference,deal.id,expectedVersion],client);
+    if(!updated)return{code:409,error:'This Deal changed after it was opened; reload before approving'};
+    await execute("UPDATE deal_checklists SET status='approved' WHERE deal_id=$1",[deal.id],client);
+    await execute(`INSERT INTO deal_status_history(id,deal_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,$3,'approved',$4,$5)`,[uuid(),deal.id,deal.status,checked.value.reason,req.broker.id],client);
+    await audit('DealStatus',deal.id,'closure_approved',req.broker.id,{opportunityId:deal.opportunityId,
+      evidenceReference:checked.value.evidenceReference,reason:checked.value.reason,version:updated.version},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
+r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion),checked=validateDealCloseWon(req.body||{});
+  if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
+  if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    const deal=await one(`SELECT d.*,b.status AS booking_status,b.version AS booking_version,
+      o.stage AS opportunity_stage,o.version AS opportunity_version,li.status AS listing_status
+      FROM deals d JOIN bookings b ON b.id=d.booking_id JOIN opportunities o ON o.id=d.opportunity_id
+      JOIN listings li ON li.id=d.listing_id WHERE d.id=$1 FOR UPDATE OF d,b,o,li`,[req.params.dealId],client);
+    if(!deal)return{code:404,error:'Deal not found'};
+    const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
+    if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
+      'Commercial Deal closure requires a Director':'Only the managed-team Manager or a Director may close this Deal'};
+    if(deal.status!=='approved')return{code:409,error:'The Deal requires a separate recorded closure approval before Closed Won'};
+    if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
+    if(deal.bookingStatus!=='reserved'||deal.listingStatus!=='Reserved'||deal.opportunityStage!=='Deal')
+      return{code:409,error:`Closure records are not aligned: Booking ${deal.bookingStatus}, Inventory ${deal.listingStatus}, Opportunity ${deal.opportunityStage}`};
+    const v=checked.value,inventoryOutcome=['rental','commercial_rental'].includes(deal.dealType)?'Rented':'Sold';
+    const updated=await one(`UPDATE deals SET status='closed_won',actual_completion_at=$1,closed_by=$2,closed_at=NOW(),
+      closed_reason=$3,closure_evidence_reference=$4,version=version+1,updated_at=NOW()
+      WHERE id=$5 AND version=$6 RETURNING *`,
+      [v.actualCompletionAt,req.broker.id,v.completionNote,v.evidenceReference,deal.id,expectedVersion],client);
+    if(!updated)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
+    await execute(`UPDATE bookings SET status='completed',completed_at=NOW(),version=version+1,updated_at=NOW()
+      WHERE id=$1 AND status='reserved'`,[deal.bookingId],client);
+    await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,'reserved','completed',$3,$4)`,[uuid(),deal.bookingId,`Completed through ${deal.dealReference}`,req.broker.id],client);
+    await execute(`UPDATE listings SET status='Closed',closed_reason=$1,closed_at=NOW(),updated_at=NOW()
+      WHERE id=$2 AND status='Reserved'`,[inventoryOutcome,deal.listingId],client);
+    await execute(`UPDATE opportunities SET stage='Closed Won',next_action='Deal completed and authoritatively closed won',
+      next_action_due_at=$1,closed_at=NOW(),version=version+1,updated_at=NOW()
+      WHERE id=$2 AND stage='Deal'`,[v.actualCompletionAt,deal.opportunityId],client);
+    const stageHistoryId=uuid();
+    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,'Deal','Closed Won','deal_completed',$3,$4)`,
+      [stageHistoryId,deal.opportunityId,v.completionNote,req.broker.id],client);
+    await execute(`INSERT INTO deal_status_history(id,deal_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,'approved','closed_won',$3,$4)`,[uuid(),deal.id,v.completionNote,req.broker.id],client);
+    await audit('DealStatus',deal.id,'closed_won',req.broker.id,{opportunityId:deal.opportunityId,bookingId:deal.bookingId,
+      listingId:deal.listingId,acceptedOfferRevisionId:deal.acceptedOfferRevisionId,actualCompletionAt:v.actualCompletionAt,
+      evidenceReference:v.evidenceReference,inventoryOutcome},client);
+    await audit('OpportunityStage',stageHistoryId,'changed',req.broker.id,{opportunityId:deal.opportunityId,from:'Deal',to:'Closed Won',
+      reasonCode:'deal_completed',dealId:deal.id},client);
+    await audit('BookingStatus',deal.bookingId,'completed',req.broker.id,{dealId:deal.id,from:'reserved',to:'completed'},client);
+    await audit('Listing',deal.listingId,'closed_from_deal',req.broker.id,{dealId:deal.id,from:'Reserved',to:'Closed',closedReason:inventoryOutcome},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
+r.post('/crm/deals/:dealId/close-lost',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion),checked=validateDealCloseLost(req.body||{});
+  if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
+  if(checked.error)return res.status(400).json({error:checked.error});
+  const result=await transaction(async client=>{
+    const deal=await one(`SELECT d.*,b.status AS booking_status,b.inventory_status_before,
+      o.stage AS opportunity_stage,li.status AS listing_status
+      FROM deals d JOIN bookings b ON b.id=d.booking_id JOIN opportunities o ON o.id=d.opportunity_id
+      JOIN listings li ON li.id=d.listing_id WHERE d.id=$1 FOR UPDATE OF d,b,o,li`,[req.params.dealId],client);
+    if(!deal)return{code:404,error:'Deal not found'};
+    const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
+    if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
+      'Closing a commercial Deal lost requires a Director':'Only the managed-team Manager or a Director may close this Deal lost'};
+    if(!['draft','completion_in_progress','approved'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
+    if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
+    if(deal.bookingStatus!=='reserved'||deal.listingStatus!=='Reserved'||deal.opportunityStage!=='Deal')
+      return{code:409,error:`Closure records are not aligned: Booking ${deal.bookingStatus}, Inventory ${deal.listingStatus}, Opportunity ${deal.opportunityStage}`};
+    const v=checked.value,restoredStatus=deal.inventoryStatusBefore;
+    if(!restoredStatus||['Reserved','Closed'].includes(restoredStatus))
+      return{code:409,error:'The inventory status held before reservation is not safe to restore; reconcile the inventory before closing this Deal'};
+    const updated=await one(`UPDATE deals SET status='closed_lost',closed_by=$1,closed_at=NOW(),
+      closed_reason=$2,closure_evidence_reference=$3,version=version+1,updated_at=NOW()
+      WHERE id=$4 AND version=$5 RETURNING *`,
+      [req.broker.id,`${v.reasonCode}: ${v.reason}`,v.evidenceReference,deal.id,expectedVersion],client);
+    if(!updated)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
+    await execute(`UPDATE bookings SET status='cancelled',cancelled_at=NOW(),release_reason=$1,version=version+1,updated_at=NOW()
+      WHERE id=$2 AND status='reserved'`,[v.reason,deal.bookingId],client);
+    await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,'reserved','cancelled',$3,$4)`,[uuid(),deal.bookingId,v.reason,req.broker.id],client);
+    await execute(`UPDATE listings SET status=$1,updated_at=NOW() WHERE id=$2 AND status='Reserved'`,
+      [restoredStatus,deal.listingId],client);
+    await execute(`UPDATE opportunities SET stage='Closed Lost',lost_reason_code=$1,lost_reason=$2,
+      next_action='Transaction closed lost',next_action_due_at=NOW(),closed_at=NOW(),version=version+1,updated_at=NOW()
+      WHERE id=$3 AND stage='Deal'`,[v.reasonCode==='customer_withdrew'?'customer_withdrew':'other',v.reason,deal.opportunityId],client);
+    const stageHistoryId=uuid();
+    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,'Deal','Closed Lost',$3,$4,$5)`,
+      [stageHistoryId,deal.opportunityId,v.reasonCode,v.reason,req.broker.id],client);
+    await execute(`INSERT INTO deal_status_history(id,deal_id,from_status,to_status,reason,actor_id)
+      VALUES($1,$2,$3,'closed_lost',$4,$5)`,[uuid(),deal.id,deal.status,v.reason,req.broker.id],client);
+    await audit('DealStatus',deal.id,'closed_lost',req.broker.id,{opportunityId:deal.opportunityId,bookingId:deal.bookingId,
+      listingId:deal.listingId,reasonCode:v.reasonCode,reason:v.reason,evidenceReference:v.evidenceReference,
+      inventoryStatusFrom:'Reserved',inventoryStatusTo:restoredStatus},client);
+    await audit('OpportunityStage',stageHistoryId,'changed',req.broker.id,{opportunityId:deal.opportunityId,from:'Deal',to:'Closed Lost',
+      reasonCode:v.reasonCode,dealId:deal.id},client);
+    await audit('BookingStatus',deal.bookingId,'cancelled',req.broker.id,{dealId:deal.id,from:'reserved',to:'cancelled',reason:v.reason},client);
+    await audit('Listing',deal.listingId,'reservation_released_from_lost_deal',req.broker.id,{dealId:deal.id,
+      from:'Reserved',to:restoredStatus},client);
     return updated;
   });
   if(result.error)return res.status(result.code).json({error:result.error});
@@ -781,6 +931,38 @@ r.patch('/crm/opportunities/:id/next-action',async(req,res)=>{
   if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
+r.get('/crm/release2/reconciliation',async(req,res)=>{
+  if(req.broker.role!=='admin'&&!['manager','director'].includes(req.broker.jobRole))
+    return res.status(403).json({error:'Release-candidate reconciliation requires Manager, Director or Administrator access'});
+  const params=[],scope=opportunityScopeSql('o',req.broker,params);
+  const [opportunityStages,dealStatuses,sourceOutcomes,exceptions]=await Promise.all([
+    many(`SELECT o.stage,COUNT(*)::int AS count FROM opportunities o WHERE ${scope.clause}
+      GROUP BY o.stage ORDER BY o.stage`,params),
+    many(`SELECT d.status,COUNT(*)::int AS count,COALESCE(SUM(d.agreed_value) FILTER(WHERE d.status='closed_won'),0) AS closed_won_value
+      FROM deals d JOIN opportunities o ON o.id=d.opportunity_id WHERE ${scope.clause}
+      GROUP BY d.status ORDER BY d.status`,params),
+    many(`SELECT COALESCE(a.source,'Not recorded') AS source,COALESCE(a.campaign_code,'No campaign') AS campaign_code,
+      COUNT(DISTINCT o.id)::int AS opportunities,COUNT(DISTINCT d.id)::int AS deals,
+      COUNT(DISTINCT d.id) FILTER(WHERE d.status='closed_won')::int AS closed_won,
+      COALESCE(SUM(d.agreed_value) FILTER(WHERE d.status='closed_won'),0) AS closed_won_value
+      FROM opportunities o JOIN opportunity_attribution a ON a.opportunity_id=o.id
+      LEFT JOIN deals d ON d.opportunity_id=o.id WHERE ${scope.clause}
+      GROUP BY a.source,a.campaign_code ORDER BY opportunities DESC,a.source,a.campaign_code`,params),
+    one(`SELECT
+      COUNT(*) FILTER(WHERE a.id IS NULL)::int AS missing_attribution,
+      COUNT(*) FILTER(WHERE o.stage='Closed Won' AND (d.id IS NULL OR d.status<>'closed_won'))::int AS closed_won_without_deal,
+      COUNT(*) FILTER(WHERE d.status='closed_won' AND o.stage<>'Closed Won')::int AS deal_opportunity_mismatch,
+      COUNT(*) FILTER(WHERE (b.status='reserved' AND li.status<>'Reserved')
+        OR (b.status='completed' AND li.status<>'Closed'))::int AS booking_inventory_mismatch
+      FROM opportunities o LEFT JOIN opportunity_attribution a ON a.opportunity_id=o.id
+      LEFT JOIN deals d ON d.opportunity_id=o.id LEFT JOIN bookings b ON b.id=d.booking_id
+      LEFT JOIN listings li ON li.id=d.listing_id WHERE ${scope.clause}`,params)
+  ]);
+  const exceptionCount=Object.values(exceptions||{}).reduce((sum,value)=>sum+Number(value||0),0);
+  res.json({opportunityStages,dealStatuses,sourceOutcomes,exceptions,exceptionCount,dataAsOf:new Date(),
+    releaseCandidate:'R2.5',migrationBaseline:'049_release2_release_candidate.sql'});
+});
+
 r.get('/crm/release2/legacy-lead-review',async(req,res)=>{
   if(req.broker.role!=='admin'&&!['manager','director'].includes(req.broker.jobRole))return res.status(403).json({error:'Manager, Director or Administrator review access required'});
   const params=[],scope=leadScopeSql('l',req.broker,params);
@@ -852,7 +1034,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     {code:'booking',label:'Booking',status:opportunityCounts.deals?'completed':opportunityCounts.bookings?'current':opportunityCounts.acceptedOffers?'ready':'blocked',count:opportunityCounts.bookings,action:opportunityCounts.deals?'Governed Deal created':opportunityCounts.bookings?'Create the governed Deal and monitor reservation expiry':opportunityCounts.acceptedOffers?'Create an explicit reservation with evidence':'An accepted exact offer revision is required'},
     {code:'deal',label:'Deal',status:opportunityCounts.deals?'current':opportunityCounts.bookings?'ready':'blocked',count:opportunityCounts.deals,action:opportunityCounts.deals?'Complete mandatory parties and the exact approved checklist':'Create only from an active governed reservation'}
   ];
-  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.4A enables governed Deal, party and checklist foundation; approval and authoritative closure remain gated for R2.4B'});
+  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.5 reconciles the accepted Release 2 flow through governed approval and authoritative closure; Production remains separately gated'});
 });
 
 export default r;

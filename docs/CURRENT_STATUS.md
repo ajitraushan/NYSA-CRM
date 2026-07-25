@@ -1,5 +1,25 @@
 # NYSA CORE Current Status
 
+## Release 2.5 release-candidate consolidation local build — 2026-07-25
+
+- Version `2.0.0-dev.42` consolidates the accepted Release 2 CRM Test flow from original
+  Customer/Lead attribution through Opportunity, viewing feedback, exact Offer revision,
+  negotiation, reservation, governed Deal and authoritative outcome.
+- A managed-team Manager or Director records closure approval separately from the final
+  Closed Won action. Commercial Deal approval and closure are Director-only.
+- Closed Won commits Deal, Booking, Opportunity and Inventory together: the reservation becomes
+  completed, Inventory becomes Closed with Sold or Rented reason, and exact evidence and immutable
+  histories remain attributable.
+- A controlled Closed Lost path prevents failed post-reservation transactions from becoming
+  trapped. It requires reason, explanation, evidence and confirmation, cancels the reservation,
+  restores the exact pre-reservation Inventory status and closes the Opportunity atomically.
+- The R2.5 reconciliation view and role-scoped screen expose lifecycle counts, Deal outcomes,
+  original source/campaign results and cross-module attribution, closure and inventory exceptions.
+- Migration `049_release2_release_candidate.sql` is additive to the accepted `048` baseline.
+  The complete automated suite passes 204/204 tests. CRM Test migration rehearsal and full
+  successful/failed transaction UAT remain required. Production and the frozen Release 1.1
+  candidate remain untouched.
+
 ## Release 2.3A offer and negotiation local build — 2026-07-24
 
 - Version `2.0.0-dev.39.2` corrects the first dev.39.1 CRM Test UAT findings while retaining the

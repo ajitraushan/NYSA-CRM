@@ -52,6 +52,14 @@ export function canWriteOpportunity(broker, opportunity) {
   return canReadOpportunity(broker,opportunity) && !isCrmReadOnly(broker) && broker.jobRole !== 'listing_agent';
 }
 
+export function canApproveDeal(broker,opportunity,deal) {
+  if (!hasInternalCrmIdentity(broker)) return false;
+  if (broker.jobRole === 'director') return true;
+  if (broker.jobRole !== 'manager' || ['commercial_sale','commercial_rental'].includes(deal?.dealType)) return false;
+  const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
+  return managedTeams.includes(opportunity?.assignedTeamId);
+}
+
 export function canCreateOpportunity(broker, lead) {
   return Boolean(canWriteLead(broker,lead) && ['admin','sales_agent','manager'].includes(broker.jobRole));
 }
