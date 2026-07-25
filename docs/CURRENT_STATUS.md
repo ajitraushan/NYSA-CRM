@@ -981,6 +981,18 @@ Use:
 - No database migration is required; the baseline remains
   `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
   pending. Production is unchanged.
+
+## Release 2.3B CRM Test acceptance
+
+- Version `2.0.0-dev.40.6`, commit `bb95521`, is deployed on CRM Test with migration
+  baseline `046_release2_booking_reservation.sql`.
+- On 2026-07-25 the NYSA owner confirmed all focused cycles passed: governed Booking
+  creation and inventory blocking, shared amount parsing/formatting, explicit manager
+  release/cancellation control, actionable Booking and Opportunity references,
+  manager-only reconciliation of legacy Reserved inventory, restored-status handling,
+  Inventory visibility and prevention of manual Reserved changes.
+- R2.3B Booking and reservation UAT is accepted. Production and the frozen Release 1.1
+  candidate remain unchanged; no Production deployment has been authorized.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
