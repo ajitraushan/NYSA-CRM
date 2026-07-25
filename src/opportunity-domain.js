@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 export const OPPORTUNITY_STAGES=['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Closed Won','Closed Lost'];
 export const R2_2_ENABLED_STAGES=['Requirements','Matching','Viewing','Closed Lost'];
 export const R2_3A_ENABLED_STAGES=['Requirements','Matching','Viewing','Offer','Negotiation','Closed Lost'];
+export const R2_4_ENABLED_STAGES=['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Deal','Closed Won','Closed Lost'];
 export const OPPORTUNITY_LOST_REASONS=['customer_withdrew','no_suitable_property','budget_or_finance','timing_changed','competitor','duplicate_pursuit','other'];
 export const OPPORTUNITY_TRANSACTION_TYPES=['Sale','Rental','Off-plan','Commercial'];
 

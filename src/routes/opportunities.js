@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
@@ -10,6 +10,7 @@ import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offer
 import { makeOfferPdf } from '../offer-pdf.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
 import { validateBookingCreate,validateBookingTransition } from '../booking-domain.js';
+import { validateDealCreate,validateDealParty,dealClosureGates } from '../deal-domain.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -113,7 +114,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     ]);
     for(const offer of offers){offer.revisions=revisions.filter(x=>x.offerId===offer.id);offer.events=events.filter(x=>x.offerId===offer.id);}
   }
-  const bookings=await many(`SELECT b.*,f.offer_reference,r.revision_number AS accepted_revision_number,
+  const bookings=await many(`SELECT b.*,f.offer_reference,f.offer_type,r.revision_number AS accepted_revision_number,
     li.project AS listing_project,li.inventory_reference,
     dv.file_name AS evidence_file_name,dv.file_hash AS evidence_file_hash,owner.name AS owner_name,
     COALESCE((SELECT json_agg(json_build_object('id',h.id,'fromStatus',h.from_status,'toStatus',h.to_status,
@@ -123,7 +124,27 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     JOIN listings li ON li.id=b.listing_id
     JOIN document_versions dv ON dv.id=b.evidence_document_version_id JOIN brokers owner ON owner.id=b.owner_id
     WHERE b.opportunity_id=$1 ORDER BY b.created_at DESC`,[opportunity.id]);
-  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers,bookings});
+  const deals=await many(`SELECT d.*,b.booking_reference,f.offer_reference,r.revision_number AS accepted_revision_number,
+    li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
+    dc.id AS checklist_id,dc.template_version_no,dc.status AS checklist_status,ct.name AS checklist_name
+    FROM deals d JOIN bookings b ON b.id=d.booking_id JOIN offers f ON f.id=d.offer_id
+    JOIN offer_revisions r ON r.id=d.accepted_offer_revision_id JOIN listings li ON li.id=d.listing_id
+    JOIN brokers owner ON owner.id=d.owner_id LEFT JOIN deal_checklists dc ON dc.deal_id=d.id
+    LEFT JOIN checklist_templates ct ON ct.id=dc.template_id
+    WHERE d.opportunity_id=$1 ORDER BY d.created_at DESC`,[opportunity.id]);
+  for(const deal of deals){
+    [deal.parties,deal.checklistItems]=await Promise.all([
+      many(`SELECT dp.*,COALESCE(c.full_name,co.name) AS party_name,c.email AS contact_email,c.phone AS contact_phone
+        FROM deal_parties dp LEFT JOIN contacts c ON c.id=dp.contact_id LEFT JOIN companies co ON co.id=dp.company_id
+        WHERE dp.deal_id=$1 ORDER BY dp.effective_to NULLS FIRST,dp.effective_from`,[deal.id]),
+      many(`SELECT i.*,assignee.name AS assignee_name,completed.name AS completed_by_name,waiver.name AS waived_by_name
+        FROM deal_checklist_items i LEFT JOIN brokers assignee ON assignee.id=i.assignee_id
+        LEFT JOIN brokers completed ON completed.id=i.completed_by LEFT JOIN brokers waiver ON waiver.id=i.waived_by
+        WHERE i.deal_checklist_id=$1 ORDER BY i.display_order`,[deal.checklistId])
+    ]);
+    deal.closureGates=dealClosureGates({deal,parties:deal.parties,items:deal.checklistItems});
+  }
+  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers,bookings,deals});
 });
 
 r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{
@@ -557,6 +578,116 @@ r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
   res.json(result);
 });
 
+r.get('/crm/opportunities/:id/deal-party-options',async(req,res)=>{
+  const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
+  const contactParams=[],contactScope=contactScopeSql('c',req.broker,contactParams),companyParams=[],companyScope=companyScopeSql('co',req.broker,companyParams);
+  const [contacts,companies]=await Promise.all([
+    many(`SELECT c.id,c.full_name,c.email,c.phone FROM contacts c WHERE c.archived_at IS NULL AND ${contactScope.clause} ORDER BY c.full_name`,contactScope.params),
+    many(`SELECT co.id,co.name,co.email,co.phone FROM companies co WHERE co.status='active' AND ${companyScope.clause} ORDER BY co.name`,companyScope.params)
+  ]);
+  if(!contacts.some(x=>x.id===opportunity.contactId))contacts.unshift({id:opportunity.contactId,fullName:opportunity.contactName,email:opportunity.contactEmail,phone:opportunity.contactPhone});
+  res.json({contacts,companies});
+});
+
+r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const booking=await one(`SELECT b.*,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,o.assigned_team_id,
+      o.stage AS opportunity_stage,o.contact_id,c.full_name AS contact_name,f.offer_type,r.amount AS accepted_amount,r.currency AS accepted_currency
+      FROM bookings b JOIN opportunities o ON o.id=b.opportunity_id JOIN contacts c ON c.id=o.contact_id
+      JOIN offers f ON f.id=b.offer_id JOIN offer_revisions r ON r.id=b.accepted_offer_revision_id
+      WHERE b.id=$1 FOR UPDATE OF b,o`,[req.params.bookingId],client);
+    if(!booking)return{code:404,error:'Booking not found'};
+    const opportunity=await opportunityWithParticipants(booking.opportunityId,client);
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Booking is outside your writable scope'};
+    if(booking.status!=='reserved')return{code:409,error:'A Deal can only start from an active governed reservation'};
+    const existing=await one('SELECT deal_reference FROM deals WHERE opportunity_id=$1 OR booking_id=$2',[booking.opportunityId,booking.id],client);
+    if(existing)return{code:409,error:`Deal ${existing.dealReference} already governs this Opportunity and reservation`};
+    const checked=validateDealCreate(req.body||{},{offerType:booking.offerType,agreedValue:booking.acceptedAmount,currency:booking.acceptedCurrency});
+    if(checked.error)return{code:400,error:checked.error};
+    const template=await one("SELECT * FROM checklist_templates WHERE deal_type=$1 AND status='approved'",[checked.value.dealType],client);
+    if(!template)return{code:409,error:`No approved completion checklist exists for ${checked.value.dealType.replaceAll('_',' ')}`};
+    const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code;
+    const counter=await one(`INSERT INTO deal_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
+      DO UPDATE SET last_value=deal_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
+    const dealId=uuid(),dealReference=`NYSA-DL-${period}-${String(counter.lastValue).padStart(6,'0')}`,v=checked.value;
+    const deal=await one(`INSERT INTO deals(id,deal_reference,opportunity_id,booking_id,listing_id,offer_id,accepted_offer_revision_id,
+      deal_type,agreed_value,currency,target_completion_at,owner_id,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [dealId,dealReference,booking.opportunityId,booking.id,booking.listingId,booking.offerId,booking.acceptedOfferRevisionId,
+        v.dealType,v.agreedValue,v.currency,v.targetCompletionAt,booking.opportunityOwnerId,req.broker.id],client);
+    const customerRole=['rental','commercial_rental'].includes(v.dealType)?'tenant':'buyer',side='buyer_side';
+    await execute(`INSERT INTO deal_parties(id,deal_id,contact_id,party_role,side,representation,is_primary,source_evidence,created_by)
+      VALUES($1,$2,$3,$4,$5,'direct',TRUE,$6,$7)`,
+      [uuid(),dealId,booking.contactId,customerRole,side,`Originating Opportunity customer: ${booking.contactName}`,req.broker.id],client);
+    const checklistId=uuid();
+    await execute(`INSERT INTO deal_checklists(id,deal_id,template_id,template_version_no) VALUES($1,$2,$3,$4)`,
+      [checklistId,dealId,template.id,template.versionNo],client);
+    await execute(`INSERT INTO deal_checklist_items(id,deal_checklist_id,template_item_id,item_code,label,responsible_role,required,evidence_required,display_order)
+      SELECT gen_random_uuid(),$1,id,item_code,label,responsible_role,required,evidence_required,display_order
+      FROM checklist_template_items WHERE template_id=$2 ORDER BY display_order`,[checklistId,template.id],client);
+    await execute(`INSERT INTO deal_status_history(id,deal_id,to_status,reason,actor_id)
+      VALUES($1,$2,'draft','Governed Deal created from active reservation and exact accepted offer revision',$3)`,[uuid(),dealId,req.broker.id],client);
+    await execute(`UPDATE opportunities SET stage='Deal',next_action='Complete mandatory Deal parties and completion checklist',
+      next_action_due_at=$1,version=version+1,updated_at=NOW() WHERE id=$2`,[v.targetCompletionAt,booking.opportunityId],client);
+    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,$3,'Deal','deal_created',$4,$5)`,
+      [uuid(),booking.opportunityId,booking.opportunityStage,`Deal ${dealReference} created from active reservation`,req.broker.id],client);
+    await audit('Deal',dealId,'created',req.broker.id,{dealReference,bookingId:booking.id,acceptedOfferRevisionId:booking.acceptedOfferRevisionId,
+      checklistTemplateId:template.id,checklistTemplateVersion:template.versionNo},client);
+    return deal;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.status(201).json(result);
+});
+
+r.post('/crm/deals/:dealId/parties',async(req,res)=>{
+  const checked=validateDealParty(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
+  try{const result=await transaction(async client=>{
+    const deal=await one('SELECT * FROM deals WHERE id=$1',[req.params.dealId],client);if(!deal)return{code:404,error:'Deal not found'};
+    const {opportunity,error}=await scopedOpportunity(req,deal.opportunityId,client);if(error)return{code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your writable scope'};
+    if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:'Parties cannot be changed after the Deal enters approval'};
+    const v=checked.value;
+    if(v.contactId){const params=[v.contactId],scope=contactScopeSql('c',req.broker,params);
+      if(!await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params,client))return{code:400,error:'Selected Contact is unavailable or outside your scope'};}
+    if(v.companyId){const params=[v.companyId],scope=companyScopeSql('co',req.broker,params);
+      if(!await one(`SELECT co.id FROM companies co WHERE co.id=$1 AND co.status='active' AND ${scope.clause}`,scope.params,client))return{code:400,error:'Selected Company is unavailable or outside your scope'};}
+    const party=await one(`INSERT INTO deal_parties(id,deal_id,contact_id,company_id,party_role,side,representation,is_primary,source_evidence,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [uuid(),deal.id,v.contactId,v.companyId,v.partyRole,v.side,v.representation,v.isPrimary,v.sourceEvidence,req.broker.id],client);
+    await execute("UPDATE deals SET status='completion_in_progress',version=version+1,updated_at=NOW() WHERE id=$1 AND status='draft'",[deal.id],client);
+    await audit('DealParty',party.id,'added',req.broker.id,{dealId:deal.id,partyRole:v.partyRole,side:v.side,contactId:v.contactId,companyId:v.companyId},client);
+    return party;
+  });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+  }catch(error){if(error.code==='23505')return res.status(409).json({error:'That active party and role are already recorded for this Deal'});throw error;}
+});
+
+r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
+  const expectedVersion=Number(req.body?.expectedVersion),status=req.body?.status,evidenceReference=clean(req.body?.evidenceReference);
+  if(!['completed','pending'].includes(status))return res.status(400).json({error:'Select completed or pending'});
+  const result=await transaction(async client=>{
+    const deal=await one('SELECT * FROM deals WHERE id=$1',[req.params.dealId],client);if(!deal)return{code:404,error:'Deal not found'};
+    const {opportunity,error}=await scopedOpportunity(req,deal.opportunityId,client);if(error)return{code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your writable scope'};
+    const item=await one(`SELECT i.* FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
+      WHERE i.id=$1 AND c.deal_id=$2 FOR UPDATE OF i`,[req.params.itemId,deal.id],client);
+    if(!item)return{code:404,error:'Checklist item not found'};
+    if(item.version!==expectedVersion)return{code:409,error:'This checklist item changed after it was opened; reload before updating it'};
+    const roleAllowed=item.responsibleRole==='sales_agent'?['sales_agent','manager'].includes(req.broker.jobRole):item.responsibleRole===req.broker.jobRole;
+    if(!roleAllowed)return{code:403,error:`This item is assigned to the ${item.responsibleRole.replaceAll('_',' ')} role`};
+    if(status==='completed'&&item.evidenceRequired&&!evidenceReference)return{code:400,error:'Evidence reference is required to complete this item'};
+    const updated=await one(`UPDATE deal_checklist_items SET status=$1,evidence_reference=$2,
+      completed_by=CASE WHEN $1='completed' THEN $3 ELSE NULL END,completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,
+      version=version+1 WHERE id=$4 AND version=$5 RETURNING *`,
+      [status,status==='completed'?evidenceReference:null,req.broker.id,item.id,item.version],client);
+    await execute("UPDATE deals SET status='completion_in_progress',version=version+1,updated_at=NOW() WHERE id=$1 AND status='draft'",[deal.id],client);
+    await audit('DealChecklistItem',item.id,status,req.broker.id,{dealId:deal.id,evidenceReference:status==='completed'?evidenceReference:null},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
 r.post('/crm/leads/:id/opportunities',async(req,res)=>{
   const checked=validateOpportunityCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   try{
@@ -682,6 +813,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id))::int AS offers,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted'))::int AS accepted_offers,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM bookings b WHERE b.opportunity_id=o.id AND b.status='reserved'))::int AS bookings,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id))::int AS deals,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
     many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
@@ -717,10 +849,10 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
     {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.viewing?'completed':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Review explainable property matches'},
     {code:'viewing',label:'Viewing',status:opportunityCounts.viewing?'current':opportunityCounts.matching?'ready':'blocked',count:opportunityCounts.viewing,action:opportunityCounts.matching?'Shortlist a property and schedule a viewing':'Record attendance, feedback and follow-up'},
     {code:'offer',label:'Offer',status:opportunityCounts.acceptedOffers?'completed':opportunityCounts.offers?'current':opportunityCounts.viewing?'ready':'blocked',count:opportunityCounts.offers,action:opportunityCounts.acceptedOffers?'Accepted offer is ready for explicit reservation':opportunityCounts.offers?'Review exact revision and negotiation timeline':'Create immutable terms from an active Opportunity'},
-    {code:'booking',label:'Booking',status:opportunityCounts.bookings?'current':opportunityCounts.acceptedOffers?'ready':'blocked',count:opportunityCounts.bookings,action:opportunityCounts.bookings?'Monitor expiry and complete the reservation requirements':opportunityCounts.acceptedOffers?'Create an explicit reservation with evidence':'An accepted exact offer revision is required'},
-    {code:'deal',label:'Deal',status:'not_available',count:0,action:'Available in a later Release 2 slice'}
+    {code:'booking',label:'Booking',status:opportunityCounts.deals?'completed':opportunityCounts.bookings?'current':opportunityCounts.acceptedOffers?'ready':'blocked',count:opportunityCounts.bookings,action:opportunityCounts.deals?'Governed Deal created':opportunityCounts.bookings?'Create the governed Deal and monitor reservation expiry':opportunityCounts.acceptedOffers?'Create an explicit reservation with evidence':'An accepted exact offer revision is required'},
+    {code:'deal',label:'Deal',status:opportunityCounts.deals?'current':opportunityCounts.bookings?'ready':'blocked',count:opportunityCounts.deals,action:opportunityCounts.deals?'Complete mandatory parties and the exact approved checklist':'Create only from an active governed reservation'}
   ];
-  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.3B enables explicit booking and reservation; Deal remains unavailable'});
+  res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.4A enables governed Deal, party and checklist foundation; approval and authoritative closure remain gated for R2.4B'});
 });
 
 export default r;

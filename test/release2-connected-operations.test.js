@@ -35,8 +35,8 @@ test('connected case and role dashboards guide users without hiding future relea
   for(const marker of ['awaiting manager assignment','Await assignment by','Manager-controlled; open Lead context only','Open Lead and review reassignment'])assert.match(routes,new RegExp(marker));
   assert.match(dashboard,/actionHint/);
   assert.doesNotMatch(dashboard,/data\.releaseBoundary/);
-  assert.match(routes,/Available in a later Release 2 slice/);
-  assert.match(routes,/R2\.3B enables explicit booking and reservation; Deal remains unavailable/);
+  assert.match(routes,/R2\.4A enables governed Deal, party and checklist foundation/);
+  assert.match(routes,/R2\.4A enables governed Deal, party and checklist foundation/);
   assert.match(dashboard,/\['opportunity','matching','viewing','offer','booking'\]\.includes\(step\)/);
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
