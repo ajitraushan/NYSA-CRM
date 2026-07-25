@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
@@ -91,11 +91,12 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
   const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
-    reservation.booking_reference AS active_booking_reference,reservation.opportunity_reference AS active_booking_opportunity_reference,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
+    reservation.opportunity_reference AS active_booking_opportunity_reference,
     reservation.expires_at AS active_booking_expires_at,
     evidence.id AS viewing_feedback_id,evidence.feedback AS viewing_feedback,evidence.updated_at AS viewing_feedback_at
     FROM offers f JOIN listings li ON li.id=f.listing_id JOIN brokers owner ON owner.id=f.owner_id
-    LEFT JOIN LATERAL (SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM bookings b
+    LEFT JOIN LATERAL (SELECT b.booking_reference,o.id AS opportunity_id,o.opportunity_reference,b.expires_at FROM bookings b
       JOIN opportunities o ON o.id=b.opportunity_id WHERE b.listing_id=f.listing_id AND b.status='reserved'
       ORDER BY b.created_at DESC LIMIT 1) reservation ON TRUE
     LEFT JOIN LATERAL (SELECT v.id,v.feedback,v.updated_at FROM viewings v
@@ -483,7 +484,13 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
     res.status(201).json(result);
   }catch(error){
     await removePrivate(storageKey);
-    if(error.code==='23505')return res.status(409).json({error:'This inventory or accepted offer already has an active reservation'});
+    if(error.code==='23505'){
+      const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM offers target
+        JOIN bookings b ON b.status='reserved' AND (b.listing_id=target.listing_id OR b.offer_id=target.id)
+        JOIN opportunities o ON o.id=b.opportunity_id WHERE target.id=$1 ORDER BY b.created_at DESC LIMIT 1`,[req.params.offerId]);
+      if(activeBooking)return res.status(409).json({error:`Inventory is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Open that Opportunity and ask its maintained manager to release, expire or cancel the reservation`});
+      return res.status(409).json({error:'A reservation conflict was detected, but its owning record could not be resolved. Reload the Opportunity before retrying; CORE has not changed the inventory'});
+    }
     throw error;
   }
 });
@@ -498,6 +505,7 @@ r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
     if(!booking)return {code:404,error:'Booking not found'};
     const opportunity=await opportunityWithParticipants(booking.opportunityId,client);
     if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Booking is outside your writable scope'};
+    if(!isManager(req.broker))return {code:403,error:'Only the maintained manager for this Opportunity may release, expire or cancel its reservation'};
     if(booking.version!==expectedVersion)return {code:409,error:'This reservation changed after it was opened; reload before updating it'};
     if(booking.currentInventoryStatus!=='Reserved')return {code:409,error:`Inventory is ${booking.currentInventoryStatus}; resolve that status conflict before changing this reservation`};
     const checked=validateBookingTransition(booking.status,{...req.body,expiresAt:booking.expiresAt});

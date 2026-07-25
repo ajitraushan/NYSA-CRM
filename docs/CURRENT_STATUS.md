@@ -938,6 +938,18 @@ Use:
 - No database migration is required; the baseline remains
   `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
   pending. Production is unchanged.
+
+## Release 2.3B actionable reservation governance correction - local build
+
+- Version `2.0.0-dev.40.4` removes the final generic reservation-conflict path.
+  Every resolvable conflict identifies its active Booking and owning Opportunity.
+- The conflict notice includes a direct action to open the blocking Opportunity.
+- Only the maintained manager for the Opportunity, within managed-team scope, or an
+  administrator can release, expire or cancel an active reservation. Agents see a
+  clear `Manager action required` state and cannot bypass the control through the API.
+- No database migration is required; the baseline remains
+  `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
+  pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
