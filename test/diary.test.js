@@ -51,7 +51,7 @@ test('My Diary combines CRM schedules with role scope and direct operating actio
   assert.doesNotMatch(ui,/data-diary-customer[\s\S]{0,500}switchTab\('customers'\)/);
   assert.match(page,/\.diary-item/);
   assert.match(page,/\.diary-conflict/);
-  assert.match(page,/app\.js\?v=r2\.3b-dev40-2/);
+  assert.match(page,/app\.js\?v=r2\.3b-dev40-3/);
   assert.match(page,/\.diary-item\{grid-template-columns:130px minmax\(0,1fr\)\}/);
   assert.match(page,/\.diary-actions\{grid-column:1\/-1;justify-content:flex-start/);
 });

@@ -91,8 +91,13 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
   const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_reference AS active_booking_opportunity_reference,
+    reservation.expires_at AS active_booking_expires_at,
     evidence.id AS viewing_feedback_id,evidence.feedback AS viewing_feedback,evidence.updated_at AS viewing_feedback_at
     FROM offers f JOIN listings li ON li.id=f.listing_id JOIN brokers owner ON owner.id=f.owner_id
+    LEFT JOIN LATERAL (SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM bookings b
+      JOIN opportunities o ON o.id=b.opportunity_id WHERE b.listing_id=f.listing_id AND b.status='reserved'
+      ORDER BY b.created_at DESC LIMIT 1) reservation ON TRUE
     LEFT JOIN LATERAL (SELECT v.id,v.feedback,v.updated_at FROM viewings v
       WHERE v.opportunity_id=f.opportunity_id AND v.listing_id=f.listing_id AND v.status='completed'
         AND NULLIF(BTRIM(v.feedback),'') IS NOT NULL AND v.updated_at<=f.created_at
@@ -437,8 +442,11 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const lockedOffer=await one('SELECT * FROM offers WHERE id=$1 FOR UPDATE',[offer.id],client);
       if(lockedOffer.status!=='accepted'||!lockedOffer.acceptedRevisionId)return {code:409,error:'Only an accepted offer with its exact accepted revision can create a reservation'};
       const listing=await one('SELECT * FROM listings WHERE id=$1 FOR UPDATE',[offer.listingId],client);
-      if(!['Available','Under offer'].includes(listing.status))return {code:409,error:`Inventory cannot be reserved because its current status is ${listing.status}`};
-      if(await one("SELECT id FROM bookings WHERE listing_id=$1 AND status='reserved' FOR UPDATE",[listing.id],client))return {code:409,error:'This inventory already has an active reservation'};
+      const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM bookings b
+        JOIN opportunities o ON o.id=b.opportunity_id WHERE b.listing_id=$1 AND b.status='reserved'
+        ORDER BY b.created_at DESC LIMIT 1 FOR UPDATE OF b`,[listing.id],client);
+      if(activeBooking)return {code:409,error:`Inventory is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Release, expire or cancel that booking before creating another reservation`};
+      if(!['Available','Under offer'].includes(listing.status))return {code:409,error:`Inventory is marked ${listing.status}, but no active booking record was found. Reconcile the inventory status before reserving; CORE will not overwrite it`};
       const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
         counter=await one(`INSERT INTO booking_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
           DO UPDATE SET last_value=booking_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),

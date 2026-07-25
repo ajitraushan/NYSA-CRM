@@ -1,7 +1,9 @@
+import { parseBusinessAmount } from './crm-domain.js';
+
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 export const BOOKING_TERMINAL_STATUSES=Object.freeze(['released','expired','cancelled']);
 export function validateBookingCreate(input={}){
-  const amount=Number(input.bookingAmount),start=new Date(input.reservationStartsAt),expiry=new Date(input.expiresAt),
+  const amount=parseBusinessAmount(input.bookingAmount),start=new Date(input.reservationStartsAt),expiry=new Date(input.expiresAt),
     currency=String(input.currency||'').trim().toUpperCase(),refundableState=input.refundableState,
     evidence=input.evidence||{};
   if(!Number.isFinite(amount)||amount<=0)return{error:'Reservation amount must be greater than zero'};

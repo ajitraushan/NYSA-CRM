@@ -924,6 +924,20 @@ Use:
   and active reservation evidence. A legacy stage label cannot falsely imply that an
   offer or negotiation record exists.
 - CRM Test deployment and focused UAT remain pending. Production is unchanged.
+
+## Release 2.3B shared amount and reservation-conflict correction - local build
+
+- Version `2.0.0-dev.40.3` applies one shared business-amount control to dynamic
+  forms across CORE. Values such as `20k`, `20 K`, `20,000` and `1.2M` are accepted,
+  interpreted consistently and comma-formatted on leaving the field.
+- Booking validation uses the same server-side amount parser, so the displayed
+  shorthand and submitted value cannot disagree.
+- An inventory conflict now identifies the active Booking reference, its Opportunity
+  and expiry, and directs the user to release, expire or cancel that reservation.
+  CORE never silently removes or overwrites the existing reservation.
+- No database migration is required; the baseline remains
+  `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
+  pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
