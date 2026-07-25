@@ -902,6 +902,15 @@ Use:
 - Release, expiry and cancellation are explicit audited actions and restore the exact
   prior inventory status. No silent inventory transition is permitted.
 - CRM Test deployment and UAT remain pending. Production is unchanged.
+
+## Release 2.3B focused workspace UX correction - local build
+
+- Version `2.0.0-dev.40.1` makes the five Opportunity operating-sequence selections
+  mutually exclusive. Selecting Inventory, Viewing, Offer, Negotiation or Booking shows
+  only that working section below the shared Opportunity context.
+- The correction explicitly controls both semantic hidden state and rendered CSS state,
+  preventing grid-based Offer or Booking layouts from overriding the selected stage.
+- CRM Test deployment and focused UAT remain pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
