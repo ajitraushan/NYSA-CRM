@@ -911,6 +911,19 @@ Use:
 - The correction explicitly controls both semantic hidden state and rendered CSS state,
   preventing grid-based Offer or Booking layouts from overriding the selected stage.
 - CRM Test deployment and focused UAT remain pending. Production is unchanged.
+
+## Release 2.3B stage clarity and reminder correction - local build
+
+- Version `2.0.0-dev.40.2` moves the general Opportunity reminder into a collapsed,
+  clearly labelled utility so it no longer appears as the content of every operational
+  stage.
+- Each stage now exposes a record-derived status in simple business language:
+  `Completed`, `In progress` or `Not completed`.
+- Selecting a stage shows one explicit next-action explanation derived from maintained
+  inventory, completed viewing feedback, exact offer delivery, negotiation acceptance
+  and active reservation evidence. A legacy stage label cannot falsely imply that an
+  offer or negotiation record exists.
+- CRM Test deployment and focused UAT remain pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in
