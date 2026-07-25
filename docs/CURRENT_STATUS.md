@@ -950,6 +950,22 @@ Use:
 - No database migration is required; the baseline remains
   `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
   pending. Production is unchanged.
+
+## Release 2.3B legacy Reserved reconciliation - local build
+
+- Version `2.0.0-dev.40.5` recognizes inventory marked `Reserved` without any
+  governed Booking as a distinct legacy-data condition rather than a normal booking
+  conflict.
+- The maintained manager for the Opportunity can explicitly restore the inventory to
+  `Under offer` or `Available` only after entering a reconciliation reason. Agents
+  see `Manager action required`.
+- The server locks the inventory, rechecks that no active Booking exists and records
+  the actor, previous and restored status, reason, Opportunity, Offer and legacy
+  evidence in the Listing audit log. It refuses reconciliation if a governed active
+  Booking exists.
+- No database migration is required; the baseline remains
+  `046_release2_booking_reservation.sql`. CRM Test deployment and focused UAT remain
+  pending. Production is unchanged.
 ## Release 1.1 area-import duplicate handling
 
 - `R1.1-AMD-001 Revision 2` is implemented locally: areas already maintained in

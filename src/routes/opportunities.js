@@ -90,7 +90,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       LEFT JOIN viewing_calendar_events cal ON cal.viewing_id=v.id AND cal.provider='google_calendar'
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
-  const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,owner.name AS owner_name,
+  const offers=await many(`SELECT f.*,li.project AS listing_project,li.inventory_reference,li.status AS listing_status,owner.name AS owner_name,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
     reservation.opportunity_reference AS active_booking_opportunity_reference,
     reservation.expires_at AS active_booking_expires_at,
@@ -493,6 +493,32 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
     }
     throw error;
   }
+});
+
+r.post('/crm/offers/:offerId/reservation-reconciliation',async(req,res)=>{
+  const restoredStatus=clean(req.body?.restoredStatus),reason=clean(req.body?.reason);
+  if(!['Available','Under offer'].includes(restoredStatus))return res.status(400).json({error:'Choose Available or Under offer as the explicit restored inventory status'});
+  if(!reason||reason.length<10)return res.status(400).json({error:'A clear reconciliation reason of at least 10 characters is required'});
+  const result=await transaction(async client=>{
+    const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
+    const opportunity={...offer,id:offer.opportunityId,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy};
+    if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Offer is outside your writable scope'};
+    if(!isManager(req.broker))return {code:403,error:'Only the maintained manager for this Opportunity may reconcile a legacy Reserved inventory status'};
+    const listing=await one('SELECT * FROM listings WHERE id=$1 FOR UPDATE',[offer.listingId],client);
+    if(!listing)return {code:404,error:'Inventory record not found'};
+    if(listing.status!=='Reserved')return {code:409,error:`Inventory is currently ${listing.status}; legacy Reserved reconciliation is not applicable`};
+    const activeBooking=await one("SELECT booking_reference FROM bookings WHERE listing_id=$1 AND status='reserved' FOR UPDATE",[listing.id],client);
+    if(activeBooking)return {code:409,error:`Inventory has active Booking ${activeBooking.bookingReference}; use the governed Booking release, expiry or cancellation action instead`};
+    const updated=await one('UPDATE listings SET status=$1,updated_at=NOW() WHERE id=$2 RETURNING *',[restoredStatus,listing.id],client);
+    await audit('Listing',listing.id,'legacy_reservation_reconciled',req.broker.id,{
+      inventoryReference:listing.inventoryReference,from:'Reserved',to:restoredStatus,reason,
+      evidence:'No active or historical governed Booking record',offerId:offer.id,opportunityId:offer.opportunityId,
+      opportunityReference:offer.opportunityReference
+    },client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
 });
 
 r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
