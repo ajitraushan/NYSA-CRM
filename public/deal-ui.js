@@ -22,7 +22,7 @@ function dealWorkspaceHTML({deals=[],bookings=[],writable}){
     <div class="deal-head"><div><span>${esc(deal.dealReference)} · ${esc(deal.dealType.replaceAll('_',' '))}</span><h4>${esc(deal.listingProject)}</h4><small>Booking ${esc(deal.bookingReference)} · exact Offer Revision ${esc(deal.acceptedRevisionNumber)}</small></div><div><b>${fmtPrice(deal.agreedValue,deal.currency)}</b><span>${esc(deal.status.replaceAll('_',' '))}</span></div></div>
     <section class="deal-gates"><h4>Closure readiness</h4>${gates.map(x=>`<div class="deal-gate ${x.complete?'complete':'blocked'}"><b>${x.complete?'✓':'!'} ${esc(x.label)}</b><span>${x.complete?'Completed':'Blocks closure'}</span></div>`).join('')}<p>Closed Won is deliberately unavailable in R2.4A. R2.4B will add governed approval and authoritative closure after these foundations pass UAT.</p></section>
     <section><h4>Transaction parties</h4>${partyRows||'<div class="empty compact">No parties recorded.</div>'}
-      ${dealEditable?`<details class="opportunity-inline-form"><summary>${requiredPartiesComplete?'More actions: add another transaction party (optional)':'Add missing required transaction party'}</summary><form id="deal-party-form" class="form-grid">
+      ${dealEditable&&!requiredPartiesComplete?`<details class="opportunity-inline-form"><summary>Add missing required transaction party</summary><form id="deal-party-form" class="form-grid">
         <div><label>Party source *</label><select name="partyKind"><option value="contact">Contact</option><option value="company">Company</option></select></div>
         <div class="span2"><label>Contact / company *</label><select name="partyId" required><option value="">Loading permitted records…</option></select></div>
         <div><label>Role *</label><select name="partyRole"><option>buyer</option><option>seller</option><option>tenant</option><option>landlord</option><option>developer</option><option value="buyer_representative">Buyer representative</option><option value="seller_representative">Seller representative</option><option value="tenant_representative">Tenant representative</option><option value="landlord_representative">Landlord representative</option><option>other</option></select></div>
@@ -30,7 +30,7 @@ function dealWorkspaceHTML({deals=[],bookings=[],writable}){
         <div><label>Representation *</label><input name="representation" value="direct" required></div>
         <div class="span2"><label>Source evidence *</label><input name="sourceEvidence" required placeholder="Maintained contact/company record, mandate, email or other source"></div>
         <label><input type="checkbox" name="isPrimary"> Primary party for this role</label><button class="btn btn-primary">Add party</button>
-      </form></details>`:'<p class="tool-note">Transaction parties are locked because this Deal has entered approval or closure.</p>'}</section>
+      </form></details>`:!dealEditable?'<p class="tool-note">Transaction parties are locked because this Deal has entered approval or closure.</p>':''}</section>
     <section><h4>${esc(deal.checklistName)} · Template version ${esc(deal.templateVersionNo)}</h4><p class="tool-note">This checklist is an exact instance of the approved template version; later template changes do not rewrite this Deal.</p>${itemRows}</section>
   </div>`;
 }
