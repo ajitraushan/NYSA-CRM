@@ -37,8 +37,9 @@ test('closure gates clearly expose missing parties, checklist and later approval
 
 test('R2.4A migration, API and workspace preserve exact commercial evidence and closure gates',()=>{
   const migration=fs.readFileSync(new URL('../src/migrations/047_release2_deal_foundation.sql',import.meta.url),'utf8');
+  const correction=fs.readFileSync(new URL('../src/migrations/048_release2_deal_stage_constraint.sql',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/opportunities.js',import.meta.url),'utf8');
-  const ui=fs.readFileSync(new URL('../public/deal-ui.js',import.meta.url),'utf8');
+  const ui=fs.readFileSync(new URL('../public/deal-ui.js',import.meta.url),'utf8'),app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   assert.match(migration,/accepted_offer_revision_id UUID NOT NULL/);
   assert.match(migration,/checklist_templates/);
   assert.match(migration,/deal_parties/);
@@ -46,4 +47,8 @@ test('R2.4A migration, API and workspace preserve exact commercial evidence and 
   assert.match(routes,/Complete mandatory Deal parties and completion checklist/);
   assert.match(ui,/Closure readiness/);
   assert.match(ui,/Closed Won is deliberately unavailable in R2\.4A/);
+  assert.match(correction,/DROP CONSTRAINT opportunities_stage_check/);
+  assert.match(correction,/'Deal'/);
+  assert.match(app,/opportunity-source-evidence/);
+  assert.match(app,/sourceEvidenceDetails\.append\(summary,attributionNote\)/);
 });
