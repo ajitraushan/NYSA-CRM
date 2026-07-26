@@ -233,25 +233,26 @@ r.get('/crm/customers/:id',async(req,res)=>{
 r.get('/crm/kyc-review-queue',async(req,res)=>{
   if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for KYC reviews'});
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||20));
-  const params=[],where=["c.archived_at IS NULL","c.kyc_status='pending_review'"];
+  const params=[],where=["c.archived_at IS NULL","c.lifecycle_status='active'","c.duplicate_review_status IN ('not_required','approved')","c.kyc_status='pending_review'"];
   if(req.broker.role!=='admin'){
     params.push(req.broker.id);
-    where.push(`(t.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
+    where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
       JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
       WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
         AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`);
   }
   if(clean(req.query.q)){
     params.push(`%${clean(req.query.q)}%`);
-    where.push(`(c.full_name ILIKE $${params.length} OR COALESCE(c.email,'') ILIKE $${params.length} OR COALESCE(c.phone,'') ILIKE $${params.length} OR COALESCE(owner.name,'') ILIKE $${params.length} OR COALESCE(t.name,'') ILIKE $${params.length})`);
+    where.push(`(c.full_name ILIKE $${params.length} OR COALESCE(c.email,'') ILIKE $${params.length} OR COALESCE(c.phone,'') ILIKE $${params.length} OR COALESCE(owner.name,'') ILIKE $${params.length} OR COALESCE(owner_team.name,membership_team.name,'') ILIKE $${params.length})`);
   }
   const from=`FROM contacts c LEFT JOIN brokers owner ON owner.id=c.owner_id
+    LEFT JOIN teams owner_team ON owner_team.id=owner.team_id
     LEFT JOIN team_memberships member_team ON member_team.broker_id=c.owner_id AND member_team.ends_at IS NULL
-    LEFT JOIN teams t ON t.id=member_team.team_id WHERE ${where.join(' AND ')}`;
+    LEFT JOIN teams membership_team ON membership_team.id=member_team.team_id WHERE ${where.join(' AND ')}`;
   const countRow=await one(`SELECT COUNT(DISTINCT c.id)::int AS count ${from}`,params);
   params.push(pageSize,(page-1)*pageSize);
   const kycReviews=await many(`SELECT DISTINCT c.id,c.full_name,c.email,c.phone,c.id_document_type,c.id_document_last4,
-    c.id_document_expiry,c.kyc_status,c.kyc_notes,c.updated_at,owner.name AS owner_name,t.name AS team_name
+    c.id_document_expiry,c.kyc_status,c.kyc_notes,c.updated_at,owner.name AS owner_name,COALESCE(owner_team.name,membership_team.name) AS team_name
     ${from} ORDER BY c.updated_at ASC,c.id LIMIT $${params.length-1} OFFSET $${params.length}`,params);
   res.json({count:Number(countRow?.count||0),page,pageSize,kycReviews});
 });
@@ -389,6 +390,8 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
     last4=reviewDecision?contact.idDocumentLast4:clean(b.idDocumentLast4)?.toUpperCase()||null,
     expiry=reviewDecision?contact.idDocumentExpiry:b.idDocumentExpiry||null,reviewNotes=clean(b.reviewNotes),
     notes=reviewDecision?[contact.kycNotes,reviewNotes?`Manager review: ${reviewNotes}`:null].filter(Boolean).join('\n')||null:clean(b.kycNotes);
+  if(canMaintain&&(contact.lifecycleStatus!=='active'||!['not_required','approved'].includes(contact.duplicateReviewStatus)))
+    return res.status(409).json({error:'KYC cannot be submitted for an inactive or unresolved duplicate Customer. A responsible Manager must approve the Customer first.'});
   if(type&&!['passport','emirates_id'].includes(type))return res.status(400).json({error:'ID type must be Passport or Emirates ID'});
   if(last4&&!/^[A-Z0-9]{4}$/.test(last4))return res.status(400).json({error:'Record only the final four letters or digits of the ID; never enter the full ID number'});
   if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
@@ -548,10 +551,11 @@ r.post('/crm/leads', async (req, res) => {
   if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
   if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
-  const contact=await one(`SELECT c.id,c.email,c.phone,c.preferred_channel,c.duplicate_review_status FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params);
+  const contact=await one(`SELECT c.id,c.email,c.phone,c.preferred_channel,c.lifecycle_status,c.duplicate_review_status FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params);
   if(!contact)
     return res.status(400).json({error:'Invalid or inaccessible contactId'});
-  if(contact.duplicateReviewStatus==='pending')return res.status(409).json({error:'This Customer is a draft awaiting duplicate resolution. A responsible Manager must approve it before a Lead can be created.'});
+  if(contact.lifecycleStatus!=='active'||!['not_required','approved'].includes(contact.duplicateReviewStatus))
+    return res.status(409).json({error:contact.duplicateReviewStatus==='rejected'?'This Customer was rejected during duplicate review and cannot be used to create a Lead. Use the approved existing Customer record instead.':'This Customer is inactive or awaiting duplicate resolution. A responsible Manager must approve it before a Lead can be created.'});
   if(!contact.email||!contact.phone||!contact.preferredChannel)return res.status(409).json({error:'Complete the existing customer email, phone and preferred channel before creating a lead'});
   if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});

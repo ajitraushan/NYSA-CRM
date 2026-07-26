@@ -13,6 +13,8 @@ test('duplicate customers become governed drafts with an explicit Manager resolu
   assert.match(routes,/duplicate_draft_created/);
   assert.match(routes,/\/crm\/contacts\/:id\/duplicate-review/);
   assert.match(routes,/A responsible Manager must approve it before a Lead can be created/);
+  assert.match(routes,/duplicateReviewStatus==='rejected'/);
+  assert.match(routes,/\!\['not_required','approved'\]\.includes\(contact\.duplicateReviewStatus\)/);
   assert.match(ui,/Create draft for duplicate review/);
   assert.match(ui,/Customers → Duplicate review/);
   assert.match(ui,/Pending duplicate review/);
@@ -22,12 +24,15 @@ test('duplicate customers become governed drafts with an explicit Manager resolu
 
 test('KYC routes honor the authoritative team manager and Manager-owned submissions verify directly',()=>{
   const routes=read('src/routes/crm.js'),ui=read('public/app.js');
-  assert.match(routes,/t\.manager_id=\$\$\{params\.length\}/);
+  assert.match(routes,/owner_team\.manager_id=\$\$\{params\.length\}/);
+  assert.match(routes,/owner_team\.id=owner\.team_id/);
+  assert.match(routes,/KYC cannot be submitted for an inactive or unresolved duplicate Customer/);
   assert.match(routes,/managerSelfVerification/);
   assert.match(routes,/kyc_manager_verified/);
   assert.match(ui,/Save and verify KYC/);
   assert.match(ui,/customer\.kycStatus==='pending_review'/);
   assert.match(ui,/Reviewer decision notes \(required for rejection or expiry\)/);
+  assert.match(ui,/Rejected duplicate Customer/);
 });
 
 test('Customer identity and Leads are company-visible but Lead work is assignment-controlled',()=>{

@@ -2,7 +2,9 @@
 
 ## Release 2.5 release-candidate consolidation local build — 2026-07-25
 
-- Version `2.0.0-dev.43` corrects the Release 2.5 customer duplicate-resolution, company-visible
+- Version `2.0.0-dev.44` prevents rejected or inactive duplicate Customers from submitting KYC
+  or creating Leads, and routes KYC reviews through both the authoritative direct team assignment
+  and governed membership records. Version `2.0.0-dev.43` corrected customer duplicate-resolution, company-visible
   Customer/Lead identity, assignment-controlled Lead work, Manager KYC, consent guidance, and
   visible customer-save confirmation findings discovered during CRM Test UAT. Version
   `2.0.0-dev.42` consolidated the accepted Release 2 CRM Test flow from original
