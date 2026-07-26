@@ -236,10 +236,10 @@ r.get('/crm/kyc-review-queue',async(req,res)=>{
   const params=[],where=["c.archived_at IS NULL","c.kyc_status='pending_review'"];
   if(req.broker.role!=='admin'){
     params.push(req.broker.id);
-    where.push(`EXISTS (SELECT 1 FROM team_memberships member
+    where.push(`(t.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
       JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
       WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
-        AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL)`);
+        AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`);
   }
   if(clean(req.query.q)){
     params.push(`%${clean(req.query.q)}%`);
@@ -272,27 +272,57 @@ r.post('/crm/contacts', async (req, res) => {
   const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
     JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
     ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
-  if(duplicates.length&&!b.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates});
+  if(duplicates.length&&!b.duplicateReviewRequested)return res.status(409).json({
+    error:'Matching customer records already use this email or phone. Review the matches, then create a draft only if this is genuinely a different person.',
+    duplicates,reviewLocation:'Customers > Duplicate review'
+  });
   const roles=Array.isArray(b.contactRoles)&&b.contactRoles.length?[...new Set(b.contactRoles)]:[b.contactType||'buyer'];
   if(roles.some(role=>!CONTACT_TYPES.includes(role)))return res.status(400).json({error:'Invalid contact role'});
   const id = uuid();
   const contact = await transaction(async client=>{
+    const duplicatePending=duplicates.length>0;
     const row=await one(`INSERT INTO contacts
       (id,full_name,email,phone,contact_type,company_name,company_id,preferred_channel,nationality,language,notes,owner_id,created_by,email_status,phone_status,public_profile_url,
-      preferred_contact_time,do_not_contact,contact_restriction_reason,source_first_seen,postal_address)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
+      preferred_contact_time,do_not_contact,contact_restriction_reason,source_first_seen,postal_address,lifecycle_status,duplicate_review_status,duplicate_match_ids)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING *`,
       [id,clean(b.fullName),identity.email,identity.phone,b.contactType||'buyer',clean(b.companyName),b.companyId||null,
        b.preferredChannel||null,clean(b.nationality),clean(b.language),clean(b.notes),ownerId,req.broker.id,identity.emailStatus,identity.phoneStatus,clean(b.publicProfileUrl),
-       clean(b.preferredContactTime),b.doNotContact?1:0,clean(b.contactRestrictionReason),clean(b.sourceFirstSeen),clean(b.postalAddress)],client);
+       clean(b.preferredContactTime),b.doNotContact?1:0,clean(b.contactRestrictionReason),clean(b.sourceFirstSeen),clean(b.postalAddress),
+       duplicatePending?'inactive':'active',duplicatePending?'pending':'not_required',duplicates.map(x=>x.id)],client);
     for(const role of roles)await execute(`INSERT INTO contact_roles (id,contact_id,role_code,created_by) VALUES ($1,$2,$3,$4)`,[uuid(),id,role,req.broker.id],client);
     if(identity.email)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
       VALUES ($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),id,String(b.email).trim(),identity.email,identity.emailStatus,req.broker.id],client);
     if(identity.phone)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
       VALUES ($1,$2,'Phone','Primary',$3,$4,$5,1,$6,$7)`,[uuid(),id,String(b.phone).trim(),identity.phone,b.whatsappEnabled||b.preferredChannel==='WhatsApp'?1:0,identity.phoneStatus,req.broker.id],client);
     if(b.companyId)await execute(`INSERT INTO company_contacts (id,company_id,contact_id,relationship_role,is_primary,created_by) VALUES ($1,$2,$3,$4,1,$5)`,[uuid(),b.companyId,id,clean(b.companyRelationshipRole)||'customer_contact',req.broker.id],client);
-    await audit('Contact',id,'created',req.broker.id,{fullName:row.fullName,duplicateReviewed:Boolean(b.duplicateReviewed)},client);return row;
+    await audit('Contact',id,duplicatePending?'duplicate_draft_created':'created',req.broker.id,
+      {fullName:row.fullName,duplicateReviewStatus:row.duplicateReviewStatus,duplicateMatchIds:duplicates.map(x=>x.id)},client);return row;
   });
   res.status(201).json({...contact,duplicateWarnings:duplicates});
+});
+
+r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for duplicate resolution'});
+  const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
+  if(!contact)return res.status(404).json({error:'Customer not found'});
+  if(contact.duplicateReviewStatus!=='pending')return res.status(409).json({error:'Only a pending duplicate draft can receive a resolution'});
+  if(req.broker.role!=='admin'){
+    const responsible=await one(`SELECT 1 AS permitted FROM brokers owner
+      LEFT JOIN teams t ON t.id=owner.team_id AND t.active=1
+      WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(
+        SELECT 1 FROM team_memberships member JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
+        WHERE member.broker_id=owner.id AND member.ends_at IS NULL AND reviewer.broker_id=$2
+          AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`,[contact.ownerId,req.broker.id]);
+    if(!responsible)return res.status(403).json({error:'This duplicate draft is outside your responsible team'});
+  }
+  const decision=clean(req.body?.decision),reviewNotes=clean(req.body?.reviewNotes);
+  if(!['approved','rejected'].includes(decision))return res.status(400).json({error:'Decision must be approved or rejected'});
+  if(!reviewNotes)return res.status(400).json({error:'Resolution notes are required'});
+  const row=await one(`UPDATE contacts SET duplicate_review_status=$1,duplicate_reviewed_at=NOW(),duplicate_reviewed_by=$2,
+    duplicate_review_notes=$3,lifecycle_status=CASE WHEN $1='approved' THEN 'active' ELSE 'inactive' END,updated_at=NOW()
+    WHERE id=$4 RETURNING *`,[decision,req.broker.id,reviewNotes,contact.id]);
+  await audit('Contact',contact.id,'duplicate_review_decided',req.broker.id,{decision,reviewNotes,duplicateMatchIds:contact.duplicateMatchIds});
+  res.json(row);
 });
 
 r.patch('/crm/contacts/:id', async (req, res) => {
@@ -351,7 +381,10 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   if(!contact)return res.status(404).json({error:'Contact not found'});
   const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id),canReview=isManager(req.broker);
   if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the contact owner or an authorized manager can maintain KYC details'});
-  const b=req.body||{},status=clean(b.kycStatus)||'unverified',reviewDecision=canReview&&['verified','expired','rejected'].includes(status),
+  const b=req.body||{},requestedStatus=clean(b.kycStatus)||'unverified',
+    managerSelfVerification=canMaintain&&canReview&&['pending_review','verified'].includes(requestedStatus),
+    status=managerSelfVerification?'verified':requestedStatus,
+    reviewDecision=canReview&&!canMaintain&&['verified','expired','rejected'].includes(status),
     type=reviewDecision?contact.idDocumentType:clean(b.idDocumentType)||null,
     last4=reviewDecision?contact.idDocumentLast4:clean(b.idDocumentLast4)?.toUpperCase()||null,
     expiry=reviewDecision?contact.idDocumentExpiry:b.idDocumentExpiry||null,reviewNotes=clean(b.reviewNotes),
@@ -361,13 +394,13 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
   if(['verified','expired','rejected'].includes(status)&&!canReview)return res.status(403).json({error:'Manager or administrator approval is required for this KYC decision'});
   if(!canMaintain&&!reviewDecision)return res.status(403).json({error:'Managers may decide a pending KYC review but cannot alter the submitted identity details'});
-  if(reviewDecision&&contact.kycStatus!=='pending_review')return res.status(409).json({error:'Only a pending KYC submission can receive a review decision'});
+  if(reviewDecision&&contact.kycStatus!=='pending_review')return res.status(409).json({error:'This KYC record is not pending review. Refresh the KYC review queue before deciding it.'});
   if(reviewDecision&&['expired','rejected'].includes(status)&&!reviewNotes)return res.status(400).json({error:'Review notes are required when rejecting or marking KYC expired'});
   if(['pending_review','verified'].includes(status)&&(!type||!last4||!expiry))return res.status(400).json({error:'ID type, masked final four and expiry date are required for KYC review'});
   const row=await one(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
     kyc_verified_at=CASE WHEN $4='verified' THEN NOW() ELSE NULL END,kyc_verified_by=CASE WHEN $4='verified' THEN $5::uuid ELSE NULL::uuid END,
     kyc_notes=$6,updated_at=NOW() WHERE id=$7 RETURNING *`,[type,last4,expiry,status,req.broker.id,notes,contact.id]);
-  await audit('Contact',contact.id,reviewDecision?'kyc_review_decided':'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry,reviewNotes});
+  await audit('Contact',contact.id,reviewDecision?'kyc_review_decided':managerSelfVerification?'kyc_manager_verified':'kyc_summary_updated',req.broker.id,{idDocumentType:type,idDocumentLast4:last4?`***${last4}`:null,kycStatus:status,expiry,reviewNotes});
   res.json(row);
 });
 
@@ -436,7 +469,7 @@ r.get('/crm/leads/:id', async (req, res) => {
       FROM lead_stage_history h JOIN brokers b ON b.id=h.changed_by
       WHERE h.lead_id=$1 ORDER BY h.changed_at`,[lead.id])
   ]);
-  res.json({ lead, activities, stageHistory, qualificationGuidance: QUALIFICATION_GUIDANCE[lead.temperature] });
+  res.json({ lead, activities, stageHistory, canWrite:canWriteLead(req.broker,lead), qualificationGuidance: QUALIFICATION_GUIDANCE[lead.temperature] });
 });
 
 async function insertCapturedLead(b, actorId, budget, client) {
@@ -483,7 +516,7 @@ r.post('/crm/leads/capture', async (req,res)=>{
   const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
     JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
     ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
-  if(duplicates.length&&!b.duplicateReviewed)return res.status(409).json({error:'Possible duplicate customer requires review',duplicates});
+  if(duplicates.length)return res.status(409).json({error:'Matching customers already exist. Select the correct existing Customer, or create a duplicate-review draft from the Customer Master before capturing a Lead.',duplicates});
   const result=await transaction(async client=>{
     const contactId=uuid(),ownerId=req.broker.id;
     const contact=await one(`INSERT INTO contacts
@@ -515,9 +548,10 @@ r.post('/crm/leads', async (req, res) => {
   if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
   if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   const contactParams=[b.contactId],contactScope=contactScopeSql('c',req.broker,contactParams);
-  const contact=await one(`SELECT c.id,c.email,c.phone,c.preferred_channel FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params);
+  const contact=await one(`SELECT c.id,c.email,c.phone,c.preferred_channel,c.duplicate_review_status FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${contactScope.clause}`,contactScope.params);
   if(!contact)
     return res.status(400).json({error:'Invalid or inaccessible contactId'});
+  if(contact.duplicateReviewStatus==='pending')return res.status(409).json({error:'This Customer is a draft awaiting duplicate resolution. A responsible Manager must approve it before a Lead can be created.'});
   if(!contact.email||!contact.phone||!contact.preferredChannel)return res.status(409).json({error:'Complete the existing customer email, phone and preferred channel before creating a lead'});
   if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});

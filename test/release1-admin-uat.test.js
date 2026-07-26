@@ -152,7 +152,7 @@ test('qualification maintenance guides business users through governed activatio
 test('customers are a primary workspace and lead KYC links to the customer master',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js'),files=read('src/routes/files-proposals.js');
   assert.match(ui,/data-tab="customers">Customers/);assert.match(ui,/renderCustomers\(\)/);
-  assert.match(ui,/Maintain customer identity, contact channels, consent and KYC once/);
+  assert.match(ui,/Customer identity is company-visible to prevent duplicates/);
   assert.match(ui,/Open customer record/);assert.match(ui,/switchTab\('customers'\)/);
   assert.doesNotMatch(ui,/id="lead-verify"/);assert.doesNotMatch(ui,/id="lead-governance"/);
   assert.match(crm,/r\.get\('\/crm\/customers\/:id'/);assert.match(crm,/canReadLead/);
@@ -161,7 +161,7 @@ test('customers are a primary workspace and lead KYC links to the customer maste
   assert.match(ui,/Create lead for this customer/);assert.match(ui,/openNewLeadForm\(id\)/);assert.match(ui,/Open customer documents/);
   assert.match(files,/r\.get\('\/crm\/customers\/:id\/documents'/);assert.match(files,/d\.lead_id IN \(SELECT id FROM leads WHERE contact_id=\$1\)/);
   assert.match(ui,/contactId:customer\.id/);assert.match(ui,/Private customer document uploaded/);
-  assert.match(ui,/id="customer-add">\+ Create customer/);assert.match(ui,/openNewCustomerForm/);assert.match(ui,/Customer created/);
+  assert.match(ui,/id="customer-add">\+ Create customer/);assert.match(ui,/openNewCustomerForm/);assert.match(ui,/Customer record created/);
   assert.match(crm,/New customers require email, phone and preferred channel/);
   assert.match(crm,/kyc_verified_by=CASE WHEN \$4='verified' THEN \$5::uuid ELSE NULL::uuid END/);
   const styles=read('public/index.html');assert.match(styles,/#customer-results td small\{display:block/);assert.match(styles,/#customer-results table\{min-width:1120px;table-layout:fixed/);

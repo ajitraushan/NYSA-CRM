@@ -53,13 +53,13 @@ test('record breadcrumb contract reaches the underlying record without losing hi
   assert.deepEqual(dashboardRecordBreadcrumb({businessType:'Sale',teamName:'Sales Team',managerName:'Sales Manager',agentName:'Agent A1',title:'Lead 101'}),['NYSA CORE','Sale','Sales Team','Sales Manager','Agent A1','Lead 101']);
 });
 
-test('dashboard drill-down scope remains company-wide for director team-only for manager and own-record for agent',()=>{
+test('Lead register read scope is company-wide for operational CRM identities',()=>{
   const director=leadScopeSql('l',{id:'d',role:'internal_broker',jobRole:'director'},[]);
   const manager=leadScopeSql('l',{id:'m',role:'internal_broker',jobRole:'manager',managedTeamIds:['t1']},[]);
   const agent=leadScopeSql('l',{id:'a',role:'internal_broker',jobRole:'sales_agent',teamId:'t1'},[]);
   assert.equal(director.clause,'1=1');
-  assert.match(manager.clause,/assigned_team_id/);
-  assert.match(agent.clause,/assigned_to/);
+  assert.equal(manager.clause,'1=1');
+  assert.equal(agent.clause,'1=1');
 });
 
 test('initial Executive contract remains concise and excludes individual task and call panels',()=>{

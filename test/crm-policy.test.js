@@ -24,15 +24,19 @@ test('company readers and read-only roles are explicit',()=>{
   assert.equal(isCrmReadOnly(accountant),true);
 });
 
-test('lead access follows company, team, and own-record scope',()=>{
+test('Lead identity is company-visible while operational changes remain assignment-controlled',()=>{
   const teamLead={assignedTo:'someone',assignedTeamId:'t1',createdBy:'other'};
   const otherLead={assignedTo:'someone',assignedTeamId:'t2',createdBy:'other'};
   assert.equal(canReadLead(admin,otherLead),true);
   assert.equal(canReadLead(director,otherLead),true);
   assert.equal(canReadLead(manager,teamLead),true);
   assert.equal(canReadLead(manager,{...teamLead,assignedTeamId:'t3'}),true);
-  assert.equal(canReadLead(manager,otherLead),false);
-  assert.equal(canReadLead(agent,{...otherLead,assignedTo:'u'}),true);
+  assert.equal(canReadLead(manager,otherLead),true);
+  assert.equal(canReadLead(agent,otherLead),true);
+  assert.equal(canWriteLead(agent,otherLead),false);
+  assert.equal(canWriteLead(agent,{...otherLead,assignedTo:'u'}),true);
+  assert.equal(canWriteLead(manager,teamLead),true);
+  assert.equal(canWriteLead(manager,otherLead),false);
   assert.equal(canReadLead(accountant,teamLead),false);
 });
 
@@ -75,8 +79,8 @@ test('Deal closure approval is managed-team scoped and commercial closure is Dir
 
 test('SQL scopes are parameterized and deny accountants',()=>{
   const lead=leadScopeSql('l',manager,[]);
-  assert.match(lead.clause,/team_memberships/);
-  assert.deepEqual(lead.params,['m']);
+  assert.equal(lead.clause,'1=1');
+  assert.deepEqual(lead.params,[]);
   const contact=contactScopeSql('c',accountant,[]);
   assert.equal(contact.clause,'1=0');
   assert.deepEqual(contact.params,[]);
@@ -93,10 +97,8 @@ test('Agent and Manager work areas exclude unrelated Leads created outside their
 
 test('Sales Agents can list customers they own or serve through a scoped lead',()=>{
   const contact=contactScopeSql('c',agent,[]);
-  assert.deepEqual(contact.params,['u']);
-  assert.match(contact.clause,/c\.owner_id=\$1/);
-  assert.match(contact.clause,/sl\.contact_id=c\.id/);
-  assert.match(contact.clause,/sl\.assigned_to=\$1 OR sl\.created_by=\$1/);
+  assert.deepEqual(contact.params,[]);
+  assert.equal(contact.clause,'1=1');
   assert.equal((contact.clause.match(/\(/g)||[]).length,(contact.clause.match(/\)/g)||[]).length,'Sales Agent contact scope SQL must have balanced parentheses');
 });
 
@@ -104,7 +106,7 @@ test('generated CRM visibility predicates keep balanced SQL parentheses',()=>{
   const scopes=[leadScopeSql('l',agent,[]),leadScopeSql('l',manager,[]),contactScopeSql('c',agent,[]),contactScopeSql('c',manager,[]),companyScopeSql('c',agent,[]),companyScopeSql('c',manager,[]),teamScopeSql('t',manager,[])];
   for(const scope of scopes)assert.equal((scope.clause.match(/\(/g)||[]).length,(scope.clause.match(/\)/g)||[]).length,scope.clause);
   assert.match(companyScopeSql('c',agent,[]).clause,/sl\.assigned_to=\$1 OR sl\.created_by=\$1/);
-  assert.match(contactScopeSql('c',manager,[]).clause,/member\.broker_id=c\.owner_id/);
+  assert.equal(contactScopeSql('c',manager,[]).clause,'1=1');
 });
 
 test('team selectors expose company scope to directors managed scope to managers and own team to agents',()=>{

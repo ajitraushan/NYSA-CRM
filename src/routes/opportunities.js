@@ -960,7 +960,7 @@ r.get('/crm/release2/reconciliation',async(req,res)=>{
   ]);
   const exceptionCount=Object.values(exceptions||{}).reduce((sum,value)=>sum+Number(value||0),0);
   res.json({opportunityStages,dealStatuses,sourceOutcomes,exceptions,exceptionCount,dataAsOf:new Date(),
-    releaseCandidate:'R2.5',migrationBaseline:'049_release2_release_candidate.sql'});
+    releaseCandidate:'R2.5',migrationBaseline:'050_release2_customer_kyc_uat_corrections.sql'});
 });
 
 r.get('/crm/release2/legacy-lead-review',async(req,res)=>{

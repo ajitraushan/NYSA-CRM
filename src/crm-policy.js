@@ -29,14 +29,15 @@ export function isCrmReadOnly(broker) {
 
 export function canReadLead(broker, lead) {
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return false;
-  if (isCompanyReader(broker)) return true;
-  if (lead.assignedTo === broker.id || lead.createdBy === broker.id) return true;
-  const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
-  return broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId);
+  return true;
 }
 
 export function canWriteLead(broker, lead) {
-  return canReadLead(broker, lead) && !isCrmReadOnly(broker);
+  if (!hasInternalCrmIdentity(broker) || isCrmReadOnly(broker)) return false;
+  if (broker.role === 'admin') return true;
+  if (lead.assignedTo === broker.id) return true;
+  const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
+  return broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId);
 }
 
 export function canReadOpportunity(broker, opportunity) {
@@ -78,15 +79,8 @@ function bind(params, value) {
 }
 
 export function leadScopeSql(alias, broker, params = []) {
-  if (isCompanyReader(broker)) return { clause:'1=1', params };
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
-  const id = bind(params, broker.id);
-  if (broker.jobRole === 'manager') {
-    return { clause:`(${alias}.assigned_to=${id} OR ${alias}.created_by=${id} OR EXISTS (
-      SELECT 1 FROM team_memberships tm WHERE tm.broker_id=${id} AND tm.team_id=${alias}.assigned_team_id
-        AND tm.membership_role='manager' AND tm.ends_at IS NULL))`, params };
-  }
-  return { clause:`(${alias}.assigned_to=${id} OR ${alias}.created_by=${id})`, params };
+  return { clause:'1=1', params };
 }
 
 export function agentWorkLeadScopeSql(alias,broker,params=[]){
@@ -134,21 +128,8 @@ export function teamScopeSql(alias,broker,params=[]){
 }
 
 export function contactScopeSql(alias, broker, params = []) {
-  if (isCompanyReader(broker)) return { clause:'1=1', params };
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
-  const id = bind(params, broker.id);
-  if (broker.jobRole === 'manager') {
-    return { clause:`(${alias}.owner_id=${id} OR EXISTS (
-      SELECT 1 FROM team_memberships member
-      JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
-      WHERE member.broker_id=${alias}.owner_id AND member.ends_at IS NULL
-        AND reviewer.broker_id=${id} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL
-    ) OR EXISTS (
-      SELECT 1 FROM leads sl JOIN team_memberships tm ON tm.team_id=sl.assigned_team_id
-      WHERE sl.contact_id=${alias}.id AND tm.broker_id=${id} AND tm.membership_role='manager' AND tm.ends_at IS NULL))`, params };
-  }
-  return { clause:`(${alias}.owner_id=${id} OR EXISTS (
-    SELECT 1 FROM leads sl WHERE sl.contact_id=${alias}.id AND (sl.assigned_to=${id} OR sl.created_by=${id})))`, params };
+  return { clause:'1=1', params };
 }
 
 export function companyScopeSql(alias, broker, params = []) {

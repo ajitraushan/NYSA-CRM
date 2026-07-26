@@ -2,7 +2,10 @@
 
 ## Release 2.5 release-candidate consolidation local build — 2026-07-25
 
-- Version `2.0.0-dev.42` consolidates the accepted Release 2 CRM Test flow from original
+- Version `2.0.0-dev.43` corrects the Release 2.5 customer duplicate-resolution, company-visible
+  Customer/Lead identity, assignment-controlled Lead work, Manager KYC, consent guidance, and
+  visible customer-save confirmation findings discovered during CRM Test UAT. Version
+  `2.0.0-dev.42` consolidated the accepted Release 2 CRM Test flow from original
   Customer/Lead attribution through Opportunity, viewing feedback, exact Offer revision,
   negotiation, reservation, governed Deal and authoritative outcome.
 - A managed-team Manager or Director records closure approval separately from the final
@@ -15,8 +18,8 @@
   restores the exact pre-reservation Inventory status and closes the Opportunity atomically.
 - The R2.5 reconciliation view and role-scoped screen expose lifecycle counts, Deal outcomes,
   original source/campaign results and cross-module attribution, closure and inventory exceptions.
-- Migration `049_release2_release_candidate.sql` is additive to the accepted `048` baseline.
-  The complete automated suite passes 204/204 tests. CRM Test migration rehearsal and full
+- Migration `050_release2_customer_kyc_uat_corrections.sql` is additive to the deployed `049`
+  Release 2.5 baseline. The complete automated suite passes 208/208 tests. CRM Test migration rehearsal and full
   successful/failed transaction UAT remain required. Production and the frozen Release 1.1
   candidate remain untouched.
 
