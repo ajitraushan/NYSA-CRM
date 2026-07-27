@@ -45,13 +45,13 @@ test('My Diary combines CRM schedules with role scope and direct operating actio
   for(const contract of ['activities','tasks','viewings','activity_calendar_events','viewing_calendar_events','selectedAgentId','allowedAgents','Asia/Dubai','Company diary access is restricted'])assert.match(route,new RegExp(contract));
   assert.match(server,/diaryRoutes/);
   for(const contract of ['My Diary','Today','Week','All company appointments','Calls','Meetings','Viewings','Tasks & follow-ups','Scheduling conflict','Due now','Due later','Overdue','Every item below is scheduled or due on this date','Email has been sent','The Google Calendar invitation has not been sent','View Customer over Diary','View Lead over Diary','View Opportunity over Diary','Open Google Meet video room','Open Google Calendar event details','Copy phone number','Open phone app to call','Record call outcome','Record viewing outcome'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  assert.match(ui,/data-tab="dashboard"[\s\S]*data-tab="diary"[\s\S]*data-tab="opportunities"[\s\S]*data-tab="crm"/);
+  assert.match(ui,/data-tab="dashboard"[\s\S]*data-tab="diary"[\s\S]*data-tab="crm"[\s\S]*data-tab="opportunities"/);
   assert.doesNotMatch(ui,/statusLabel=\{upcoming/);
   assert.match(ui,/openCustomer\(b\.dataset\.diaryCustomer\)/);
   assert.doesNotMatch(ui,/data-diary-customer[\s\S]{0,500}switchTab\('customers'\)/);
   assert.match(page,/\.diary-item/);
   assert.match(page,/\.diary-conflict/);
-  assert.match(page,/app\.js\?v=r2\.5-dev48/);
+  assert.match(page,/app\.js\?v=r2\.5-dev49/);
   assert.match(page,/\.diary-item\{grid-template-columns:130px minmax\(0,1fr\)\}/);
   assert.match(page,/\.diary-actions\{grid-column:1\/-1;justify-content:flex-start/);
 });

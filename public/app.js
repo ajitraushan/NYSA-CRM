@@ -215,7 +215,7 @@ function renderShell() {
     <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty"></div>
     <div class="system-name" aria-label="NYSA Core">CORE</div>
     <div class="userbox">
-      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.48</span>
+      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.49</span>
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
       <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
       <button class="btn btn-sm" id="logout-btn">Sign out</button>
@@ -224,8 +224,8 @@ function renderShell() {
   <nav class="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
-    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="opportunities">Opportunities</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="crm">Leads</button>' : ''}
+    ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="opportunities">Opportunities</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="customers">Customers</button>' : ''}
     <button data-tab="listings">${ME.jobRole==='listing_agent'?'My inventory workspace':'Inventory'}</button>
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
