@@ -257,6 +257,26 @@ r.get('/crm/kyc-review-queue',async(req,res)=>{
   res.json({count:Number(countRow?.count||0),page,pageSize,kycReviews});
 });
 
+r.get('/crm/duplicate-review-queue',async(req,res)=>{
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for duplicate Customer reviews'});
+  const params=[],where=["c.archived_at IS NULL","c.duplicate_review_status='pending'"];
+  if(req.broker.role!=='admin'){
+    params.push(req.broker.id);
+    where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
+      JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
+      WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
+        AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`);
+  }
+  const from=`FROM contacts c LEFT JOIN brokers owner ON owner.id=c.owner_id
+    LEFT JOIN brokers creator ON creator.id=c.created_by
+    LEFT JOIN teams owner_team ON owner_team.id=owner.team_id WHERE ${where.join(' AND ')}`;
+  const count=Number((await one(`SELECT COUNT(DISTINCT c.id)::int AS count ${from}`,params))?.count||0);
+  const duplicateReviews=await many(`SELECT DISTINCT c.id,c.full_name,c.email,c.phone,c.duplicate_match_ids,c.created_at,
+    owner.name AS owner_name,creator.name AS submitted_by_name,owner_team.name AS team_name
+    ${from} ORDER BY c.created_at ASC,c.id`,params);
+  res.json({count,duplicateReviews});
+});
+
 r.post('/crm/contacts', async (req, res) => {
   const b = req.body || {};
   if (!canWriteCrm(req.broker)) return res.status(403).json({ error:'This role has read-only CRM access' });

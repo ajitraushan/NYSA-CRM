@@ -130,10 +130,14 @@ r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
   if (!broker) return res.status(404).json({ error:'Broker not found' });
-  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId } = req.body || {};
+  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId,name,email,phone } = req.body || {};
   if (role !== undefined && !ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   if (jobRole !== undefined && jobRole !== null && !JOB_ROLES.includes(jobRole)) return res.status(400).json({ error:'Invalid jobRole' });
   if (status !== undefined && !['pending_activation','active','suspended','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
+  if(name!==undefined&&!String(name).trim())return res.status(400).json({error:'User name is required'});
+  if(email!==undefined&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))return res.status(400).json({error:'Enter a valid user email'});
+  if(phone!==undefined&&phone!==null&&String(phone).trim()&&!/^\+?[0-9][0-9 ()-]{6,24}$/.test(String(phone).trim()))return res.status(400).json({error:'Enter a valid representative phone number'});
+  if(email!==undefined&&await one('SELECT id FROM brokers WHERE LOWER(email)=LOWER($1) AND id<>$2',[String(email).trim(),broker.id]))return res.status(409).json({error:'A user with this email already exists'});
   if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Admin Assistant cannot alter privileged roles or access status' });
   if (teamId && !(await one('SELECT id FROM teams WHERE id=$1 AND active=1', [teamId]))) return res.status(400).json({ error:'Invalid teamId' });
   const nextJobRole=jobRole===undefined?broker.jobRole:jobRole||null,nextTeamId=teamId===undefined?broker.teamId:teamId||null;
@@ -145,6 +149,10 @@ r.patch('/admin/brokers/:id', async (req, res) => {
   if (broker.id === req.broker.id && status === 'revoked') return res.status(400).json({ error:'You cannot revoke yourself' });
   const changes = {};
   await transaction(async (client) => {
+    for(const [field,value,column] of [['name',name,'name'],['email',email,'email'],['phone',phone,'phone']]){
+      if(value===undefined)continue;const normalized=field==='email'?String(value).trim().toLowerCase():String(value||'').trim()||null;
+      if((broker[field]||null)!==normalized){changes[field]={from:broker[field]||null,to:normalized};await execute(`UPDATE brokers SET ${column}=$1,updated_at=NOW() WHERE id=$2`,[normalized,broker.id],client);}
+    }
     if (role !== undefined && role !== broker.role) {
       changes.role = { from:broker.role, to:role };
       const defaultJobRole = role === 'admin' ? 'admin' : role === 'internal_broker' ? (jobRole || broker.jobRole || 'sales_agent') : null;

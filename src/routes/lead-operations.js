@@ -237,14 +237,18 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
   const bedroomValue=n=>b[n]===undefined||b[n]===null||String(b[n]).trim()===''?null:Number(b[n]),bedroomsMin=bedroomValue('bedroomsMin'),bedroomsMax=bedroomValue('bedroomsMax');
   for(const [name,value] of [['bedroomsMin',bedroomsMin],['bedroomsMax',bedroomsMax]])if(value!==null&&(!Number.isInteger(value)||value<0))return res.status(400).json({error:`${name} must be a non-negative integer`});
   if(bedroomsMin!==null&&bedroomsMax!==null&&bedroomsMax<bedroomsMin)return res.status(400).json({error:'bedroomsMax cannot be below bedroomsMin'});
+  let aiReviewedEvidence=null;
+  if(b.aiReviewedEvidence){try{aiReviewedEvidence=typeof b.aiReviewedEvidence==='string'?JSON.parse(b.aiReviewedEvidence):b.aiReviewedEvidence;}catch{return res.status(400).json({error:'Reviewed AI evidence is invalid'});}
+    if(!aiReviewedEvidence||typeof aiReviewedEvidence!=='object'||Array.isArray(aiReviewedEvidence))return res.status(400).json({error:'Reviewed AI evidence must be a structured object'});}
   const row=await transaction(async client=>{
     const current=await one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
     if(current)await execute('UPDATE lead_requirements SET superseded_at=NOW() WHERE id=$1',[current.id],client);
     const id=uuid(),version=(current?.versionNo||0)+1;
     const created=await one(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,funding_method,
-      bedrooms_min,bedrooms_max,timeline_code,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-      [id,lead.id,version,text(b.businessLine),b.purpose,propertyTypes,normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,bedroomsMin,bedroomsMax,text(b.timelineCode),text(b.notes),req.broker.id],client);
-    await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version},client);return created;
+      bedrooms_min,bedrooms_max,timeline_code,notes,created_by,ai_conversation_notes,ai_reviewed_evidence,ai_reviewed_at,ai_reviewed_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE NOW() END,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE $15 END) RETURNING *`,
+      [id,lead.id,version,text(b.businessLine),b.purpose,propertyTypes,normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,bedroomsMin,bedroomsMax,text(b.timelineCode),text(b.notes),req.broker.id,aiReviewedEvidence?text(b.aiConversationNotes):null,aiReviewedEvidence?JSON.stringify(aiReviewedEvidence):null],client);
+    await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version,reviewedAiEvidence:Boolean(aiReviewedEvidence)},client);return created;
   });res.status(201).json(row);
 });
 
