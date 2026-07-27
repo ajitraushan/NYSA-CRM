@@ -27,9 +27,9 @@ test('coordinated reassignment locks and validates the linked case then updates 
 });
 
 test('connected case and role dashboards guide users without hiding future release boundaries',()=>{
-  const ui=read('public/app.js'),dashboard=read('public/dashboard-ui.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js');
+  const ui=read('public/app.js'),dashboard=read('public/dashboard-ui.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js'),dashboardRoutes=read('src/routes/dashboards.js');
   for(const marker of ['GUIDED WORK','connected case','Review reassignment impact','Impact preview','Lead ownership will stay unchanged','Open connected Lead and full flow','Ownership history'])assert.match(ui,new RegExp(marker));
-  for(const marker of ['GUIDED SALES FLOW','My operating sequence','Team operating sequence','Current work, blockers and the next permitted action','data-guided-step','data-guided-lead','data-guided-all','My priority cases','Open full Lead register'])assert.match(dashboard,new RegExp(marker));
+  for(const marker of ['GUIDED SALES FLOW','My operating sequence','Team operating sequence','Every sequence count opens the exact contributing records','data-guided-step','data-guided-lead','data-guided-all','My priority cases','Open full Lead register'])assert.match(dashboard,new RegExp(marker));
   for(const marker of ['dashboard-connected-flow','flow-current','flow-ready','flow-blocked','flow-not_available','reassignment-preview','guided-work-layout','guided-next-scroll','max-height:360px'])assert.match(styles,new RegExp(marker));
   assert.match(routes,/\/crm\/operations\/guided-work/);
   for(const marker of ['awaiting manager assignment','Await assignment by','Manager-controlled; open Lead context only','Open Lead and review reassignment'])assert.match(routes,new RegExp(marker));
@@ -37,7 +37,11 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.doesNotMatch(dashboard,/data\.releaseBoundary/);
   assert.match(routes,/R2\.5 reconciles the accepted Release 2 flow/);
   assert.match(routes,/authoritative closure/);
-  assert.match(dashboard,/\['opportunity','matching','viewing','offer','booking'\]\.includes\(step\)/);
+  assert.match(dashboard,/openDashboardRecords\(`guided_\$\{button\.dataset\.guidedStep\}`/);
+  assert.match(dashboardRoutes,/segment\.startsWith\('guided_'\)/);
+  for(const step of ['customer','lead','qualification','opportunity','matching','viewing','offer','booking','deal'])assert.match(dashboardRoutes,new RegExp(step));
+  assert.match(dashboard,/filter\(x=>x\.responsibility==='agent'\)/);
+  assert.match(routes,/responsibility:'manager'/);
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
   assert.match(routes,/LIMIT 50/);

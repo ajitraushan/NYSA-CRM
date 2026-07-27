@@ -1139,8 +1139,9 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
         CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN COALESCE(assignment_offer.acceptance_due_at,l.acceptance_due_at) ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
         l.updated_at DESC LIMIT 50`,nextLeadScope.params)
   ]);
-  const guidedCases=nextCases.map(item=>item.assignedTo?{...item,actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
+  const guidedCases=nextCases.map(item=>item.assignedTo?{...item,responsibility:'agent',actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
     ...item,
+    responsibility:'manager',
     nextAction:canCoordinateAssignment?'Assign a responsible agent':`Await assignment by ${item.responsibleManagerName||'your manager'}`,
     actionHint:canCoordinateAssignment?'Open Lead and review reassignment':'Manager-controlled; open Lead context only'
   });

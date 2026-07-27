@@ -101,5 +101,5 @@ test('UI shell, calendar, closure, diary and cache regressions have explicit con
   assert.match(opportunities,/Complete mandatory transaction parties before management review/);
   assert.match(migration,/GRANT UPDATE ON deal_checklists/);
   assert.match(diary,/SELECT DISTINCT b\.id,b\.name,b\.job_role,b\.team_id,[\s\S]*AS diary_order[\s\S]*ORDER BY diary_order,b\.name/);
-  assert.match(app,/NYSA CORE 2\.0\.0-dev\.47/);
+  assert.match(app,/NYSA CORE 2\.0\.0-dev\.48/);
 });

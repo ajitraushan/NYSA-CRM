@@ -215,7 +215,7 @@ function renderShell() {
     <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty"></div>
     <div class="system-name" aria-label="NYSA Core">CORE</div>
     <div class="userbox">
-      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.47</span>
+      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.48</span>
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
       <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
       <button class="btn btn-sm" id="logout-btn">Sign out</button>

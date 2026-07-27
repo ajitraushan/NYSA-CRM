@@ -1,7 +1,7 @@
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,agentWorkLeadScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
 import { dashboardTypeFor,buildRoleDashboardPresentation,buildAgentLifecycle,AGENT_LIFECYCLE_STAGES } from '../dashboard-domain.js';
 import { DASHBOARD_METRICS } from '../admin-governance.js';
 
@@ -186,6 +186,29 @@ r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_a
 r.get('/crm/dashboard/records',async(req,res)=>{
   const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const segment=req.query.segment||'new_leads';
   const lifecycle=AGENT_LIFECYCLE_STAGES.find(item=>`lifecycle_${item.stage.toLowerCase()}`===segment);
+  if(segment.startsWith('guided_')){
+    const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)'};
+    let rows;
+    if(Object.hasOwn(leadSteps,step)){
+      const params=[],scope=agentWorkLeadScopeSql('l',req.broker,params),distinct=step==='customer'?'DISTINCT ON (l.contact_id)':'';
+      rows=await many(`SELECT ${distinct} l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+        t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
+        FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
+        WHERE ${scope.clause} AND ${leadSteps[step]} ORDER BY ${step==='customer'?'l.contact_id,':''}l.created_at DESC`,params);
+    }else{
+      const conditions={opportunity:"o.stage NOT IN('Closed Won','Closed Lost')",matching:"o.stage='Matching'",viewing:"o.stage='Viewing'",
+        offer:'EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id)',booking:"EXISTS(SELECT 1 FROM bookings bk WHERE bk.opportunity_id=o.id AND bk.status='reserved')",
+        deal:'EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id)'};
+      if(!conditions[step])return res.status(400).json({error:'Unknown operating-sequence step'});
+      const params=[],scope=opportunityScopeSql('o',req.broker,params);
+      rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,
+        t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
+        FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=o.assigned_team_id
+        LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=o.owner_id
+        WHERE ${scope.clause} AND ${conditions[step]} ORDER BY o.created_at DESC`,params);
+    }
+    return res.json({entityType:'lead',segment,segmentLabel:step==='customer'?'Customers':step[0].toUpperCase()+step.slice(1),dataAsOf:new Date(),filters:{},count:rows.length,breadcrumbs:['NYSA CORE',req.broker.jobRole==='manager'?'Team operating sequence':'My operating sequence'],records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+  }
   if(['inventory_available','inventory_stale','inventory_media_not_ready','inventory_readiness_exposure','inventory_aging_exposure','inventory_compliance_exposure'].includes(segment)){
     if(!isCompanyReader(req.broker))return res.status(403).json({error:'Company inventory drill-down requires Director or Administrator access'});
     const conditions={inventory_available:"status='Available'",inventory_stale:"updated_at<NOW()-INTERVAL '30 days' AND status<>'Closed'",inventory_media_not_ready:"NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))",
