@@ -47,7 +47,7 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(ui,/renderListingExecutiveDashboard/);
   assert.match(ui,/My listing workspace/);
   assert.match(ui,/Approved company inventory/);
-  assert.match(ui,/Submit for review/);
+  assert.match(ui,/Submit Inventory for approval/);
   assert.match(routes,/\/listings-workspace/);
   assert.match(routes,/workflow_auto_approved_by_policy/);
   assert.match(routes,/b\.team_id=ANY/);

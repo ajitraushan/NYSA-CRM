@@ -250,10 +250,8 @@ r.patch('/listings/:id/workflow',async(req,res)=>{
   const action=String(req.body?.action||''),reason=String(req.body?.reason||'').trim(),reviewer=await canReview(req.broker,listing);
   const error=validateListingWorkflowAction({current:listing.workflowStatus,action,reason,isOwner:ownsListing(req.broker,listing),canReview:reviewer});
   if(error)return res.status(error.startsWith('Only')?403:400).json({error});
-  if(['submit','approve'].includes(action)){
-    const current=withDiscount(await refreshReadiness(listing.id));
-    if(!current.publicationReadiness.ready)return res.status(409).json({error:`Resolve listing readiness before ${action==='submit'?'submission':'approval'}: ${current.publicationReadiness.blockers.map(item=>item.label).join(', ')}`});
-  }
+  // Inventory governance is independent of external-portal publication readiness.
+  // Verification and media can block publication without blocking approval of the Inventory record.
   const policy=action==='submit'?await listingApprovalPolicy():null,autoApproved=action==='submit'&&!policy.managerApprovalRequired;
   const next=autoApproved?'approved':{submit:'in_review',approve:'approved',request_changes:'changes_requested',block:'blocked',restore:'draft'}[action];
   const submitted=action==='submit',reviewed=autoApproved||['approve','request_changes','block','restore'].includes(action);

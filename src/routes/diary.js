@@ -14,13 +14,14 @@ async function diaryAgents(broker){
   if(isCompanyReader(broker))return many(`SELECT id,name,job_role,team_id FROM brokers
     WHERE role IN ('admin','internal_broker') AND status='active' AND job_role NOT IN ('accountant','listing_agent')
     ORDER BY CASE job_role WHEN 'sales_agent' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END,name`);
-  if(broker.jobRole==='manager')return many(`SELECT DISTINCT b.id,b.name,b.job_role,b.team_id FROM brokers b
+  if(broker.jobRole==='manager')return many(`SELECT DISTINCT b.id,b.name,b.job_role,b.team_id,
+    CASE WHEN b.id=$1 THEN 0 ELSE 1 END AS diary_order FROM brokers b
     WHERE b.status='active' AND b.role IN ('admin','internal_broker') AND (
       b.id=$1 OR (b.job_role='sales_agent' AND EXISTS (
         SELECT 1 FROM team_memberships member JOIN team_memberships manager ON manager.team_id=member.team_id
         WHERE member.broker_id=b.id AND member.ends_at IS NULL
           AND manager.broker_id=$1 AND manager.membership_role='manager' AND manager.ends_at IS NULL)))
-    ORDER BY CASE WHEN b.id=$1 THEN 0 ELSE 1 END,b.name`,[broker.id]);
+    ORDER BY diary_order,b.name`,[broker.id]);
   return many('SELECT id,name,job_role,team_id FROM brokers WHERE id=$1',[broker.id]);
 }
 

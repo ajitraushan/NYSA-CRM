@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.5-dev45"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.5-dev46"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -251,14 +251,14 @@ test('manager dashboard exposes a team-scoped listing approval queue with comple
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const listings=fs.readFileSync(new URL('../src/routes/listings.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  for(const marker of ['Listing approvals','Search listing approvals','Review listing','data-listing-approval-tab','/listings-approval-queue'])assert.match(ui,new RegExp(marker.replaceAll('/','\\/')));
+  for(const marker of ['Inventory approvals','Search Inventory approvals','Review listing','data-listing-approval-tab','/listings-approval-queue'])assert.match(ui,new RegExp(marker.replaceAll('/','\\/')));
   assert.match(ui,/openDetail\(review\.dataset\.listingApproval,\{afterWorkflow:load\}\)/);
   assert.match(listings,/r\.get\('\/listings-approval-queue'/);
   assert.match(listings,/l\.workflow_status='in_review'/);
   assert.match(listings,/t\.manager_id=\$1 OR EXISTS\(SELECT 1 FROM team_memberships/);
   assert.match(listings,/ORDER BY COALESCE\(l\.submitted_at,l\.updated_at\) DESC/);
   assert.match(app,/async function openDetail\(id,\{afterWorkflow=null\}=\{\}\)/);
-  for(const action of ['Approve listing','Request changes','Block listing'])assert.match(app,new RegExp(action));
+  for(const action of ['Approve Inventory','Return for correction','Reject Inventory'])assert.match(app,new RegExp(action));
 });
 
 test('dashboard period presets replace manual date entry for every role',()=>{
@@ -291,8 +291,8 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.5-dev45/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev45/);
+  assert.match(page,/app\.js\?v=r2\.5-dev46/);
+  assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev46/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

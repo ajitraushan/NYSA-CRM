@@ -19,7 +19,7 @@ test('lead tasks distinguish planned work from completed activities and expose o
 test('financial scenarios use business forms and preserve immutable governed snapshots',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
   assert.doesNotMatch(ui,/Inputs JSON/);
-  for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected vacancy (%)','Cash invested','indicative estimate','immutable snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
+  for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected occupancy rate (%)','Cash invested','indicative estimate','immutable snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
   assert.match(ui,/data-business-amount/);
   assert.match(routes,/input_snapshot,output_snapshot/);
   assert.match(routes,/assumption_version_id/);
