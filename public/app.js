@@ -215,7 +215,7 @@ function renderShell() {
     <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty"></div>
     <div class="system-name" aria-label="NYSA Core">CORE</div>
     <div class="userbox">
-      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.49</span>
+      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.50</span>
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
       <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
       <button class="btn btn-sm" id="logout-btn">Sign out</button>
@@ -524,7 +524,7 @@ function renderCrm() {
   $('#crm-opportunities')?.addEventListener('click', openOpportunityWorkspace);
   $('#crm-companies').addEventListener('click', openCompanies);
   $('#crm-reports').addEventListener('click', openCrmReports);
-  $('#crm-mortgage').addEventListener('click', openMortgageCalculator);
+  $('#crm-mortgage').addEventListener('click', openBusinessMortgageCalculator);
   $('#crm-queue').addEventListener('click', openAssignmentQueue);
   $('#crm-sla').addEventListener('click',openSlaQueue);$('#crm-tasks').addEventListener('click',openTaskQueue);
   $('#crm-apply').addEventListener('click', loadCRMLeads);
@@ -1029,6 +1029,34 @@ async function openCrmReports() {
   const rows=(items,value='count')=>items.map(x=>`<tr><td>${esc(x.label||x.name)}</td><td>${x[value]??0}</td></tr>`).join('');
   const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">MANAGEMENT REPORT</div><h2>CRM performance summary</h2></div><button class="btn btn-sm" id="report-print">Print</button></div>
     <p class="report-date">Generated ${fmtDate(report.generatedAt)}</p><div class="report-grid"><div><h3>Lead stages</h3><table><tr><th>Stage</th><th>Leads</th></tr>${rows(report.stages)}</table></div><div><h3>Lead sources</h3><table><tr><th>Source</th><th>Leads</th></tr>${rows(report.sources)}</table></div><div><h3>Activities</h3><table><tr><th>Type</th><th>Records</th></tr>${rows(report.activities)}</table></div><div><h3>Broker performance</h3><table><tr><th>Broker</th><th>Leads / Won / Calls</th></tr>${report.agents.map(a=>`<tr><td>${esc(a.name)}</td><td>${a.totalLeads} / ${a.wonLeads} / ${a.calls}</td></tr>`).join('')}</table></div><div><h3>Recent lead movement</h3><table><tr><th>Customer</th><th>Movement</th></tr>${(report.movements||[]).map(x=>`<tr><td>${esc(x.contactName)}<small>${fmtDate(x.timestamp)}</small></td><td>${esc(x.fromStage)} → ${esc(x.toStage)}</td></tr>`).join('')}</table></div><div><h3>Closed leads / sales booked</h3><table><tr><th>Customer</th><th>Result</th></tr>${(report.closedLeads||[]).map(x=>`<tr><td>${esc(x.contactName)}<small>${esc(x.title)}</small></td><td>${esc(x.stage)}${x.lostReason?' · '+esc(x.lostReason):''}</td></tr>`).join('')}</table></div><div class="span2"><h3>Call report</h3><table><tr><th>When</th><th>Customer</th><th>Subject</th><th>Owner</th></tr>${(report.calls||[]).map(x=>`<tr><td>${fmtDate(x.createdAt)}</td><td>${esc(x.contactName)}</td><td>${esc(x.subject)}</td><td>${esc(x.ownerName)}</td></tr>`).join('')}</table></div></div></div>`);$('#report-print',o).addEventListener('click',()=>window.print());
+}
+
+function openBusinessMortgageCalculator(){
+  const o=overlay(`<div class="modal" style="max-width:720px"><button class="close-x">×</button><h2>Mortgage and repayment calculator</h2><p class="tool-note">Illustrative estimate only. Enter amounts as 2 M, 2m, 750K or 2,000,000.</p>
+    <form id="mortgage-form"><div class="form-grid">
+      <div><label>Property price (AED)</label><input name="propertyPrice" data-business-amount inputmode="decimal" required placeholder="e.g. 2 M"></div>
+      <div><label>Down payment %</label><input name="downPaymentPercent" type="number" min="0" max="100" value="20" required></div>
+      <div><label>Loan amount (optional)</label><input name="loanAmount" data-business-amount inputmode="decimal" placeholder="e.g. 1.6 M"></div>
+      <div><label>Annual interest %</label><input name="annualRatePercent" type="number" min="0" step="0.01" value="4.5" required></div>
+      <div><label>Term (years)</label><input name="years" type="number" min="1" max="50" value="25" required></div>
+      <div><label>Additional upfront costs</label><input name="additionalCosts" data-business-amount inputmode="decimal" value="0"></div>
+      <div><label>Monthly income (for DBR)</label><input name="monthlyIncome" data-business-amount inputmode="decimal" placeholder="e.g. 50K"></div>
+      <div><label>Existing monthly debt</label><input name="monthlyDebt" data-business-amount inputmode="decimal" value="0"></div>
+    </div><div class="modal-actions"><button class="btn btn-primary">Calculate</button></div></form><div id="mortgage-result"></div></div>`);
+  installBusinessAmountInputs(o);
+  $('#mortgage-form',o).addEventListener('submit',async e=>{
+    e.preventDefault();
+    const f=Object.fromEntries(new FormData(e.target));
+    try{
+      f.propertyPrice=scenarioMoney(f.propertyPrice,'Property price');
+      f.loanAmount=scenarioMoney(f.loanAmount,'Loan amount',{optional:true});
+      f.additionalCosts=scenarioMoney(f.additionalCosts,'Additional upfront costs',{optional:true})??0;
+      f.monthlyIncome=scenarioMoney(f.monthlyIncome,'Monthly income',{optional:true});
+      f.monthlyDebt=scenarioMoney(f.monthlyDebt,'Existing monthly debt',{optional:true})??0;
+      const x=await api('/crm/tools/mortgage',{method:'POST',body:f});
+      $('#mortgage-result',o).innerHTML=`<div class="calculator-result"><div><span>Monthly repayment</span><strong>${fmtPrice(x.monthlyPayment)}</strong></div><div><span>Loan principal / LTV</span><strong>${fmtPrice(x.principal)} · ${x.loanToValue}%</strong></div><div><span>Upfront cash</span><strong>${fmtPrice(x.upfrontCash)}</strong></div><div><span>Total repayment / interest</span><strong>${fmtPrice(x.totalRepayment)} / ${fmtPrice(x.totalInterest)}</strong></div>${x.debtBurdenRatio!==null?`<div><span>Debt burden ratio</span><strong>${x.debtBurdenRatio}%</strong></div>`:''}</div><p class="tool-note">Illustrative estimate only. Bank rates, fees, eligibility and final repayments may differ.</p>`;
+    }catch(err){toast(err.message);}
+  });
 }
 
 function openMortgageCalculator() {

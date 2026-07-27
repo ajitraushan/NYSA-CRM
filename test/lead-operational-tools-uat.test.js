@@ -20,6 +20,10 @@ test('financial scenarios use business forms and preserve immutable governed sna
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
   assert.doesNotMatch(ui,/Inputs JSON/);
   for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected occupancy rate (%)','Cash invested','indicative estimate','immutable snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
+  assert.match(ui,/openBusinessMortgageCalculator/);
+  assert.match(ui,/name="propertyPrice" data-business-amount/);
+  assert.match(ui,/name="loanAmount" data-business-amount/);
+  assert.match(ui,/f\.propertyPrice=scenarioMoney\(f\.propertyPrice,'Property price'\)/);
   assert.match(ui,/data-business-amount/);
   assert.match(routes,/input_snapshot,output_snapshot/);
   assert.match(routes,/assumption_version_id/);
