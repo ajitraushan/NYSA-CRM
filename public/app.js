@@ -519,7 +519,7 @@ function renderCrm() {
     <div class="filter-actions"><button class="btn btn-primary btn-sm" id="crm-apply">Apply</button><button class="btn btn-sm" id="crm-reset">Reset</button><span class="result-count" id="crm-count"></span></div>
   </div>
   <div id="crm-results"><div class="loading-state">Loading leads...</div></div>`;
-  $('#crm-add')?.addEventListener('click', openNewLeadForm);
+  $('#crm-add')?.addEventListener('click',()=>openNewLeadForm());
   $('#crm-opportunities')?.addEventListener('click', openOpportunityWorkspace);
   $('#crm-companies').addEventListener('click', openCompanies);
   $('#crm-reports').addEventListener('click', openCrmReports);
@@ -1034,7 +1034,7 @@ async function openContactGovernance(lead,parent){
 
 function openValueBriefForm(lead,listings,parent) {
   const o=overlay(`<div class="modal"><button class="close-x">×</button><h2>Create customer value brief</h2><form id="brief-form"><div class="form-grid"><div class="span3"><label>Property *</label><select name="listingId" required><option value="">Select listing</option>${listings.map(l=>`<option value="${l.id}" ${lead.listingId===l.id?'selected':''}>${esc(l.project)} · ${esc(l.area)} · ${fmtPrice(l.price,l.currency)}</option>`).join('')}</select></div><div><label>Expected annual rent</label><input name="expectedAnnualRent" type="number" min="0"></div><div><label>Estimated annual costs</label><input name="estimatedAnnualCosts" type="number" min="0" value="0"></div><div class="span3"><label>Strong points of the deal *</label><textarea name="strengths" rows="3" required placeholder="Location, pricing, payment plan, demand, developer track record..."></textarea></div><div class="span3"><label>Why this customer should consider it *</label><textarea name="recommendation" rows="3" required></textarea></div></div><div class="modal-actions"><button class="btn btn-primary">Generate brief</button></div></form></div>`);
-  $('#brief-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/leads/${lead.id}/value-briefs`,{method:'POST',body:f});toast('Value brief created');o.remove();parent.remove();openValueBriefs(lead);}catch(err){toast(err.message);}});
+  $('#brief-form',o).addEventListener('submit',async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api(`/crm/leads/${lead.id}/value-briefs`,{method:'POST',body:f});toast('Value brief created');o.remove();openValueBriefs(lead,parent);}catch(err){toast(err.message);}});
 }
 
 async function openValueBriefs(lead,parent) {
@@ -1207,7 +1207,7 @@ async function openDetail(id,{afterWorkflow=null}={}) {
       <div><b>Listed</b>${fmtDate(l.createdAt)}</div>
     </div>
     ${l.propertyType==='Bulk deal'?`<div class="bulk-unit-summary"><h3>Bulk deal properties</h3><table><tr><th>Reference</th><th>Property type</th><th>Bedrooms</th><th>Size</th><th>Asking price</th></tr>${(l.bulkUnits||[]).map(unit=>`<tr><td>${esc(unit.unitReference)}</td><td>${esc(unit.propertyType)}</td><td>${esc(unit.bedrooms||'Not applicable')}</td><td>${Number(unit.sizeSqft).toLocaleString()} sqft</td><td>${fmtPrice(unit.price,l.currency)}</td></tr>`).join('')}</table></div>`:''}
-    <div class="proposal-readiness ${l.publicationReadiness?.ready?'ready':'blocked'}"><b>Listing publication readiness: ${l.publicationReadiness?.ready?'Ready':'Blocked'}</b><span>${l.publicationReadiness?.ready?'Required listing information, current availability, verification and approved media are present.':esc((l.publicationReadiness?.blockers||[]).map(x=>x.label).join(' · ')||'Readiness evidence is incomplete.')}</span><small>Calculated by NYSA CORE. Portal publication is not available in Release 1.1.</small></div>
+    <div class="proposal-readiness ${l.publicationReadiness?.ready?'ready':'blocked'}"><b>External listing publication readiness: ${l.publicationReadiness?.ready?'Ready':'Blocked'}</b><span>${l.publicationReadiness?.ready?'Required portal information, current availability, verification and approved media are present.':esc((l.publicationReadiness?.blockers||[]).map(x=>x.label).join(' · ')||'Publication evidence is incomplete.')}</span><small>Calculated by NYSA CORE. Inventory can be maintained without publishing an external listing.</small></div>
     ${l.reviewComment?`<div class="proposal-readiness ${['changes_requested','blocked'].includes(l.workflowStatus)?'blocked':''}"><b>Latest workflow review</b><span>${esc(l.reviewComment)}</span><small>${l.reviewedAt?fmtDate(l.reviewedAt):''}</small></div>`:''}
     ${l.notes ? `<div class="notes-block">${esc(l.notes)}</div>` : ''}
     ${hasCrmAccess()?'<button class="btn btn-sm" id="d-media">Property media and approval</button>':''}

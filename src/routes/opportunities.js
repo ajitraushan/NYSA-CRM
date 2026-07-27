@@ -10,7 +10,7 @@ import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offer
 import { makeOfferPdf } from '../offer-pdf.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
 import { validateBookingCreate,validateBookingTransition } from '../booking-domain.js';
-import { validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
+import { REQUIRED_PARTIES,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
 
 const r=Router();
 r.use(requireAuth,(req,res,next)=>{
@@ -649,9 +649,6 @@ r.post('/crm/deals/:dealId/parties',async(req,res)=>{
     const {opportunity,error}=await scopedOpportunity(req,deal.opportunityId,client);if(error)return{code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your writable scope'};
     if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:'Parties cannot be changed after the Deal enters approval'};
-    if(await one(`SELECT i.id FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
-      WHERE c.deal_id=$1 AND i.required AND i.responsible_role IN ('manager','director') AND i.status='completed' LIMIT 1`,[deal.id],client))
-      return{code:409,error:'Transaction parties are locked after the Manager or Director completion review'};
     const v=checked.value;
     if(v.contactId){const params=[v.contactId],scope=contactScopeSql('c',req.broker,params);
       if(!await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params,client))return{code:400,error:'Selected Contact is unavailable or outside your scope'};}
@@ -682,6 +679,11 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
     const roleAllowed=item.responsibleRole==='sales_agent'?['sales_agent','manager'].includes(req.broker.jobRole):item.responsibleRole===req.broker.jobRole;
     if(!roleAllowed)return{code:403,error:`This item is assigned to the ${item.responsibleRole.replaceAll('_',' ')} role`};
     if(status==='completed'&&item.evidenceRequired&&!evidenceReference)return{code:400,error:'Evidence reference is required to complete this item'};
+    if(status==='completed'&&['manager','director'].includes(item.responsibleRole)){
+      const parties=await many('SELECT party_role FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL',[deal.id],client);
+      const present=new Set(parties.map(x=>x.partyRole)),missing=(REQUIRED_PARTIES[deal.dealType]||[]).filter(role=>!present.has(role));
+      if(missing.length)return{code:409,error:`Complete mandatory transaction parties before management review: ${missing.join(', ')}`};
+    }
     const updated=await one(`UPDATE deal_checklist_items SET status=$1,evidence_reference=$2,
       completed_by=CASE WHEN $1='completed' THEN $3::uuid ELSE NULL END,completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,
       version=version+1 WHERE id=$4 AND version=$5 RETURNING *`,
@@ -695,7 +697,8 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
 });
 
 r.post('/crm/deals/:dealId/approval',async(req,res)=>{
-  const expectedVersion=Number(req.body?.expectedVersion),checked=validateDealApproval(req.body||{});
+  const expectedVersion=Number(req.body?.expectedVersion),decision=clean(req.body?.decision)||'approved',checked=validateDealApproval(req.body||{});
+  if(!['approved','returned','rejected'].includes(decision))return res.status(400).json({error:'Select approve, return for correction, or reject'});
   if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
   if(checked.error)return res.status(400).json({error:checked.error});
   const result=await transaction(async client=>{
@@ -708,6 +711,17 @@ r.post('/crm/deals/:dealId/approval',async(req,res)=>{
       'Commercial Deal closure approval requires a Director':'Only the managed-team Manager or a Director may approve this Deal for closure'};
     if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before approving'};
+    if(decision!=='approved'){
+      const updated=await one(`UPDATE deals SET status='completion_in_progress',approved_by=NULL,approved_at=NULL,
+        approval_reason=NULL,approval_evidence_reference=NULL,version=version+1,updated_at=NOW()
+        WHERE id=$1 AND version=$2 RETURNING *`,[deal.id,expectedVersion],client);
+      if(!updated)return{code:409,error:'This completion record changed after it was opened; reload before deciding'};
+      await execute(`INSERT INTO deal_status_history(id,deal_id,from_status,to_status,reason,actor_id)
+        VALUES($1,$2,$3,'completion_in_progress',$4,$5)`,[uuid(),deal.id,deal.status,`${decision}: ${checked.value.reason}`,req.broker.id],client);
+      await audit('DealStatus',deal.id,decision==='returned'?'closure_returned':'closure_rejected',req.broker.id,
+        {opportunityId:deal.opportunityId,evidenceReference:checked.value.evidenceReference,reason:checked.value.reason,version:updated.version},client);
+      return updated;
+    }
     const [parties,items]=await Promise.all([
       many('SELECT * FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL',[deal.id],client),
       many(`SELECT i.* FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id
@@ -852,8 +866,8 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
       if(!requirement)return {code:409,error:'A current structured requirement is required before creating an opportunity'};
       const assessment=await one('SELECT * FROM qualification_assessments WHERE lead_id=$1 ORDER BY assessed_at DESC LIMIT 1',[lead.id],client);
       if(!assessment)return {code:409,error:'A recorded qualification assessment is required before creating an opportunity'};
-      const input=checked.value;
-      if(input.listingId&&!await one("SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[input.listingId],client))return {code:409,error:'Select approved active inventory or leave the property unselected'};
+      const input=checked.value,selectedListingId=input.listingId||lead.listingId||null;
+      if(selectedListingId&&!await one("SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[selectedListingId],client))return {code:409,error:'The Inventory selected on this Lead is no longer approved and active; select another Inventory record or remove it before continuing'};
       const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code;
       const counter=await one(`INSERT INTO opportunity_number_counters(period_code,last_value) VALUES($1,1)
         ON CONFLICT(period_code) DO UPDATE SET last_value=opportunity_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
@@ -861,10 +875,20 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
       const opportunity=await one(`INSERT INTO opportunities(id,opportunity_reference,lead_id,contact_id,requirement_id,qualification_assessment_id,
         listing_id,assigned_team_id,owner_id,title,transaction_type,priority,next_action,next_action_due_at,created_from_legacy_stage,created_by)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-        [id,opportunityReference,lead.id,lead.contactId,requirement.id,assessment.id,input.listingId,lead.assignedTeamId,lead.assignedTo,
+        [id,opportunityReference,lead.id,lead.contactId,requirement.id,assessment.id,selectedListingId,lead.assignedTeamId,lead.assignedTo,
           input.title,input.transactionType,input.priority,input.nextAction,input.nextActionDueAt,['Viewing','Negotiation','Won'].includes(lead.stage)?lead.stage:null,req.broker.id],client);
       await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,to_stage,reason_code,reason,changed_by)
-        VALUES($1,$2,'Requirements','opportunity_created',$3,$4)`,[uuid(),id,input.serviceOpportunityReason,req.broker.id],client);
+        VALUES($1,$2,$3,$4,$5,$6)`,[uuid(),id,selectedListingId?'Matching':'Requirements',selectedListingId?'lead_inventory_carried_forward':'opportunity_created',
+          selectedListingId?'The Inventory selected on the originating Lead was carried into the Opportunity':input.serviceOpportunityReason,req.broker.id],client);
+      if(selectedListingId){
+        await execute("UPDATE opportunities SET stage='Matching' WHERE id=$1",[id],client);
+        const matchId=uuid();
+        await execute(`INSERT INTO property_matches(id,opportunity_id,requirement_id,listing_id,match_source,fit_status,rationale,exceptions,created_by,updated_by)
+          VALUES($1,$2,$3,$4,'manual','partial_fit',$5,$6,$7,$7)`,
+          [matchId,id,requirement.id,selectedListingId,'Carried from the Inventory selected on the originating Lead; suitability must be confirmed against the current requirements','Confirm current availability and customer suitability',req.broker.id],client);
+        await execute(`INSERT INTO property_match_history(id,property_match_id,to_status,reason,changed_by)
+          VALUES($1,$2,'considering',$3,$4)`,[uuid(),matchId,'Inventory carried forward from the originating Lead without losing provenance',req.broker.id],client);
+      }
       await execute(`INSERT INTO opportunity_participants(id,opportunity_id,broker_id,participation_role,added_by)
         VALUES($1,$2,$3,'owner',$4)`,[uuid(),id,lead.assignedTo,req.broker.id],client);
       await execute(`INSERT INTO opportunity_assignment_history(id,opportunity_id,to_team_id,to_owner_id,change_scope,reason,changed_by)
