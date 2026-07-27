@@ -44,8 +44,15 @@ test('assignment queue supports scoped visibility atomic claim and repeat-cycle 
   assert.match(source,/\/crm\/assignment-queue/);
   assert.match(source,/FOR UPDATE/);
   assert.match(source,/self_claimed/);
-  assert.match(source,/b\.job_role='sales_agent'/);
+  assert.match(source,/eligible_broker\.job_role='sales_agent'/);
   assert.match(source,/eligible active Sales Agent in the selected team/);
+  assert.match(source,/eligibleSalesAgentTeamSql/);
+  assert.match(source,/eligible_broker\.team_id=/);
+  assert.match(source,/team_memberships eligible_tm/);
+  assert.match(source,/user_role_assignments eligible_ur/);
+  assert.match(source,/conditions\.push\("l\.assignment_status='reassignment_due'"\)/);
+  assert.match(source,/canSelfClaim/);
+  assert.match(ui,/l\.canSelfClaim/);
   assert.match(source,/queue_cycle_no=queue_cycle_no\+1/);
   assert.match(source,/first_contact_due_at=\$4,accepted_at=NULL,first_contact_at=NULL/);
   assert.match(source,/firstContactDueAt=lead\.firstContactDueAt\|\|lead\.assignmentDueAt\|\|new Date\(\)/);

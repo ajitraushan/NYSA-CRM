@@ -111,7 +111,30 @@ r.post('/admin/routing-rules/dubai-defaults',async(req,res)=>{if(req.broker.role
 
 async function recycleBreachedAssignments(actorId){return transaction(async client=>{const breached=await many(`SELECT * FROM leads WHERE stage NOT IN ('Won','Lost') AND assigned_to IS NOT NULL AND ((accepted_at IS NULL AND acceptance_due_at<=NOW()) OR (accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<=NOW())) FOR UPDATE`,[],client);for(const lead of breached){const assignment=await one('SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);if(assignment)await execute("UPDATE lead_assignments SET status='timed_out',superseded_at=NOW(),responded_at=NOW(),response_reason='SLA breach returned lead to routed team queue' WHERE id=$1",[assignment.id],client);const sequence=Number((await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client)).n);await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,$3,$4,'queued',$5,$6)`,[uuid(),lead.id,sequence,lead.assignedTeamId,lead.acceptanceDueAt,actorId],client);await execute("UPDATE leads SET assigned_to=NULL,assignment_status='reassignment_due',accepted_at=NULL,queue_cycle_no=queue_cycle_no+1,last_queue_entered_at=NOW(),updated_at=NOW() WHERE id=$1",[lead.id],client);await audit('LeadAssignment',assignment?.id||lead.id,'sla_recycled',actorId,{leadId:lead.id,teamId:lead.assignedTeamId,cycle:Number(lead.queueCycleNo||1)+1},client);}return breached.length;});}
 
-r.get('/crm/assignment-queue',async(req,res)=>{await recycleBreachedAssignments(req.broker.id);const params=[],conditions=["l.stage NOT IN ('Won','Lost')","l.assigned_to IS NULL","l.assignment_status IN ('unassigned','reassignment_due')"];if(req.broker.role!=='admin'&&req.broker.jobRole!=='director'){const teams=req.broker.jobRole==='manager'?(req.broker.managedTeamIds||[]):[req.broker.teamId].filter(Boolean);if(!teams.length)return res.json({leads:[]});params.push(teams);conditions.push(`l.assigned_team_id=ANY($${params.length}::uuid[])`);}const leads=await many(`SELECT l.*,c.full_name AS contact_name,t.name AS team_name,EXTRACT(EPOCH FROM (NOW()-COALESCE(l.last_queue_entered_at,l.received_at)))::int AS queue_wait_seconds,CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS sla_deadline FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id WHERE ${conditions.join(' AND ')} ORDER BY COALESCE(l.last_queue_entered_at,l.received_at)`,params);res.json({leads});});
+const eligibleSalesAgentTeamSql=(agent,team)=>`EXISTS(SELECT 1 FROM brokers eligible_broker WHERE eligible_broker.id=${agent}
+  AND eligible_broker.status='active' AND eligible_broker.role='internal_broker' AND eligible_broker.job_role='sales_agent'
+  AND (eligible_broker.team_id=${team}
+    OR EXISTS(SELECT 1 FROM team_memberships eligible_tm WHERE eligible_tm.broker_id=eligible_broker.id AND eligible_tm.team_id=${team} AND eligible_tm.ends_at IS NULL)
+    OR EXISTS(SELECT 1 FROM user_role_assignments eligible_ur WHERE eligible_ur.broker_id=eligible_broker.id AND eligible_ur.team_id=${team}
+      AND eligible_ur.job_role='sales_agent' AND eligible_ur.status='active' AND eligible_ur.ends_at IS NULL)))`;
+
+r.get('/crm/assignment-queue',async(req,res)=>{
+  await recycleBreachedAssignments(req.broker.id);
+  const params=[],conditions=["l.stage NOT IN ('Won','Lost')","l.assigned_to IS NULL","l.assignment_status IN ('unassigned','reassignment_due')"];
+  if(req.broker.role!=='admin'&&req.broker.jobRole!=='director'){
+    if(req.broker.jobRole==='manager'){
+      const teams=req.broker.managedTeamIds||[];if(!teams.length)return res.json({leads:[]});
+      params.push(teams);conditions.push(`l.assigned_team_id=ANY($${params.length}::uuid[])`);
+    }else{
+      if(req.broker.jobRole!=='sales_agent')return res.json({leads:[]});
+      params.push(req.broker.id);
+      conditions.push("l.assignment_status='reassignment_due'");
+      conditions.push(eligibleSalesAgentTeamSql(`$${params.length}`,'l.assigned_team_id'));
+    }
+  }
+  const leads=await many(`SELECT l.*,c.full_name AS contact_name,t.name AS team_name,EXTRACT(EPOCH FROM (NOW()-COALESCE(l.last_queue_entered_at,l.received_at)))::int AS queue_wait_seconds,CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS sla_deadline FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id WHERE ${conditions.join(' AND ')} ORDER BY COALESCE(l.last_queue_entered_at,l.received_at)`,params);
+  res.json({leads:leads.map(lead=>({...lead,canSelfClaim:req.broker.jobRole==='sales_agent'&&lead.assignmentStatus==='reassignment_due'}))});
+});
 
 async function assignQueuedLead(req,res,selfClaim=false){
   const result=await transaction(async client=>{
@@ -121,10 +144,9 @@ async function assignQueuedLead(req,res,selfClaim=false){
     if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
     const agentId=selfClaim?req.broker.id:req.body?.agentId,teamId=req.body?.teamId||lead.assignedTeamId;
     if(!agentId||!teamId)return {code:400,error:'An eligible team and agent are required'};
-    const eligible=await one("SELECT b.id FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND b.job_role='sales_agent' AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)",[agentId,teamId],client);
+    const eligible=await one(`SELECT b.id FROM brokers b WHERE b.id=$1 AND ${eligibleSalesAgentTeamSql('b.id','$2')}`,[agentId,teamId],client);
     if(!eligible)return {code:400,error:'Responsible agent must be an eligible active Sales Agent in the selected team'};
     const managed=req.broker.managedTeamIds||[];
-    if(selfClaim&&req.broker.teamId!==teamId)return {code:403,error:'Agents can claim only from their own team queue'};
     if(!selfClaim&&req.broker.role!=='admin'&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Only an Administrator, the responsible team lead or Director can assign this lead'};
     const policy=await activePolicy(client),now=new Date(),due=policy?addBusinessMinutes(now,policy.acceptanceMinutes,calendar(policy)):new Date(now.getTime()+30*60000),firstDue=policy?addBusinessMinutes(now,policy.firstContactMinutes,calendar(policy)):new Date(now.getTime()+120*60000);
     const current=await one('SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
