@@ -35,7 +35,8 @@ export function validateOpportunityCreate(body={}){
   const due=new Date(body.nextActionDueAt);
   if(!body.nextActionDueAt||Number.isNaN(due.valueOf()))return {error:'A valid next-action due time is required'};
   if(body.priority&&!['low','normal','high','urgent'].includes(body.priority))return {error:'Select a valid opportunity priority'};
-  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:body.listingId||null,serviceOpportunityReason}};
+  const listingIds=[...new Set([...(Array.isArray(body.listingIds)?body.listingIds:[]),body.listingId].filter(Boolean))];
+  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:listingIds[0]||null,listingIds,serviceOpportunityReason}};
 }
 
 export function validateOpportunityTransition(currentStage,toStage,{reasonCode,reason}={}){

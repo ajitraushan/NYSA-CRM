@@ -3,8 +3,8 @@ function offerWorkspaceHTML({opportunity,offers,matches,viewings,writable}){
     eventLabels={viewed:'Customer viewed the offer',acknowledged:'Customer confirmed receipt (recorded by agent)',countered:'Customer / counterparty made a counteroffer',accepted:'Customer / counterparty accepted this revision',rejected:'Customer / counterparty rejected the offer',expired:'Offer validity expired',withdrawn:'NYSA withdrew the offer'},
     statusMeta={draft:['Draft - not sent','The current revision exists in CORE but delivery has not been recorded.'],sent:['Sent - awaiting response','The exact current revision was sent and a response is pending.'],viewed:['Viewed','The counterparty viewed or acknowledged the current revision.'],countered:['Countered','An inbound counter position is recorded. Create the next immutable response revision or record the outcome.'],accepted:['Accepted','The exact accepted revision is retained. Booking and inventory reservation have not started.'],rejected:['Rejected','The offer was rejected with a recorded reason.'],expired:['Expired','The current revision passed its validity time.'],withdrawn:['Withdrawn','NYSA withdrew the offer with a recorded reason.']},
     terminal=['accepted','rejected','expired','withdrawn'],typeByTransaction={'Sale':'purchase','Rental':'rental','Off-plan':'off_plan','Commercial':'commercial'},
-    completedViewingListings=new Set((viewings||[]).filter(x=>x.status==='completed'&&String(x.feedback||'').trim()).map(x=>x.listingId)),
-    eligible=matches.filter(x=>x.shortlistStatus!=='rejected'&&completedViewingListings.has(x.listingId));
+    completedViewingMatches=new Set((viewings||[]).filter(x=>x.status==='completed'&&String(x.feedback||'').trim()).map(x=>x.propertyMatchId)),
+    eligible=matches.filter(x=>x.shortlistStatus!=='rejected'&&completedViewingMatches.has(x.id));
   const cards=offers.map(offer=>{
     const revisions=offer.revisions||[],current=revisions.find(x=>x.id===offer.currentRevisionId)||revisions.at(-1),events=offer.events||[],
       governedEvidence=Boolean(offer.viewingFeedbackId),canRevise=writable&&governedEvidence&&!terminal.includes(offer.status),
@@ -41,7 +41,7 @@ function offerWorkspaceHTML({opportunity,offers,matches,viewings,writable}){
 
 function bookingWorkspaceHTML({offers,bookings,writable,managerWritable=false}){
   const activeOfferIds=new Set(bookings.filter(x=>x.status==='reserved').map(x=>x.offerId)),
-    eligible=offers.filter(x=>x.status==='accepted'&&x.acceptedRevisionId&&!activeOfferIds.has(x.id)&&!x.activeBookingReference&&['Available','Under offer'].includes(x.listingStatus)),
+    eligible=offers.filter(x=>x.status==='accepted'&&x.acceptedRevisionId&&!activeOfferIds.has(x.id)&&!x.activeBookingReference&&['Available','Under offer','approved_for_opportunity'].includes(x.listingStatus)),
     conflicts=offers.filter(x=>x.status==='accepted'&&x.activeBookingReference&&!activeOfferIds.has(x.id)),
     legacyConflicts=offers.filter(x=>x.status==='accepted'&&!x.activeBookingReference&&x.listingStatus==='Reserved');
   const cards=bookings.map(booking=>`<article class="offer-card booking-card" data-booking-id="${esc(booking.id)}" data-booking-version="${esc(booking.version)}">

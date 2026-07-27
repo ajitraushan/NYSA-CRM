@@ -3,6 +3,7 @@ import { one, many, execute, uuid, audit, transaction } from '../db.js';
 import { requireAuth, requirePostRights } from '../auth.js';
 import { PAYMENT_PLANS,PROPERTY_TYPES,BEDROOMS,normalizeInventoryAmount,normalizeHandover,normalizeBulkUnits,derivePublicationReadiness } from '../inventory-domain.js';
 import { listingWorkflowNextStep,listingWorkflowQueue,validateListingWorkflowAction } from '../listing-workflow-domain.js';
+import { validateVerificationSubmission,validateVerificationDecision,listingStatusForVerificationDecision } from '../inventory-verification-domain.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -13,7 +14,7 @@ const CLOSED_REASONS = ['Sold','Rented','Withdrawn','Expired'];
 const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
 const EDITABLE = ['project','developer','areaId','community','propertyType','bedrooms','sizeSqft','price','referencePrice',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
-  'handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','contact','notes','availabilityConfirmedAt','verificationStatus','verificationExpiresAt','permitNumber','permitExpiresAt'];
+  'handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','contact','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt'];
 const COLUMN = {
   project:'project', developer:'developer', areaId:'area_id', community:'community', propertyType:'property_type', bedrooms:'bedrooms',
   sizeSqft:'size_sqft', price:'price', referencePrice:'reference_price', currency:'currency',
@@ -184,6 +185,135 @@ r.get('/listings-approval-queue',async(req,res)=>{
   res.json({listingApprovals:listings,count,page,pageSize});
 });
 
+r.get('/inventory-verification-queue',async(req,res)=>{
+  if(!isReviewer(req.broker))return res.status(403).json({error:'Inventory verification queue requires Manager or Administrator access'});
+  const params=[],where=["vr.status='pending'","l.deleted_at IS NULL"];
+  if(req.broker.role!=='admin'){
+    params.push(req.broker.id);
+    where.push(`(t.manager_id=$${params.length} OR EXISTS(
+      SELECT 1 FROM team_memberships tm
+      WHERE tm.team_id=t.id AND tm.broker_id=$${params.length}
+        AND tm.membership_role='manager' AND tm.ends_at IS NULL
+    ))`);
+  }
+  const requests=await many(`SELECT vr.*,l.inventory_reference,l.project,l.area,l.verification_status,
+      submitter.name AS submitted_by_name,owner.name AS inventory_owner_name,t.name AS team_name
+    FROM inventory_verification_requests vr
+    JOIN listings l ON l.id=vr.listing_id
+    JOIN brokers submitter ON submitter.id=vr.submitted_by
+    JOIN brokers owner ON owner.id=l.posted_by
+    LEFT JOIN teams t ON t.id=owner.team_id
+    WHERE ${where.join(' AND ')}
+    ORDER BY vr.submitted_at`,params);
+  res.json({verificationRequests:requests,count:requests.length});
+});
+
+r.post('/listings/:id/verification-requests',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id
+      FROM listings l JOIN brokers b ON b.id=l.posted_by
+      WHERE l.id=$1 AND l.deleted_at IS NULL FOR UPDATE`,[req.params.id],client);
+    if(!listing)return {code:404,error:'Inventory not found'};
+    if(!canEdit(req.broker,listing)&&!ownsListing(req.broker,listing))return {code:403,error:'This Inventory is outside your editable scope'};
+    if(await one("SELECT id FROM inventory_verification_requests WHERE listing_id=$1 AND status='pending'",[listing.id],client))return {code:409,error:'A verification request is already pending'};
+    const checked=validateVerificationSubmission({currentStatus:listing.verificationStatus,...req.body});
+    if(checked.error)return {code:400,error:checked.error};
+    const prior=await one('SELECT id FROM inventory_verification_requests WHERE listing_id=$1 ORDER BY submitted_at DESC LIMIT 1',[listing.id],client);
+    const v=checked.value,id=uuid(),request=await one(`INSERT INTO inventory_verification_requests(
+        id,listing_id,request_type,status,evidence_reference,request_reason,submitted_by,prior_request_id
+      ) VALUES($1,$2,$3,'pending',$4,$5,$6,$7) RETURNING *`,
+      [id,listing.id,v.requestType,v.evidenceReference,v.reason,req.broker.id,prior?.id||null],client);
+    await execute(`UPDATE listings SET verification_status='pending',current_verification_request_id=$1,
+      verification_decided_by=NULL,verification_decided_at=NULL,verification_reason=$2,updated_at=NOW()
+      WHERE id=$3`,[id,v.reason,listing.id],client);
+    await audit('InventoryVerification',id,v.requestType==='exemption'?'exemption_requested':'submitted',req.broker.id,
+      {listingId:listing.id,from:listing.verificationStatus,to:'pending',reason:v.reason,evidenceReference:v.evidenceReference},client);
+    return {request};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.status(201).json(result.request);
+});
+
+r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const request=await one(`SELECT vr.*,l.posted_by,b.team_id AS posted_by_team_id
+      FROM inventory_verification_requests vr
+      JOIN listings l ON l.id=vr.listing_id
+      JOIN brokers b ON b.id=l.posted_by
+      WHERE vr.id=$1 FOR UPDATE`,[req.params.id],client);
+    if(!request)return {code:404,error:'Verification request not found'};
+    if(!await canReview(req.broker,{postedBy:request.postedBy,postedByTeamId:request.postedByTeamId}))return {code:403,error:'This verification request is outside your review scope'};
+    const checked=validateVerificationDecision({requestStatus:request.status,requestType:request.requestType,...req.body});
+    if(checked.error)return {code:400,error:checked.error};
+    const v=checked.value,inventoryStatus=listingStatusForVerificationDecision(request.requestType,v.decision);
+    const updated=await one(`UPDATE inventory_verification_requests SET status=$1,decided_by=$2,
+      decided_at=NOW(),decision_reason=$3,version=version+1 WHERE id=$4 RETURNING *`,
+      [v.decision,req.broker.id,v.reason,request.id],client);
+    await execute(`UPDATE listings SET verification_status=$1,verification_decided_by=$2,
+      verification_decided_at=NOW(),verification_reason=$3,updated_at=NOW() WHERE id=$4`,
+      [inventoryStatus,req.broker.id,v.reason,request.listingId],client);
+    await refreshReadiness(request.listingId);
+    await audit('InventoryVerification',request.id,`decision_${v.decision}`,req.broker.id,
+      {listingId:request.listingId,from:'pending',to:inventoryStatus,reason:v.reason},client);
+    return {request:updated,verificationStatus:inventoryStatus};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
+r.post('/listings/:id/external-publications',async(req,res)=>{
+  const channel=String(req.body?.channel||'').trim(),externalReference=String(req.body?.externalReference||'').trim()||null,
+    externalUrl=String(req.body?.externalUrl||'').trim()||null,evidenceReference=String(req.body?.evidenceReference||'').trim(),
+    reason=String(req.body?.reason||'').trim();
+  if(!channel||!evidenceReference||!reason)return res.status(400).json({error:'Channel, publication evidence and reason are required'});
+  const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by
+    WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This Inventory is outside your publication scope'});
+  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Approve the Internal Inventory record before creating an external listing publication'});
+  const id=uuid(),publication=await one(`INSERT INTO external_listing_publications(
+    id,listing_id,channel,external_reference,external_url,status,evidence_reference,reason,created_by
+  ) VALUES($1,$2,$3,$4,$5,'draft',$6,$7,$8) RETURNING *`,
+  [id,listing.id,channel,externalReference,externalUrl,evidenceReference,reason,req.broker.id]);
+  await audit('ExternalListingPublication',id,'draft_created',req.broker.id,
+    {listingId:listing.id,channel,externalReference,externalUrl,reason});
+  res.status(201).json(publication);
+});
+
+r.patch('/external-publications/:id/status',async(req,res)=>{
+  const status=String(req.body?.status||''),reason=String(req.body?.reason||'').trim(),
+    evidenceReference=String(req.body?.evidenceReference||'').trim();
+  const statuses=['submitted','approved','published','paused','withdrawn','rejected'];
+  if(!statuses.includes(status)||!reason||!evidenceReference)return res.status(400).json({error:'Select a valid publication status and record evidence and reason'});
+  const result=await transaction(async client=>{
+    const publication=await one(`SELECT p.*,l.posted_by,b.team_id AS posted_by_team_id,l.verification_status,
+      l.workflow_status FROM external_listing_publications p JOIN listings l ON l.id=p.listing_id
+      JOIN brokers b ON b.id=l.posted_by WHERE p.id=$1 FOR UPDATE OF p`,[req.params.id],client);
+    if(!publication)return{code:404,error:'External publication not found'};
+    const listing={postedBy:publication.postedBy,postedByTeamId:publication.postedByTeamId};
+    const reviewer=await canReview(req.broker,listing);
+    if(['approved','rejected'].includes(status)&&!reviewer)return{code:403,error:'Manager or Administrator approval is required'};
+    if(!reviewer&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing))return{code:403,error:'This publication is outside your editable scope'};
+    const allowed={draft:['submitted','withdrawn'],submitted:['approved','rejected','withdrawn'],approved:['published','withdrawn'],
+      published:['paused','withdrawn'],paused:['published','withdrawn'],rejected:['submitted'],withdrawn:[]};
+    if(!(allowed[publication.status]||[]).includes(status))return{code:409,error:`External publication cannot move from ${publication.status} to ${status}`};
+    if(['submitted','approved','published'].includes(status)&&!['verified','not_required'].includes(publication.verificationStatus))
+      return{code:409,error:'External publication requires system-controlled Inventory verification or approved exemption'};
+    const updated=await one(`UPDATE external_listing_publications SET status=$1,evidence_reference=$2,reason=$3,
+      submitted_by=CASE WHEN $1='submitted' THEN $4 ELSE submitted_by END,
+      submitted_at=CASE WHEN $1='submitted' THEN NOW() ELSE submitted_at END,
+      approved_by=CASE WHEN $1='approved' THEN $4 ELSE approved_by END,
+      approved_at=CASE WHEN $1='approved' THEN NOW() ELSE approved_at END,
+      published_at=CASE WHEN $1='published' THEN NOW() ELSE published_at END,
+      ended_at=CASE WHEN $1 IN ('withdrawn','rejected') THEN NOW() ELSE ended_at END,updated_at=NOW()
+      WHERE id=$5 RETURNING *`,[status,evidenceReference,reason,req.broker.id,publication.id],client);
+    await audit('ExternalListingPublication',publication.id,`status_${status}`,req.broker.id,
+      {listingId:publication.listingId,from:publication.status,to:status,evidenceReference,reason},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
+});
+
 r.get('/listings/:id', async (req, res) => {
   const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
@@ -207,7 +337,20 @@ r.get('/listings/:id', async (req, res) => {
     WHERE a.entity_type='Listing' AND a.entity_id=$1 AND (a.action LIKE 'workflow_%' OR a.action='draft_created') ORDER BY a.timestamp DESC`,[listing.id]);
   const bulkUnits=listing.propertyType==='Bulk deal'?await many(`SELECT id,unit_reference,property_type,bedrooms,size_sqft,price,display_order
     FROM listing_units WHERE listing_id=$1 ORDER BY display_order,created_at`,[listing.id]):[];
-  res.json({...withDiscount(listing),bulkUnits,workflowHistory:workflowHistory.map(item=>({...item,details:typeof item.details==='string'?JSON.parse(item.details):item.details}))});
+  const [verificationRequests,externalPublications]=await Promise.all([
+    many(`SELECT vr.*,submitter.name AS submitted_by_name,decider.name AS decided_by_name
+      FROM inventory_verification_requests vr
+      JOIN brokers submitter ON submitter.id=vr.submitted_by
+      LEFT JOIN brokers decider ON decider.id=vr.decided_by
+      WHERE vr.listing_id=$1 ORDER BY vr.submitted_at DESC`,[listing.id]),
+    many(`SELECT p.*,creator.name AS created_by_name,approver.name AS approved_by_name
+      FROM external_listing_publications p
+      JOIN brokers creator ON creator.id=p.created_by
+      LEFT JOIN brokers approver ON approver.id=p.approved_by
+      WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id])
+  ]);
+  res.json({...withDiscount(listing),bulkUnits,verificationRequests,externalPublications,
+    workflowHistory:workflowHistory.map(item=>({...item,details:typeof item.details==='string'?JSON.parse(item.details):item.details}))});
 });
 
 r.post('/listings', requirePostRights, async (req, res) => {
@@ -236,7 +379,7 @@ r.post('/listings', requirePostRights, async (req, res) => {
      b.referencePrice??null,b.currency||'AED',b.paymentPlanType||null,b.downPaymentPercent??null,
      b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,b.handoverStatus,b.handoverExpectedDate,
      b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null,b.availabilityConfirmedAt||null,
-     b.verificationStatus||'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,'blocked'],client);
+     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,'blocked'],client);
     if(b.propertyType==='Bulk deal')await replaceBulkUnits(id,bulk.units,client);
     await audit('Listing', id, 'draft_created', req.broker.id, { project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length },client);
     return created;

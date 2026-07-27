@@ -33,12 +33,12 @@ export function validateDealCreate(input={},context={}){
 
 export function validateDealParty(input={}){
   const role=input.partyRole,side=input.side,contactId=clean(input.contactId),companyId=clean(input.companyId),
-    representation=clean(input.representation)||'direct',sourceEvidence=clean(input.sourceEvidence);
+    transactionCounterpartyId=clean(input.transactionCounterpartyId),representation=clean(input.representation)||'direct',sourceEvidence=clean(input.sourceEvidence);
   if(!DEAL_PARTY_ROLES.includes(role))return{error:'Select a valid transaction-party role'};
   if(!['buyer_side','seller_side','neutral'].includes(side))return{error:'Select the party side'};
-  if(Boolean(contactId)===Boolean(companyId))return{error:'Select exactly one Contact or Company'};
+  if([contactId,companyId,transactionCounterpartyId].filter(Boolean).length!==1)return{error:'Select exactly one Customer/Contact, Company, or transaction-only counterparty'};
   if(!sourceEvidence)return{error:'Record the source evidence for this party'};
-  return{value:{partyRole:role,side,contactId,companyId,representation,isPrimary:input.isPrimary===true||input.isPrimary==='on',sourceEvidence}};
+  return{value:{partyRole:role,side,contactId,companyId,transactionCounterpartyId,representation,isPrimary:input.isPrimary===true||input.isPrimary==='on',sourceEvidence}};
 }
 
 export function validateDealApproval(input={}){

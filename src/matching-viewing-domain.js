@@ -21,7 +21,7 @@ export function validateMatchDecision(body={}){
 }
 
 export function validateViewingCreate(body={}){
-  const propertyMatchId=clean(body.propertyMatchId),timezone=clean(body.timezone),location=clean(body.location),instructions=clean(body.instructions),clientMessage=clean(body.clientMessage);
+  const propertyMatchId=clean(body.propertyMatchId),timezone=clean(body.timezone),location=clean(body.location),instructions=clean(body.instructions),clientMessage=clean(body.clientMessage),rescheduledFromViewingId=clean(body.rescheduledFromViewingId),rescheduleReason=clean(body.rescheduleReason);
   const startsAt=new Date(body.startsAt),endsAt=new Date(body.endsAt);
   if(!propertyMatchId)return {error:'Select a shortlisted property'};
   if(Number.isNaN(startsAt.valueOf())||Number.isNaN(endsAt.valueOf())||endsAt<=startsAt)return {error:'The viewing time could not be understood. Re-enter the start date and duration'};
@@ -29,7 +29,7 @@ export function validateViewingCreate(body={}){
   if(clientMessage&&clientMessage.length>1000)return {error:'The client message must be 1,000 characters or fewer'};
   const attendees=Array.isArray(body.attendees)?body.attendees:[];
   if(attendees.length>20)return {error:'A viewing can include at most 20 attendees'};
-  return {value:{propertyMatchId,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),timezone,location,instructions,clientMessage,attendees}};
+  return {value:{propertyMatchId,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),timezone,location,instructions,clientMessage,attendees,rescheduledFromViewingId,rescheduleReason}};
 }
 
 export function validateViewingOutcome(body={}){

@@ -150,7 +150,7 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.5-dev46"><\/script>/);
+  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.5-dev47"><\/script>/);
 });
 
 test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
@@ -196,7 +196,7 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/data-approval-tab/);
   assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals','My tasks'\]/);
   assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
-  assert.match(ui,/showingTasks\|\|showingKycReviews\|\|showingListingApprovals\|\|showingMediaApprovals\|\|showingProposalApprovals\?'':kpiCards\(data\)/);
+  assert.match(ui,/showingTasks\|\|showingKycReviews\|\|showingVerification\|\|showingListingApprovals\|\|showingMediaApprovals\|\|showingProposalApprovals\?'':kpiCards\(data\)/);
   assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
   assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
   assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);
@@ -291,8 +291,8 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.5-dev46/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev46/);
+  assert.match(page,/app\.js\?v=r2\.5-dev47/);
+  assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev47/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

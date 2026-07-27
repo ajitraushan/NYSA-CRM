@@ -15,7 +15,7 @@ test('R2.5 APIs separate approval from authoritative Closed Won and reconcile ou
   const routes=read('src/routes/opportunities.js');
   for(const marker of ["/crm/deals/:dealId/approval","/crm/deals/:dealId/close-won",
     "/crm/deals/:dealId/close-lost","inventory_status_before","status='cancelled'","stage='Closed Lost'",
-    'FOR UPDATE OF d,b,o,li',"status='completed'","stage='Closed Won'","status='Closed'",
+    'FOR UPDATE OF d,b,o',"status='completed'","stage='Closed Won'","status='Closed'",
     "'closed_from_deal'","/crm/release2/reconciliation",'sourceOutcomes','exceptionCount'])
     assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

@@ -686,7 +686,7 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
   if(!lead)return res.status(404).json({error:'Lead not found'});
   if(!canReadLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your permitted scope'});
   const opportunityParams=[lead.id],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams);
-  const [requirement,qualification,opportunities]=await Promise.all([
+  const [requirement,qualification,opportunities,inventorySelections]=await Promise.all([
     one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL',[lead.id]),
     one('SELECT * FROM qualification_assessments WHERE lead_id=$1 ORDER BY assessed_at DESC LIMIT 1',[lead.id]),
     many(`SELECT o.id,o.opportunity_reference,o.title,o.stage,o.owner_id,o.assigned_team_id,o.next_action,o.next_action_due_at,o.version,
@@ -694,7 +694,10 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
       (SELECT COUNT(*)::int FROM bookings bk WHERE bk.opportunity_id=o.id AND bk.status='reserved') AS active_booking_count,
       b.name AS owner_name,t.name AS team_name,li.project AS listing_project
       FROM opportunities o JOIN brokers b ON b.id=o.owner_id LEFT JOIN teams t ON t.id=o.assigned_team_id
-      LEFT JOIN listings li ON li.id=o.listing_id WHERE o.lead_id=$1 AND ${opportunityScope.clause} ORDER BY o.created_at`,opportunityScope.params)
+      LEFT JOIN listings li ON li.id=o.listing_id WHERE o.lead_id=$1 AND ${opportunityScope.clause} ORDER BY o.created_at`,opportunityScope.params),
+    many(`SELECT s.*,l.inventory_reference,l.project,l.area,l.price,l.currency
+      FROM lead_inventory_selections s JOIN listings l ON l.id=s.listing_id
+      WHERE s.lead_id=$1 ORDER BY s.selected_at`,[lead.id])
   ]);
   const active=opportunities.filter(x=>!['Closed Won','Closed Lost'].includes(x.stage));
   const opportunityReady=Boolean(lead.assignedTo&&requirement&&qualification&&['Qualified','Viewing','Negotiation','Won'].includes(lead.stage));
@@ -713,7 +716,7 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
     {code:'booking',label:'Booking',status:currentOpportunity?.activeBookingCount?'current':currentOpportunity?.acceptedOfferCount?'ready':'blocked',action:currentOpportunity?.activeBookingCount?'Monitor reservation expiry and evidence':currentOpportunity?.acceptedOfferCount?'Create an explicit reservation':'An accepted exact offer revision is required'},
     {code:'deal',label:'Deal',status:'not_available',action:'Available in a later Release 2 slice'}
   ];
-  res.json({lead,requirement,qualification,opportunities,steps,currentOpportunity,
+  res.json({lead,requirement,qualification,opportunities,inventorySelections,steps,currentOpportunity,
     canCoordinateAssignment:canAssignLead(req.broker,lead),authoritativeSources:{customer:'Customer identity and contact details',lead:'Enquiry, source, campaign, requirement and qualification',opportunity:'Pursuit stage, owner and next action',listing:'Property facts and availability'}});
 });
 
