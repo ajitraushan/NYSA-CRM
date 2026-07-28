@@ -164,8 +164,26 @@ export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmoun
   const debtBurdenRatio=income===null?null:Math.round((monthlyPayment+debt)/income*10000)/100;
   const prudent=Number(prudentDbrPercent),regulatory=Number(regulatoryDbrPercent);
   if(!Number.isFinite(prudent)||!Number.isFinite(regulatory)||prudent<=0||regulatory<=prudent||regulatory>100)return {error:'DBR thresholds are invalid'};
-  const maximumExistingDebtAtPrudent=income===null?null:Math.max(0,Math.round((income*prudent/100-monthlyPayment)*100)/100);
-  const existingDebtReductionToPrudent=income===null?null:Math.max(0,Math.round((debt-maximumExistingDebtAtPrudent)*100)/100);
+  const affordabilityAt=percent=>{
+    if(income===null)return null;
+    const maximumTotalMonthlyDebt=Math.round(income*percent)/100,
+      maximumMortgagePayment=Math.max(0,Math.round((maximumTotalMonthlyDebt-debt)*100)/100),
+      maximumLoanPrincipal=monthlyRate===0?maximumMortgagePayment*months:
+        maximumMortgagePayment*(1-Math.pow(1+monthlyRate,-months))/monthlyRate,
+      equivalentPropertyPrice=down>=100?null:maximumLoanPrincipal/(1-down/100),
+      requiredExistingDebtReduction=Math.max(0,Math.round((monthlyPayment+debt-maximumTotalMonthlyDebt)*100)/100);
+    return {
+      percent,maximumTotalMonthlyDebt,maximumMortgagePayment,
+      maximumLoanPrincipal:Math.round(maximumLoanPrincipal*100)/100,
+      equivalentPropertyPrice:equivalentPropertyPrice===null?null:Math.round(equivalentPropertyPrice*100)/100,
+      maximumExistingMonthlyDebt:Math.max(0,Math.round((maximumTotalMonthlyDebt-monthlyPayment)*100)/100),
+      requiredExistingDebtReduction,
+      debtReductionAloneSufficient:requiredExistingDebtReduction<=debt
+    };
+  };
+  const prudentAffordability=affordabilityAt(prudent),regulatoryAffordability=affordabilityAt(regulatory);
+  const maximumExistingDebtAtPrudent=prudentAffordability?.maximumExistingMonthlyDebt??null;
+  const existingDebtReductionToPrudent=prudentAffordability?.requiredExistingDebtReduction??null;
   const dbrBand=debtBurdenRatio===null?null:debtBurdenRatio<=prudent?'prudent':debtBurdenRatio<=regulatory?'limited_buffer':'above_regulatory_ceiling';
   return {
     propertyPrice: price,
@@ -177,7 +195,7 @@ export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmoun
     upfrontCash: downPayment + costs,
     months,loanToValue:Math.round(principal/price*10000)/100,
     debtBurdenRatio,dbrBand,prudentDbrPercent:prudent,regulatoryDbrPercent:regulatory,
-    maximumExistingDebtAtPrudent,existingDebtReductionToPrudent,
+    maximumExistingDebtAtPrudent,existingDebtReductionToPrudent,prudentAffordability,regulatoryAffordability,
     monthlyIncome:income,monthlyDebt:debt,additionalCosts:costs
   };
 }

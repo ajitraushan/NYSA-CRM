@@ -76,6 +76,23 @@ test('mortgage calculator classifies DBR and calculates debt reduction to pruden
   assert.equal(result.regulatoryDbrPercent,50);
   assert.ok(result.existingDebtReductionToPrudent>15_800&&result.existingDebtReductionToPrudent<15_900);
   assert.equal(Math.round((result.maximumExistingDebtAtPrudent+result.monthlyPayment)/75000*100),47);
+  assert.equal(result.prudentAffordability.percent,47);
+  assert.equal(result.regulatoryAffordability.percent,50);
+  assert.equal(result.regulatoryAffordability.maximumTotalMonthlyDebt,37_500);
+  assert.equal(result.regulatoryAffordability.maximumLoanPrincipal,0);
+});
+
+test('mortgage affordability gives explicit 47 and 50 percent corrective options',()=>{
+  const result=calculateMortgage({propertyPrice:4_000_000,loanAmount:3_200_000,annualRatePercent:4.5,years:25,monthlyIncome:50_000,monthlyDebt:20_000});
+  assert.equal(result.debtBurdenRatio,75.57);
+  assert.equal(result.prudentAffordability.maximumTotalMonthlyDebt,23_500);
+  assert.equal(result.prudentAffordability.maximumMortgagePayment,3_500);
+  assert.equal(result.prudentAffordability.requiredExistingDebtReduction,14_286.64);
+  assert.equal(result.regulatoryAffordability.maximumTotalMonthlyDebt,25_000);
+  assert.equal(result.regulatoryAffordability.maximumMortgagePayment,5_000);
+  assert.equal(result.regulatoryAffordability.requiredExistingDebtReduction,12_786.64);
+  assert.equal(result.regulatoryAffordability.maximumLoanPrincipal,899_551.61);
+  assert.equal(result.regulatoryAffordability.equivalentPropertyPrice,1_124_439.51);
 });
 
 test('business amounts accept thousand million and billion shorthand',()=>{

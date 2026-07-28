@@ -29,6 +29,8 @@ test('financial scenarios use business forms and preserve immutable governed sna
   assert.match(ui,/Inputs changed — recalculating/);
   assert.match(ui,/setTimeout\(\(\)=>calculate\(\{quiet:true\}\),350\)/);
   assert.match(ui,/existingDebtReductionToPrudent/);
+  for(const marker of ['Maximum total monthly debt','Maximum mortgage payment with current debt','Maximum supportable loan','Indicative property price at entered down payment','Reducing existing debt alone is insufficient'])
+    assert.match(ui,new RegExp(marker));
   assert.match(ui,/data-business-amount/);
   assert.match(routes,/input_snapshot,output_snapshot/);
   assert.match(routes,/assumption_version_id/);
