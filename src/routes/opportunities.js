@@ -167,7 +167,75 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     ]);
     deal.closureGates=dealClosureGates({deal,parties:deal.parties,items:deal.checklistItems});
   }
-  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers,bookings,deals});
+  const propertyShares=await many(`SELECT s.*,creator.name AS created_by_name,sender.name AS sent_by_name,
+    COALESCE(json_agg(json_build_object('id',i.id,'propertyMatchId',i.property_match_id,'propertySnapshot',i.property_snapshot,
+      'responseStatus',i.response_status,'responseNotes',i.response_notes,'respondedAt',i.responded_at)
+      ORDER BY i.id) FILTER(WHERE i.id IS NOT NULL),'[]') AS items
+    FROM opportunity_property_shares s
+    JOIN brokers creator ON creator.id=s.created_by
+    LEFT JOIN brokers sender ON sender.id=s.sent_by
+    LEFT JOIN opportunity_property_share_items i ON i.share_id=s.id
+    WHERE s.opportunity_id=$1 GROUP BY s.id,creator.name,sender.name ORDER BY s.created_at DESC`,[opportunity.id]);
+  res.json({opportunity,stageHistory,assignmentHistory,matches,viewings,offers,bookings,deals,propertyShares});
+});
+
+r.post('/crm/opportunities/:id/property-shares',async(req,res)=>{
+  const matchIds=Array.isArray(req.body?.propertyMatchIds)?[...new Set(req.body.propertyMatchIds.map(String))]:[],
+    recipientPhone=clean(req.body?.recipientPhone),customerMessage=clean(req.body?.customerMessage);
+  if(!matchIds.length||!recipientPhone||!customerMessage)return res.status(400).json({error:'Select at least one property and provide the WhatsApp recipient and message'});
+  if(matchIds.length>10)return res.status(400).json({error:'A single WhatsApp share may contain up to 10 properties'});
+  const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return{code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Opportunity is outside your writable scope'};
+    const matches=await many(`SELECT pm.id,pm.listing_id,pm.external_property_id,pm.shortlist_status,
+      COALESCE(li.inventory_reference,ep.external_reference) AS property_reference,
+      COALESCE(li.project,ep.project_or_building) AS project,
+      COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
+      COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency,'AED') AS currency
+      FROM property_matches pm LEFT JOIN listings li ON li.id=pm.listing_id
+      LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
+      WHERE pm.opportunity_id=$1 AND pm.id=ANY($2::uuid[]) AND pm.shortlist_status<>'rejected'`,[opportunity.id,matchIds],client);
+    if(matches.length!==matchIds.length)return{code:409,error:'Every selected property must be an active considered or shortlisted option in this Opportunity'};
+    const id=uuid(),share=await one(`INSERT INTO opportunity_property_shares(id,opportunity_id,recipient_phone,customer_message,created_by)
+      VALUES($1,$2,$3,$4,$5) RETURNING *`,[id,opportunity.id,recipientPhone,customerMessage,req.broker.id],client);
+    for(const match of matches)await execute(`INSERT INTO opportunity_property_share_items(
+      id,share_id,property_match_id,listing_id,external_property_id,property_snapshot)
+      VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[uuid(),id,match.id,match.listingId,match.externalPropertyId,JSON.stringify({
+        reference:match.propertyReference,project:match.project,area:match.area,propertyType:match.propertyType,
+        price:match.price,currency:match.currency
+      })],client);
+    await audit('OpportunityPropertyShare',id,'prepared',req.broker.id,{opportunityId:opportunity.id,matchIds,recipientPhone},client);
+    return{...share,items:matches};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+});
+
+r.patch('/crm/opportunities/:id/property-shares/:shareId',async(req,res)=>{
+  const action=String(req.body?.action||''),responseStatus=req.body?.responseStatus||null,
+    responseNotes=clean(req.body?.responseNotes),itemResponses=Array.isArray(req.body?.itemResponses)?req.body.itemResponses:[];
+  if(!['sent','delivery_failed','cancelled','response'].includes(action))return res.status(400).json({error:'Select a valid WhatsApp share update'});
+  if(action==='response'&&!['accepted','rejected','alternatives_requested','mixed'].includes(responseStatus))
+    return res.status(400).json({error:'Select the customer response'});
+  const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return{code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Opportunity is outside your writable scope'};
+    const prior=await one('SELECT * FROM opportunity_property_shares WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[req.params.shareId,opportunity.id],client);
+    if(!prior)return{code:404,error:'WhatsApp property share not found'};
+    const status=action==='response'?'responded':action;
+    const updated=await one(`UPDATE opportunity_property_shares SET status=$1,
+      sent_by=CASE WHEN $1='sent' THEN $2 ELSE sent_by END,sent_at=CASE WHEN $1='sent' THEN NOW() ELSE sent_at END,
+      response_status=CASE WHEN $3 THEN $4 ELSE response_status END,response_notes=CASE WHEN $3 THEN $5 ELSE response_notes END,
+      responded_at=CASE WHEN $3 THEN NOW() ELSE responded_at END,updated_at=NOW() WHERE id=$6 RETURNING *`,
+      [status,req.broker.id,action==='response',responseStatus,responseNotes,prior.id],client);
+    if(action==='response')for(const item of itemResponses){
+      if(!['accepted','rejected','alternatives_requested'].includes(item.responseStatus))continue;
+      await execute(`UPDATE opportunity_property_share_items SET response_status=$1,response_notes=$2,responded_at=NOW()
+        WHERE id=$3 AND share_id=$4`,[item.responseStatus,clean(item.responseNotes),item.id,prior.id],client);
+    }
+    await audit('OpportunityPropertyShare',prior.id,action,req.broker.id,{from:prior.status,to:status,responseStatus,responseNotes},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
 r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{

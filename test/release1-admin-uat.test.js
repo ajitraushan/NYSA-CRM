@@ -191,15 +191,16 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
   assert.match(styles,/\.lead-lifecycle-lost\.current/);
 });
 
-test('existing customer selection ranks typed matches first and alphabetizes both groups',()=>{
+test('existing customer selection displays matches and requires explicit confirmation',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js');
-  assert.match(ui,/Select existing customer \(optional\)/);
-  assert.match(ui,/id="existing-customer-select" name="contactId"/);
-  assert.match(ui,/sorted dropdown/);
+  assert.match(ui,/Matching Customers/);
+  assert.match(ui,/id="existing-customer-select" name="contactId" type="hidden"/);
+  assert.match(ui,/customer-picker-result/);
+  assert.match(ui,/Selected existing Customer/);
+  assert.match(ui,/Create a new Customer instead/);
   assert.match(ui,/Type a name, email or phone, e\.g\. Ajit/);
   assert.match(ui,/rankCustomerChoices/);
-  assert.match(ui,/shown first; names are alphabetical within each group/);
-  assert.match(ui,/all customers remain available alphabetically/);
+  assert.match(ui,/Select one explicitly/);
   assert.match(crm,/ORDER BY LOWER\(c\.full_name\)/);
 });
 

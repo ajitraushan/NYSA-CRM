@@ -45,8 +45,8 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   const ui=await readFile(new URL('../public/app.js',import.meta.url),'utf8'),styles=await readFile(new URL('../public/index.html',import.meta.url),'utf8'),routes=await readFile(new URL('../src/routes/listings.js',import.meta.url),'utf8'),migration=await readFile(new URL('../src/migrations/029_listing_executive_workflow.sql',import.meta.url),'utf8');
   assert.match(ui,/listing_agent:'Listing Executive'/);
   assert.match(ui,/renderListingExecutiveDashboard/);
-  assert.match(ui,/My listing workspace/);
-  assert.match(ui,/Approved company inventory/);
+  assert.match(ui,/My Inventory workspace/);
+  assert.match(ui,/external Listing and submit it to a portal/);
   assert.match(ui,/Submit Inventory for approval/);
   assert.match(routes,/\/listings-workspace/);
   assert.match(routes,/workflow_auto_approved_by_policy/);
