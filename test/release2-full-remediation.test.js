@@ -11,8 +11,18 @@ const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('Release 2.6 final migration governs Inventory counterparties, agreements and DBR thresholds',()=>{
   const migration=read('src/migrations/055_release26_transaction_inventory_finance.sql');
-  for(const marker of ['inventory_counterparties','inventory_agreements','prudent_dbr_percent','regulatory_dbr_percent','lessor','co_broker','marketing_authorized'])
+  for(const marker of ['inventory_counterparties','inventory_agreements','inventory_counterparty_id','prudent_dbr_percent','regulatory_dbr_percent','lessor','co_broker','marketing_authorized'])
     assert.match(migration,new RegExp(marker));
+});
+
+test('selected NYSA Inventory automatically supplies the Opportunity and Deal seller party',()=>{
+  const origin=read('src/routes/transaction-representation.js'),opportunities=read('src/routes/opportunities.js'),ui=read('public/app.js');
+  for(const marker of ['inventory_counterparties','ON CONFLICT\\(inventory_counterparty_id\\)','v\\.sellerCounterpartyId=inherited\\.id'])
+    assert.match(origin,new RegExp(marker));
+  assert.match(opportunities,/o\.seller_counterparty_id/);
+  assert.match(opportunities,/Inherited from selected NYSA Inventory/);
+  assert.match(ui,/inherited from Inventory/);
+  assert.match(ui,/sellerCounterparty\.disabled=!isExternal/);
 });
 
 test('Inventory verification status is system controlled from submission through decision',()=>{

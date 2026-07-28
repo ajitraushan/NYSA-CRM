@@ -111,6 +111,24 @@ r.post('/crm/opportunity-origins',async(req,res)=>{
     if(lead&&!['Qualified','Viewing','Negotiation','Won'].includes(lead.stage))return {code:409,error:'Complete Lead qualification before creating this representation path'};
     const listing=v.listingId?await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[v.listingId],client):null;
     if(v.listingId&&!listing)return {code:409,error:'Select approved NYSA Inventory'};
+    if(listing){
+      const inventoryParty=await one(`SELECT * FROM inventory_counterparties WHERE listing_id=$1
+        AND party_role = ANY($2::text[])
+        ORDER BY CASE party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,created_at DESC LIMIT 1`,
+        [listing.id,['Rental'].includes(transactionType)?['landlord','lessor']:['seller','landlord','lessor']],client);
+      if(inventoryParty){
+        const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';
+        const inherited=await one(`INSERT INTO transaction_counterparties
+          (id,display_name,party_type,role,phone,email,represented_party,source,evidence_reference,created_by,inventory_counterparty_id)
+          VALUES($1,$2,'inventory_owner',$3,$4,$5,$6,$7,$8,$9,$10)
+          ON CONFLICT(inventory_counterparty_id) DO UPDATE SET
+            display_name=EXCLUDED.display_name,role=EXCLUDED.role,phone=EXCLUDED.phone,email=EXCLUDED.email,
+            represented_party=EXCLUDED.represented_party,source=EXCLUDED.source,evidence_reference=EXCLUDED.evidence_reference,updated_at=NOW()
+          RETURNING *`,[uuid(),inventoryParty.displayName,role,inventoryParty.phone,inventoryParty.email,inventoryParty.representedParty,
+            inventoryParty.source,inventoryParty.authorityEvidence,req.broker.id,inventoryParty.id],client);
+        v.sellerCounterpartyId=inherited.id;
+      }
+    }
     const external=v.externalPropertyId?await one("SELECT * FROM provisional_external_properties WHERE id=$1 AND status='approved_for_opportunity'",[v.externalPropertyId],client):null;
     if(v.externalPropertyId&&!external)return {code:409,error:'External/co-broker property must be verified and approved for this Opportunity'};
     const requirement=lead?await one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL',[lead.id],client):null;

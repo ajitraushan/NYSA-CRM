@@ -49,6 +49,9 @@ CREATE TABLE inventory_agreements (
 CREATE INDEX inventory_counterparties_listing_idx ON inventory_counterparties(listing_id,created_at);
 CREATE INDEX inventory_agreements_listing_idx ON inventory_agreements(listing_id,status,created_at);
 
+ALTER TABLE transaction_counterparties
+  ADD COLUMN inventory_counterparty_id UUID UNIQUE REFERENCES inventory_counterparties(id);
+
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_entity_type_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_entity_type_check CHECK (entity_type IN (
   'Listing','ListingApprovalPolicy','ListingIntake','ListingMappingVersion','ListingValueMapping','Comment','Broker','Invitation','Team','TeamMembership','Contact','ContactChannel','ContactMerge',

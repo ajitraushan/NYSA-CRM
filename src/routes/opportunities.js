@@ -49,6 +49,7 @@ r.use(requireAuth,(req,res,next)=>{
 
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 const SELECT_OPPORTUNITY=`SELECT o.*,COALESCE(c.full_name,buyer_cp.display_name,'External buyer') AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
+  seller_cp.display_name AS seller_counterparty_name,seller_cp.role AS seller_counterparty_role,seller_cp.evidence_reference AS seller_counterparty_evidence,
   c.postal_address AS contact_address,l.title AS lead_title,l.stage AS lead_stage,
   req.version_no AS requirement_version,qa.final_temperature AS qualification_temperature,
   COALESCE(li.project,ep.project_or_building) AS listing_project,COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
@@ -63,6 +64,7 @@ const SELECT_OPPORTUNITY=`SELECT o.*,COALESCE(c.full_name,buyer_cp.display_name,
   LEFT JOIN listings li ON li.id=o.listing_id
   LEFT JOIN provisional_external_properties ep ON ep.id=o.external_property_id
   LEFT JOIN transaction_counterparties buyer_cp ON buyer_cp.id=o.buyer_counterparty_id
+  LEFT JOIN transaction_counterparties seller_cp ON seller_cp.id=o.seller_counterparty_id
   JOIN brokers owner ON owner.id=o.owner_id
   LEFT JOIN teams t ON t.id=o.assigned_team_id
   JOIN opportunity_attribution attr ON attr.opportunity_id=o.id`;
@@ -781,9 +783,12 @@ r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
   const result=await transaction(async client=>{
     const booking=await one(`SELECT b.*,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,o.assigned_team_id,
       o.stage AS opportunity_stage,o.contact_id,COALESCE(c.full_name,buyer.display_name) AS contact_name,
-      o.buyer_counterparty_id,f.offer_type,r.amount AS accepted_amount,r.currency AS accepted_currency
+      o.buyer_counterparty_id,o.seller_counterparty_id,
+      seller.display_name AS seller_name,seller.role AS seller_role,seller.source AS seller_source,seller.evidence_reference AS seller_evidence,
+      f.offer_type,r.amount AS accepted_amount,r.currency AS accepted_currency
       FROM bookings b JOIN opportunities o ON o.id=b.opportunity_id LEFT JOIN contacts c ON c.id=o.contact_id
       LEFT JOIN transaction_counterparties buyer ON buyer.id=o.buyer_counterparty_id
+      LEFT JOIN transaction_counterparties seller ON seller.id=o.seller_counterparty_id
       JOIN offers f ON f.id=b.offer_id JOIN offer_revisions r ON r.id=b.accepted_offer_revision_id
       WHERE b.id=$1 FOR UPDATE OF b,o`,[req.params.bookingId],client);
     if(!booking)return{code:404,error:'Booking not found'};
@@ -810,6 +815,11 @@ r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
       VALUES($1,$2,$3,$4,$5,$6,'direct',TRUE,$7,$8)`,
       [uuid(),dealId,booking.contactId,booking.contactId?null:booking.buyerCounterpartyId,customerRole,side,
         `Originating Opportunity buyer/tenant: ${booking.contactName}`,req.broker.id],client);
+    if(booking.sellerCounterpartyId)await execute(`INSERT INTO deal_parties
+      (id,deal_id,transaction_counterparty_id,party_role,side,representation,is_primary,source_evidence,created_by)
+      VALUES($1,$2,$3,$4,'seller_side','direct',TRUE,$5,$6)`,
+      [uuid(),dealId,booking.sellerCounterpartyId,booking.sellerRole==='landlord'?'landlord':'seller',
+        `Inherited from selected NYSA Inventory: ${booking.sellerName}; ${booking.sellerSource}; ${booking.sellerEvidence}`,req.broker.id],client);
     const checklistId=uuid();
     await execute(`INSERT INTO deal_checklists(id,deal_id,template_id,template_version_no) VALUES($1,$2,$3,$4)`,
       [checklistId,dealId,template.id,template.versionNo],client);
