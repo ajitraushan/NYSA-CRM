@@ -5,7 +5,13 @@ CREATE TABLE opportunity_property_shares (
   opportunity_id UUID NOT NULL REFERENCES opportunities(id),
   channel TEXT NOT NULL DEFAULT 'whatsapp' CHECK (channel='whatsapp'),
   recipient_phone TEXT NOT NULL,
+  recipient_type TEXT NOT NULL DEFAULT 'customer'
+    CHECK (recipient_type IN ('customer','external_broker')),
+  recipient_name TEXT NOT NULL,
+  recipient_agency TEXT,
   customer_message TEXT NOT NULL,
+  public_token_hash TEXT NOT NULL UNIQUE,
+  public_expires_at TIMESTAMPTZ NOT NULL,
   status TEXT NOT NULL DEFAULT 'prepared'
     CHECK (status IN ('prepared','sent','delivery_failed','responded','cancelled')),
   sent_by UUID REFERENCES brokers(id),
@@ -35,6 +41,8 @@ CREATE TABLE opportunity_property_share_items (
 
 CREATE INDEX opportunity_property_shares_opportunity_idx
   ON opportunity_property_shares(opportunity_id,created_at DESC);
+CREATE INDEX opportunity_property_shares_public_token_idx
+  ON opportunity_property_shares(public_token_hash,public_expires_at);
 
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_entity_type_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_entity_type_check CHECK (entity_type IN (

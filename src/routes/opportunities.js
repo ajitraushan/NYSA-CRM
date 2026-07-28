@@ -13,6 +13,35 @@ import { validateBookingCreate,validateBookingTransition } from '../booking-doma
 import { REQUIRED_PARTIES,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
 
 const r=Router();
+const publicTokenHash=token=>crypto.createHash('sha256').update(String(token||'')).digest('hex');
+const publicEsc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+
+r.get('/public/property-shares/:token',async(req,res)=>{
+  const share=await one(`SELECT s.*,o.opportunity_reference,creator.name AS agent_name,creator.phone AS agent_phone,creator.email AS agent_email
+    FROM opportunity_property_shares s JOIN opportunities o ON o.id=s.opportunity_id
+    JOIN brokers creator ON creator.id=s.created_by
+    WHERE s.public_token_hash=$1 AND s.public_expires_at>NOW()`,[publicTokenHash(req.params.token)]);
+  if(!share)return res.status(404).send('This property share is unavailable or has expired.');
+  const items=await many('SELECT * FROM opportunity_property_share_items WHERE share_id=$1 ORDER BY id',[share.id]);
+  const cards=items.map(item=>{const p=item.propertySnapshot||{},media=Array.isArray(p.media)?p.media:[],photos=media.filter(x=>x.kind==='image'),documents=media.filter(x=>x.kind!=='image');
+    return `<details class="property" open><summary><span><b>${publicEsc(p.project)}</b><small>${publicEsc(p.area)} · ${publicEsc(p.propertyType)} · ${publicEsc(p.bedrooms||'Bedrooms not recorded')}</small></span><strong>${publicEsc(p.currency)} ${Number(p.price||0).toLocaleString('en-US')}</strong></summary><div class="body">${photos.length?`<div class="photos">${photos.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank"><img src="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" alt="${publicEsc(x.title)}"></a>`).join('')}</div>`:''}<dl><div><dt>Property type</dt><dd>${publicEsc(p.propertyType)}</dd></div><div><dt>Bedrooms</dt><dd>${publicEsc(p.bedrooms||'Not recorded')}</dd></div><div><dt>Size</dt><dd>${p.sizeSqft?`${Number(p.sizeSqft).toLocaleString('en-US')} sq ft`:'Not recorded'}</dd></div><div><dt>Payment plan</dt><dd>${publicEsc(p.paymentPlan||'Not recorded')}</dd></div></dl>${documents.length?`<div class="documents">${documents.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank">${x.kind==='floor_plan'?'View floor plan / layout':'Open brochure'} · ${publicEsc(x.title)}</a>`).join('')}</div>`:''}<label>Response<select data-share-item="${item.id}"><option value="">Select response</option><option value="accepted">Interested / accepted</option><option value="rejected">Not suitable</option><option value="alternatives_requested">Send alternatives</option></select></label></div></details>`;}).join('');
+  res.setHeader('Content-Type','text/html; charset=utf-8');res.send(`<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>NYSA property selection</title><style>body{font:16px system-ui;margin:auto;max-width:900px;padding:20px;color:#27271f;background:#f5f4ef}header,.property{background:#fff;border:1px solid #ddd9cc;border-radius:12px;margin:12px 0;padding:16px}summary{display:flex;justify-content:space-between;gap:16px;cursor:pointer}summary span{display:grid}small{color:#727267;margin-top:4px}.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:16px 0}.photos img{width:100%;height:140px;object-fit:cover;border-radius:8px}dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}dl div{background:#f5f4ef;padding:10px}dt{font-size:12px;text-transform:uppercase;color:#727267}dd{margin:4px 0}.documents{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.documents a{border:1px solid #b28b42;padding:8px;border-radius:7px;color:#76581d}footer{margin-top:20px;border-top:1px solid #ccc;padding-top:14px}.disclaimer{font-size:13px;color:#666}</style></head><body><header><h1>Selected property options</h1><p>${publicEsc(share.customerMessage)}</p></header>${cards}<footer><b>Your NYSA representative: ${publicEsc(share.agentName)}</b><p>${publicEsc(share.agentPhone||'')} · ${publicEsc(share.agentEmail||'')}</p><p class="disclaimer">${publicEsc(items[0]?.propertySnapshot?.disclaimer||'Property information, pricing and availability are subject to verification and may change without notice.')}</p></footer></body></html>`);
+});
+
+r.get('/public/property-shares/:token/media/:mediaId',async(req,res)=>{
+  const media=await one(`SELECT m.* FROM opportunity_property_shares s
+    JOIN opportunity_property_share_items i ON i.share_id=s.id
+    JOIN property_media m ON m.id=$2 AND m.listing_id=i.listing_id
+    WHERE s.public_token_hash=$1 AND s.public_expires_at>NOW() AND m.approval_status='approved'
+      AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())
+      AND (i.property_snapshot->'media') @> jsonb_build_array(jsonb_build_object('id',m.id::text)) LIMIT 1`,
+    [publicTokenHash(req.params.token),req.params.mediaId]);
+  if(!media)return res.status(404).send('Approved shared media is unavailable.');
+  const data=await readPrivate(media.storageKey);res.setHeader('Content-Type',media.mediaType);
+  res.setHeader('Content-Disposition',`${media.mediaKind==='image'?'inline':'attachment'}; filename="${media.fileName.replace(/"/g,'')}"`);
+  res.setHeader('Cache-Control','private, no-store');res.end(data);
+});
+
 r.use(requireAuth,(req,res,next)=>{
   if(!hasInternalCrmIdentity(req.broker))return res.status(403).json({error:'Opportunity data is restricted to NYSA staff'});
   next();
@@ -181,8 +210,12 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
 
 r.post('/crm/opportunities/:id/property-shares',async(req,res)=>{
   const matchIds=Array.isArray(req.body?.propertyMatchIds)?[...new Set(req.body.propertyMatchIds.map(String))]:[],
-    recipientPhone=clean(req.body?.recipientPhone),customerMessage=clean(req.body?.customerMessage);
-  if(!matchIds.length||!recipientPhone||!customerMessage)return res.status(400).json({error:'Select at least one property and provide the WhatsApp recipient and message'});
+    recipientPhone=clean(req.body?.recipientPhone),customerMessage=clean(req.body?.customerMessage),
+    recipientType=String(req.body?.recipientType||'customer'),recipientName=clean(req.body?.recipientName),
+    recipientAgency=clean(req.body?.recipientAgency);
+  if(!matchIds.length||!recipientPhone||!customerMessage||!recipientName)return res.status(400).json({error:'Select at least one property and provide the WhatsApp recipient name, number and message'});
+  if(!['customer','external_broker'].includes(recipientType))return res.status(400).json({error:'Recipient must be the Customer or an external broker'});
+  if(recipientType==='external_broker'&&!recipientAgency)return res.status(400).json({error:'External broker agency is required'});
   if(matchIds.length>10)return res.status(400).json({error:'A single WhatsApp share may contain up to 10 properties'});
   const result=await transaction(async client=>{
     const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return{code:error[0],error:error[1]};
@@ -191,21 +224,35 @@ r.post('/crm/opportunities/:id/property-shares',async(req,res)=>{
       COALESCE(li.inventory_reference,ep.external_reference) AS property_reference,
       COALESCE(li.project,ep.project_or_building) AS project,
       COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
+      li.bedrooms,li.size_sqft,CASE WHEN li.payment_plan_type IS NULL THEN NULL ELSE concat_ws(' · ',li.payment_plan_type,
+        CASE WHEN li.down_payment_percent IS NOT NULL THEN li.down_payment_percent||'% down' END,
+        CASE WHEN li.on_handover_percent IS NOT NULL THEN li.on_handover_percent||'% on handover' END,
+        li.payment_plan_notes) END AS payment_plan,
       COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency,'AED') AS currency
       FROM property_matches pm LEFT JOIN listings li ON li.id=pm.listing_id
       LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
       WHERE pm.opportunity_id=$1 AND pm.id=ANY($2::uuid[]) AND pm.shortlist_status<>'rejected'`,[opportunity.id,matchIds],client);
     if(matches.length!==matchIds.length)return{code:409,error:'Every selected property must be an active considered or shortlisted option in this Opportunity'};
-    const id=uuid(),share=await one(`INSERT INTO opportunity_property_shares(id,opportunity_id,recipient_phone,customer_message,created_by)
-      VALUES($1,$2,$3,$4,$5) RETURNING *`,[id,opportunity.id,recipientPhone,customerMessage,req.broker.id],client);
-    for(const match of matches)await execute(`INSERT INTO opportunity_property_share_items(
+    const organization=await one("SELECT default_disclaimer FROM organization_settings WHERE status='active' ORDER BY version DESC LIMIT 1",[],client);
+    const token=crypto.randomBytes(32).toString('base64url'),id=uuid(),share=await one(`INSERT INTO opportunity_property_shares(
+      id,opportunity_id,recipient_phone,recipient_type,recipient_name,recipient_agency,customer_message,public_token_hash,public_expires_at,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW()+INTERVAL '30 days',$9) RETURNING *`,
+      [id,opportunity.id,recipientPhone,recipientType,recipientName,recipientAgency,customerMessage,publicTokenHash(token),req.broker.id],client);
+    for(const match of matches){const media=match.listingId?await many(`SELECT id,media_kind,title,caption,file_name,media_type
+      FROM property_media WHERE listing_id=$1 AND approval_status='approved' AND usage_rights_confirmed=TRUE
+      AND (rights_expires_at IS NULL OR rights_expires_at>NOW()) AND media_kind IN ('image','floor_plan','brochure')
+      ORDER BY CASE media_kind WHEN 'image' THEN 1 WHEN 'floor_plan' THEN 2 ELSE 3 END,display_order,created_at`,[match.listingId],client):[];
+      await execute(`INSERT INTO opportunity_property_share_items(
       id,share_id,property_match_id,listing_id,external_property_id,property_snapshot)
       VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[uuid(),id,match.id,match.listingId,match.externalPropertyId,JSON.stringify({
         reference:match.propertyReference,project:match.project,area:match.area,propertyType:match.propertyType,
-        price:match.price,currency:match.currency
+        bedrooms:match.bedrooms,sizeSqft:match.sizeSqft,paymentPlan:match.paymentPlan,price:match.price,currency:match.currency,
+        media:media.map(item=>({id:String(item.id),kind:item.mediaKind,title:item.title,caption:item.caption,fileName:item.fileName,mediaType:item.mediaType})),
+        disclaimer:organization?.defaultDisclaimer||'Property information, pricing and availability are subject to verification and may change without notice.'
       })],client);
+    }
     await audit('OpportunityPropertyShare',id,'prepared',req.broker.id,{opportunityId:opportunity.id,matchIds,recipientPhone},client);
-    return{...share,items:matches};
+    return{...share,items:matches,publicToken:token};
   });
   if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
 });

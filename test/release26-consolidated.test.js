@@ -18,8 +18,14 @@ test('Release 2.6 persists multi-property WhatsApp sharing and customer response
   assert.match(routes,/OpportunityPropertyShare/);
   assert.match(ui,/WhatsApp property sharing/);
   assert.match(ui,/propertyMatchIds/);
-  assert.match(ui,/Record customer response/);
+  assert.match(ui,/Record recipient response/);
   assert.match(ui,/https:\/\/wa\.me/);
+  assert.match(ui,/secure property drill-down link/);
+  assert.match(ui,/recipientType/);
+  assert.match(routes,/\/public\/property-shares\/:token/);
+  assert.match(routes,/media_kind IN \('image','floor_plan','brochure'\)/);
+  assert.match(routes,/default_disclaimer/);
+  assert.match(routes,/itemResponses/);
 });
 
 test('Release 2.6 separates Internal Inventory from optional external portal Listings',()=>{
