@@ -1055,9 +1055,10 @@ function openBusinessMortgageCalculator(){
       <div><label>Existing monthly debt</label><input name="monthlyDebt" data-business-amount inputmode="decimal" value="0"></div>
     </div><div class="modal-actions"><button class="btn btn-primary">Calculate</button></div></form><div id="mortgage-result"></div></div>`);
   installBusinessAmountInputs(o);
-  $('#mortgage-form',o).addEventListener('submit',async e=>{
-    e.preventDefault();
-    const f=Object.fromEntries(new FormData(e.target));
+  const form=$('#mortgage-form',o),result=$('#mortgage-result',o);
+  let hasCalculated=false,recalculationTimer=null,calculationSequence=0;
+  const calculate=async({quiet=false}={})=>{
+    const sequence=++calculationSequence,f=Object.fromEntries(new FormData(form));
     try{
       f.propertyPrice=scenarioMoney(f.propertyPrice,'Property price');
       f.loanAmount=scenarioMoney(f.loanAmount,'Loan amount',{optional:true});
@@ -1065,9 +1066,18 @@ function openBusinessMortgageCalculator(){
       f.monthlyIncome=scenarioMoney(f.monthlyIncome,'Monthly income',{optional:true});
       f.monthlyDebt=scenarioMoney(f.monthlyDebt,'Existing monthly debt',{optional:true})??0;
       const x=await api('/crm/tools/mortgage',{method:'POST',body:f});
-      $('#mortgage-result',o).innerHTML=`<div class="calculator-result"><div><span>Monthly repayment</span><strong>${fmtPrice(x.monthlyPayment)}</strong></div><div><span>Loan principal / LTV</span><strong>${fmtPrice(x.principal)} · ${x.loanToValue}%</strong></div><div><span>Upfront cash</span><strong>${fmtPrice(x.upfrontCash)}</strong></div><div><span>Total repayment / interest</span><strong>${fmtPrice(x.totalRepayment)} / ${fmtPrice(x.totalInterest)}</strong></div>${x.debtBurdenRatio!==null?`<div><span>Debt burden ratio</span><strong>${x.debtBurdenRatio}%</strong></div>`:''}</div><p class="tool-note">Illustrative estimate only. Bank rates, fees, eligibility and final repayments may differ.</p>`;
-    }catch(err){toast(err.message);}
-  });
+      if(sequence!==calculationSequence)return;
+      const dbr=x.debtBurdenRatio===null?'':`<div><span>Debt burden ratio</span><strong>${x.debtBurdenRatio}%</strong></div>`,
+        guidance=x.debtBurdenRatio===null?'':x.dbrBand==='prudent'
+          ?`<div class="proposal-readiness ready"><b>Within NYSA's prudent ${x.prudentDbrPercent}% planning threshold</b><span>Final lender assessment still applies.</span></div>`
+          :x.dbrBand==='limited_buffer'
+            ?`<div class="proposal-readiness blocked"><b>Limited lending buffer</b><span>DBR is above NYSA's prudent ${x.prudentDbrPercent}% threshold and close to the maintained ${x.regulatoryDbrPercent}% ceiling. Reduce existing monthly debt by approximately ${fmtPrice(x.existingDebtReductionToPrudent)} to reach ${x.prudentDbrPercent}%.</span></div>`
+            :`<div class="proposal-readiness blocked"><b>Likely to be rejected by a bank</b><span>DBR exceeds the maintained ${x.regulatoryDbrPercent}% ceiling. Reduce existing monthly debt by approximately ${fmtPrice(x.existingDebtReductionToPrudent)} to reach NYSA's prudent ${x.prudentDbrPercent}% planning threshold. Bank policy and permitted exceptions remain decisive.</span></div>`;
+      result.innerHTML=`<div class="calculator-result"><div><span>Monthly repayment</span><strong>${fmtPrice(x.monthlyPayment)}</strong></div><div><span>Loan principal / LTV</span><strong>${fmtPrice(x.principal)} · ${x.loanToValue}%</strong></div><div><span>Upfront cash</span><strong>${fmtPrice(x.upfrontCash)}</strong></div><div><span>Total repayment / interest</span><strong>${fmtPrice(x.totalRepayment)} / ${fmtPrice(x.totalInterest)}</strong></div>${dbr}</div>${guidance}<p class="tool-note">Recalculated from the current inputs. Illustrative estimate only; final lender assessment applies.</p>`;
+    }catch(err){if(!quiet)toast(err.message);}
+  };
+  form.addEventListener('submit',async e=>{e.preventDefault();hasCalculated=true;clearTimeout(recalculationTimer);await calculate();});
+  form.addEventListener('input',()=>{if(!hasCalculated)return;clearTimeout(recalculationTimer);result.innerHTML='<p class="tool-note">Inputs changed — recalculating…</p>';recalculationTimer=setTimeout(()=>calculate({quiet:true}),350);});
 }
 
 function openMortgageCalculator() {

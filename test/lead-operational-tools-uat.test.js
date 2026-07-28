@@ -24,6 +24,11 @@ test('financial scenarios use business forms and preserve immutable governed sna
   assert.match(ui,/name="propertyPrice" data-business-amount/);
   assert.match(ui,/name="loanAmount" data-business-amount/);
   assert.match(ui,/f\.propertyPrice=scenarioMoney\(f\.propertyPrice,'Property price'\)/);
+  assert.match(ui,/hasCalculated=false,recalculationTimer=null,calculationSequence=0/);
+  assert.match(ui,/form\.addEventListener\('input'/);
+  assert.match(ui,/Inputs changed — recalculating/);
+  assert.match(ui,/setTimeout\(\(\)=>calculate\(\{quiet:true\}\),350\)/);
+  assert.match(ui,/existingDebtReductionToPrudent/);
   assert.match(ui,/data-business-amount/);
   assert.match(routes,/input_snapshot,output_snapshot/);
   assert.match(routes,/assumption_version_id/);
