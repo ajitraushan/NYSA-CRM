@@ -36,3 +36,11 @@ test('user contact maintenance, viewing alignment and multiple Lead entry are ex
   assert.match(ui,/A Customer may/);
   assert.match(ui,/preselectedCustomerId=null/);
 });
+
+test('new User creation requires and persists the representative phone',()=>{
+  const admin=read('src/routes/admin.js'),ui=read('public/app.js');
+  assert.match(ui,/<label>Phone \*<\/label><input name="phone" type="tel" required/);
+  assert.match(ui,/phone:f\.phone/);
+  assert.match(admin,/INSERT INTO brokers\(id,name,email,phone/);
+  assert.match(admin,/valid email, phone and user classification are required/);
+});

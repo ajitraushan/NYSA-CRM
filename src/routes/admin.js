@@ -91,8 +91,8 @@ r.delete('/admin/password-reset-requests/:id',async(req,res)=>{
 });
 
 r.post('/admin/users',async(req,res)=>{
-  const b=req.body||{},email=String(b.email||'').trim().toLowerCase(),classification=b.userClassification||'internal_user',assignments=Array.isArray(b.roleAssignments)?b.roleAssignments:[];
-  if(!String(b.name||'').trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!['internal_user','viewer','external_broker'].includes(classification))return res.status(400).json({error:'Name, valid email and user classification are required'});
+  const b=req.body||{},email=String(b.email||'').trim().toLowerCase(),phone=String(b.phone||'').trim(),classification=b.userClassification||'internal_user',assignments=Array.isArray(b.roleAssignments)?b.roleAssignments:[];
+  if(!String(b.name||'').trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!/^\+?[0-9][0-9 ()-]{6,24}$/.test(phone)||!['internal_user','viewer','external_broker'].includes(classification))return res.status(400).json({error:'Name, valid email, phone and user classification are required'});
   if(await one('SELECT id FROM brokers WHERE LOWER(email)=LOWER($1)',[email]))return res.status(409).json({error:'A user with this email already exists'});
   if(classification==='internal_user'&&(!assignments.length||assignments.filter(x=>x.isPrimary).length!==1))return res.status(400).json({error:'Internal users require exactly one primary role'});
   if(classification!=='internal_user'&&assignments.length)return res.status(400).json({error:'Role assignments apply only to internal users'});
@@ -101,10 +101,10 @@ r.post('/admin/users',async(req,res)=>{
   for(const a of assignments.filter(x=>x.jobRole==='manager')){const team=await teamManager(a.teamId);if(team?.managerId)return res.status(409).json({error:`${team.name} is already managed by ${team.managerName}. Change its manager deliberately in Team maintenance.`});}
   const primary=assignments.find(x=>x.isPrimary),role=classification==='viewer'?'viewer':classification==='external_broker'?'partner_broker':primary?.jobRole==='admin'?'admin':'internal_broker',status=classification==='external_broker'?'revoked':'pending_activation',id=uuid(),code='NYSA-'+crypto.randomBytes(8).toString('hex').toUpperCase();
   const result=await transaction(async client=>{
-    const user=await one(`INSERT INTO brokers(id,name,email,role,job_role,team_id,status,password_hash,invited_by,user_classification) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,[id,String(b.name).trim(),email,role,primary?.jobRole||null,primary?.teamId||null,status,hashPassword(crypto.randomBytes(32).toString('hex')),req.broker.id,classification],client);
+    const user=await one(`INSERT INTO brokers(id,name,email,phone,role,job_role,team_id,status,password_hash,invited_by,user_classification) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[id,String(b.name).trim(),email,phone,role,primary?.jobRole||null,primary?.teamId||null,status,hashPassword(crypto.randomBytes(32).toString('hex')),req.broker.id,classification],client);
     for(const a of assignments){await execute(`INSERT INTO user_role_assignments(id,broker_id,job_role,team_id,is_primary,status,starts_at,ends_at,approved_by,change_reason) VALUES($1,$2,$3,$4,$5,'active',COALESCE($6,NOW()),$7,$8,$9)`,[uuid(),id,a.jobRole,a.teamId||null,a.isPrimary?1:0,a.startsAt||null,a.endsAt||null,req.broker.id,String(a.changeReason||'Initial approved role').trim()],client);if(a.teamId){if(a.jobRole==='manager')await syncManagerAssignment(a.teamId,id,req.broker.id,client);else await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'member',$4)`,[uuid(),a.teamId,id,req.broker.id],client);}}
     if(classification!=='external_broker')await execute(`INSERT INTO invitations(id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at,team_id,pending_broker_id) VALUES($1,$2,$3,$4,$5,$6,1,NOW()+INTERVAL '7 days',$7,$8)`,[uuid(),code,req.broker.id,email,role,primary?.jobRole||null,primary?.teamId||null,id],client);
-    await audit('Broker',id,'user_added',req.broker.id,{classification,status,roles:assignments},client);return user;
+    await audit('Broker',id,'user_added',req.broker.id,{classification,status,phoneMaintained:true,roles:assignments},client);return user;
   });
   res.status(201).json({user:publicBroker(result),activationCode:classification==='external_broker'?null:code});
 });
