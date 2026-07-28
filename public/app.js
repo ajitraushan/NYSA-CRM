@@ -3,6 +3,7 @@ const $ = (sel, el = document) => el.querySelector(sel);
 const app = $('#app');
 let TOKEN = null;
 let ME = null;
+let APP_VERSION = 'version unavailable';
 let currentTab = 'dashboard';
 let lastListings = [];
 let listingAreas = null;
@@ -215,7 +216,7 @@ function renderShell() {
     <div class="brand"><img class="brand-logo" src="/nysa-logo.svg" alt="NYSA Realty"></div>
     <div class="system-name" aria-label="NYSA Core">CORE</div>
     <div class="userbox">
-      <span class="environment-badge"><b>CRM Test</b>NYSA CORE 2.0.0-dev.51</span>
+      <span class="environment-badge"><b>CRM Test</b>NYSA CORE ${esc(APP_VERSION)}</span>
       <span>${esc(ME.name)} · ${esc(ME.brokerage || '')}</span>
       <span class="role">${esc(JOB_ROLES[ME.jobRole] || ROLES[ME.role])}</span>
       <button class="btn btn-sm" id="logout-btn">Sign out</button>
@@ -1778,6 +1779,10 @@ async function loadAudit() {
 
 /* ============ BOOT ============ */
 (async function boot() {
+  try {
+    const health = await api('/health');
+    APP_VERSION = health.version || APP_VERSION;
+  } catch {}
   try { ME = await api('/me'); return renderShell(); } catch {}
   try {
     const setup = await api('/auth/setup-status');

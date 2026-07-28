@@ -1,9 +1,12 @@
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
 import { Router } from '../lib/http-kit.js';
 import { one, execute, transaction, uuid, audit } from '../db.js';
 import { hashPassword, verifyPassword, createSession, destroySession, requireAuth, publicBroker } from '../auth.js';
 
 const r = Router();
+const require = createRequire(import.meta.url);
+const { version: applicationVersion } = require('../../package.json');
 
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -11,7 +14,7 @@ const MAX_ATTEMPTS = 10;
 
 r.get('/health', async (req, res) => {
   await one('SELECT 1 AS database_ready');
-  res.json({ ok: true, database: 'ready' });
+  res.json({ ok: true, database: 'ready', version: applicationVersion });
 });
 
 function clientIp(req) {
