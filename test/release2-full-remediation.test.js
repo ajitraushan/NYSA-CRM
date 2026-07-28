@@ -9,6 +9,12 @@ import {validateViewingCreate,validateViewingOutcome} from '../src/matching-view
 
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
+test('Release 2.6 final migration governs Inventory counterparties, agreements and DBR thresholds',()=>{
+  const migration=read('src/migrations/055_release26_transaction_inventory_finance.sql');
+  for(const marker of ['inventory_counterparties','inventory_agreements','prudent_dbr_percent','regulatory_dbr_percent','lessor','co_broker','marketing_authorized'])
+    assert.match(migration,new RegExp(marker));
+});
+
 test('Inventory verification status is system controlled from submission through decision',()=>{
   assert.equal(validateVerificationSubmission({currentStatus:'verified',requestType:'verification',reason:'Again',evidenceReference:'E-1'}).error,'Verified Inventory does not require verification');
   assert.match(validateVerificationSubmission({currentStatus:'unverified',requestType:'verification',reason:'Check authority'}).error,/evidence/);

@@ -69,6 +69,15 @@ test('ROI and assignment deadline calculations are deterministic', () => {
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'Won' }, new Date('2026-01-02T00:00:00Z')), false);
 });
 
+test('mortgage calculator classifies DBR and calculates debt reduction to prudent threshold',()=>{
+  const result=calculateMortgage({propertyPrice:2_000_000,loanAmount:2_000_000,annualRatePercent:4.5,years:25,monthlyIncome:75_000,monthlyDebt:40_000});
+  assert.equal(result.dbrBand,'above_regulatory_ceiling');
+  assert.equal(result.prudentDbrPercent,47);
+  assert.equal(result.regulatoryDbrPercent,50);
+  assert.ok(result.existingDebtReductionToPrudent>15_800&&result.existingDebtReductionToPrudent<15_900);
+  assert.equal(Math.round((result.maximumExistingDebtAtPrudent+result.monthlyPayment)/75000*100),47);
+});
+
 test('business amounts accept thousand million and billion shorthand',()=>{
   assert.equal(parseBusinessAmount('2 M'),2000000);
   assert.equal(parseBusinessAmount('2.5m'),2500000);

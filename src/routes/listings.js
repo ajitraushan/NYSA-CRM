@@ -337,7 +337,7 @@ r.get('/listings/:id', async (req, res) => {
     WHERE a.entity_type='Listing' AND a.entity_id=$1 AND (a.action LIKE 'workflow_%' OR a.action='draft_created') ORDER BY a.timestamp DESC`,[listing.id]);
   const bulkUnits=listing.propertyType==='Bulk deal'?await many(`SELECT id,unit_reference,property_type,bedrooms,size_sqft,price,display_order
     FROM listing_units WHERE listing_id=$1 ORDER BY display_order,created_at`,[listing.id]):[];
-  const [verificationRequests,externalPublications]=await Promise.all([
+  const [verificationRequests,externalPublications,inventoryCounterparties,inventoryAgreements]=await Promise.all([
     many(`SELECT vr.*,submitter.name AS submitted_by_name,decider.name AS decided_by_name
       FROM inventory_verification_requests vr
       JOIN brokers submitter ON submitter.id=vr.submitted_by
@@ -347,10 +347,50 @@ r.get('/listings/:id', async (req, res) => {
       FROM external_listing_publications p
       JOIN brokers creator ON creator.id=p.created_by
       LEFT JOIN brokers approver ON approver.id=p.approved_by
-      WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id])
+      WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id]),
+    many(`SELECT * FROM inventory_counterparties WHERE listing_id=$1 ORDER BY created_at`,[listing.id]),
+    many(`SELECT a.*,c.display_name AS counterparty_name FROM inventory_agreements a
+      LEFT JOIN inventory_counterparties c ON c.id=a.counterparty_id
+      WHERE a.listing_id=$1 ORDER BY a.created_at DESC`,[listing.id])
   ]);
-  res.json({...withDiscount(listing),bulkUnits,verificationRequests,externalPublications,
+  res.json({...withDiscount(listing),bulkUnits,verificationRequests,externalPublications,inventoryCounterparties,inventoryAgreements,
     workflowHistory:workflowHistory.map(item=>({...item,details:typeof item.details==='string'?JSON.parse(item.details):item.details}))});
+});
+
+r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
+  const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its seller or lessor parties'});
+  const b=req.body||{},roles=['seller','landlord','lessor','developer','authorized_representative'],
+    types=['person','company','external_broker','external_agency'];
+  if(!roles.includes(b.partyRole)||!types.includes(b.partyType))return res.status(400).json({error:'Select a valid party role and type'});
+  for(const field of ['displayName','source','authorityEvidence'])if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
+  const id=uuid(),row=await one(`INSERT INTO inventory_counterparties
+    (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [id,listing.id,b.partyRole,b.partyType,String(b.displayName).trim(),String(b.phone||'').trim()||null,String(b.email||'').trim()||null,
+      String(b.representedParty||'').trim()||null,String(b.source).trim(),String(b.authorityEvidence).trim(),String(b.contactRestrictions||'').trim()||null,req.broker.id]);
+  await audit('InventoryCounterparty',id,'created',req.broker.id,{listingId:listing.id,partyRole:row.partyRole,partyType:row.partyType});
+  res.status(201).json(row);
+});
+
+r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
+  const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its agreements'});
+  const b=req.body||{},types=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','co_broker','commission_sharing','ownership_authority','marketing_publication','viewing_access','developer_authorization','amendment','renewal'],
+    representations=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
+  if(!types.includes(b.agreementType)||!representations.includes(b.representationType))return res.status(400).json({error:'Select a valid agreement and representation type'});
+  if(!String(b.evidenceReference||'').trim())return res.status(400).json({error:'Agreement evidence reference is required'});
+  if(b.counterpartyId&&!(await one('SELECT id FROM inventory_counterparties WHERE id=$1 AND listing_id=$2',[b.counterpartyId,listing.id])))return res.status(400).json({error:'Select a party maintained on this Inventory'});
+  const id=uuid(),row=await one(`INSERT INTO inventory_agreements
+    (id,listing_id,counterparty_id,agreement_type,representation_type,evidence_reference,effective_from,effective_to,
+     commission_terms,marketing_authorized,viewing_authorized,status,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+    [id,listing.id,b.counterpartyId||null,b.agreementType,b.representationType,String(b.evidenceReference).trim(),
+      b.effectiveFrom||null,b.effectiveTo||null,String(b.commissionTerms||'').trim()||null,b.marketingAuthorized?1:0,b.viewingAuthorized?1:0,b.status||'active',req.broker.id]);
+  await audit('InventoryAgreement',id,'created',req.broker.id,{listingId:listing.id,agreementType:row.agreementType,representationType:row.representationType});
+  res.status(201).json(row);
 });
 
 r.post('/listings', requirePostRights, async (req, res) => {

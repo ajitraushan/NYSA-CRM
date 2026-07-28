@@ -884,7 +884,9 @@ r.get('/crm/activities/:id/calendar', async (req,res)=>{
 });
 
 r.post('/crm/tools/mortgage', async (req,res)=>{
-  const result=calculateMortgage(req.body||{});if(result.error) return res.status(400).json({error:result.error});res.json(result);
+  const thresholds=await one("SELECT prudent_dbr_percent,regulatory_dbr_percent FROM organization_settings WHERE status='active' ORDER BY version DESC LIMIT 1");
+  const result=calculateMortgage({...req.body,prudentDbrPercent:thresholds?.prudentDbrPercent??47,regulatoryDbrPercent:thresholds?.regulatoryDbrPercent??50});
+  if(result.error) return res.status(400).json({error:result.error});res.json(result);
 });
 
 r.get('/crm/reports/summary', async (req,res)=>{
