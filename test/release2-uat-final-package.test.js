@@ -44,3 +44,11 @@ test('new User creation requires and persists the representative phone',()=>{
   assert.match(admin,/INSERT INTO brokers\(id,name,email,phone/);
   assert.match(admin,/valid email, phone and user classification are required/);
 });
+
+test('User management groups Add User and existing User records together',()=>{
+  const ui=read('public/app.js');
+  assert.match(ui,/\['listing_policy','Inventory approval policy'\],\['users','User management'\],\['users','User records'\],\['operations','Operations & audit'\]/);
+  assert.match(ui,/<h2>User records<\/h2>/);
+  assert.match(ui,/id="broker-table"/);
+  assert.match(ui,/data-edit-user-contact/);
+});
