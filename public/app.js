@@ -1421,8 +1421,7 @@ async function postComment(listingId, o) {
 /* ============ ADD / EDIT LISTING ============ */
 function bulkUnitRow(unit={}){return `<div class="bulk-unit-row"><div><label>Unit / property reference *</label><input data-unit="unitReference" required value="${esc(unit.unitReference||'')}"></div><div><label>Property type *</label><select data-unit="propertyType">${opts(PROPERTY_TYPES.filter(value=>value!=='Bulk deal'),unit.propertyType||'Apartment')}</select></div><div><label>Bedrooms *</label><select data-unit="bedrooms"><option value="">Select</option>${opts(BEDROOMS,unit.bedrooms)}</select></div><div><label>Built-up / plot area (sqft) *</label><input data-unit="sizeSqft" type="number" min="0.01" step="0.01" required value="${esc(unit.sizeSqft||'')}"></div><div><label>Property asking price *</label><input data-unit="price" data-business-amount required value="${esc(unit.price||'')}"></div><button class="btn btn-sm" type="button" data-remove-bulk-unit>Remove</button></div>`;}
 async function openListingForm(l = null,{focusField=null}={}) {
-  let areas,staff=[];try{[areas,{staff}]=await Promise.all([loadListingAreas(),api('/crm/staff')]);}catch(err){return toast(`Listing form not opened: ${err.message}`);}
-  const inventoryAgents=staff.filter(x=>['listing_agent','sales_agent','manager','director','admin'].includes(x.jobRole));
+  let areas,inventoryAgents=[];try{[areas,{inventoryAgents}]=await Promise.all([loadListingAreas(),api('/inventory-agents')]);}catch(err){return toast(`Listing form not opened: ${err.message}`);}
   const v = (f) => l ? esc(l[f] ?? '') : '';
   const dt = (f) => l?.[f] ? esc(String(l[f]).slice(0,16)) : '';
   const handoverStatus=l?.handoverStatus||(l?.handoverDate==='Ready'?'ready':/^\d{4}-\d{2}-\d{2}$/.test(String(l?.handoverDate||''))?'expected':'to_be_confirmed');

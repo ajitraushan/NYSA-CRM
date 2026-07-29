@@ -49,6 +49,13 @@ async function replaceBulkUnits(listingId,units,client){
 const isReviewer=broker=>broker.role==='admin'||broker.jobRole==='manager';
 const canCreateListing=broker=>broker.role==='admin'||['listing_agent','admin_assistant','manager'].includes(broker.jobRole);
 const ownsListing=(broker,listing)=>listing.postedBy===broker.id;
+const inventoryAgentEligibilitySql=alias=>`(${alias}.job_role IN ('listing_agent','sales_agent') OR EXISTS (
+  SELECT 1 FROM user_role_assignments inventory_role
+  WHERE inventory_role.broker_id=${alias}.id
+    AND inventory_role.job_role IN ('listing_agent','sales_agent')
+    AND inventory_role.status='active'
+    AND inventory_role.ends_at IS NULL
+))`;
 async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
 async function canReview(broker,listing){
   if(broker.role==='admin')return true;
@@ -141,6 +148,15 @@ r.get('/listings', async (req, res) => {
       ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
     WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest}`, params);
   res.json({ count: rows.length, listings: rows.map(withDiscount) });
+});
+
+r.get('/inventory-agents',async(req,res)=>{
+  const inventoryAgents=await many(`SELECT b.id,b.name,b.phone,b.job_title,b.job_role
+    FROM brokers b
+    WHERE b.status='active' AND b.role IN ('admin','internal_broker')
+      AND ${inventoryAgentEligibilitySql('b')}
+    ORDER BY b.name,b.id`);
+  res.json({inventoryAgents});
 });
 
 r.get('/listings-workspace',async(req,res)=>{
@@ -415,8 +431,8 @@ r.post('/listings', requirePostRights, async (req, res) => {
   const agreementTypes=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','ownership_authority','developer_authorization'],
     representationTypes=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
   if(!agreementTypes.includes(b.agreementType)||!representationTypes.includes(b.representationType))return res.status(400).json({error:'Select a valid ownership agreement and representation type'});
-  const eligibleAgents=await many(`SELECT id FROM brokers WHERE id=ANY($1::uuid[]) AND status='active'
-    AND role IN ('admin','internal_broker') AND job_role IN ('listing_agent','sales_agent','manager','director','admin')`,
+  const eligibleAgents=await many(`SELECT b.id FROM brokers b WHERE b.id=ANY($1::uuid[]) AND b.status='active'
+    AND b.role IN ('admin','internal_broker') AND ${inventoryAgentEligibilitySql('b')}`,
     [[b.originatingAgentId,b.responsibleAgentId]]);
   if(new Set(eligibleAgents.map(x=>x.id)).size!==new Set([b.originatingAgentId,b.responsibleAgentId]).size)
     return res.status(400).json({error:'Select active eligible NYSA originating and responsible Inventory agents'});

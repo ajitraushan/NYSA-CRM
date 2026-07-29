@@ -18,3 +18,13 @@ test('Opportunity seller-side inheritance remains linked to Inventory counterpar
   assert.match(route,/inventory_counterparties/);
   assert.match(route,/v\.sellerCounterpartyId=inherited\.id/);
 });
+
+test('Inventory agent selectors use company-wide active agent eligibility, not CRM team scope',()=>{
+  const route=read('src/routes/listings.js'),ui=read('public/app.js');
+  assert.match(route,/r\.get\('\/inventory-agents'/);
+  assert.match(route,/inventoryAgentEligibilitySql/);
+  assert.match(route,/user_role_assignments inventory_role/);
+  assert.match(route,/inventory_role\.job_role IN \('listing_agent','sales_agent'\)/);
+  assert.match(ui,/api\('\/inventory-agents'\)/);
+  assert.doesNotMatch(ui,/const inventoryAgents=staff\.filter/);
+});
