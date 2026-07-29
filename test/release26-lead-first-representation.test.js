@@ -14,9 +14,9 @@ test('standalone Opportunity creation is retired in favor of qualified Lead conv
 test('Inventory preserves originating and responsible agent identities',()=>{
   const migration=read('src/migrations/058_release26_lead_first_representation.sql'),route=read('src/routes/listings.js'),ui=read('public/app.js');
   assert.match(migration,/originating_agent_id UUID REFERENCES brokers/);
-  assert.match(route,/originatingAgentId/);
-  assert.match(ui,/Inventory originating agent/);
-  assert.match(ui,/Immutable attribution/);
+  assert.match(route,/b\.originatingAgentId=b\.responsibleAgentId/);
+  assert.doesNotMatch(ui,/Inventory originating agent/);
+  assert.match(ui,/immutable originating attribution/);
 });
 
 test('Lead conversion inherits Inventory seller, mandate and responsible agent',()=>{

@@ -424,8 +424,9 @@ r.post('/listings', requirePostRights, async (req, res) => {
   const handover=normalizeHandover(b);if(handover.error)return res.status(400).json({error:handover.error});b.handoverStatus=handover.status;b.handoverExpectedDate=handover.expectedDate;b.handoverDate=handover.legacyValue;
   const validationError = validateListingFields(b);
   if (validationError) return res.status(400).json({ error: validationError });
+  b.originatingAgentId=b.responsibleAgentId;
   const ownerRoles=['seller','landlord','lessor','developer'],ownerTypes=['person','company','external_broker','external_agency'];
-  for(const field of ['originatingAgentId','responsibleAgentId','ownerRole','ownerType','ownerName','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
+  for(const field of ['responsibleAgentId','ownerRole','ownerType','ownerName','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
     if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
   if(!ownerRoles.includes(b.ownerRole)||!ownerTypes.includes(b.ownerType))return res.status(400).json({error:'Select a valid Inventory owner role and type'});
   const agreementTypes=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','ownership_authority','developer_authorization'],
