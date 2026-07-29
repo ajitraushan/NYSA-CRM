@@ -14,6 +14,10 @@ test('administrators can maintain several active business areas and one primary 
   assert.match(admin,/NOT\(team_id=ANY\(\$2::uuid\[\]\)\)/);
   assert.match(ui,/Manage business areas/);
   assert.match(ui,/form\.getAll\('teamId'\)/);
+  assert.match(ui,/type="checkbox" name="teamId"/);
+  assert.match(ui,/type="radio" name="primaryTeamId"/);
+  assert.match(ui,/teamChecks\.filter\(input=>input\.checked\)/);
+  assert.match(ui,/if\(team\)team\.checked=true/);
 });
 
 test('geographical assignments are multi-select and constrain area-specific routing eligibility',()=>{

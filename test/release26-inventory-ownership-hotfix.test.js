@@ -8,7 +8,7 @@ test('Inventory draft atomically captures owner, authority, agreement and respon
   const route=read('src/routes/listings.js'),ui=read('public/app.js'),migration=read('src/migrations/057_release26_inventory_ownership_capture.sql');
   for(const marker of ['responsible_agent_id','inventory_counterparties','inventory_agreements','ownerName','agreementEvidenceReference'])
     assert.match(route,new RegExp(marker));
-  for(const label of ['Inventory ownership and authority','Owner / represented party name','Authority / mandate evidence','Responsible NYSA Inventory agent'])
+  for(const label of ['Inventory ownership and authority','Owner / represented party name','Authority / mandate evidence','Originating NYSA Inventory agent'])
     assert.match(ui,new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(migration,/ALTER COLUMN responsible_agent_id SET NOT NULL/);
 });
