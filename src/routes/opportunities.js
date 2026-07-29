@@ -1086,15 +1086,17 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
       const representationListing=selectedListings[0]||null;
       let sellerCounterpartyId=null,authorityEvidence=null;
       if(['inventory','dual'].includes(input.representationPath)){
-        const inventoryParty=await one(`SELECT * FROM inventory_counterparties WHERE listing_id=$1
-          AND party_role=ANY($2::text[])
-          ORDER BY CASE party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,created_at DESC LIMIT 1`,
+        const inventoryParty=await one(`SELECT p.*,COALESCE(c.full_name,p.display_name) AS display_name,
+          COALESCE(c.phone,p.phone) AS phone,COALESCE(c.email,p.email) AS email
+          FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
+          WHERE p.listing_id=$1 AND p.party_role=ANY($2::text[])
+          ORDER BY CASE p.party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,p.created_at DESC LIMIT 1`,
           [representationListing.id,input.transactionType==='Rental'?['landlord','lessor']:['seller','landlord','lessor','developer']],client);
         if(!inventoryParty)return {code:409,error:'The selected Inventory must have a maintained seller, landlord or developer before this representation path can create an Opportunity'};
         if(input.representationPath==='inventory'){
           const leadParty=await one('SELECT id,full_name,email,phone FROM contacts WHERE id=$1',[lead.contactId],client),
             normalizePhone=value=>String(value||'').replace(/\D/g,''),
-            sameParty=Boolean(
+            sameParty=Boolean(inventoryParty.contactId===lead.contactId||
               inventoryParty.email&&leadParty?.email&&inventoryParty.email.trim().toLowerCase()===leadParty.email.trim().toLowerCase()||
               normalizePhone(inventoryParty.phone)&&normalizePhone(inventoryParty.phone)===normalizePhone(leadParty?.phone)||
               inventoryParty.displayName&&leadParty?.fullName&&inventoryParty.displayName.trim().toLowerCase()===leadParty.fullName.trim().toLowerCase()

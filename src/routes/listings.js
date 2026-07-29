@@ -4,6 +4,7 @@ import { requireAuth, requirePostRights } from '../auth.js';
 import { PAYMENT_PLANS,PROPERTY_TYPES,BEDROOMS,normalizeInventoryAmount,normalizeHandover,normalizeBulkUnits,derivePublicationReadiness } from '../inventory-domain.js';
 import { listingWorkflowNextStep,listingWorkflowQueue,validateListingWorkflowAction } from '../listing-workflow-domain.js';
 import { validateVerificationSubmission,validateVerificationDecision,listingStatusForVerificationDecision } from '../inventory-verification-domain.js';
+import { validateContactIdentity } from '../crm-domain.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -14,14 +15,14 @@ const CLOSED_REASONS = ['Sold','Rented','Withdrawn','Expired'];
 const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
 const EDITABLE = ['project','developer','areaId','community','propertyType','bedrooms','sizeSqft','price','referencePrice',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
-  'handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','contact','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt'];
+  'inventoryHeadline','handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt'];
 const COLUMN = {
   project:'project', developer:'developer', areaId:'area_id', community:'community', propertyType:'property_type', bedrooms:'bedrooms',
   sizeSqft:'size_sqft', price:'price', referencePrice:'reference_price', currency:'currency',
   paymentPlanType:'payment_plan_type', downPaymentPercent:'down_payment_percent',
   onHandoverPercent:'on_handover_percent', postHandoverYears:'post_handover_years',
   paymentPlanNotes:'payment_plan_notes', handoverDate:'handover_date',handoverStatus:'handover_status',handoverExpectedDate:'handover_expected_date',exclusivityTier:'exclusivity_tier',
-  contact:'contact', notes:'notes', availabilityConfirmedAt:'availability_confirmed_at',verificationStatus:'verification_status',
+  inventoryHeadline:'inventory_headline', notes:'notes', availabilityConfirmedAt:'availability_confirmed_at',verificationStatus:'verification_status',
   verificationExpiresAt:'verification_expires_at',permitNumber:'permit_number',permitExpiresAt:'permit_expires_at'
 };
 
@@ -159,6 +160,15 @@ r.get('/inventory-agents',async(req,res)=>{
   res.json({inventoryAgents});
 });
 
+r.get('/inventory-owner-customers',async(req,res)=>{
+  const q=String(req.query.q||'').trim(),params=[],where=["c.archived_at IS NULL","c.lifecycle_status<>'merged'"];
+  if(q){params.push(`%${q}%`);where.push(`(c.full_name ILIKE $1 OR COALESCE(c.email,'') ILIKE $1 OR COALESCE(c.phone,'') ILIKE $1 OR COALESCE(c.postal_address,'') ILIKE $1)`);}
+  const customers=await many(`SELECT c.id,c.full_name,c.email,c.phone,c.postal_address,c.kyc_status,
+    c.lifecycle_status,c.duplicate_review_status FROM contacts c WHERE ${where.join(' AND ')}
+    ORDER BY LOWER(c.full_name),c.id LIMIT 50`,params);
+  res.json({customers});
+});
+
 r.get('/listings-workspace',async(req,res)=>{
   if(req.broker.jobRole!=='listing_agent'&&req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')return res.status(403).json({error:'Listing Executive workspace is outside your role'});
   const params=[],scope=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),'l.posted_by=$1'):'TRUE';
@@ -187,6 +197,8 @@ r.get('/listings-workspace',async(req,res)=>{
 });
 
 r.get('/listings-approval-queue',async(req,res)=>{
+  return res.status(410).json({error:'Inventory approval was consolidated into mandatory Inventory verification. Use the Inventory verification queue.'});
+  /*
   if(req.broker.jobRole!=='manager')return res.status(403).json({error:'Listing approval queue requires the responsible Team Manager'});
   const q=String(req.query.q||'').trim().toLowerCase(),page=Math.max(1,Number(req.query.page)||1),pageSize=Math.min(100,Math.max(1,Number(req.query.pageSize)||20)),params=[req.broker.id],search=[];
   if(q){params.push(`%${q}%`);search.push(`(LOWER(l.project) LIKE $${params.length} OR LOWER(COALESCE(l.inventory_reference,'')) LIKE $${params.length} OR LOWER(COALESCE(l.area,'')) LIKE $${params.length} OR LOWER(COALESCE(l.community,'')) LIKE $${params.length} OR LOWER(COALESCE(l.property_type,'')) LIKE $${params.length} OR LOWER(COALESCE(owner.name,'')) LIKE $${params.length} OR LOWER(t.name) LIKE $${params.length})`);}
@@ -199,6 +211,7 @@ r.get('/listings-approval-queue',async(req,res)=>{
     FROM listings l JOIN brokers owner ON owner.id=l.posted_by JOIN teams t ON t.id=owner.team_id
     WHERE ${where} ORDER BY COALESCE(l.submitted_at,l.updated_at) DESC,l.id DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);
   res.json({listingApprovals:listings,count,page,pageSize});
+  */
 });
 
 r.get('/inventory-verification-queue',async(req,res)=>{
@@ -265,13 +278,15 @@ r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
     const updated=await one(`UPDATE inventory_verification_requests SET status=$1,decided_by=$2,
       decided_at=NOW(),decision_reason=$3,version=version+1 WHERE id=$4 RETURNING *`,
       [v.decision,req.broker.id,v.reason,request.id],client);
+    const activated=['verified','exempted'].includes(v.decision),workflowStatus=activated?'approved':v.decision==='returned'?'draft':'blocked';
     await execute(`UPDATE listings SET verification_status=$1,verification_decided_by=$2,
-      verification_decided_at=NOW(),verification_reason=$3,updated_at=NOW() WHERE id=$4`,
-      [inventoryStatus,req.broker.id,v.reason,request.listingId],client);
+      verification_decided_at=NOW(),verification_reason=$3,workflow_status=$4,reviewed_by=$2,
+      reviewed_at=NOW(),review_comment=$3,updated_at=NOW() WHERE id=$5`,
+      [inventoryStatus,req.broker.id,v.reason,workflowStatus,request.listingId],client);
     await refreshReadiness(request.listingId,client);
     await audit('InventoryVerification',request.id,`decision_${v.decision}`,req.broker.id,
-      {listingId:request.listingId,from:'pending',to:inventoryStatus,reason:v.reason},client);
-    return {request:updated,verificationStatus:inventoryStatus};
+      {listingId:request.listingId,from:'pending',to:inventoryStatus,workflowStatus,activated,reason:v.reason},client);
+    return {request:updated,verificationStatus:inventoryStatus,workflowStatus,activated};
   });
   if(result.error)return res.status(result.code).json({error:result.error});
   res.json(result);
@@ -286,7 +301,7 @@ r.post('/listings/:id/external-publications',async(req,res)=>{
     WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
   if(!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This Inventory is outside your publication scope'});
-  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Approve the Internal Inventory record before creating an external listing publication'});
+  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Verify and activate the Internal Inventory record before creating an external listing publication'});
   const id=uuid(),publication=await one(`INSERT INTO external_listing_publications(
     id,listing_id,channel,external_reference,external_url,status,evidence_reference,reason,created_by
   ) VALUES($1,$2,$3,$4,$5,'draft',$6,$7,$8) RETURNING *`,
@@ -364,7 +379,13 @@ r.get('/listings/:id', async (req, res) => {
       JOIN brokers creator ON creator.id=p.created_by
       LEFT JOIN brokers approver ON approver.id=p.approved_by
       WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id]),
-    many(`SELECT * FROM inventory_counterparties WHERE listing_id=$1 ORDER BY created_at`,[listing.id]),
+    many(`SELECT p.*,
+      COALESCE(c.full_name,p.display_name) AS display_name,
+      COALESCE(c.phone,p.phone) AS phone,
+      COALESCE(c.email,p.email) AS email,
+      c.postal_address AS customer_address,c.kyc_status AS customer_kyc_status
+      FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
+      WHERE p.listing_id=$1 ORDER BY p.created_at`,[listing.id]),
     many(`SELECT a.*,c.display_name AS counterparty_name FROM inventory_agreements a
       LEFT JOIN inventory_counterparties c ON c.id=a.counterparty_id
       WHERE a.listing_id=$1 ORDER BY a.created_at DESC`,[listing.id])
@@ -377,9 +398,9 @@ r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
   const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
   if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its seller or lessor parties'});
-  const b=req.body||{},roles=['seller','landlord','lessor','developer','authorized_representative'],
+  const b=req.body||{},roles=['authorized_representative'],
     types=['person','company','external_broker','external_agency'];
-  if(!roles.includes(b.partyRole)||!types.includes(b.partyType))return res.status(400).json({error:'Select a valid party role and type'});
+  if(!roles.includes(b.partyRole)||!types.includes(b.partyType))return res.status(400).json({error:'The authoritative Seller, Landlord, Lessor or Developer is linked through Customer Master. Additional free-text parties may only be authorized representatives.'});
   for(const field of ['displayName','source','authorityEvidence'])if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
   const id=uuid(),row=await one(`INSERT INTO inventory_counterparties
     (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
@@ -412,7 +433,7 @@ r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
 r.post('/listings', requirePostRights, async (req, res) => {
   if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive, Manager or Administrator'});
   const b = {...(req.body || {})};
-  for (const field of ['project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
+  for (const field of ['inventoryHeadline','project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
   const area=await governedArea(b.areaId);if(!area)return res.status(400).json({error:'Select an active Area from Area Maintenance'});b.area=area.businessLabel;b.community=String(b.community||'').trim()||null;
   if (!PROPERTY_TYPES.includes(b.propertyType)) return res.status(400).json({ error: 'Invalid propertyType' });
   if (b.bedrooms && !BEDROOMS.includes(b.bedrooms)) return res.status(400).json({ error: 'Invalid bedrooms' });
@@ -426,9 +447,9 @@ r.post('/listings', requirePostRights, async (req, res) => {
   if (validationError) return res.status(400).json({ error: validationError });
   b.responsibleAgentId=b.originatingAgentId;
   const ownerRoles=['seller','landlord','lessor','developer'],ownerTypes=['person','company','external_broker','external_agency'];
-  for(const field of ['originatingAgentId','ownerRole','ownerType','ownerName','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
+  for(const field of ['originatingAgentId','ownerRole','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
     if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
-  if(!ownerRoles.includes(b.ownerRole)||!ownerTypes.includes(b.ownerType))return res.status(400).json({error:'Select a valid Inventory owner role and type'});
+  if(!ownerRoles.includes(b.ownerRole)||!ownerTypes.includes(b.ownerType||'person'))return res.status(400).json({error:'Select a valid Inventory owner role and type'});
   const agreementTypes=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','ownership_authority','developer_authorization'],
     representationTypes=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
   if(!agreementTypes.includes(b.agreementType)||!representationTypes.includes(b.representationType))return res.status(400).json({error:'Select a valid ownership agreement and representation type'});
@@ -439,23 +460,53 @@ r.post('/listings', requirePostRights, async (req, res) => {
     return res.status(400).json({error:'Select active eligible NYSA originating and responsible Inventory agents'});
   const id = uuid();
   const listing = await transaction(async client=>{
-    const created=await one(`INSERT INTO listings (id,project,developer,area,area_id,community,property_type,bedrooms,size_sqft,price,
+    let ownerContact;
+    if(b.ownerContactId){
+      ownerContact=await one(`SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL AND lifecycle_status<>'merged'`,[b.ownerContactId],client);
+      if(!ownerContact)return {ownerError:'Select an existing Customer from Customer Master'};
+    }else{
+      if(!String(b.ownerName||'').trim())return {ownerError:'Select an existing Customer or enter a new owner name'};
+      const identity=validateContactIdentity(b.ownerEmail,b.ownerPhone);
+      if(identity.error)return {ownerError:identity.error};
+      const duplicates=await many(`SELECT DISTINCT c.id,c.full_name FROM contacts c LEFT JOIN contact_channels cc ON cc.contact_id=c.id
+        WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+        ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2)
+          OR LOWER(c.email)=$1 OR c.phone=$2)`,
+        [identity.email,identity.phone],client);
+      if(duplicates.length)return {ownerError:'A matching Customer already exists. Select that Customer instead of creating another owner.',duplicates};
+      const contactId=uuid(),contactType=b.ownerRole==='seller'?'seller':b.ownerRole==='developer'?'developer':'landlord';
+      ownerContact=await one(`INSERT INTO contacts
+        (id,full_name,email,phone,contact_type,preferred_channel,postal_address,owner_id,created_by,
+         email_status,phone_status,kyc_status,lifecycle_status,duplicate_review_status,source_first_seen)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'unverified','active','not_required','Inventory ownership intake') RETURNING *`,
+        [contactId,String(b.ownerName).trim(),identity.email,identity.phone,contactType,b.ownerPreferredChannel||'Phone',
+         String(b.ownerAddress||'').trim()||null,b.originatingAgentId,req.broker.id,identity.emailStatus,identity.phoneStatus],client);
+      await execute(`INSERT INTO contact_roles(id,contact_id,role_code,created_by) VALUES($1,$2,$3,$4)`,
+        [uuid(),contactId,contactType,req.broker.id],client);
+      if(identity.email)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+        VALUES($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),contactId,b.ownerEmail,identity.email,identity.emailStatus,req.broker.id],client);
+      if(identity.phone)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+        VALUES($1,$2,'Phone','Primary',$3,$4,1,$5,$6)`,[uuid(),contactId,b.ownerPhone,identity.phone,identity.phoneStatus,req.broker.id],client);
+      await audit('Contact',contactId,'created_from_inventory_owner',req.broker.id,{kycStatus:'unverified',listingId:id},client);
+    }
+    const created=await one(`INSERT INTO listings (id,inventory_headline,project,developer,area,area_id,community,property_type,bedrooms,size_sqft,price,
     reference_price,currency,payment_plan_type,down_payment_percent,on_handover_percent,post_handover_years,
     payment_plan_notes,handover_date,handover_status,handover_expected_date,exclusivity_tier,posted_by,contact,notes,availability_confirmed_at,verification_status,
     verification_expires_at,permit_number,permit_expires_at,portal_status,workflow_status,source_kind,responsible_agent_id,originating_agent_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'draft','manual',$31,$32) RETURNING *`,
-    [id,b.project,b.developer||null,b.area,area.id,b.community,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NULL,$24,$25,$26,$27,$28,$29,'blocked','draft','manual',$30,$31) RETURNING *`,
+    [id,String(b.inventoryHeadline).trim(),b.project,b.developer||null,b.area,area.id,b.community,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
      b.referencePrice??null,b.currency||'AED',b.paymentPlanType||null,b.downPaymentPercent??null,
      b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,b.handoverStatus,b.handoverExpectedDate,
-     b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null,b.availabilityConfirmedAt||null,
-     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,'blocked',b.responsibleAgentId,b.originatingAgentId],client);
+     b.exclusivityTier||'Off-market',req.broker.id,b.notes||null,b.availabilityConfirmedAt||null,
+     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,b.responsibleAgentId,b.originatingAgentId],client);
     const counterpartyId=uuid();
     await one(`INSERT INTO inventory_counterparties
-      (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [counterpartyId,id,b.ownerRole,b.ownerType,String(b.ownerName).trim(),String(b.ownerPhone||'').trim()||null,
-       String(b.ownerEmail||'').trim()||null,String(b.ownerRepresentedParty||'').trim()||null,String(b.ownerSource).trim(),
-       String(b.authorityEvidence).trim(),String(b.ownerContactRestrictions||'').trim()||null,req.broker.id],client);
+      (id,listing_id,contact_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,identity_snapshot,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14) RETURNING id`,
+      [counterpartyId,id,ownerContact.id,b.ownerRole,b.ownerType||'person',ownerContact.fullName,ownerContact.phone,ownerContact.email,
+       String(b.ownerRepresentedParty||'').trim()||null,String(b.ownerSource).trim(),String(b.authorityEvidence).trim(),
+       String(b.ownerContactRestrictions||'').trim()||null,JSON.stringify({customerId:ownerContact.id,fullName:ownerContact.fullName,
+         phone:ownerContact.phone,email:ownerContact.email,postalAddress:ownerContact.postalAddress,kycStatus:ownerContact.kycStatus}),req.broker.id],client);
     const agreementId=uuid();
     await one(`INSERT INTO inventory_agreements
       (id,listing_id,counterparty_id,agreement_type,representation_type,evidence_reference,effective_from,effective_to,
@@ -465,13 +516,16 @@ r.post('/listings', requirePostRights, async (req, res) => {
        b.agreementEffectiveFrom||null,b.agreementEffectiveTo||null,String(b.commissionTerms||'').trim()||null,
        b.marketingAuthorized?1:0,b.viewingAuthorized?1:0,req.broker.id],client);
     if(b.propertyType==='Bulk deal')await replaceBulkUnits(id,bulk.units,client);
-    await audit('Listing', id, 'draft_created', req.broker.id, { project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length,originatingAgentId:b.originatingAgentId,responsibleAgentId:b.responsibleAgentId,inventoryCounterpartyId:counterpartyId,inventoryAgreementId:agreementId },client);
+    await audit('Listing', id, 'draft_created', req.broker.id, {inventoryHeadline:b.inventoryHeadline,project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length,originatingAgentId:b.originatingAgentId,responsibleAgentId:b.responsibleAgentId,ownerContactId:ownerContact.id,inventoryCounterpartyId:counterpartyId,inventoryAgreementId:agreementId },client);
     return created;
   });
+  if(listing?.ownerError)return res.status(409).json({error:listing.ownerError,duplicates:listing.duplicates||[]});
   res.status(201).json(withDiscount({...listing,bulkUnitCount:bulk.units.length,incompleteBulkUnitCount:0}));
 });
 
 r.patch('/listings/:id/workflow',async(req,res)=>{
+  return res.status(410).json({error:'Inventory approval was consolidated into mandatory Inventory verification'});
+  /*
   const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
   if(!listing)return res.status(404).json({error:'Listing not found'});
   const action=String(req.body?.action||''),reason=String(req.body?.reason||'').trim(),reviewer=await canReview(req.broker,listing);
@@ -489,6 +543,7 @@ r.patch('/listings/:id/workflow',async(req,res)=>{
     review_comment=$5,updated_at=NOW() WHERE id=$6 RETURNING *`,[next,submitted,reviewed,req.broker.id,reviewReason,listing.id]);
   await audit('Listing',listing.id,autoApproved?'workflow_auto_approved_by_policy':`workflow_${action}`,req.broker.id,{from:listing.workflowStatus,to:next,reason:reviewReason,managerApprovalRequired:policy?.managerApprovalRequired??null});
   res.json(withDiscount(updated));
+  */
 });
 
 r.patch('/listings/:id', async (req, res) => {
@@ -535,7 +590,7 @@ r.patch('/listings/:id/status', async (req, res) => {
   const listing = await one('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (!canEdit(req.broker, listing)) return res.status(403).json({ error: 'Only the posting broker or an admin can change status' });
-  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Submit and approve the listing before changing operational availability'});
+  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Verify and activate the Inventory before changing operational availability'});
   const { status, closedReason } = req.body || {};
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
   if(status==='Reserved')return res.status(409).json({error:'Reserved status is created only by the governed Booking workflow'});

@@ -247,18 +247,14 @@ test('manager dashboard exposes a team-scoped customer KYC review queue',()=>{
   assert.match(routes,/Review notes are required when rejecting or marking KYC expired/);
 });
 
-test('manager dashboard exposes a team-scoped listing approval queue with complete review actions',()=>{
+test('manager dashboard consolidates Inventory approval into its verification queue',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const listings=fs.readFileSync(new URL('../src/routes/listings.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  for(const marker of ['Inventory approvals','Search Inventory approvals','Review listing','data-listing-approval-tab','/listings-approval-queue'])assert.match(ui,new RegExp(marker.replaceAll('/','\\/')));
-  assert.match(ui,/openDetail\(review\.dataset\.listingApproval,\{afterWorkflow:load\}\)/);
-  assert.match(listings,/r\.get\('\/listings-approval-queue'/);
-  assert.match(listings,/l\.workflow_status='in_review'/);
-  assert.match(listings,/t\.manager_id=\$1 OR EXISTS\(SELECT 1 FROM team_memberships/);
-  assert.match(listings,/ORDER BY COALESCE\(l\.submitted_at,l\.updated_at\) DESC/);
-  assert.match(app,/async function openDetail\(id,\{afterWorkflow=null\}=\{\}\)/);
-  for(const action of ['Approve Inventory','Return for correction','Reject Inventory'])assert.match(app,new RegExp(action));
+  assert.match(ui,/Inventory verification/);
+  assert.doesNotMatch(ui,/likelyType==='manager'\?\[[^\]]*'Inventory approvals'/);
+  assert.match(listings,/Inventory approval was consolidated into mandatory Inventory verification/);
+  assert.match(app,/There is no separate Inventory approval/);
 });
 
 test('dashboard period presets replace manual date entry for every role',()=>{
@@ -291,7 +287,7 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.6-dev66/);
+  assert.match(page,/app\.js\?v=r2\.6-dev67/);
   assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev52/);
 });
 

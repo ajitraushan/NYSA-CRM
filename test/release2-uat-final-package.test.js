@@ -47,7 +47,8 @@ test('new User creation requires and persists the representative phone',()=>{
 
 test('User management groups Add User and existing User records together',()=>{
   const ui=read('public/app.js');
-  assert.match(ui,/\['listing_policy','Inventory approval policy'\],\['users','User management'\],\['users','User records'\],\['operations','Operations & audit'\]/);
+  assert.match(ui,/\['users','User management'\],\['users','User records'\],\['operations','Operations & audit'\]/);
+  assert.doesNotMatch(ui,/\['listing_policy','Inventory approval policy'\]/);
   assert.match(ui,/<h2>User records<\/h2>/);
   assert.match(ui,/id="broker-table"/);
   assert.match(ui,/data-edit-user-contact/);

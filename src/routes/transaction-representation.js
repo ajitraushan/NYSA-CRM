@@ -114,9 +114,11 @@ r.post('/crm/opportunity-origins',async(req,res)=>{
     const listing=v.listingId?await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[v.listingId],client):null;
     if(v.listingId&&!listing)return {code:409,error:'Select approved NYSA Inventory'};
     if(listing){
-      const inventoryParty=await one(`SELECT * FROM inventory_counterparties WHERE listing_id=$1
-        AND party_role = ANY($2::text[])
-        ORDER BY CASE party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,created_at DESC LIMIT 1`,
+      const inventoryParty=await one(`SELECT p.*,COALESCE(c.full_name,p.display_name) AS display_name,
+        COALESCE(c.phone,p.phone) AS phone,COALESCE(c.email,p.email) AS email
+        FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
+        WHERE p.listing_id=$1 AND p.party_role = ANY($2::text[])
+        ORDER BY CASE p.party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,p.created_at DESC LIMIT 1`,
         [listing.id,['Rental'].includes(transactionType)?['landlord','lessor']:['seller','landlord','lessor']],client);
       if(inventoryParty){
         const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';

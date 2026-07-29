@@ -47,9 +47,9 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(ui,/renderListingExecutiveDashboard/);
   assert.match(ui,/My Inventory workspace/);
   assert.match(ui,/external Listing and submit it to a portal/);
-  assert.match(ui,/Submit Inventory for approval/);
+  assert.match(ui,/There is no separate Inventory approval/);
   assert.match(routes,/\/listings-workspace/);
-  assert.match(routes,/workflow_auto_approved_by_policy/);
+  assert.match(routes,/Inventory approval was consolidated into mandatory Inventory verification/);
   assert.match(routes,/b\.team_id=ANY/);
   assert.match(routes,/Manual listing drafts may be created by a Listing Executive/);
   assert.match(routes,/q\.workspaceScope==='approved'/);
