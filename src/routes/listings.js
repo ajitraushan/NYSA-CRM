@@ -57,19 +57,19 @@ const inventoryAgentEligibilitySql=alias=>`(${alias}.job_role IN ('listing_agent
     AND inventory_role.ends_at IS NULL
 ))`;
 async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
-async function canReview(broker,listing){
+async function canReview(broker,listing,client){
   if(broker.role==='admin')return true;
   if(broker.jobRole!=='manager')return false;
   if((broker.managedTeamIds||[]).includes(String(listing.postedByTeamId||'')))return true;
   return Boolean(await one(`SELECT 1 AS allowed FROM brokers owner JOIN teams t ON t.id=owner.team_id
-    WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$2 AND tm.membership_role='manager' AND tm.ends_at IS NULL))`,[listing.postedBy,broker.id]));
+    WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$2 AND tm.membership_role='manager' AND tm.ends_at IS NULL))`,[listing.postedBy,broker.id],client));
 }
 
-async function refreshReadiness(id){const listing=await one(`SELECT l.*,
+async function refreshReadiness(id,client){const listing=await one(`SELECT l.*,
   (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
   0::int AS incomplete_bulk_unit_count,
   (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
-  FROM listings l WHERE l.id=$1`,[id]);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id]);return{...updated,approvedMediaCount:listing.approvedMediaCount,bulkUnitCount:listing.bulkUnitCount,incompleteBulkUnitCount:0};}
+  FROM listings l WHERE l.id=$1`,[id],client);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id],client);return{...updated,approvedMediaCount:listing.approvedMediaCount,bulkUnitCount:listing.bulkUnitCount,incompleteBulkUnitCount:0};}
 
 function canEdit(broker, listing) {
   return broker.role === 'admin' || broker.jobRole==='admin_assistant' || listing.postedBy === broker.id;
@@ -258,7 +258,7 @@ r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
       JOIN brokers b ON b.id=l.posted_by
       WHERE vr.id=$1 FOR UPDATE`,[req.params.id],client);
     if(!request)return {code:404,error:'Verification request not found'};
-    if(!await canReview(req.broker,{postedBy:request.postedBy,postedByTeamId:request.postedByTeamId}))return {code:403,error:'This verification request is outside your review scope'};
+    if(!await canReview(req.broker,{postedBy:request.postedBy,postedByTeamId:request.postedByTeamId},client))return {code:403,error:'This verification request is outside your review scope'};
     const checked=validateVerificationDecision({requestStatus:request.status,requestType:request.requestType,...req.body});
     if(checked.error)return {code:400,error:checked.error};
     const v=checked.value,inventoryStatus=listingStatusForVerificationDecision(request.requestType,v.decision);
@@ -268,7 +268,7 @@ r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
     await execute(`UPDATE listings SET verification_status=$1,verification_decided_by=$2,
       verification_decided_at=NOW(),verification_reason=$3,updated_at=NOW() WHERE id=$4`,
       [inventoryStatus,req.broker.id,v.reason,request.listingId],client);
-    await refreshReadiness(request.listingId);
+    await refreshReadiness(request.listingId,client);
     await audit('InventoryVerification',request.id,`decision_${v.decision}`,req.broker.id,
       {listingId:request.listingId,from:'pending',to:inventoryStatus,reason:v.reason},client);
     return {request:updated,verificationStatus:inventoryStatus};
@@ -307,7 +307,7 @@ r.patch('/external-publications/:id/status',async(req,res)=>{
       JOIN brokers b ON b.id=l.posted_by WHERE p.id=$1 FOR UPDATE OF p`,[req.params.id],client);
     if(!publication)return{code:404,error:'External publication not found'};
     const listing={postedBy:publication.postedBy,postedByTeamId:publication.postedByTeamId};
-    const reviewer=await canReview(req.broker,listing);
+    const reviewer=await canReview(req.broker,listing,client);
     if(['approved','rejected'].includes(status)&&!reviewer)return{code:403,error:'Manager or Administrator approval is required'};
     if(!reviewer&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing))return{code:403,error:'This publication is outside your editable scope'};
     const allowed={draft:['submitted','withdrawn'],submitted:['approved','rejected','withdrawn'],approved:['published','withdrawn'],

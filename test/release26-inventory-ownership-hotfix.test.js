@@ -28,3 +28,11 @@ test('Inventory agent selectors use company-wide active agent eligibility, not C
   assert.match(ui,/api\('\/inventory-agents'\)/);
   assert.doesNotMatch(ui,/const inventoryAgents=staff\.filter/);
 });
+
+test('Inventory verification reuses its transaction client instead of exhausting the pool',()=>{
+  const route=read('src/routes/listings.js');
+  assert.match(route,/canReview\(req\.broker,\{postedBy:request\.postedBy,postedByTeamId:request\.postedByTeamId\},client\)/);
+  assert.match(route,/refreshReadiness\(request\.listingId,client\)/);
+  assert.match(route,/async function refreshReadiness\(id,client\)/);
+  assert.match(route,/async function canReview\(broker,listing,client\)/);
+});
