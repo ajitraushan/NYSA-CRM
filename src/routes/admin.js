@@ -53,6 +53,7 @@ r.delete('/admin/invitations/:id', async (req, res) => {
 r.get('/admin/brokers', async (req, res) => {
   const rows = await many(`SELECT b.*,t.manager_id AS reporting_manager_id,m.name AS reporting_manager_name,d.name AS direct_supervisor_name,
     COALESCE((SELECT ARRAY_AGG(tm.team_id::text ORDER BY member_team.name) FROM team_memberships tm JOIN teams member_team ON member_team.id=tm.team_id WHERE tm.broker_id=b.id AND tm.ends_at IS NULL),ARRAY[]::text[]) AS team_ids,
+    COALESCE((SELECT ARRAY_AGG(aa.area_id::text ORDER BY assigned_area.display_order,assigned_area.business_label) FROM agent_area_assignments aa JOIN areas assigned_area ON assigned_area.id=aa.area_id WHERE aa.broker_id=b.id AND aa.ends_at IS NULL),ARRAY[]::text[]) AS area_ids,
     (SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
     'id',r.id,'jobRole',r.job_role,'teamId',r.team_id,'isPrimary',r.is_primary=1,
     'status',r.status,'startsAt',r.starts_at,'endsAt',r.ends_at,'changeReason',r.change_reason
@@ -134,12 +135,14 @@ r.put('/admin/users/:id/business-areas',async(req,res)=>{
   if(!target)return res.status(404).json({error:'User not found'});
   if(target.role!=='internal_broker')return res.status(400).json({error:'Business areas apply to internal CRM users'});
   if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});
-  const teamIds=[...new Set((Array.isArray(body.teamIds)?body.teamIds:[]).filter(Boolean))],primaryTeamId=body.primaryTeamId||null,reason=String(body.reason||'').trim();
+  const teamIds=[...new Set((Array.isArray(body.teamIds)?body.teamIds:[]).filter(Boolean))],areaIds=[...new Set((Array.isArray(body.areaIds)?body.areaIds:[]).filter(Boolean))],primaryTeamId=body.primaryTeamId||null,reason=String(body.reason||'').trim();
   if(!teamIds.length)return res.status(400).json({error:'Select at least one business area'});
   if(!primaryTeamId||!teamIds.includes(primaryTeamId))return res.status(400).json({error:'Primary team must be one of the selected business areas'});
   if(!reason)return res.status(400).json({error:'Change reason is required'});
   const teams=await many('SELECT id FROM teams WHERE id=ANY($1::uuid[]) AND active=1',[teamIds]);
   if(teams.length!==teamIds.length)return res.status(400).json({error:'One or more selected business areas are unavailable'});
+  const areas=areaIds.length?await many('SELECT id FROM areas WHERE id=ANY($1::uuid[]) AND active=1',[areaIds]):[];
+  if(areas.length!==areaIds.length)return res.status(400).json({error:'One or more selected geographical areas are unavailable'});
   await transaction(async client=>{
     const before=await many('SELECT team_id,membership_role FROM team_memberships WHERE broker_id=$1 AND ends_at IS NULL',[target.id],client);
     await execute('UPDATE team_memberships SET ends_at=NOW() WHERE broker_id=$1 AND ends_at IS NULL AND NOT(team_id=ANY($2::uuid[]))',[target.id,teamIds],client);
@@ -151,9 +154,12 @@ r.put('/admin/users/:id/business-areas',async(req,res)=>{
     }
     await execute('UPDATE brokers SET team_id=$1,updated_at=NOW() WHERE id=$2',[primaryTeamId,target.id],client);
     await execute(`UPDATE user_role_assignments SET team_id=$1 WHERE broker_id=$2 AND is_primary=1 AND status='active'`,[primaryTeamId,target.id],client);
-    await audit('Broker',target.id,'business_areas_updated',req.broker.id,{reason,primaryTeamId,teamIds,before},client);
+    await execute('UPDATE agent_area_assignments SET ends_at=NOW() WHERE broker_id=$1 AND ends_at IS NULL AND NOT(area_id=ANY($2::uuid[]))',[target.id,areaIds],client);
+    for(const areaId of areaIds)await execute(`INSERT INTO agent_area_assignments(id,broker_id,area_id,created_by) VALUES($1,$2,$3,$4)
+      ON CONFLICT (broker_id,area_id) WHERE ends_at IS NULL DO NOTHING`,[uuid(),target.id,areaId,req.broker.id],client);
+    await audit('Broker',target.id,'assignment_scope_updated',req.broker.id,{reason,primaryTeamId,teamIds,areaIds,before},client);
   });
-  res.json({ok:true,primaryTeamId,teamIds});
+  res.json({ok:true,primaryTeamId,teamIds,areaIds});
 });
 
 r.patch('/admin/brokers/:id', async (req, res) => {
