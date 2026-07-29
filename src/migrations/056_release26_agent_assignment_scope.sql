@@ -13,5 +13,4 @@ CREATE UNIQUE INDEX agent_area_assignments_active_uq
 CREATE INDEX agent_area_assignments_area_idx
   ON agent_area_assignments(area_id,broker_id) WHERE ends_at IS NULL;
 
-INSERT INTO schema_migrations(version)
-VALUES('056_release26_agent_assignment_scope.sql');
+GRANT SELECT,INSERT,UPDATE ON agent_area_assignments TO nysareal_nysar2app;
