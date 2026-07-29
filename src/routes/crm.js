@@ -95,7 +95,7 @@ r.get('/crm/staff', async (req, res) => {
   else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships managed
     JOIN team_memberships member ON member.team_id=managed.team_id AND member.ends_at IS NULL
     WHERE managed.broker_id=$1 AND managed.membership_role='manager' AND managed.ends_at IS NULL AND member.broker_id=brokers.id))`;}
-  const staff = await many(`SELECT id,name,email,team_id,job_title,job_role,
+  const staff = await many(`SELECT id,name,email,phone,team_id,job_title,job_role,
     COALESCE(ARRAY(SELECT tm.team_id::text FROM team_memberships tm WHERE tm.broker_id=brokers.id AND tm.ends_at IS NULL ORDER BY tm.team_id),ARRAY[]::text[]) AS team_ids
     FROM brokers
     WHERE (${scope}) AND role IN ('admin','internal_broker') AND status='active' ORDER BY name`,params);

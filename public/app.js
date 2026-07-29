@@ -1418,7 +1418,8 @@ async function postComment(listingId, o) {
 /* ============ ADD / EDIT LISTING ============ */
 function bulkUnitRow(unit={}){return `<div class="bulk-unit-row"><div><label>Unit / property reference *</label><input data-unit="unitReference" required value="${esc(unit.unitReference||'')}"></div><div><label>Property type *</label><select data-unit="propertyType">${opts(PROPERTY_TYPES.filter(value=>value!=='Bulk deal'),unit.propertyType||'Apartment')}</select></div><div><label>Bedrooms *</label><select data-unit="bedrooms"><option value="">Select</option>${opts(BEDROOMS,unit.bedrooms)}</select></div><div><label>Built-up / plot area (sqft) *</label><input data-unit="sizeSqft" type="number" min="0.01" step="0.01" required value="${esc(unit.sizeSqft||'')}"></div><div><label>Property asking price *</label><input data-unit="price" data-business-amount required value="${esc(unit.price||'')}"></div><button class="btn btn-sm" type="button" data-remove-bulk-unit>Remove</button></div>`;}
 async function openListingForm(l = null,{focusField=null}={}) {
-  let areas;try{areas=await loadListingAreas();}catch(err){return toast(`Listing form not opened: ${err.message}`);}
+  let areas,staff=[];try{[areas,{staff}]=await Promise.all([loadListingAreas(),api('/crm/staff')]);}catch(err){return toast(`Listing form not opened: ${err.message}`);}
+  const inventoryAgents=staff.filter(x=>['listing_agent','sales_agent','manager','director','admin'].includes(x.jobRole));
   const v = (f) => l ? esc(l[f] ?? '') : '';
   const dt = (f) => l?.[f] ? esc(String(l[f]).slice(0,16)) : '';
   const handoverStatus=l?.handoverStatus||(l?.handoverDate==='Ready'?'ready':/^\d{4}-\d{2}-\d{2}$/.test(String(l?.handoverDate||''))?'expected':'to_be_confirmed');
@@ -1454,7 +1455,20 @@ async function openListingForm(l = null,{focusField=null}={}) {
         <div><label>Permit number</label><input name="permitNumber" value="${v('permitNumber')}"></div>
         <div><label>Permit expiry</label><input name="permitExpiresAt" type="datetime-local" value="${dt('permitExpiresAt')}"></div>
         <div class="span2"><label>Listing publication readiness</label><div class="proposal-readiness ${l?.publicationReadiness?.ready?'ready':'blocked'}"><b>${l?.publicationReadiness?.ready?'Ready':'Calculated after save'}</b><span>${l?.publicationReadiness?.ready?'Required evidence is present.':'NYSA CORE checks completeness, current availability, verification/permit and approved property media.'}</span><small>Not editable. Published is unavailable until a governed portal connector is introduced.</small></div></div>
-        <div class="span2"><label>Contact for this listing</label><input name="contact" value="${l ? esc(l.contact ?? '') : esc(ME.phone || '')}"></div>
+        ${!l?`<div class="span3"><h3>Inventory ownership and authority</h3><p class="tool-note">Record the Seller, Landlord or Lessor and the authority under which NYSA maintains this Inventory. These details automatically become the seller-side transaction party when this Inventory is selected for an Opportunity.</p></div>
+        <div><label>Owner role *</label><select name="ownerRole" required><option value="seller">Seller</option><option value="landlord">Landlord</option><option value="lessor">Lessor</option><option value="developer">Developer</option></select></div>
+        <div><label>Owner type *</label><select name="ownerType" required><option value="person">Person</option><option value="company">Company</option><option value="external_broker">External broker</option><option value="external_agency">External agency</option></select></div>
+        <div><label>Owner / represented party name *</label><input name="ownerName" required></div>
+        <div><label>Owner phone</label><input name="ownerPhone" type="tel"></div><div><label>Owner email</label><input name="ownerEmail" type="email"></div>
+        <div><label>Source of owner details *</label><input name="ownerSource" required placeholder="Owner instruction, title deed, developer or co-broker"></div>
+        <div class="span2"><label>Authority / mandate evidence *</label><input name="authorityEvidence" required placeholder="Document number, signed mandate or verified instruction reference"></div>
+        <div><label>Agreement type *</label><select name="agreementType" required><option value="listing_mandate">Listing mandate</option><option value="leasing_mandate">Leasing mandate</option><option value="seller_representation">Seller representation</option><option value="landlord_representation">Landlord representation</option><option value="ownership_authority">Ownership authority</option><option value="developer_authorization">Developer authorization</option></select></div>
+        <div><label>Representation *</label><select name="representationType" required><option value="exclusive">Exclusive</option><option value="non_exclusive">Non-exclusive</option><option value="referral">Referral</option><option value="co_broker">Co-broker</option><option value="not_applicable">Not applicable</option></select></div>
+        <div><label>Agreement evidence reference *</label><input name="agreementEvidenceReference" required></div>
+        <div><label>Effective from</label><input name="agreementEffectiveFrom" type="date"></div><div><label>Effective to</label><input name="agreementEffectiveTo" type="date"></div>
+        <div><label><input name="marketingAuthorized" type="checkbox"> Marketing authorized</label><label><input name="viewingAuthorized" type="checkbox"> Viewing authorized</label></div>`:''}
+        <div><label>Responsible NYSA Inventory agent *</label><select name="responsibleAgentId" required ${l?'disabled':''}>${inventoryAgents.map(agent=>`<option value="${agent.id}" ${(l?.responsibleAgentId||ME.id)===agent.id?'selected':''}>${esc(agent.name)} · ${esc(agent.jobTitle||agent.jobRole)}</option>`).join('')}</select><small>Selected only from active eligible NYSA users.</small></div>
+        <div class="span2"><label>Inventory contact</label><input name="contact" readonly value="${l ? esc(l.contact ?? '') : esc(ME.phone || '')}"><small>Derived from the maintained responsible NYSA user; it is not an external-listing free-text field.</small></div>
         <div class="span3"><label>Notes (visible to all brokers)</label><textarea name="notes" rows="3">${v('notes')}</textarea></div>
       </div>
       <div class="modal-actions">
@@ -1465,12 +1479,13 @@ async function openListingForm(l = null,{focusField=null}={}) {
   </div>`);
   $('#lf-cancel', o).addEventListener('click', () => o.remove());
   const form=$('#listing-form',o),handoverDateWrap=$('[data-handover-date]',o),bulkWrap=$('[data-bulk-deal]',o),bulkList=$('#bulk-unit-list',o),bulkTotal=$('#bulk-deal-total',o),syncHandover=()=>{const expected=form.elements.handoverStatus.value==='expected';handoverDateWrap.hidden=!expected;form.elements.handoverExpectedDate.required=expected;if(!expected)form.elements.handoverExpectedDate.value='';};
+  const syncResponsibleContact=()=>{if(l||!form.elements.responsibleAgentId)return;const agent=inventoryAgents.find(x=>x.id===form.elements.responsibleAgentId.value);form.elements.contact.value=agent?.phone||'';};
   if(focusField&&form.elements[focusField]){form.elements[focusField].scrollIntoView({block:'center'});form.elements[focusField].focus();}
   const updateBulkTotal=()=>{const total=[...bulkList.querySelectorAll('[data-unit="price"]')].reduce((sum,input)=>{const amount=parseBusinessAmountInput(input.value);return sum+(Number.isFinite(amount)?amount:0);},0);bulkTotal.textContent=fmtPrice(total,form.elements.currency.value||'AED');};
   const wireBulkRows=()=>{bulkList.querySelectorAll('[data-remove-bulk-unit]').forEach(button=>button.onclick=()=>{button.closest('.bulk-unit-row').remove();updateBulkTotal();});bulkList.querySelectorAll('[data-unit="propertyType"]').forEach(select=>{const sync=()=>{const bedrooms=select.closest('.bulk-unit-row').querySelector('[data-unit="bedrooms"]'),plot=select.value==='Plot';bedrooms.disabled=plot;bedrooms.required=!plot;if(plot)bedrooms.value='';};select.onchange=sync;sync();});bulkList.querySelectorAll('[data-unit="price"]').forEach(input=>{if(input.dataset.bulkTotalInstalled!=='1'){input.dataset.bulkTotalInstalled='1';input.addEventListener('input',updateBulkTotal);input.addEventListener('blur',updateBulkTotal);}});installBusinessAmountInputs(bulkList);updateBulkTotal();};
   const addBulkRow=unit=>{bulkList.insertAdjacentHTML('beforeend',bulkUnitRow(unit));wireBulkRows();};
   const syncPropertyType=()=>{const bulk=form.elements.propertyType.value==='Bulk deal';bulkWrap.hidden=!bulk;o.querySelectorAll('[data-single-property],[data-single-commercial]').forEach(field=>{field.hidden=bulk;field.querySelectorAll('input,select').forEach(control=>control.disabled=bulk);});bulkWrap.querySelectorAll('input,select,button').forEach(control=>control.disabled=!bulk);if(bulk&&!bulkList.children.length){addBulkRow();addBulkRow();}if(bulk)wireBulkRows();};
-  $('#add-bulk-unit',o).onclick=()=>addBulkRow();form.elements.propertyType.addEventListener('change',syncPropertyType);form.elements.currency.addEventListener('change',updateBulkTotal);form.elements.handoverStatus.addEventListener('change',syncHandover);wireBulkRows();syncPropertyType();syncHandover();
+  $('#add-bulk-unit',o).onclick=()=>addBulkRow();form.elements.propertyType.addEventListener('change',syncPropertyType);form.elements.currency.addEventListener('change',updateBulkTotal);form.elements.handoverStatus.addEventListener('change',syncHandover);form.elements.responsibleAgentId?.addEventListener('change',syncResponsibleContact);wireBulkRows();syncPropertyType();syncHandover();syncResponsibleContact();
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
@@ -1479,7 +1494,7 @@ async function openListingForm(l = null,{focusField=null}={}) {
     for(const [field,label,required] of [['price','Asking price',true],['referencePrice','Reference / market price',false]]){const amount=parseBusinessAmountInput(f[field]);if((required&&(!Number.isFinite(amount)||amount<=0))||(!required&&f[field]&&!Number.isFinite(amount)))return toast(`${label} must be an amount such as 1 M, 750K or 1000000`);f[field]=amount;}
     for (const k of ['sizeSqft','downPaymentPercent','onHandoverPercent','postHandoverYears'])
       f[k] = f[k] === '' ? null : +f[k];
-    for (const k of ['developer','bedrooms','paymentPlanType','paymentPlanNotes','handoverExpectedDate','contact','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt'])
+    for (const k of ['developer','bedrooms','paymentPlanType','paymentPlanNotes','handoverExpectedDate','contact','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt','ownerPhone','ownerEmail','agreementEffectiveFrom','agreementEffectiveTo'])
       if (f[k] === '') f[k] = null;
     try {
       if (l) await api('/listings/' + l.id, { method: 'PATCH', body: f });
