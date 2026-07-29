@@ -51,7 +51,9 @@ r.delete('/admin/invitations/:id', async (req, res) => {
 });
 
 r.get('/admin/brokers', async (req, res) => {
-  const rows = await many(`SELECT b.*,t.manager_id AS reporting_manager_id,m.name AS reporting_manager_name,d.name AS direct_supervisor_name,(SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
+  const rows = await many(`SELECT b.*,t.manager_id AS reporting_manager_id,m.name AS reporting_manager_name,d.name AS direct_supervisor_name,
+    COALESCE((SELECT ARRAY_AGG(tm.team_id::text ORDER BY member_team.name) FROM team_memberships tm JOIN teams member_team ON member_team.id=tm.team_id WHERE tm.broker_id=b.id AND tm.ends_at IS NULL),ARRAY[]::text[]) AS team_ids,
+    (SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
     'id',r.id,'jobRole',r.job_role,'teamId',r.team_id,'isPrimary',r.is_primary=1,
     'status',r.status,'startsAt',r.starts_at,'endsAt',r.ends_at,'changeReason',r.change_reason
   ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers d ON d.id=b.reports_to_id ORDER BY b.joined_at DESC`);
@@ -127,6 +129,33 @@ r.post('/admin/users/:id/roles',async(req,res)=>{
 });
 r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),action=req.body?.action,reason=String(req.body?.reason||'').trim();if(!target)return res.status(404).json({error:'User not found'});if(target.id===req.broker.id)return res.status(400).json({error:'You cannot change your own access state'});if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});if(!['suspend','reactivate','revoke'].includes(action)||!reason)return res.status(400).json({error:'Valid action and reason are required'});const status=action==='reactivate'?'active':action==='suspend'?'suspended':'revoked';await transaction(async client=>{await execute(`UPDATE brokers SET status=$1,suspended_at=CASE WHEN $1='suspended' THEN NOW() ELSE suspended_at END,revoked_at=CASE WHEN $1='revoked' THEN NOW() ELSE revoked_at END,access_change_reason=$2,updated_at=NOW() WHERE id=$3`,[status,reason,target.id],client);if(status!=='active')await execute('DELETE FROM sessions WHERE broker_id=$1',[target.id],client);await audit('Broker',target.id,action,req.broker.id,{reason},client);});res.json({ok:true,status});});
 
+r.put('/admin/users/:id/business-areas',async(req,res)=>{
+  const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),body=req.body||{};
+  if(!target)return res.status(404).json({error:'User not found'});
+  if(target.role!=='internal_broker')return res.status(400).json({error:'Business areas apply to internal CRM users'});
+  if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});
+  const teamIds=[...new Set((Array.isArray(body.teamIds)?body.teamIds:[]).filter(Boolean))],primaryTeamId=body.primaryTeamId||null,reason=String(body.reason||'').trim();
+  if(!teamIds.length)return res.status(400).json({error:'Select at least one business area'});
+  if(!primaryTeamId||!teamIds.includes(primaryTeamId))return res.status(400).json({error:'Primary team must be one of the selected business areas'});
+  if(!reason)return res.status(400).json({error:'Change reason is required'});
+  const teams=await many('SELECT id FROM teams WHERE id=ANY($1::uuid[]) AND active=1',[teamIds]);
+  if(teams.length!==teamIds.length)return res.status(400).json({error:'One or more selected business areas are unavailable'});
+  await transaction(async client=>{
+    const before=await many('SELECT team_id,membership_role FROM team_memberships WHERE broker_id=$1 AND ends_at IS NULL',[target.id],client);
+    await execute('UPDATE team_memberships SET ends_at=NOW() WHERE broker_id=$1 AND ends_at IS NULL AND NOT(team_id=ANY($2::uuid[]))',[target.id,teamIds],client);
+    for(const teamId of teamIds){
+      const managed=await one('SELECT id FROM teams WHERE id=$1 AND manager_id=$2',[teamId,target.id],client),membershipRole=managed?'manager':'member';
+      await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5)
+        ON CONFLICT (team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role=EXCLUDED.membership_role`,
+        [uuid(),teamId,target.id,membershipRole,req.broker.id],client);
+    }
+    await execute('UPDATE brokers SET team_id=$1,updated_at=NOW() WHERE id=$2',[primaryTeamId,target.id],client);
+    await execute(`UPDATE user_role_assignments SET team_id=$1 WHERE broker_id=$2 AND is_primary=1 AND status='active'`,[primaryTeamId,target.id],client);
+    await audit('Broker',target.id,'business_areas_updated',req.broker.id,{reason,primaryTeamId,teamIds,before},client);
+  });
+  res.json({ok:true,primaryTeamId,teamIds});
+});
+
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
   if (!broker) return res.status(404).json({ error:'Broker not found' });
@@ -170,9 +199,9 @@ r.patch('/admin/brokers/:id', async (req, res) => {
     if (teamId !== undefined && (teamId || null) !== broker.teamId) {
       changes.teamId = { from:broker.teamId, to:teamId||null };
       await execute('UPDATE brokers SET team_id=$1 WHERE id=$2', [teamId||null,broker.id], client);
-      await execute('UPDATE team_memberships SET ends_at=NOW() WHERE broker_id=$1 AND ends_at IS NULL',[broker.id],client);
       if(teamId) await execute(`INSERT INTO team_memberships (id,team_id,broker_id,membership_role,created_by)
-        VALUES ($1,$2,$3,$4,$5)`,[uuid(),teamId,broker.id,(jobRole||broker.jobRole)==='manager'?'manager':'member',req.broker.id],client);
+        VALUES ($1,$2,$3,$4,$5) ON CONFLICT (team_id,broker_id) WHERE ends_at IS NULL DO NOTHING`,
+        [uuid(),teamId,broker.id,(jobRole||broker.jobRole)==='manager'?'manager':'member',req.broker.id],client);
     }
     if (jobTitle !== undefined && (jobTitle || null) !== broker.jobTitle) {
       changes.jobTitle = { from:broker.jobTitle, to:jobTitle||null };
