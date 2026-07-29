@@ -409,27 +409,29 @@ r.post('/listings', requirePostRights, async (req, res) => {
   const validationError = validateListingFields(b);
   if (validationError) return res.status(400).json({ error: validationError });
   const ownerRoles=['seller','landlord','lessor','developer'],ownerTypes=['person','company','external_broker','external_agency'];
-  for(const field of ['responsibleAgentId','ownerRole','ownerType','ownerName','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
+  for(const field of ['originatingAgentId','responsibleAgentId','ownerRole','ownerType','ownerName','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
     if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
   if(!ownerRoles.includes(b.ownerRole)||!ownerTypes.includes(b.ownerType))return res.status(400).json({error:'Select a valid Inventory owner role and type'});
   const agreementTypes=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','ownership_authority','developer_authorization'],
     representationTypes=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
   if(!agreementTypes.includes(b.agreementType)||!representationTypes.includes(b.representationType))return res.status(400).json({error:'Select a valid ownership agreement and representation type'});
-  const responsible=await one(`SELECT id FROM brokers WHERE id=$1 AND status='active'
-    AND role IN ('admin','internal_broker') AND job_role IN ('listing_agent','sales_agent','manager','director','admin')`,[b.responsibleAgentId]);
-  if(!responsible)return res.status(400).json({error:'Select an active eligible NYSA Inventory agent'});
+  const eligibleAgents=await many(`SELECT id FROM brokers WHERE id=ANY($1::uuid[]) AND status='active'
+    AND role IN ('admin','internal_broker') AND job_role IN ('listing_agent','sales_agent','manager','director','admin')`,
+    [[b.originatingAgentId,b.responsibleAgentId]]);
+  if(new Set(eligibleAgents.map(x=>x.id)).size!==new Set([b.originatingAgentId,b.responsibleAgentId]).size)
+    return res.status(400).json({error:'Select active eligible NYSA originating and responsible Inventory agents'});
   const id = uuid();
   const listing = await transaction(async client=>{
     const created=await one(`INSERT INTO listings (id,project,developer,area,area_id,community,property_type,bedrooms,size_sqft,price,
     reference_price,currency,payment_plan_type,down_payment_percent,on_handover_percent,post_handover_years,
     payment_plan_notes,handover_date,handover_status,handover_expected_date,exclusivity_tier,posted_by,contact,notes,availability_confirmed_at,verification_status,
-    verification_expires_at,permit_number,permit_expires_at,portal_status,workflow_status,source_kind,responsible_agent_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'draft','manual',$31) RETURNING *`,
+    verification_expires_at,permit_number,permit_expires_at,portal_status,workflow_status,source_kind,responsible_agent_id,originating_agent_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'draft','manual',$31,$32) RETURNING *`,
     [id,b.project,b.developer||null,b.area,area.id,b.community,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
      b.referencePrice??null,b.currency||'AED',b.paymentPlanType||null,b.downPaymentPercent??null,
      b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,b.handoverStatus,b.handoverExpectedDate,
      b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null,b.availabilityConfirmedAt||null,
-     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,'blocked',b.responsibleAgentId],client);
+     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,'blocked',b.responsibleAgentId,b.originatingAgentId],client);
     const counterpartyId=uuid();
     await one(`INSERT INTO inventory_counterparties
       (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
@@ -446,7 +448,7 @@ r.post('/listings', requirePostRights, async (req, res) => {
        b.agreementEffectiveFrom||null,b.agreementEffectiveTo||null,String(b.commissionTerms||'').trim()||null,
        b.marketingAuthorized?1:0,b.viewingAuthorized?1:0,req.broker.id],client);
     if(b.propertyType==='Bulk deal')await replaceBulkUnits(id,bulk.units,client);
-    await audit('Listing', id, 'draft_created', req.broker.id, { project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length,responsibleAgentId:b.responsibleAgentId,inventoryCounterpartyId:counterpartyId,inventoryAgreementId:agreementId },client);
+    await audit('Listing', id, 'draft_created', req.broker.id, { project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length,originatingAgentId:b.originatingAgentId,responsibleAgentId:b.responsibleAgentId,inventoryCounterpartyId:counterpartyId,inventoryAgreementId:agreementId },client);
     return created;
   });
   res.status(201).json(withDiscount({...listing,bulkUnitCount:bulk.units.length,incompleteBulkUnitCount:0}));

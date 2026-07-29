@@ -65,6 +65,9 @@ r.get('/crm/dashboard',async(req,res)=>{
   const prior=priorWhere(f),priorProposal=priorWhere(proposalF,'l','p.updated_at'),priorCall=priorWhere(callF,'l','a.created_at'),type=dashboardTypeFor(req.broker),canSeeIntegration=isManager(req.broker)||isCompanyReader(req.broker);
   const [current,previous,stages,sources,priorSources,campaigns,teams,agents,trend,tasks,exceptions,previousExceptions,proposals,calls,priorProposals,priorCalls,priorAgents,inventory,targets,hierarchyRows,accountabilityRows,integrationFailures,previousIntegrationFailures]=await Promise.all([
     one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS warm_converted,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id) AND stage NOT IN('Lost'))::int AS warm_pending,
+      COUNT(*) FILTER(WHERE temperature='Hot' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS hot_converted,
       COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND accepted_at IS NULL)::int AS awaiting_acceptance,
@@ -173,7 +176,9 @@ r.get('/crm/dashboard',async(req,res)=>{
   const dataAsOf=new Date(),presentation=buildRoleDashboardPresentation({type,view:requestedView,current,previous,previousInventory,targets,trend,tasks:taskSummary,exceptions,previousExceptions,proposals,calls,inventory,agents,sources,priorSources,accountabilityRows,dataAsOf});
   res.json({dashboardType:type,view:presentation.view,canApproveProposals,dataAsOf,lastRefresh:dataAsOf,filters:f.selected,period:{current:{from:f.start,to:f.end},prior:{from:prior.start,to:prior.end}},
     calculationContext:'Role-scoped operational data; reassignment history is not rewritten. Counts use distinct accessible records.',...presentation,
-    organizationContext,qualification:{hot:current.hot,warm:current.warm},stages,agentLifecycle:buildAgentLifecycle(stages),customerCount:Number(current.customers||0),sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue:approvalResult.rows,proposalApprovalQueueCount:approvalResult.count,proposalApprovalQueuePage:approvalResult.page,proposalApprovalQueuePageSize:approvalResult.pageSize,calls,inventory,recentActivities,hierarchy});
+    organizationContext,qualification:{hot:current.hot,warm:current.warm,warmConverted:current.warmConverted,warmPending:current.warmPending,
+      warmConversionRate:Number(current.warm||0)?Number((Number(current.warmConverted||0)*100/Number(current.warm)).toFixed(2)):0,
+      hotConverted:current.hotConverted},stages,agentLifecycle:buildAgentLifecycle(stages),customerCount:Number(current.customers||0),sources,campaigns,teams,agents,trend,tasks:taskSummary,exceptions,proposals,proposalApprovalQueue:approvalResult.rows,proposalApprovalQueueCount:approvalResult.count,proposalApprovalQueuePage:approvalResult.page,proposalApprovalQueuePageSize:approvalResult.pageSize,calls,inventory,recentActivities,hierarchy});
 });
 
 r.get('/crm/dashboard/proposal-approvals',async(req,res)=>{if(!isProposalApprover(req.broker))return res.status(403).json({error:'Proposal approval access requires Team Manager or Managing Director'});const selected={teamId:clean(req.query.teamId),managerId:clean(req.query.managerId),agentId:clean(req.query.agentId),businessType:clean(req.query.businessType)},result=await loadProposalApprovalQueue(req,selected,clean(req.query.q)||'',req.query.page,req.query.pageSize);res.json({proposalApprovalQueue:result.rows,count:result.count,page:result.page,pageSize:result.pageSize});});

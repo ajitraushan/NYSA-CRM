@@ -102,6 +102,8 @@ r.post('/crm/external-properties/:id/link-inventory',async(req,res)=>{
 });
 
 r.post('/crm/opportunity-origins',async(req,res)=>{
+  return res.status(409).json({error:'Every Opportunity must be created by converting an assigned, qualified Lead. Open the Lead and select Create opportunity.'});
+  /* Legacy standalone origin retained below temporarily for audit-compatible rollback only; it is unreachable. */
   const checked=validateRepresentation(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   const v=checked.value,title=clean(req.body?.title),transactionType=req.body?.transactionType,nextAction=clean(req.body?.nextAction),due=new Date(req.body?.nextActionDueAt);
   if(!title||!['Sale','Rental','Off-plan','Commercial'].includes(transactionType)||!nextAction||Number.isNaN(due.valueOf()))return res.status(400).json({error:'Opportunity name, transaction, next action and due time are required'});

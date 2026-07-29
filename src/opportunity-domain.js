@@ -36,7 +36,33 @@ export function validateOpportunityCreate(body={}){
   if(!body.nextActionDueAt||Number.isNaN(due.valueOf()))return {error:'A valid next-action due time is required'};
   if(body.priority&&!['low','normal','high','urgent'].includes(body.priority))return {error:'Select a valid opportunity priority'};
   const listingIds=[...new Set([...(Array.isArray(body.listingIds)?body.listingIds:[]),body.listingId].filter(Boolean))];
-  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:listingIds[0]||null,listingIds,serviceOpportunityReason}};
+  const representationPath=body.representationPath||'buyer';
+  if(!['buyer','inventory','dual'].includes(representationPath))return {error:'Select how NYSA is representing the parties'};
+  if(['inventory','dual'].includes(representationPath)&&listingIds.length!==1)return {error:'Seller/landlord and dual representation must select exactly one approved NYSA Inventory record'};
+  const percent=(value,label)=>{
+    if(value===undefined||value===null||value==='')return null;
+    const number=Number(value);if(!Number.isFinite(number)||number<0||number>100)throw new Error(`${label} must be between 0% and 100%`);
+    return number;
+  },amount=(value,label)=>{
+    if(value===undefined||value===null||value==='')return null;
+    const number=Number(value);if(!Number.isFinite(number)||number<0)throw new Error(`${label} must be a non-negative amount`);
+    return number;
+  };
+  let buyerCommissionPercent,buyerCommissionMinimum,sellerCommissionPercent,sellerCommissionMinimum,originatingAgentSplitPercent,servicingAgentSplitPercent;
+  try{
+    buyerCommissionPercent=percent(body.buyerCommissionPercent,'Buyer-side commission');
+    buyerCommissionMinimum=amount(body.buyerCommissionMinimum,'Buyer-side commission minimum');
+    sellerCommissionPercent=percent(body.sellerCommissionPercent,'Seller-side commission');
+    sellerCommissionMinimum=amount(body.sellerCommissionMinimum,'Seller-side commission minimum');
+    originatingAgentSplitPercent=percent(body.originatingAgentSplitPercent,'Originating-agent split');
+    servicingAgentSplitPercent=percent(body.servicingAgentSplitPercent,'Servicing-agent split');
+  }catch(error){return {error:error.message};}
+  if((originatingAgentSplitPercent!==null||servicingAgentSplitPercent!==null)&&
+    (originatingAgentSplitPercent===null||servicingAgentSplitPercent===null||originatingAgentSplitPercent+servicingAgentSplitPercent!==100))
+    return {error:'Originating-agent and servicing-agent split percentages must both be entered and total 100%'};
+  return {value:{title,transactionType,nextAction,nextActionDueAt:due.toISOString(),priority:body.priority||'normal',listingId:listingIds[0]||null,listingIds,serviceOpportunityReason,
+    representationPath,buyerCommissionPercent,buyerCommissionMinimum,sellerCommissionPercent,sellerCommissionMinimum,originatingAgentSplitPercent,servicingAgentSplitPercent,
+    disclosureEvidence:clean(body.disclosureEvidence)}};
 }
 
 export function validateOpportunityTransition(currentStage,toStage,{reasonCode,reason}={}){

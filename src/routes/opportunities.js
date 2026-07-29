@@ -1077,7 +1077,45 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         WHERE lead_id=$1 AND removed_at IS NULL ORDER BY selected_at`,[lead.id],client),
         selectedListingIds=[...new Set((selectionSpecified?input.listingIds:[...storedSelections.map(x=>x.listingId),lead.listingId]).filter(Boolean))],
         selectedListingId=selectedListingIds[0]||null;
-      for(const listingId of selectedListingIds)if(!await one("SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[listingId],client))return {code:409,error:'Inventory carried from this Lead is no longer approved and active; deliberately remove or replace it before continuing'};
+      const selectedListings=[];
+      for(const listingId of selectedListingIds){
+        const selected=await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[listingId],client);
+        if(!selected)return {code:409,error:'Inventory carried from this Lead is no longer approved and active; deliberately remove or replace it before continuing'};
+        selectedListings.push(selected);
+      }
+      const representationListing=selectedListings[0]||null;
+      let sellerCounterpartyId=null,authorityEvidence=null;
+      if(['inventory','dual'].includes(input.representationPath)){
+        const inventoryParty=await one(`SELECT * FROM inventory_counterparties WHERE listing_id=$1
+          AND party_role=ANY($2::text[])
+          ORDER BY CASE party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,created_at DESC LIMIT 1`,
+          [representationListing.id,input.transactionType==='Rental'?['landlord','lessor']:['seller','landlord','lessor','developer']],client);
+        if(!inventoryParty)return {code:409,error:'The selected Inventory must have a maintained seller, landlord or developer before this representation path can create an Opportunity'};
+        if(input.representationPath==='inventory'){
+          const leadParty=await one('SELECT id,full_name,email,phone FROM contacts WHERE id=$1',[lead.contactId],client),
+            normalizePhone=value=>String(value||'').replace(/\D/g,''),
+            sameParty=Boolean(
+              inventoryParty.email&&leadParty?.email&&inventoryParty.email.trim().toLowerCase()===leadParty.email.trim().toLowerCase()||
+              normalizePhone(inventoryParty.phone)&&normalizePhone(inventoryParty.phone)===normalizePhone(leadParty?.phone)||
+              inventoryParty.displayName&&leadParty?.fullName&&inventoryParty.displayName.trim().toLowerCase()===leadParty.fullName.trim().toLowerCase()
+            );
+          if(!sameParty)return {code:409,error:'For seller/landlord representation, the qualified Lead party must be the owner maintained on the selected Inventory. Create or select the owner Lead; do not use an unrelated Customer.'};
+        }
+        const agreement=await one(`SELECT * FROM inventory_agreements WHERE listing_id=$1 AND status='active'
+          ORDER BY created_at DESC LIMIT 1`,[representationListing.id],client);
+        if(!agreement)return {code:409,error:'The selected Inventory must have an active mandate or authority agreement'};
+        const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';
+        const inherited=await one(`INSERT INTO transaction_counterparties
+          (id,display_name,party_type,role,phone,email,represented_party,source,evidence_reference,created_by,inventory_counterparty_id)
+          VALUES($1,$2,'inventory_owner',$3,$4,$5,$6,$7,$8,$9,$10)
+          ON CONFLICT(inventory_counterparty_id) DO UPDATE SET
+            display_name=EXCLUDED.display_name,role=EXCLUDED.role,phone=EXCLUDED.phone,email=EXCLUDED.email,
+            represented_party=EXCLUDED.represented_party,source=EXCLUDED.source,evidence_reference=EXCLUDED.evidence_reference,updated_at=NOW()
+          RETURNING *`,[uuid(),inventoryParty.displayName,role,inventoryParty.phone,inventoryParty.email,inventoryParty.representedParty,
+            inventoryParty.source,inventoryParty.authorityEvidence,req.broker.id,inventoryParty.id],client);
+        sellerCounterpartyId=inherited.id;
+        authorityEvidence=agreement.evidenceReference;
+      }
       if(selectionSpecified){
         const selectedSet=new Set(selectedListingIds);
         for(const prior of storedSelections)if(!selectedSet.has(prior.listingId))await execute(`UPDATE lead_inventory_selections
@@ -1091,12 +1129,22 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
       const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code;
       const counter=await one(`INSERT INTO opportunity_number_counters(period_code,last_value) VALUES($1,1)
         ON CONFLICT(period_code) DO UPDATE SET last_value=opportunity_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
-      const opportunityReference=`NYSA-OP-${period}-${String(counter.lastValue).padStart(6,'0')}`,id=uuid();
+      const opportunityReference=`NYSA-OP-${period}-${String(counter.lastValue).padStart(6,'0')}`,id=uuid(),
+        inventorySideAgentId=['inventory','dual'].includes(input.representationPath)?representationListing.responsibleAgentId:null,
+        buyerSideAgentId=input.representationPath==='inventory'?null:lead.assignedTo,
+        ownerId=input.representationPath==='inventory'?inventorySideAgentId:lead.assignedTo,
+        ownerTeam=await one('SELECT team_id FROM brokers WHERE id=$1',[ownerId],client);
       const opportunity=await one(`INSERT INTO opportunities(id,opportunity_reference,lead_id,contact_id,requirement_id,qualification_assessment_id,
-        listing_id,assigned_team_id,owner_id,title,transaction_type,priority,next_action,next_action_due_at,created_from_legacy_stage,created_by)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-        [id,opportunityReference,lead.id,lead.contactId,requirement.id,assessment.id,selectedListingId,lead.assignedTeamId,lead.assignedTo,
-          input.title,input.transactionType,input.priority,input.nextAction,input.nextActionDueAt,['Viewing','Negotiation','Won'].includes(lead.stage)?lead.stage:null,req.broker.id],client);
+        listing_id,assigned_team_id,owner_id,title,transaction_type,priority,next_action,next_action_due_at,created_from_legacy_stage,created_by,
+        representation_path,property_source,buyer_source,buyer_side_agent_id,inventory_side_agent_id,seller_counterparty_id,
+        authority_evidence,disclosure_evidence,representation_locked_at,buyer_commission_percent,buyer_commission_minimum,
+        seller_commission_percent,seller_commission_minimum,originating_agent_split_percent,servicing_agent_split_percent)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'nysa_inventory',$18,$19,$20,$21,$22,$23,NOW(),$24,$25,$26,$27,$28,$29) RETURNING *`,
+        [id,opportunityReference,lead.id,lead.contactId,requirement.id,assessment.id,selectedListingId,ownerTeam?.teamId||lead.assignedTeamId,ownerId,
+          input.title,input.transactionType,input.priority,input.nextAction,input.nextActionDueAt,['Viewing','Negotiation','Won'].includes(lead.stage)?lead.stage:null,req.broker.id,
+          input.representationPath,input.representationPath==='inventory'?'external_buyer_agent':'nysa_customer',buyerSideAgentId,inventorySideAgentId,
+          sellerCounterpartyId,authorityEvidence,input.disclosureEvidence,input.buyerCommissionPercent,input.buyerCommissionMinimum,
+          input.sellerCommissionPercent,input.sellerCommissionMinimum,input.originatingAgentSplitPercent,input.servicingAgentSplitPercent],client);
       await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,$4,$5,$6)`,[uuid(),id,selectedListingId?'Matching':'Requirements',selectedListingId?'lead_inventory_carried_forward':'opportunity_created',
           selectedListingId?'The Inventory selected on the originating Lead was carried into the Opportunity':input.serviceOpportunityReason,req.broker.id],client);
@@ -1112,10 +1160,22 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         }
       }
       await execute(`INSERT INTO opportunity_participants(id,opportunity_id,broker_id,participation_role,added_by)
-        VALUES($1,$2,$3,'owner',$4)`,[uuid(),id,lead.assignedTo,req.broker.id],client);
+        VALUES($1,$2,$3,'owner',$4)`,[uuid(),id,ownerId,req.broker.id],client);
       await execute(`INSERT INTO opportunity_assignment_history(id,opportunity_id,to_team_id,to_owner_id,change_scope,reason,changed_by)
-        VALUES($1,$2,$3,$4,'opportunity_only','Initial owner captured from the qualified lead when the opportunity was created',$5)`,
-        [uuid(),id,lead.assignedTeamId,lead.assignedTo,req.broker.id],client);
+        VALUES($1,$2,$3,$4,'opportunity_only',$5,$6)`,
+        [uuid(),id,ownerTeam?.teamId||lead.assignedTeamId,ownerId,input.representationPath==='inventory'?
+          'Initial owner inherited from the current responsible NYSA Inventory agent; originating Inventory attribution remains immutable':
+          'Initial owner captured from the qualified lead when the opportunity was created',req.broker.id],client);
+      const representationSnapshot={representationPath:input.representationPath,leadId:lead.id,listingId:selectedListingId,
+        buyerSideAgentId,inventorySideAgentId,inventoryOriginatingAgentId:representationListing?.originatingAgentId||null,
+        sellerCounterpartyId,authorityEvidence,buyerCommissionPercent:input.buyerCommissionPercent,
+        buyerCommissionMinimum:input.buyerCommissionMinimum,sellerCommissionPercent:input.sellerCommissionPercent,
+        sellerCommissionMinimum:input.sellerCommissionMinimum,originatingAgentSplitPercent:input.originatingAgentSplitPercent,
+        servicingAgentSplitPercent:input.servicingAgentSplitPercent};
+      await execute(`INSERT INTO opportunity_representation_history(id,opportunity_id,representation_path,property_source,buyer_source,snapshot,reason,changed_by)
+        VALUES($1,$2,$3,'nysa_inventory',$4,$5,$6,$7)`,[uuid(),id,input.representationPath,
+          input.representationPath==='inventory'?'external_buyer_agent':'nysa_customer',JSON.stringify(representationSnapshot),
+          'Representation selected during governed conversion of a qualified Lead',req.broker.id],client);
       const attribution=buildOpportunityAttribution(lead);
       const attributionId=uuid();
       await execute(`INSERT INTO opportunity_attribution(id,opportunity_id,originating_lead_id,source,campaign_code,external_source_id,source_page,source_form,
@@ -1124,7 +1184,7 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
           attribution.originatingListingId,JSON.stringify(attribution.provenanceSnapshot),attribution.provenanceHash],client);
       await execute(`UPDATE r2_legacy_lead_review SET review_status='linked_after_review',linked_opportunity_id=$1,reviewed_by=$2,
         reviewed_at=NOW(),review_note='Opportunity created explicitly after scoped review' WHERE lead_id=$3 AND review_status='pending'`,[id,req.broker.id,lead.id],client);
-      await audit('Opportunity',id,'created',req.broker.id,{leadId:lead.id,opportunityReference,requirementId:requirement.id,qualificationAssessmentId:assessment.id,legacyLeadStage:lead.stage,serviceOpportunityConfirmed:true,serviceOpportunityReason:input.serviceOpportunityReason},client);
+      await audit('Opportunity',id,'created',req.broker.id,{leadId:lead.id,opportunityReference,requirementId:requirement.id,qualificationAssessmentId:assessment.id,legacyLeadStage:lead.stage,serviceOpportunityConfirmed:true,serviceOpportunityReason:input.serviceOpportunityReason,...representationSnapshot},client);
       await audit('OpportunityAttribution',attributionId,'captured',req.broker.id,{opportunityId:id,provenanceHash:attribution.provenanceHash,attributionBasis:'original_enquiry'},client);
       return opportunity;
     });
