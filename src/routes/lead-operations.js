@@ -248,7 +248,7 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
     const id=uuid(),version=(current?.versionNo||0)+1;
     const created=await one(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,funding_method,
       bedrooms_min,bedrooms_max,timeline_code,notes,created_by,ai_conversation_notes,ai_reviewed_evidence,ai_reviewed_at,ai_reviewed_by)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE NOW() END,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE $15 END) RETURNING *`,
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::uuid,$16,$17::jsonb,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE NOW() END,CASE WHEN $17::jsonb IS NULL THEN NULL ELSE $15::uuid END) RETURNING *`,
       [id,lead.id,version,text(b.businessLine),b.purpose,propertyTypes,normalizeDelimitedValues(b.areas),budget.min,budget.max,b.fundingMethod,bedroomsMin,bedroomsMax,text(b.timelineCode),text(b.notes),req.broker.id,aiReviewedEvidence?text(b.aiConversationNotes):null,aiReviewedEvidence?JSON.stringify(aiReviewedEvidence):null],client);
     await audit('LeadRequirement',id,'version_created',req.broker.id,{leadId:lead.id,version,reviewedAiEvidence:Boolean(aiReviewedEvidence)},client);return created;
   });res.status(201).json(row);

@@ -31,3 +31,9 @@ test('routing and self-claim eligibility includes every active team and geograph
   assert.match(leads,/l\.primary_routing_area_id/);
   assert.match(leads,/Responsible agent must be an eligible active Sales Agent in the selected team/);
 });
+
+test('structured requirement save uses explicit UUID typing and blocking errors stay in the active dialog',()=>{
+  assert.match(leads,/\$15::uuid/);
+  assert.match(ui,/showDialogError\(o,`Requirement not saved:/);
+  assert.match(ui,/function showDialogError/);
+});
