@@ -36,6 +36,7 @@ test('unit migration ownership is exact, ordered and covers 038 through 059 once
 test('frozen R2.6 signoff binds the accepted version and exact candidate digest',()=>{
   const release=manifest.units.find(unit=>unit.id==='R2.6');
   assert.equal(release.acceptedVersion,'2.1.0-dev.79');
+  assert.equal(release.sourceCommit,'5669016');
   assert.equal(release.sourceBaselineCommit,'9073206');
   assert.equal(release.candidateSha256,'689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f');
   const checksum=readFileSync(

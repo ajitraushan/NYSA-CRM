@@ -104,6 +104,7 @@
     {
       "id": "R2.6",
       "acceptedVersion": "2.1.0-dev.79",
+      "sourceCommit": "5669016",
       "sourceBaselineCommit": "9073206",
       "candidateSha256": "689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f",
       "migrations": [

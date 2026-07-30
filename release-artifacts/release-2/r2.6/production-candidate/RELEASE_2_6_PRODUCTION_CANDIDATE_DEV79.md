@@ -3,7 +3,8 @@
 Status: **FROZEN — production-clone rehearsal required**
 
 - Candidate version: `2.1.0-dev.79`
-- Source commit baseline: `9073206`
+- Reconciled candidate source commit: `5669016`
+- Development baseline before UAT remediation: `9073206`
 - Branch: `agent/release-2-design`
 - Package: `nysa-core-r2-6-production-candidate-dev79-9073206.zip`
 - SHA-256: `689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f`
