@@ -13,12 +13,15 @@ test('every Release 2 unit has explicit owner acceptance and durable evidence',(
     assert.equal(unit.status,manifest.signoffPolicy.requiredStatus,`${unit.id} status`);
     assert.equal(unit.authority,manifest.signoffPolicy.requiredAuthority,`${unit.id} authority`);
     assert.match(unit.acceptedVersion,/^\d+\.\d+\.\d+-dev\.\d+(?:\.\d+)?$/);
+    assert.match(unit.signedTag,/^nysa-core-r2\.(?:1a|2|3|3a|3b|4a|5|6)-accepted$/);
     assert.ok(unit.evidence.length>0,`${unit.id} evidence`);
     for(const evidence of unit.evidence)
       assert.ok(existsSync(resolve(root,evidence)),`${unit.id} missing evidence ${evidence}`);
   }
-  assert.equal(manifest.signoffPolicy.cryptographicSigning,'not_configured');
-  assert.match(manifest.signoffPolicy.cryptographicSigningReason,/No GPG program/);
+  assert.equal(manifest.signoffPolicy.cryptographicSigning,'ssh-ed25519');
+  assert.equal(manifest.signoffPolicy.signingPrincipal,'ajitraush@gmail.com');
+  assert.equal(manifest.signoffPolicy.signingKeyFingerprint,'SHA256:Z9KhEvKwhC3kdyesE2+PbjbIVBc0Nr7GcMtJRcKf6Mc');
+  assert.ok(existsSync(resolve(root,manifest.signoffPolicy.allowedSignersFile)));
 });
 
 test('unit migration ownership is exact, ordered and covers 038 through 059 once',()=>{

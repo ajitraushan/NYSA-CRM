@@ -19,13 +19,13 @@ migration chain from 038 through 059, and the frozen dev.79 candidate hash.
 
 ## Signing state
 
-The repository has a configured author name and email, but the audited workstation has no GPG
-program, GPG secret key, SSH signing key, `user.signingkey`, `commit.gpgsign`, or `tag.gpgsign`.
-Cryptographic signing is therefore **not configured** and must not be claimed.
+Release attestations use the dedicated SSH Ed25519 signing key for principal
+`ajitraush@gmail.com`, fingerprint
+`SHA256:Z9KhEvKwhC3kdyesE2+PbjbIVBc0Nr7GcMtJRcKf6Mc`. The public key is recorded in
+`docs/GIT_ALLOWED_SIGNERS`; the private key remains outside the repository.
 
-Unit-level acceptance is explicit and test-enforced. Cryptographically signed release tags remain
-a separate hardening action after the repository owner installs or connects an appropriate signing
-key. Existing historical commits must not be rewritten merely to add signatures.
+Each unit has a distinct signed tag recorded in the machine-readable ledger. Existing historical
+commits are not rewritten merely to add signatures.
 
 ## Scope preservation
 

@@ -10,8 +10,10 @@
     "requiredStatus": "accepted",
     "requiredAuthority": "NYSA owner",
     "requiredEvidence": true,
-    "cryptographicSigning": "not_configured",
-    "cryptographicSigningReason": "No GPG program, secret key, SSH signing key, or Git signing key is configured in the audited workspace."
+    "cryptographicSigning": "ssh-ed25519",
+    "signingPrincipal": "ajitraush@gmail.com",
+    "signingKeyFingerprint": "SHA256:Z9KhEvKwhC3kdyesE2+PbjbIVBc0Nr7GcMtJRcKf6Mc",
+    "allowedSignersFile": "docs/GIT_ALLOWED_SIGNERS"
   },
   "units": [
     {
@@ -25,6 +27,7 @@
       ],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.1a-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -40,6 +43,7 @@
       ],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.2-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -49,6 +53,7 @@
       "migrations": [],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.3-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -58,6 +63,7 @@
       "migrations": ["045_release2_offer_negotiation.sql"],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.3a-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -68,6 +74,7 @@
       "migrations": ["046_release2_booking_reservation.sql"],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.3b-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -81,6 +88,7 @@
       ],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.4a-accepted",
       "evidence": ["docs/CURRENT_STATUS.md"]
     },
     {
@@ -96,6 +104,7 @@
       ],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.5-accepted",
       "evidence": [
         "docs/CURRENT_STATUS.md",
         "release-artifacts/release-2/r2.5/RELEASE_2_5_DEV51_FULL_REMEDIATION.md"
@@ -117,6 +126,7 @@
       ],
       "status": "accepted",
       "authority": "NYSA owner",
+      "signedTag": "nysa-core-r2.6-accepted",
       "evidence": [
         "docs/CURRENT_STATUS.md",
         "release-artifacts/release-2/r2.6/production-candidate/RELEASE_2_6_PRODUCTION_CANDIDATE_DEV79.md"
