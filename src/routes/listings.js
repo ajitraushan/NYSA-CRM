@@ -121,7 +121,7 @@ r.get('/listings', async (req, res) => {
   if (q.handoverBefore) add("(l.handover_date = 'Ready' OR l.handover_date <= ?)", q.handoverBefore);
   if (q.handoverAfter) add("(l.handover_date != 'Ready' AND l.handover_date >= ?)", q.handoverAfter);
   if (q.q) {
-    const term = `%${q.q}%`;
+    const term = `%${String(q.q).replaceAll('*','%')}%`;
     params.push(term, term, term);
     where.push(`(l.project ILIKE $${params.length - 2} OR l.developer ILIKE $${params.length - 1} OR l.area ILIKE $${params.length} OR l.community ILIKE $${params.length})`);
   }
@@ -130,6 +130,8 @@ r.get('/listings', async (req, res) => {
     discount: '(CASE WHEN l.reference_price > 0 THEN (l.reference_price - l.price) / l.reference_price ELSE -1 END) DESC',
     handover: "(CASE WHEN l.handover_date = 'Ready' THEN '0000' ELSE COALESCE(l.handover_date,'9999') END) ASC"
   };
+  const pageSize=Math.min(100,Math.max(1,Number.parseInt(q.pageSize,10)||10));
+  const total=Number((await one(`SELECT COUNT(*)::int AS count FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE ${where.join(' AND ')}`,params)).count||0);
   const rows = await many(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,
     b.team_id AS posted_by_team_id,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
@@ -147,8 +149,8 @@ r.get('/listings', async (req, res) => {
     LEFT JOIN LATERAL (SELECT o.id AS opportunity_id,o.opportunity_reference FROM offers f
       JOIN opportunities o ON o.id=f.opportunity_id WHERE f.listing_id=l.id AND f.status='accepted'
       ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
-    WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest}`, params);
-  res.json({ count: rows.length, listings: rows.map(withDiscount) });
+    WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest} LIMIT $${params.length+1}`, [...params,pageSize]);
+  res.json({ count: total, pageSize, listings: rows.map(withDiscount) });
 });
 
 r.get('/inventory-agents',async(req,res)=>{
@@ -574,8 +576,13 @@ r.patch('/listings/:id', async (req, res) => {
   }
   if(area){changes.area={from:listing.area,to:area.businessLabel};params.push(area.businessLabel);sets.push(`area = $${params.length}`);}
   const replaceUnits=bulk!==null;
+  // Inventory activation is governed only by verification or an authorized exemption.
+  // Maintaining property, availability, permit, or verification-evidence fields must not silently deactivate a verified Inventory.
+  if(listing.workflowStatus==='draft'&&['verified','not_required'].includes(listing.verificationStatus)){
+    sets.push("workflow_status='approved'","review_comment=NULL","reviewed_at=COALESCE(reviewed_at,NOW())");
+    changes.workflowStatus={from:'draft',to:'approved',reason:'restored because system-controlled verification remains valid'};
+  }
   if (!sets.length&&!replaceUnits) return res.json(withDiscount(listing));
-  if(listing.workflowStatus==='approved'&&req.broker.jobRole==='listing_agent')sets.push("workflow_status='draft'","review_comment='Material changes require a new review'","reviewed_at=NULL","reviewed_by=NULL");
   params.push(listing.id);
   await transaction(async client=>{
     if(sets.length)await one(`UPDATE listings SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`, params,client);

@@ -44,7 +44,14 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(routes,/responsibility:'manager'/);
   assert.match(routes,/Accept assignment/);
   assert.match(routes,/Open Lead to accept or reject/);
-  assert.match(routes,/LIMIT 50/);
+  assert.match(routes,/LIMIT 8/);
+  assert.match(styles,/priority scrolling must not stretch the operating sequence/);
+  assert.match(dashboard,/class="dashboard-workspace"/);
+  assert.match(dashboard,/class="dashboard-left-flow"/);
+  assert.match(dashboard,/id="dashboard-priority-flow"/);
+  assert.match(dashboard,/append\(priorityPanel\)/);
+  assert.match(styles,/#dashboard-priority-flow\{min-width:0;align-self:start\}/);
+  assert.doesNotMatch(styles,/\.guided-next-cases\{grid-column:2;grid-row:1/);
   assert.match(routes,/nextCaseResponsibility/);
   assert.match(routes,/l\.assigned_to IS NULL AND l\.assignment_status IN \('unassigned','reassignment_due'\)/);
   assert.match(dashboard,/manager action required/);

@@ -169,7 +169,7 @@ r.get('/crm/dashboard',async(req,res)=>{
   for(const row of organizationRows){let team=hierarchy.teams.find(x=>x.id===row.teamId);if(!team){team={id:row.teamId,name:row.teamName,managerId:row.managerId,manager:row.managerName||req.broker.name,agents:[]};hierarchy.teams.push(team);}if(row.agentId&&!team.agents.some(x=>x.id===row.agentId))team.agents.push({id:row.agentId,name:row.agentName,value:activityByAgent.get(row.agentId)||0});}
   const taskSummary=Object.fromEntries(tasks.map(item=>[item.label,item.value]));
   const recentActivities=await many(`SELECT a.id,a.activity_type,a.subject,a.outcome,a.created_at,l.id AS lead_id,l.title,c.full_name AS contact_name,b.name AS owner_name FROM activities a
-    JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 12`,f.params);
+    JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id JOIN brokers b ON b.id=a.owner_id WHERE ${f.where} ORDER BY a.created_at DESC LIMIT 8`,f.params);
   const approvalResult=await loadProposalApprovalQueue(req,f.selected);
   const organizationContext=await loadOrganizationContext(req.broker,type);
   const canApproveProposals=isProposalApprover(req.broker),requestedView=!canApproveProposals&&req.query.view==='Proposal approvals'?null:req.query.view;

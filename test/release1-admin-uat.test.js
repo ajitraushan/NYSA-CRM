@@ -159,7 +159,7 @@ test('qualification maintenance guides business users through governed activatio
 test('customers are a primary workspace and lead KYC links to the customer master',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js'),files=read('src/routes/files-proposals.js');
   assert.match(ui,/data-tab="customers">Customers/);assert.match(ui,/renderCustomers\(\)/);
-  assert.match(ui,/Customer identity is company-visible to prevent duplicates/);
+  assert.match(ui,/Search uses partial matching/);
   assert.match(ui,/Open customer record/);assert.match(ui,/switchTab\('customers'\)/);
   assert.doesNotMatch(ui,/id="lead-verify"/);assert.doesNotMatch(ui,/id="lead-governance"/);
   assert.match(crm,/r\.get\('\/crm\/customers\/:id'/);assert.match(crm,/canReadLead/);
@@ -178,7 +178,8 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
   const ui=read('public/app.js'),crm=read('src/routes/crm.js'),styles=read('public/index.html');
   assert.match(crm,/SELECT c\.id FROM contacts c WHERE \$\{where\.join\(' AND '\)\}/);
   assert.match(crm,/WHERE c\.id=ANY\(\$1::uuid\[\]\)/);
-  assert.match(crm,/res\.json\(\{ count: contacts\.length, contacts \}\)/);
+  assert.match(crm,/pageSize=Math\.min\(100,Math\.max\(1,Number\.parseInt\(req\.query\.pageSize,10\)\|\|10\)\)/);
+  assert.match(crm,/res\.json\(\{ count: total, pageSize, contacts \}\)/);
   assert.match(crm,/stageHistory/);
   assert.match(ui,/Customer.*Lead.*Contacted.*Qualified.*Viewing.*Negotiation.*Won/s);
   assert.match(ui,/One customer may have several leads, and each lead can be at a different stage\./);

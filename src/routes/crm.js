@@ -196,15 +196,23 @@ r.get('/crm/contacts', async (req, res) => {
   const where = ['c.archived_at IS NULL'], params = [];
   where.push(contactScopeSql('c',req.broker,params).clause);
   if (req.query.q) {
-    params.push(`%${req.query.q}%`);
+    params.push(`%${String(req.query.q).replaceAll('*','%')}%`);
     where.push(`(c.full_name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`);
   }
+  if(['unverified','pending_review','verified','expired','rejected'].includes(req.query.kycStatus)){
+    params.push(req.query.kycStatus); where.push(`c.kyc_status=$${params.length}`);
+  }
+  if(['pending','approved','rejected','not_required'].includes(req.query.duplicateReviewStatus)){
+    params.push(req.query.duplicateReviewStatus); where.push(`c.duplicate_review_status=$${params.length}`);
+  }
+  const pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||10));
+  const sort={name:'LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,\'\')),c.id',newest:'c.created_at DESC,c.id',kyc:'c.kyc_status,LOWER(c.full_name),c.id'}[req.query.sort]||'LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,\'\')),c.id';
+  const total=Number((await one(`SELECT COUNT(*)::int AS count FROM contacts c WHERE ${where.join(' AND ')}`,params)).count||0);
   // Resolve permission scope before loading optional presentation metadata. This keeps
   // the Sales Agent owner/lead predicate in a small, independently parameterized query
   // and ensures a newly created customer remains visible even before it has a lead.
-  const visible = await many(`SELECT c.id FROM contacts c WHERE ${where.join(' AND ')}
-    ORDER BY LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,'')),c.id LIMIT 500`,params);
-  if(!visible.length)return res.json({count:0,contacts:[]});
+  const visible = await many(`SELECT c.id FROM contacts c WHERE ${where.join(' AND ')} ORDER BY ${sort} LIMIT $${params.length+1}`,[...params,pageSize]);
+  if(!visible.length)return res.json({count:total,pageSize,contacts:[]});
   const contacts = await many(`SELECT c.*,b.name AS owner_name,co.name AS company_name_resolved,lc.lead_count
     FROM contacts c
     LEFT JOIN brokers b ON b.id=c.owner_id
@@ -212,15 +220,20 @@ r.get('/crm/contacts', async (req, res) => {
     LEFT JOIN LATERAL (SELECT COUNT(*)::int AS lead_count FROM leads l WHERE l.contact_id=c.id) lc ON TRUE
     WHERE c.id=ANY($1::uuid[])
     ORDER BY LOWER(c.full_name),LOWER(COALESCE(c.email,c.phone,'')),c.id`,[visible.map(x=>x.id)]);
-  res.json({ count: contacts.length, contacts });
+  res.json({ count: total, pageSize, contacts });
 });
 
 r.get('/crm/customers/:id',async(req,res)=>{
   const params=[req.params.id],scope=contactScopeSql('c',req.broker,params);
-  const customer=await one(`SELECT c.*,co.name AS company_name_resolved FROM contacts c LEFT JOIN companies co ON co.id=c.company_id WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
+  const customer=await one(`SELECT c.*,co.name AS company_name_resolved,owner.name AS owner_name,creator.name AS created_by_name
+    FROM contacts c
+    LEFT JOIN companies co ON co.id=c.company_id
+    LEFT JOIN brokers owner ON owner.id=c.owner_id
+    LEFT JOIN brokers creator ON creator.id=c.created_by
+    WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
   const allLeads=await many(`SELECT id,title,business_type,stage,temperature,assigned_to,assigned_team_id,created_by,created_at FROM leads WHERE contact_id=$1 ORDER BY created_at DESC`,[customer.id]);
-  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id),canReviewKyc=isManager(req.broker);
+  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id),canReviewKyc=isManager(req.broker);
   const [roles,channels,consent,documents]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
@@ -400,7 +413,7 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   const scopeParams=[req.params.id],scope=contactScopeSql('c',req.broker,scopeParams);
   const contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!contact)return res.status(404).json({error:'Contact not found'});
-  const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id),canReview=isManager(req.broker);
+  const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id),canReview=isManager(req.broker);
   if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the contact owner or an authorized manager can maintain KYC details'});
   const b=req.body||{},requestedStatus=clean(b.kycStatus)||'unverified',
     managerSelfVerification=canMaintain&&canReview&&['pending_review','verified'].includes(requestedStatus),
@@ -453,7 +466,9 @@ r.get('/crm/leads', async (req, res) => {
   if (req.query.assignedTo === 'me') add('l.assigned_to=?',req.broker.id);
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
-  if (req.query.q) { params.push(`%${req.query.q}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
+  if (req.query.q) { params.push(`%${String(req.query.q).replaceAll('*','%')}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
+  const pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||10));
+  const total=Number((await one(`SELECT COUNT(*)::int AS count FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);
   const opportunityScope=opportunityScopeSql('o',req.broker,params);
   const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,
@@ -470,8 +485,8 @@ r.get('/crm/leads', async (req, res) => {
       ORDER BY o.updated_at DESC,o.created_at DESC LIMIT 1
     ) active_opportunity ON TRUE
     WHERE ${where.join(' AND ')} ORDER BY
-      CASE l.temperature WHEN 'Hot' THEN 1 WHEN 'Warm' THEN 2 ELSE 3 END,l.updated_at DESC LIMIT 500`,params);
-  res.json({ count: leads.length, leads });
+      CASE l.temperature WHEN 'Hot' THEN 1 WHEN 'Warm' THEN 2 ELSE 3 END,l.updated_at DESC LIMIT $${params.length+1}`,[...params,pageSize]);
+  res.json({ count: total, pageSize, leads });
 });
 
 r.get('/crm/leads/:id', async (req, res) => {

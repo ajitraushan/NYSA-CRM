@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "releaseFamily": "NYSA CORE Release 2",
+  "productionBaseline": {
+    "release": "1.1",
+    "commit": "6588047",
+    "latestMigration": "037_listing_mapping_governance.sql"
+  },
+  "signoffPolicy": {
+    "requiredStatus": "accepted",
+    "requiredAuthority": "NYSA owner",
+    "requiredEvidence": true,
+    "cryptographicSigning": "not_configured",
+    "cryptographicSigningReason": "No GPG program, secret key, SSH signing key, or Git signing key is configured in the audited workspace."
+  },
+  "units": [
+    {
+      "id": "R2.1A",
+      "acceptedVersion": "2.0.0-dev.14",
+      "sourceCommit": "6fc1aee",
+      "evidenceCommit": "a62d2b8",
+      "migrations": [
+        "038_release2_opportunity_foundation.sql",
+        "039_release2_connected_operations.sql"
+      ],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.2",
+      "acceptedVersion": "2.0.0-dev.17",
+      "sourceCommit": "dba3e44",
+      "migrations": [
+        "040_release2_matching_viewing.sql",
+        "041_google_calendar_integration.sql",
+        "042_google_calendar_sync_reconciliation.sql",
+        "043_activity_google_meet.sql",
+        "044_viewing_client_message.sql"
+      ],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.3",
+      "acceptedVersion": "2.0.0-dev.38.2",
+      "sourceCommit": "0a0f797",
+      "migrations": [],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.3A",
+      "acceptedVersion": "2.0.0-dev.39.7",
+      "sourceCommit": "a911730",
+      "migrations": ["045_release2_offer_negotiation.sql"],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.3B",
+      "acceptedVersion": "2.0.0-dev.40.6",
+      "sourceCommit": "bb95521",
+      "evidenceCommit": "f946c78",
+      "migrations": ["046_release2_booking_reservation.sql"],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.4A",
+      "acceptedVersion": "2.0.0-dev.41.4",
+      "sourceCommit": "9d932a0",
+      "evidenceCommit": "28b8b1c",
+      "migrations": [
+        "047_release2_deal_foundation.sql",
+        "048_release2_deal_stage_constraint.sql"
+      ],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": ["docs/CURRENT_STATUS.md"]
+    },
+    {
+      "id": "R2.5",
+      "acceptedVersion": "2.0.0-dev.54",
+      "sourceCommit": "5b5e199",
+      "migrations": [
+        "049_release2_release_candidate.sql",
+        "050_release2_customer_kyc_uat_corrections.sql",
+        "051_release2_final_uat_remediation.sql",
+        "052_release2_full_remediation_foundation.sql",
+        "053_release2_uat_evidence_and_queue.sql"
+      ],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": [
+        "docs/CURRENT_STATUS.md",
+        "release-artifacts/release-2/r2.5/RELEASE_2_5_DEV51_FULL_REMEDIATION.md"
+      ]
+    },
+    {
+      "id": "R2.6",
+      "acceptedVersion": "2.1.0-dev.79",
+      "sourceBaselineCommit": "9073206",
+      "candidateSha256": "689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f",
+      "migrations": [
+        "054_release26_consolidated.sql",
+        "055_release26_transaction_inventory_finance.sql",
+        "056_release26_agent_assignment_scope.sql",
+        "057_release26_inventory_ownership_capture.sql",
+        "058_release26_lead_first_representation.sql",
+        "059_release26_inventory_owner_and_activation.sql"
+      ],
+      "status": "accepted",
+      "authority": "NYSA owner",
+      "evidence": [
+        "docs/CURRENT_STATUS.md",
+        "release-artifacts/release-2/r2.6/production-candidate/RELEASE_2_6_PRODUCTION_CANDIDATE_DEV79.md"
+      ]
+    }
+  ]
+}

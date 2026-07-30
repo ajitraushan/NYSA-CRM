@@ -91,10 +91,12 @@ r.get('/crm/opportunities',async(req,res)=>{
   if(req.query.stage){if(!OPPORTUNITY_STAGES.includes(req.query.stage))return res.status(400).json({error:'Invalid opportunity stage'});params.push(req.query.stage);where.push(`o.stage=$${params.length}`);}
   if(req.query.assignedTo==='me'){params.push(req.broker.id);where.push(`o.owner_id=$${params.length}`);}
   if(req.query.leadId){params.push(req.query.leadId);where.push(`o.lead_id=$${params.length}`);}
-  if(clean(req.query.q)){params.push(`%${clean(req.query.q)}%`);where.push(`(o.title ILIKE $${params.length} OR o.opportunity_reference ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`);}
-  const opportunities=await many(`${SELECT_OPPORTUNITY} WHERE ${where.join(' AND ')} ORDER BY
-    CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.next_action_due_at,o.created_at DESC`,params);
-  res.json({count:opportunities.length,opportunities});
+  if(clean(req.query.q)){params.push(`%${String(clean(req.query.q)).replaceAll('*','%')}%`);where.push(`(o.title ILIKE $${params.length} OR o.opportunity_reference ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`);}
+  const pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||10));
+  const total=Number((await one(`SELECT COUNT(*)::int AS count FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);
+  const sorts={due:"CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.next_action_due_at NULLS LAST,o.created_at DESC",newest:'o.created_at DESC',updated:'o.updated_at DESC,o.created_at DESC',customer:'LOWER(COALESCE(c.full_name,buyer_cp.display_name,\'\')),o.created_at DESC'};
+  const opportunities=await many(`${SELECT_OPPORTUNITY} WHERE ${where.join(' AND ')} ORDER BY ${sorts[req.query.sort]||sorts.due} LIMIT $${params.length+1}`,[...params,pageSize]);
+  res.json({count:total,pageSize,opportunities});
 });
 
 r.get('/crm/opportunities/:id',async(req,res)=>{
@@ -111,6 +113,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
       COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency) AS currency,
       COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
+      CASE WHEN li.id IS NOT NULL THEN CONCAT_WS(', ',NULLIF(li.project,''),NULLIF(li.community,''),NULLIF(li.area,'')) ELSE ep.property_address END AS viewing_address,
       creator.name AS created_by_name FROM property_matches pm LEFT JOIN listings li ON li.id=pm.listing_id
       LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
       JOIN brokers creator ON creator.id=pm.created_by WHERE pm.opportunity_id=$1 ORDER BY
@@ -1324,7 +1327,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost') ${nextCaseResponsibility}
       ORDER BY CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 0 ELSE 1 END,
         CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN COALESCE(assignment_offer.acceptance_due_at,l.acceptance_due_at) ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
-        l.updated_at DESC LIMIT 50`,nextLeadScope.params)
+        l.updated_at DESC LIMIT 8`,nextLeadScope.params)
   ]);
   const guidedCases=nextCases.map(item=>item.assignedTo?{...item,responsibility:'agent',actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
     ...item,
