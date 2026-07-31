@@ -119,13 +119,13 @@ before_version=$("$NODE_BIN" -p "require('$APP_ROOT/package.json').version")
   echo "Clone application is not on the verified Production version: $before_version"
   exit 1
 }
-baseline=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
+baseline=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY LEFT(version,3)::integer DESC,version DESC LIMIT 1")
 [[ "$baseline" == "$EXPECTED_BASELINE" ]] || {
   echo "Clone is not on the verified Production database baseline: $baseline"
   exit 1
 }
-release11_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '027_' AND version <= '037~'")
-release2_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '038_' AND version <= '059~'")
+release11_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE LEFT(version,3)::integer BETWEEN 27 AND 37")
+release2_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE LEFT(version,3)::integer BETWEEN 38 AND 59")
 [[ "$release11_before" == 0 && "$release2_before" == 0 ]] || {
   echo "Clone already contains post-baseline migrations: Release 1.1=$release11_before Release 2=$release2_before"
   exit 1
@@ -175,9 +175,9 @@ while IFS= read -r migration; do
   fi
 done <<< "$migration_files"
 
-after_migration=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
-release11_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '027_' AND version <= '037~'")
-release2_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '038_' AND version <= '059~'")
+after_migration=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY LEFT(version,3)::integer DESC,version DESC LIMIT 1")
+release11_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE LEFT(version,3)::integer BETWEEN 27 AND 37")
+release2_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE LEFT(version,3)::integer BETWEEN 38 AND 59")
 [[ "$after_migration" == "$EXPECTED_FINAL" &&
    "$release11_after" == 11 &&
    "$release2_after" == 22 ]] || {

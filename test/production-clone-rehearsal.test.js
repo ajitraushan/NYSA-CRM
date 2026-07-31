@@ -24,6 +24,10 @@ test('production-clone rehearsal is bound to the verified application and databa
 test('production-clone rehearsal applies and verifies the complete 027 through 059 chain',()=>{
   assert.match(script,/awk '\$0 >= "027_" && \$0 <= "059~"/);
   assert.match(script,/\[\[ "\$migration_count" == 33/);
+  assert.match(script,/LEFT\(version,3\)::integer BETWEEN 27 AND 37/);
+  assert.match(script,/LEFT\(version,3\)::integer BETWEEN 38 AND 59/);
+  assert.doesNotMatch(script,/version >= '027_'/);
+  assert.doesNotMatch(script,/version >= '038_'/);
   assert.match(script,/"\$release11_after" == 11/);
   assert.match(script,/"\$release2_after" == 22/);
 });
