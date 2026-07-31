@@ -8,7 +8,9 @@ EXPECTED_CLONE_DATABASE=${4:-}
 EXPECTED_CLONE_USER=${5:-}
 EXPECTED_HASH=689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f
 EXPECTED_VERSION=2.1.0-dev.79
-EXPECTED_BASELINE=037_listing_mapping_governance.sql
+EXPECTED_APP_BASELINE=1.1.0
+EXPECTED_BASELINE=026_routing_rule_governance.sql
+EXPECTED_R11_FINAL=037_listing_mapping_governance.sql
 EXPECTED_FINAL=059_release26_inventory_owner_and_activation.sql
 PRODUCTION_ROOT=/home/nysareal/nysa-crm
 CRM_TEST_ROOT=/home/nysareal/nysa-core-dashboard-dd6262a-stage
@@ -112,17 +114,23 @@ before_health=$(health)
   echo "Clone health preflight failed: $before_health"
   exit 1
 }
+before_version=$("$NODE_BIN" -p "require('$APP_ROOT/package.json').version")
+[[ "$before_version" == "$EXPECTED_APP_BASELINE" ]] || {
+  echo "Clone application is not on the verified Production version: $before_version"
+  exit 1
+}
 baseline=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
 [[ "$baseline" == "$EXPECTED_BASELINE" ]] || {
-  echo "Clone is not on the frozen Release 1.1 migration baseline: $baseline"
+  echo "Clone is not on the verified Production database baseline: $baseline"
   exit 1
 }
+release11_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '027_' AND version <= '037~'")
 release2_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '038_' AND version <= '059~'")
-[[ "$release2_before" == 0 ]] || {
-  echo "Clone already contains Release 2 migrations: $release2_before"
+[[ "$release11_before" == 0 && "$release2_before" == 0 ]] || {
+  echo "Clone already contains post-baseline migrations: Release 1.1=$release11_before Release 2=$release2_before"
   exit 1
 }
-echo "Preflight passed: isolated clone PID $old_pid; database $PGDATABASE; baseline $baseline"
+echo "Preflight passed: isolated clone PID $old_pid; application $before_version; database $PGDATABASE; baseline $baseline"
 
 tmp=$(mktemp -d "$APP_ROOT/tmp/r2-6-prod-rehearsal.XXXXXX")
 unzip -q "$PACKAGE" -d "$tmp"
@@ -133,14 +141,15 @@ package_version=$("$NODE_BIN" -p "require('$tmp/package.json').version")
 }
 migration_count=$(find "$tmp/src/migrations" -maxdepth 1 -type f \
   -name '*.sql' -printf '%f\n' |
-  awk '$0 >= "038_" && $0 <= "059~" { count++ } END { print count+0 }')
-[[ "$migration_count" == 22 &&
+  awk '$0 >= "027_" && $0 <= "059~" { count++ } END { print count+0 }')
+[[ "$migration_count" == 33 &&
+   -f "$tmp/src/migrations/$EXPECTED_R11_FINAL" &&
    -f "$tmp/src/migrations/$EXPECTED_FINAL" ]] || {
-  echo "Candidate does not contain the complete 22-migration Release 2 chain."
+  echo "Candidate does not contain the complete 33-migration cumulative chain."
   exit 1
 }
 
-backup=/home/nysareal/crm-backups/r1-1-to-r2-6-clone-rehearsal-$(date -u +%Y%m%dT%H%M%SZ)
+backup=/home/nysareal/crm-backups/production-db026-to-r2-6-clone-rehearsal-$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$backup"
 chmod 700 "$backup"
 PGPASSWORD="$PGPASSWORD" pg_dump \
@@ -149,10 +158,10 @@ PGPASSWORD="$PGPASSWORD" pg_dump \
 tar --exclude='./node_modules' --exclude='./tmp' --exclude='./storage/private' \
   -czf "$backup/pre-r2-6-clone-app.tar.gz" -C "$APP_ROOT" .
 
-echo "Applying migrations 038 through 059 to the isolated clone."
+echo "Applying migrations 027 through 059 to the isolated clone."
 migration_files=$(find "$tmp/src/migrations" -maxdepth 1 -type f \
   -name '*.sql' -printf '%f\n' |
-  awk '$0 >= "038_" && $0 <= "059~"' |
+  awk '$0 >= "027_" && $0 <= "059~"' |
   sort)
 while IFS= read -r migration; do
   [[ -n "$migration" ]] || continue
@@ -167,9 +176,12 @@ while IFS= read -r migration; do
 done <<< "$migration_files"
 
 after_migration=$(db_psql -Atqc "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
+release11_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '027_' AND version <= '037~'")
 release2_after=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE version >= '038_' AND version <= '059~'")
-[[ "$after_migration" == "$EXPECTED_FINAL" && "$release2_after" == 22 ]] || {
-  echo "Migration verification failed: latest=$after_migration count=$release2_after"
+[[ "$after_migration" == "$EXPECTED_FINAL" &&
+   "$release11_after" == 11 &&
+   "$release2_after" == 22 ]] || {
+  echo "Migration verification failed: latest=$after_migration Release 1.1=$release11_after Release 2=$release2_after"
   echo "Clone database backup: $backup/pre-r2-6-clone.dump"
   exit 1
 }
@@ -211,7 +223,9 @@ for attempt in {1..24}; do
     echo "Installed version: $after_version"
     echo "Health: $after_health"
     echo "Migration baseline: $baseline"
+    echo "Release 1.1 migration final: $EXPECTED_R11_FINAL"
     echo "Migration final: $after_migration"
+    echo "Release 1.1 migrations recorded: $release11_after"
     echo "Release 2 migrations recorded: $release2_after"
     echo "Database backup: $backup/pre-r2-6-clone.dump"
     echo "Application backup: $backup/pre-r2-6-clone-app.tar.gz"

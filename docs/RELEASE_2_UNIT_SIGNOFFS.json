@@ -6,6 +6,14 @@
     "commit": "6588047",
     "latestMigration": "037_listing_mapping_governance.sql"
   },
+  "installedProductionBaseline": {
+    "verifiedAt": "2026-07-30",
+    "applicationVersion": "1.1.0",
+    "latestMigration": "026_routing_rule_governance.sql",
+    "migrationCount": 26,
+    "cloneDatabase": "nysareal_nysa_r2_prod_clone",
+    "sourceDumpSha256": "babac77bd1f018e42fb22947a3407e97dab323971d5d32021bb4b7c9cfbab83d"
+  },
   "signoffPolicy": {
     "requiredStatus": "accepted",
     "requiredAuthority": "NYSA owner",

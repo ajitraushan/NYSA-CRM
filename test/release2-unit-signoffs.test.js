@@ -48,3 +48,14 @@ test('frozen R2.6 signoff binds the accepted version and exact candidate digest'
   ).trim().split(/\s+/)[0];
   assert.equal(checksum,release.candidateSha256);
 });
+
+test('production rehearsal evidence binds the installed baseline without redefining accepted Release 1.1',()=>{
+  assert.equal(manifest.productionBaseline.latestMigration,'037_listing_mapping_governance.sql');
+  assert.equal(manifest.installedProductionBaseline.applicationVersion,'1.1.0');
+  assert.equal(manifest.installedProductionBaseline.latestMigration,'026_routing_rule_governance.sql');
+  assert.equal(manifest.installedProductionBaseline.migrationCount,26);
+  assert.equal(
+    manifest.installedProductionBaseline.sourceDumpSha256,
+    'babac77bd1f018e42fb22947a3407e97dab323971d5d32021bb4b7c9cfbab83d'
+  );
+});
