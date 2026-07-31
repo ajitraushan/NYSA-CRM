@@ -33,5 +33,8 @@ test('production-clone rehearsal retains environment and target isolation guards
   assert.match(script,/PRODUCTION_ROOT=\/home\/nysareal\/nysa-crm/);
   assert.match(script,/CRM_TEST_ROOT=\/home\/nysareal\/nysa-core-dashboard-dd6262a-stage/);
   assert.match(script,/Clone worker database identity does not match the explicit arguments/);
+  assert.match(script,/Expected at least one isolated clone worker/);
+  assert.match(script,/for pid in "\$\{old_pids\[@\]\}"/);
+  assert.match(script,/"\$all_workers_replaced" -eq 1/);
   assert.match(script,/Production and CRM Test were not modified/);
 });

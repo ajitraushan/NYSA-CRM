@@ -90,8 +90,8 @@ old_pids=()
 if [[ -n "$old_pid_text" ]]; then
   read -r -a old_pids <<< "$old_pid_text"
 fi
-[[ "${#old_pids[@]}" -eq 1 ]] || {
-  echo "Expected exactly one isolated clone worker; found ${#old_pids[@]}."
+[[ "${#old_pids[@]}" -ge 1 ]] || {
+  echo "Expected at least one isolated clone worker; found none."
   exit 1
 }
 old_pid=${old_pids[0]}
@@ -130,7 +130,7 @@ release2_before=$(db_psql -Atqc "SELECT COUNT(*) FROM schema_migrations WHERE ve
   echo "Clone already contains post-baseline migrations: Release 1.1=$release11_before Release 2=$release2_before"
   exit 1
 }
-echo "Preflight passed: isolated clone PID $old_pid; application $before_version; database $PGDATABASE; baseline $baseline"
+echo "Preflight passed: ${#old_pids[@]} isolated clone worker(s): ${old_pids[*]}; application $before_version; database $PGDATABASE; baseline $baseline"
 
 tmp=$(mktemp -d "$APP_ROOT/tmp/r2-6-prod-rehearsal.XXXXXX")
 unzip -q "$PACKAGE" -d "$tmp"
@@ -192,13 +192,16 @@ install -m 0644 "$tmp/package-lock.json" "$APP_ROOT/package-lock.json"
 cp -a "$tmp/public/." "$APP_ROOT/public/"
 cp -a "$tmp/src/." "$APP_ROOT/src/"
 touch "$APP_ROOT/tmp/restart.txt"
-echo "Installed dev.79 on the clone; terminating old clone PID $old_pid."
-kill -KILL "$old_pid"
+echo "Installed dev.79 on the clone; terminating old clone workers: ${old_pids[*]}."
+for pid in "${old_pids[@]}"; do
+  kill -KILL "$pid" 2>/dev/null || true
+done
 
 new_pid=
 after_health=
 after_version=
 worker_count=0
+current_pids=()
 for attempt in {1..24}; do
   sleep 5
   current_pid_text=$(worker_pids || true)
@@ -210,8 +213,16 @@ for attempt in {1..24}; do
   new_pid=${current_pids[0]:-}
   after_health=$(health || true)
   after_version=$("$NODE_BIN" -p "require('$APP_ROOT/package.json').version" || true)
-  if [[ "$worker_count" -eq 1 &&
-        "$new_pid" != "$old_pid" &&
+  all_workers_replaced=1
+  for current_pid in "${current_pids[@]}"; do
+    for prior_pid in "${old_pids[@]}"; do
+      if [[ "$current_pid" == "$prior_pid" ]]; then
+        all_workers_replaced=0
+      fi
+    done
+  done
+  if [[ "$worker_count" -ge 1 &&
+        "$all_workers_replaced" -eq 1 &&
         "$after_version" == "$EXPECTED_VERSION" &&
         "$after_health" == *'"ok":true'* &&
         "$after_health" == *'"version":"2.1.0-dev.79"'* ]]; then
@@ -219,7 +230,7 @@ for attempt in {1..24}; do
       echo "Temporary package directory retained: $tmp"
     fi
     echo "Production-clone rehearsal deployment confirmed"
-    echo "Clone PID: $new_pid (one worker)"
+    echo "Clone PIDs: ${current_pids[*]} ($worker_count worker(s), all newly started)"
     echo "Installed version: $after_version"
     echo "Health: $after_health"
     echo "Migration baseline: $baseline"
@@ -236,8 +247,8 @@ for attempt in {1..24}; do
 done
 
 echo "Clone deployment confirmation failed"
-echo "Old clone PID: $old_pid"
-echo "New clone PID: ${new_pid:-none}"
+echo "Old clone PIDs: ${old_pids[*]}"
+echo "Current clone PIDs: ${current_pids[*]:-none}"
 echo "Clone worker count: $worker_count"
 echo "Installed version: ${after_version:-unknown}"
 echo "Health: ${after_health:-unavailable}"

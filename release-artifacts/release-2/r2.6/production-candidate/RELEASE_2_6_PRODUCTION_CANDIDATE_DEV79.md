@@ -9,7 +9,7 @@ Status: **FROZEN — production-clone rehearsal required**
 - Package: `nysa-core-r2-6-production-candidate-dev79-9073206.zip`
 - SHA-256: `689d089b357f8f9c956c329c44e592712e26becff10a9b0efbc77d8bc074836f`
 - Clone rehearsal: `rehearse-production-db026-to-r2-6-dev79-clone-only.sh`
-- Rehearsal SHA-256: `eb27ea4a3a2fc150c9ac0e66a7f0255df5bcf910a309ec34f00012d29ecc66f2`
+- Rehearsal SHA-256: `31c6d534ededbbc06134eda1dd1e21e400d3d69837ef8abfe0e12592f9ad1699`
 - Accepted frozen-source baseline: Release 1.1 through `037_listing_mapping_governance.sql`
 - Verified Production database baseline: `026_routing_rule_governance.sql`
 - Cumulative rehearsal range: `027_inventory_commercial_readiness.sql` through
@@ -40,7 +40,8 @@ applies the complete cumulative chain in order:
 
 It refuses Production, CRM Test, an unexpected database or user, any non-clone URL, an unexpected
 application version, a database baseline other than `026`, or a candidate package with an unexpected
-hash or incomplete migration chain.
+hash or incomplete migration chain. It accepts one or more isolated Passenger workers, terminates
+every old clone worker after installation, and confirms that every resulting clone PID is new.
 
 Production remains unauthorized. A separate production script may be prepared only after the
 clone rehearsal evidence is reviewed and the NYSA owner explicitly authorizes Production.
