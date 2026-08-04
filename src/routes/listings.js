@@ -1,36 +1,79 @@
 import { Router } from '../lib/http-kit.js';
-import { one, many, execute, uuid, audit } from '../db.js';
+import { one, many, execute, uuid, audit, transaction } from '../db.js';
 import { requireAuth, requirePostRights } from '../auth.js';
+import { PAYMENT_PLANS,PROPERTY_TYPES,BEDROOMS,normalizeInventoryAmount,normalizeHandover,normalizeBulkUnits,derivePublicationReadiness } from '../inventory-domain.js';
+import { listingWorkflowNextStep,listingWorkflowQueue,validateListingWorkflowAction } from '../listing-workflow-domain.js';
+import { validateVerificationSubmission,validateVerificationDecision,listingStatusForVerificationDecision } from '../inventory-verification-domain.js';
+import { validateContactIdentity } from '../crm-domain.js';
 
 const r = Router();
 r.use(requireAuth);
 
-const PROPERTY_TYPES = ['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'];
-const BEDROOMS = ['Studio','1','2','3','4','5+'];
-const PAYMENT_PLANS = ['Cash','Mortgage','Developer plan','Post-handover'];
 const STATUSES = ['Available','Reserved','Under offer','Closed'];
 const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
-const CLOSED_REASONS = ['Sold','Withdrawn','Expired'];
-const EDITABLE = ['project','developer','area','propertyType','bedrooms','sizeSqft','price','referencePrice',
+const CLOSED_REASONS = ['Sold','Rented','Withdrawn','Expired'];
+const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
+const EDITABLE = ['project','developer','areaId','community','propertyType','bedrooms','sizeSqft','price','referencePrice',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
-  'handoverDate','exclusivityTier','contact','notes'];
+  'inventoryHeadline','handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','notes','availabilityConfirmedAt','verificationExpiresAt','permitNumber','permitExpiresAt'];
 const COLUMN = {
-  project:'project', developer:'developer', area:'area', propertyType:'property_type', bedrooms:'bedrooms',
+  project:'project', developer:'developer', areaId:'area_id', community:'community', propertyType:'property_type', bedrooms:'bedrooms',
   sizeSqft:'size_sqft', price:'price', referencePrice:'reference_price', currency:'currency',
   paymentPlanType:'payment_plan_type', downPaymentPercent:'down_payment_percent',
   onHandoverPercent:'on_handover_percent', postHandoverYears:'post_handover_years',
-  paymentPlanNotes:'payment_plan_notes', handoverDate:'handover_date', exclusivityTier:'exclusivity_tier',
-  contact:'contact', notes:'notes'
+  paymentPlanNotes:'payment_plan_notes', handoverDate:'handover_date',handoverStatus:'handover_status',handoverExpectedDate:'handover_expected_date',exclusivityTier:'exclusivity_tier',
+  inventoryHeadline:'inventory_headline', notes:'notes', availabilityConfirmedAt:'availability_confirmed_at',verificationStatus:'verification_status',
+  verificationExpiresAt:'verification_expires_at',permitNumber:'permit_number',permitExpiresAt:'permit_expires_at'
 };
 
 function withDiscount(listing) {
   const discountPercent = listing.referencePrice && Number(listing.referencePrice) > 0
     ? Math.round(((Number(listing.referencePrice) - Number(listing.price)) / Number(listing.referencePrice)) * 1000) / 10 : null;
-  return { ...listing, discountPercent };
+  const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount||0);
+  return { ...listing, discountPercent,publicationReadiness:readiness,portalStatus:listing.portalStatus==='published'?'published':readiness.status };
 }
 
+async function governedArea(areaId,client){
+  if(!areaId)return null;
+  return one('SELECT id,business_label,emirate FROM areas WHERE id=$1 AND active=1',[areaId],client);
+}
+
+async function replaceBulkUnits(listingId,units,client){
+  await execute('DELETE FROM listing_units WHERE listing_id=$1',[listingId],client);
+  for(let index=0;index<units.length;index++){
+    const unit=units[index];
+    await one(`INSERT INTO listing_units(id,listing_id,unit_reference,property_type,bedrooms,size_sqft,price,display_order)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,[uuid(),listingId,unit.unitReference,unit.propertyType,unit.bedrooms,unit.sizeSqft,unit.price,index],client);
+  }
+}
+
+const isReviewer=broker=>broker.role==='admin'||broker.jobRole==='manager';
+const canCreateListing=broker=>broker.role==='admin'||['listing_agent','admin_assistant','manager'].includes(broker.jobRole);
+const ownsListing=(broker,listing)=>listing.postedBy===broker.id;
+const inventoryAgentEligibilitySql=alias=>`(${alias}.job_role IN ('listing_agent','sales_agent') OR EXISTS (
+  SELECT 1 FROM user_role_assignments inventory_role
+  WHERE inventory_role.broker_id=${alias}.id
+    AND inventory_role.job_role IN ('listing_agent','sales_agent')
+    AND inventory_role.status='active'
+    AND inventory_role.ends_at IS NULL
+))`;
+async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
+async function canReview(broker,listing,client){
+  if(broker.role==='admin')return true;
+  if(broker.jobRole!=='manager')return false;
+  if((broker.managedTeamIds||[]).includes(String(listing.postedByTeamId||'')))return true;
+  return Boolean(await one(`SELECT 1 AS allowed FROM brokers owner JOIN teams t ON t.id=owner.team_id
+    WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$2 AND tm.membership_role='manager' AND tm.ends_at IS NULL))`,[listing.postedBy,broker.id],client));
+}
+
+async function refreshReadiness(id,client){const listing=await one(`SELECT l.*,
+  (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
+  0::int AS incomplete_bulk_unit_count,
+  (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+  FROM listings l WHERE l.id=$1`,[id],client);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id],client);return{...updated,approvedMediaCount:listing.approvedMediaCount,bulkUnitCount:listing.bulkUnitCount,incompleteBulkUnitCount:0};}
+
 function canEdit(broker, listing) {
-  return broker.role === 'admin' || listing.postedBy === broker.id;
+  return broker.role === 'admin' || broker.jobRole==='admin_assistant' || listing.postedBy === broker.id;
 }
 
 function validateListingFields(body) {
@@ -41,7 +84,10 @@ function validateListingFields(body) {
   for (const field of ['downPaymentPercent', 'onHandoverPercent']) {
     if (body[field] !== undefined && body[field] !== null && Number(body[field]) > 100) return `${field} cannot exceed 100`;
   }
-  if (body.handoverDate !== undefined && body.handoverDate !== null && body.handoverDate !== 'Ready' && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.handoverDate))) return 'handoverDate must be Ready or YYYY-MM-DD';
+  if(body.handoverStatus!==undefined||body.handoverExpectedDate!==undefined||body.handoverDate!==undefined){const handover=normalizeHandover(body);if(handover.error)return handover.error;}
+  for(const field of ['availabilityConfirmedAt','verificationExpiresAt','permitExpiresAt'])if(body[field]!==undefined&&body[field]!==null&&body[field]!==''&&Number.isNaN(new Date(body[field]).valueOf()))return `${field} must be a valid date/time`;
+  if(body.verificationStatus!==undefined&&!VERIFICATION_STATUSES.includes(body.verificationStatus))return 'Invalid verificationStatus';
+  if(body.portalStatus!==undefined)return 'Portal readiness is calculated by the system and cannot be edited';
   return null;
 }
 
@@ -49,70 +95,473 @@ r.get('/listings', async (req, res) => {
   const q = req.query;
   const where = ['l.deleted_at IS NULL'];
   const params = [];
+  if(req.broker.jobRole==='listing_agent'){
+    if(q.workspaceScope==='approved')where.push("l.workflow_status='approved'");
+    else{
+      params.push(req.broker.id);
+      if(q.workspaceScope==='mine')where.push(`l.posted_by=$${params.length}`);
+      else where.push(`(l.workflow_status='approved' OR l.posted_by=$${params.length})`);
+    }
+  }
+  else if(req.broker.jobRole==='manager'){params.push(req.broker.managedTeamIds||[]);where.push(`(l.workflow_status='approved' OR b.team_id=ANY($${params.length}::uuid[]))`);}
+  else if(req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')where.push("l.workflow_status='approved'");
   const add = (clause, value) => { params.push(value); where.push(clause.replace('?', `$${params.length}`)); };
   if (q.area) add('l.area ILIKE ?', `%${q.area}%`);
+  if (q.areaId) add('l.area_id = ?', q.areaId);
+  if (q.community) add('l.community ILIKE ?', `%${q.community}%`);
   if (q.propertyType && PROPERTY_TYPES.includes(q.propertyType)) add('l.property_type = ?', q.propertyType);
   if (q.bedrooms && BEDROOMS.includes(q.bedrooms)) add('l.bedrooms = ?', q.bedrooms);
   if (q.minPrice && Number.isFinite(+q.minPrice)) add('l.price >= ?', +q.minPrice);
   if (q.maxPrice && Number.isFinite(+q.maxPrice)) add('l.price <= ?', +q.maxPrice);
   if (q.paymentPlanType && PAYMENT_PLANS.includes(q.paymentPlanType)) add('l.payment_plan_type = ?', q.paymentPlanType);
   if (q.status && STATUSES.includes(q.status)) add('l.status = ?', q.status);
+  if(q.workflowStatus&&(isReviewer(req.broker)||req.broker.jobRole==='listing_agent')&&['draft','in_review','approved','changes_requested','blocked'].includes(q.workflowStatus))add('l.workflow_status = ?',q.workflowStatus);
   if (q.exclusivityTier && TIERS.includes(q.exclusivityTier)) add('l.exclusivity_tier = ?', q.exclusivityTier);
   if (q.developer) add('l.developer ILIKE ?', `%${q.developer}%`);
   if (q.handoverBefore) add("(l.handover_date = 'Ready' OR l.handover_date <= ?)", q.handoverBefore);
   if (q.handoverAfter) add("(l.handover_date != 'Ready' AND l.handover_date >= ?)", q.handoverAfter);
   if (q.q) {
-    const term = `%${q.q}%`;
+    const term = `%${String(q.q).replaceAll('*','%')}%`;
     params.push(term, term, term);
-    where.push(`(l.project ILIKE $${params.length - 2} OR l.developer ILIKE $${params.length - 1} OR l.area ILIKE $${params.length})`);
+    where.push(`(l.project ILIKE $${params.length - 2} OR l.developer ILIKE $${params.length - 1} OR l.area ILIKE $${params.length} OR l.community ILIKE $${params.length})`);
   }
   const sorts = {
     newest: 'l.created_at DESC', price_asc: 'l.price ASC', price_desc: 'l.price DESC',
     discount: '(CASE WHEN l.reference_price > 0 THEN (l.reference_price - l.price) / l.reference_price ELSE -1 END) DESC',
     handover: "(CASE WHEN l.handover_date = 'Ready' THEN '0000' ELSE COALESCE(l.handover_date,'9999') END) ASC"
   };
+  const pageSize=Math.min(100,Math.max(1,Number.parseInt(q.pageSize,10)||10));
+  const total=Number((await one(`SELECT COUNT(*)::int AS count FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE ${where.join(' AND ')}`,params)).count||0);
   const rows = await many(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,
-    (SELECT COUNT(*)::int FROM comments c WHERE c.listing_id = l.id AND c.deleted_at IS NULL) AS comment_count
+    b.team_id AS posted_by_team_id,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
+    reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    legacy_offer.opportunity_id AS legacy_reconciliation_opportunity_id,
+    legacy_offer.opportunity_reference AS legacy_reconciliation_opportunity_reference,
+    (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
+    0::int AS incomplete_bulk_unit_count,
+    (SELECT COUNT(*)::int FROM comments c WHERE c.listing_id = l.id AND c.deleted_at IS NULL) AS comment_count,
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by
-    WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest}`, params);
-  res.json({ count: rows.length, listings: rows.map(withDiscount) });
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
+      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT o.id AS opportunity_id,o.opportunity_reference FROM offers f
+      JOIN opportunities o ON o.id=f.opportunity_id WHERE f.listing_id=l.id AND f.status='accepted'
+      ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
+    WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest} LIMIT $${params.length+1}`, [...params,pageSize]);
+  res.json({ count: total, pageSize, listings: rows.map(withDiscount) });
+});
+
+r.get('/inventory-agents',async(req,res)=>{
+  const inventoryAgents=await many(`SELECT b.id,b.name,b.phone,b.job_title,b.job_role
+    FROM brokers b
+    WHERE b.status='active' AND b.role IN ('admin','internal_broker')
+      AND ${inventoryAgentEligibilitySql('b')}
+    ORDER BY b.name,b.id`);
+  res.json({inventoryAgents});
+});
+
+r.get('/inventory-owner-customers',async(req,res)=>{
+  const q=String(req.query.q||'').trim(),params=[],where=["c.archived_at IS NULL","c.lifecycle_status<>'merged'"];
+  if(q){params.push(`%${q}%`);where.push(`(c.full_name ILIKE $1 OR COALESCE(c.email,'') ILIKE $1 OR COALESCE(c.phone,'') ILIKE $1 OR COALESCE(c.postal_address,'') ILIKE $1)`);}
+  const customers=await many(`SELECT c.id,c.full_name,c.email,c.phone,c.postal_address,c.kyc_status,
+    c.lifecycle_status,c.duplicate_review_status FROM contacts c WHERE ${where.join(' AND ')}
+    ORDER BY LOWER(c.full_name),c.id LIMIT 50`,params);
+  res.json({customers});
+});
+
+r.get('/listings-workspace',async(req,res)=>{
+  if(req.broker.jobRole!=='listing_agent'&&req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')return res.status(403).json({error:'Listing Executive workspace is outside your role'});
+  const params=[],scope=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),'l.posted_by=$1'):'TRUE';
+  const rows=await many(`SELECT l.*,b.name AS posted_by_name,b.team_id AS posted_by_team_id,
+    (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
+    0::int AS incomplete_bulk_unit_count,
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count,
+    (SELECT m.id FROM property_media m WHERE m.listing_id=l.id AND m.is_cover=TRUE AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp') ORDER BY m.display_order,m.created_at,m.id LIMIT 1) AS cover_media_id
+    FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.deleted_at IS NULL AND ${scope} ORDER BY l.updated_at DESC LIMIT 500`,params);
+  const listings=rows.map(withDiscount).map(item=>{const queue=listingWorkflowQueue(item);return {...item,queue,nextStep:listingWorkflowNextStep(queue)};});
+  const counts={active:0,drafts:0,awaitingReview:0,changesRequested:0,availabilityRefresh:0,pendingVerification:0,expiringPermits:0,incompleteMedia:0,readinessBlocks:0};
+  for(const item of listings){
+    if(item.workflowStatus==='approved'&&item.status!=='Closed')counts.active++;
+    if(item.workflowStatus==='draft')counts.drafts++;
+    if(item.workflowStatus==='in_review')counts.awaitingReview++;
+    if(item.workflowStatus==='changes_requested')counts.changesRequested++;
+    if(item.status==='Closed')continue;
+    if(item.queue==='availability_refresh')counts.availabilityRefresh++;
+    if(!['verified','not_required'].includes(item.verificationStatus))counts.pendingVerification++;
+    if(item.permitExpiresAt&&new Date(item.permitExpiresAt)-new Date()<30*86400000)counts.expiringPermits++;
+    if(!Number(item.approvedMediaCount||0))counts.incompleteMedia++;
+    if(!item.publicationReadiness?.ready)counts.readinessBlocks++;
+  }
+  counts.intakeAttention=Number((await one("SELECT COUNT(*)::int AS count FROM listing_intake_events WHERE assigned_to=$1 AND status IN ('failed','unmapped','duplicate_review')",[req.broker.id])).count||0);
+  res.json({counts,listings});
+});
+
+r.get('/listings-approval-queue',async(req,res)=>{
+  return res.status(410).json({error:'Inventory approval was consolidated into mandatory Inventory verification. Use the Inventory verification queue.'});
+  /*
+  if(req.broker.jobRole!=='manager')return res.status(403).json({error:'Listing approval queue requires the responsible Team Manager'});
+  const q=String(req.query.q||'').trim().toLowerCase(),page=Math.max(1,Number(req.query.page)||1),pageSize=Math.min(100,Math.max(1,Number(req.query.pageSize)||20)),params=[req.broker.id],search=[];
+  if(q){params.push(`%${q}%`);search.push(`(LOWER(l.project) LIKE $${params.length} OR LOWER(COALESCE(l.inventory_reference,'')) LIKE $${params.length} OR LOWER(COALESCE(l.area,'')) LIKE $${params.length} OR LOWER(COALESCE(l.community,'')) LIKE $${params.length} OR LOWER(COALESCE(l.property_type,'')) LIKE $${params.length} OR LOWER(COALESCE(owner.name,'')) LIKE $${params.length} OR LOWER(t.name) LIKE $${params.length})`);}
+  const where=`l.deleted_at IS NULL AND l.workflow_status='in_review' AND t.active=1 AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL))${search.length?' AND '+search.join(' AND '):''}`;
+  const count=Number((await one(`SELECT COUNT(*)::int AS count FROM listings l JOIN brokers owner ON owner.id=l.posted_by JOIN teams t ON t.id=owner.team_id WHERE ${where}`,params)).count||0);
+  params.push(pageSize,(page-1)*pageSize);
+  const listings=await many(`SELECT l.id,l.inventory_reference,l.project,l.area,l.community,l.property_type,l.price,l.currency,l.submitted_at,l.updated_at,
+    owner.name AS submitted_by,t.id AS team_id,t.name AS team_name,
+    (SELECT m.id FROM property_media m WHERE m.listing_id=l.id AND m.is_cover=TRUE AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp') ORDER BY m.display_order,m.created_at,m.id LIMIT 1) AS cover_media_id
+    FROM listings l JOIN brokers owner ON owner.id=l.posted_by JOIN teams t ON t.id=owner.team_id
+    WHERE ${where} ORDER BY COALESCE(l.submitted_at,l.updated_at) DESC,l.id DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);
+  res.json({listingApprovals:listings,count,page,pageSize});
+  */
+});
+
+r.get('/inventory-verification-queue',async(req,res)=>{
+  if(!isReviewer(req.broker))return res.status(403).json({error:'Inventory verification queue requires Manager or Administrator access'});
+  const params=[],where=["vr.status='pending'","l.deleted_at IS NULL"];
+  if(req.broker.role!=='admin'){
+    params.push(req.broker.id);
+    where.push(`(t.manager_id=$${params.length} OR EXISTS(
+      SELECT 1 FROM team_memberships tm
+      WHERE tm.team_id=t.id AND tm.broker_id=$${params.length}
+        AND tm.membership_role='manager' AND tm.ends_at IS NULL
+    ))`);
+  }
+  const requests=await many(`SELECT vr.*,l.inventory_reference,l.project,l.area,l.verification_status,
+      submitter.name AS submitted_by_name,owner.name AS inventory_owner_name,t.name AS team_name
+    FROM inventory_verification_requests vr
+    JOIN listings l ON l.id=vr.listing_id
+    JOIN brokers submitter ON submitter.id=vr.submitted_by
+    JOIN brokers owner ON owner.id=l.posted_by
+    LEFT JOIN teams t ON t.id=owner.team_id
+    WHERE ${where.join(' AND ')}
+    ORDER BY vr.submitted_at`,params);
+  res.json({verificationRequests:requests,count:requests.length});
+});
+
+r.post('/listings/:id/verification-requests',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id
+      FROM listings l JOIN brokers b ON b.id=l.posted_by
+      WHERE l.id=$1 AND l.deleted_at IS NULL FOR UPDATE`,[req.params.id],client);
+    if(!listing)return {code:404,error:'Inventory not found'};
+    if(!canEdit(req.broker,listing)&&!ownsListing(req.broker,listing))return {code:403,error:'This Inventory is outside your editable scope'};
+    if(await one("SELECT id FROM inventory_verification_requests WHERE listing_id=$1 AND status='pending'",[listing.id],client))return {code:409,error:'A verification request is already pending'};
+    const checked=validateVerificationSubmission({currentStatus:listing.verificationStatus,...req.body});
+    if(checked.error)return {code:400,error:checked.error};
+    const prior=await one('SELECT id FROM inventory_verification_requests WHERE listing_id=$1 ORDER BY submitted_at DESC LIMIT 1',[listing.id],client);
+    const v=checked.value,id=uuid(),request=await one(`INSERT INTO inventory_verification_requests(
+        id,listing_id,request_type,status,evidence_reference,request_reason,submitted_by,prior_request_id
+      ) VALUES($1,$2,$3,'pending',$4,$5,$6,$7) RETURNING *`,
+      [id,listing.id,v.requestType,v.evidenceReference,v.reason,req.broker.id,prior?.id||null],client);
+    await execute(`UPDATE listings SET verification_status='pending',current_verification_request_id=$1,
+      verification_decided_by=NULL,verification_decided_at=NULL,verification_reason=$2,updated_at=NOW()
+      WHERE id=$3`,[id,v.reason,listing.id],client);
+    await audit('InventoryVerification',id,v.requestType==='exemption'?'exemption_requested':'submitted',req.broker.id,
+      {listingId:listing.id,from:listing.verificationStatus,to:'pending',reason:v.reason,evidenceReference:v.evidenceReference},client);
+    return {request};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.status(201).json(result.request);
+});
+
+r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const request=await one(`SELECT vr.*,l.posted_by,b.team_id AS posted_by_team_id
+      FROM inventory_verification_requests vr
+      JOIN listings l ON l.id=vr.listing_id
+      JOIN brokers b ON b.id=l.posted_by
+      WHERE vr.id=$1 FOR UPDATE`,[req.params.id],client);
+    if(!request)return {code:404,error:'Verification request not found'};
+    if(!await canReview(req.broker,{postedBy:request.postedBy,postedByTeamId:request.postedByTeamId},client))return {code:403,error:'This verification request is outside your review scope'};
+    const checked=validateVerificationDecision({requestStatus:request.status,requestType:request.requestType,...req.body});
+    if(checked.error)return {code:400,error:checked.error};
+    const v=checked.value,inventoryStatus=listingStatusForVerificationDecision(request.requestType,v.decision);
+    const updated=await one(`UPDATE inventory_verification_requests SET status=$1,decided_by=$2,
+      decided_at=NOW(),decision_reason=$3,version=version+1 WHERE id=$4 RETURNING *`,
+      [v.decision,req.broker.id,v.reason,request.id],client);
+    const activated=['verified','exempted'].includes(v.decision),workflowStatus=activated?'approved':v.decision==='returned'?'draft':'blocked';
+    await execute(`UPDATE listings SET verification_status=$1,verification_decided_by=$2,
+      verification_decided_at=NOW(),verification_reason=$3,workflow_status=$4,reviewed_by=$2,
+      reviewed_at=NOW(),review_comment=$3,updated_at=NOW() WHERE id=$5`,
+      [inventoryStatus,req.broker.id,v.reason,workflowStatus,request.listingId],client);
+    await refreshReadiness(request.listingId,client);
+    await audit('InventoryVerification',request.id,`decision_${v.decision}`,req.broker.id,
+      {listingId:request.listingId,from:'pending',to:inventoryStatus,workflowStatus,activated,reason:v.reason},client);
+    return {request:updated,verificationStatus:inventoryStatus,workflowStatus,activated};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
+
+r.post('/listings/:id/external-publications',async(req,res)=>{
+  const channel=String(req.body?.channel||'').trim(),externalReference=String(req.body?.externalReference||'').trim()||null,
+    externalUrl=String(req.body?.externalUrl||'').trim()||null,evidenceReference=String(req.body?.evidenceReference||'').trim(),
+    reason=String(req.body?.reason||'').trim();
+  if(!channel||!evidenceReference||!reason)return res.status(400).json({error:'Channel, publication evidence and reason are required'});
+  const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by
+    WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This Inventory is outside your publication scope'});
+  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Verify and activate the Internal Inventory record before creating an external listing publication'});
+  const id=uuid(),publication=await one(`INSERT INTO external_listing_publications(
+    id,listing_id,channel,external_reference,external_url,status,evidence_reference,reason,created_by
+  ) VALUES($1,$2,$3,$4,$5,'draft',$6,$7,$8) RETURNING *`,
+  [id,listing.id,channel,externalReference,externalUrl,evidenceReference,reason,req.broker.id]);
+  await audit('ExternalListingPublication',id,'draft_created',req.broker.id,
+    {listingId:listing.id,channel,externalReference,externalUrl,reason});
+  res.status(201).json(publication);
+});
+
+r.patch('/external-publications/:id/status',async(req,res)=>{
+  const status=String(req.body?.status||''),reason=String(req.body?.reason||'').trim(),
+    evidenceReference=String(req.body?.evidenceReference||'').trim();
+  const statuses=['submitted','approved','published','paused','withdrawn','rejected'];
+  if(!statuses.includes(status)||!reason||!evidenceReference)return res.status(400).json({error:'Select a valid publication status and record evidence and reason'});
+  const result=await transaction(async client=>{
+    const publication=await one(`SELECT p.*,l.posted_by,b.team_id AS posted_by_team_id,l.verification_status,
+      l.workflow_status FROM external_listing_publications p JOIN listings l ON l.id=p.listing_id
+      JOIN brokers b ON b.id=l.posted_by WHERE p.id=$1 FOR UPDATE OF p`,[req.params.id],client);
+    if(!publication)return{code:404,error:'External publication not found'};
+    const listing={postedBy:publication.postedBy,postedByTeamId:publication.postedByTeamId};
+    const reviewer=await canReview(req.broker,listing,client);
+    if(['approved','rejected'].includes(status)&&!reviewer)return{code:403,error:'Manager or Administrator approval is required'};
+    if(!reviewer&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing))return{code:403,error:'This publication is outside your editable scope'};
+    const allowed={draft:['submitted','withdrawn'],submitted:['approved','rejected','withdrawn'],approved:['published','withdrawn'],
+      published:['paused','withdrawn'],paused:['published','withdrawn'],rejected:['submitted'],withdrawn:[]};
+    if(!(allowed[publication.status]||[]).includes(status))return{code:409,error:`External publication cannot move from ${publication.status} to ${status}`};
+    if(['submitted','approved','published'].includes(status)&&!['verified','not_required'].includes(publication.verificationStatus))
+      return{code:409,error:'External publication requires system-controlled Inventory verification or approved exemption'};
+    const updated=await one(`UPDATE external_listing_publications SET status=$1,evidence_reference=$2,reason=$3,
+      submitted_by=CASE WHEN $1='submitted' THEN $4 ELSE submitted_by END,
+      submitted_at=CASE WHEN $1='submitted' THEN NOW() ELSE submitted_at END,
+      approved_by=CASE WHEN $1='approved' THEN $4 ELSE approved_by END,
+      approved_at=CASE WHEN $1='approved' THEN NOW() ELSE approved_at END,
+      published_at=CASE WHEN $1='published' THEN NOW() ELSE published_at END,
+      ended_at=CASE WHEN $1 IN ('withdrawn','rejected') THEN NOW() ELSE ended_at END,updated_at=NOW()
+      WHERE id=$5 RETURNING *`,[status,evidenceReference,reason,req.broker.id,publication.id],client);
+    await audit('ExternalListingPublication',publication.id,`status_${status}`,req.broker.id,
+      {listingId:publication.listingId,from:publication.status,to:status,evidenceReference,reason},client);
+    return updated;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
 r.get('/listings/:id', async (req, res) => {
-  const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage
-    FROM listings l JOIN brokers b ON b.id = l.posted_by WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
+  const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
+    reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
+    reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    legacy_offer.opportunity_id AS legacy_reconciliation_opportunity_id,
+    legacy_offer.opportunity_reference AS legacy_reconciliation_opportunity_reference,
+    (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
+    0::int AS incomplete_bulk_unit_count,
+    (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
+    FROM listings l JOIN brokers b ON b.id = l.posted_by
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
+      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT o.id AS opportunity_id,o.opportunity_reference FROM offers f
+      JOIN opportunities o ON o.id=f.opportunity_id WHERE f.listing_id=l.id AND f.status='accepted'
+      ORDER BY f.accepted_at DESC NULLS LAST,f.created_at DESC LIMIT 1) legacy_offer ON reservation.booking_reference IS NULL
+    WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
-  res.json(withDiscount(listing));
+  if(listing.workflowStatus!=='approved'&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This draft is outside your inventory scope'});
+  const workflowHistory=await many(`SELECT a.action,a.timestamp,a.details,b.name AS performed_by_name FROM audit_log a JOIN brokers b ON b.id=a.performed_by
+    WHERE a.entity_type='Listing' AND a.entity_id=$1 AND (a.action LIKE 'workflow_%' OR a.action='draft_created') ORDER BY a.timestamp DESC`,[listing.id]);
+  const bulkUnits=listing.propertyType==='Bulk deal'?await many(`SELECT id,unit_reference,property_type,bedrooms,size_sqft,price,display_order
+    FROM listing_units WHERE listing_id=$1 ORDER BY display_order,created_at`,[listing.id]):[];
+  const [verificationRequests,externalPublications,inventoryCounterparties,inventoryAgreements]=await Promise.all([
+    many(`SELECT vr.*,submitter.name AS submitted_by_name,decider.name AS decided_by_name
+      FROM inventory_verification_requests vr
+      JOIN brokers submitter ON submitter.id=vr.submitted_by
+      LEFT JOIN brokers decider ON decider.id=vr.decided_by
+      WHERE vr.listing_id=$1 ORDER BY vr.submitted_at DESC`,[listing.id]),
+    many(`SELECT p.*,creator.name AS created_by_name,approver.name AS approved_by_name
+      FROM external_listing_publications p
+      JOIN brokers creator ON creator.id=p.created_by
+      LEFT JOIN brokers approver ON approver.id=p.approved_by
+      WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id]),
+    many(`SELECT p.*,
+      COALESCE(c.full_name,p.display_name) AS display_name,
+      COALESCE(c.phone,p.phone) AS phone,
+      COALESCE(c.email,p.email) AS email,
+      c.postal_address AS customer_address,c.kyc_status AS customer_kyc_status
+      FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
+      WHERE p.listing_id=$1 ORDER BY p.created_at`,[listing.id]),
+    many(`SELECT a.*,c.display_name AS counterparty_name FROM inventory_agreements a
+      LEFT JOIN inventory_counterparties c ON c.id=a.counterparty_id
+      WHERE a.listing_id=$1 ORDER BY a.created_at DESC`,[listing.id])
+  ]);
+  res.json({...withDiscount(listing),bulkUnits,verificationRequests,externalPublications,inventoryCounterparties,inventoryAgreements,
+    workflowHistory:workflowHistory.map(item=>({...item,details:typeof item.details==='string'?JSON.parse(item.details):item.details}))});
+});
+
+r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
+  const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its seller or lessor parties'});
+  const b=req.body||{},roles=['authorized_representative'],
+    types=['person','company','external_broker','external_agency'];
+  if(!roles.includes(b.partyRole)||!types.includes(b.partyType))return res.status(400).json({error:'The authoritative Seller, Landlord, Lessor or Developer is linked through Customer Master. Additional free-text parties may only be authorized representatives.'});
+  for(const field of ['displayName','source','authorityEvidence'])if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
+  const id=uuid(),row=await one(`INSERT INTO inventory_counterparties
+    (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [id,listing.id,b.partyRole,b.partyType,String(b.displayName).trim(),String(b.phone||'').trim()||null,String(b.email||'').trim()||null,
+      String(b.representedParty||'').trim()||null,String(b.source).trim(),String(b.authorityEvidence).trim(),String(b.contactRestrictions||'').trim()||null,req.broker.id]);
+  await audit('InventoryCounterparty',id,'created',req.broker.id,{listingId:listing.id,partyRole:row.partyRole,partyType:row.partyType});
+  res.status(201).json(row);
+});
+
+r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
+  const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Inventory not found'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its agreements'});
+  const b=req.body||{},types=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','co_broker','commission_sharing','ownership_authority','marketing_publication','viewing_access','developer_authorization','amendment','renewal'],
+    representations=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
+  if(!types.includes(b.agreementType)||!representations.includes(b.representationType))return res.status(400).json({error:'Select a valid agreement and representation type'});
+  if(!String(b.evidenceReference||'').trim())return res.status(400).json({error:'Agreement evidence reference is required'});
+  if(b.counterpartyId&&!(await one('SELECT id FROM inventory_counterparties WHERE id=$1 AND listing_id=$2',[b.counterpartyId,listing.id])))return res.status(400).json({error:'Select a party maintained on this Inventory'});
+  const id=uuid(),row=await one(`INSERT INTO inventory_agreements
+    (id,listing_id,counterparty_id,agreement_type,representation_type,evidence_reference,effective_from,effective_to,
+     commission_terms,marketing_authorized,viewing_authorized,status,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+    [id,listing.id,b.counterpartyId||null,b.agreementType,b.representationType,String(b.evidenceReference).trim(),
+      b.effectiveFrom||null,b.effectiveTo||null,String(b.commissionTerms||'').trim()||null,b.marketingAuthorized?1:0,b.viewingAuthorized?1:0,b.status||'active',req.broker.id]);
+  await audit('InventoryAgreement',id,'created',req.broker.id,{listingId:listing.id,agreementType:row.agreementType,representationType:row.representationType});
+  res.status(201).json(row);
 });
 
 r.post('/listings', requirePostRights, async (req, res) => {
-  const b = req.body || {};
-  for (const field of ['project','area','propertyType','price']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
+  if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive, Manager or Administrator'});
+  const b = {...(req.body || {})};
+  for (const field of ['inventoryHeadline','project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
+  const area=await governedArea(b.areaId);if(!area)return res.status(400).json({error:'Select an active Area from Area Maintenance'});b.area=area.businessLabel;b.community=String(b.community||'').trim()||null;
   if (!PROPERTY_TYPES.includes(b.propertyType)) return res.status(400).json({ error: 'Invalid propertyType' });
   if (b.bedrooms && !BEDROOMS.includes(b.bedrooms)) return res.status(400).json({ error: 'Invalid bedrooms' });
+  const bulk=normalizeBulkUnits(b.propertyType,b.bulkUnits);if(bulk.error)return res.status(400).json({error:bulk.error});
+  if(b.propertyType==='Bulk deal'){b.bedrooms=null;b.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);b.price=bulk.units.reduce((sum,item)=>sum+item.price,0);b.referencePrice=null;}else if(Array.isArray(b.bulkUnits)&&b.bulkUnits.length)return res.status(400).json({error:'Property rows are available only when Property type is Bulk deal'});
   if (b.paymentPlanType && !PAYMENT_PLANS.includes(b.paymentPlanType)) return res.status(400).json({ error: 'Invalid paymentPlanType' });
   if (b.exclusivityTier && !TIERS.includes(b.exclusivityTier)) return res.status(400).json({ error: 'Invalid exclusivityTier' });
-  if (!Number.isFinite(+b.price) || +b.price <= 0) return res.status(400).json({ error: 'price must be a positive number' });
+  const price=normalizeInventoryAmount(b.price,{required:true,label:'Asking price'}),reference=normalizeInventoryAmount(b.referencePrice,{label:'Reference / market price'});if(price.error)return res.status(400).json({error:price.error});if(reference.error)return res.status(400).json({error:reference.error});b.price=price.value;b.referencePrice=reference.value;
+  const handover=normalizeHandover(b);if(handover.error)return res.status(400).json({error:handover.error});b.handoverStatus=handover.status;b.handoverExpectedDate=handover.expectedDate;b.handoverDate=handover.legacyValue;
   const validationError = validateListingFields(b);
   if (validationError) return res.status(400).json({ error: validationError });
+  b.responsibleAgentId=b.originatingAgentId;
+  const ownerRoles=['seller','landlord','lessor','developer'],ownerTypes=['person','company','external_broker','external_agency'];
+  for(const field of ['originatingAgentId','ownerRole','ownerSource','authorityEvidence','agreementType','representationType','agreementEvidenceReference'])
+    if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
+  if(!ownerRoles.includes(b.ownerRole)||!ownerTypes.includes(b.ownerType||'person'))return res.status(400).json({error:'Select a valid Inventory owner role and type'});
+  const agreementTypes=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','ownership_authority','developer_authorization'],
+    representationTypes=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
+  if(!agreementTypes.includes(b.agreementType)||!representationTypes.includes(b.representationType))return res.status(400).json({error:'Select a valid ownership agreement and representation type'});
+  const eligibleAgents=await many(`SELECT b.id FROM brokers b WHERE b.id=ANY($1::uuid[]) AND b.status='active'
+    AND b.role IN ('admin','internal_broker') AND ${inventoryAgentEligibilitySql('b')}`,
+    [[b.originatingAgentId,b.responsibleAgentId]]);
+  if(new Set(eligibleAgents.map(x=>x.id)).size!==new Set([b.originatingAgentId,b.responsibleAgentId]).size)
+    return res.status(400).json({error:'Select active eligible NYSA originating and responsible Inventory agents'});
   const id = uuid();
-  const listing = await one(`INSERT INTO listings (id,project,developer,area,property_type,bedrooms,size_sqft,price,
+  const listing = await transaction(async client=>{
+    let ownerContact;
+    if(b.ownerContactId){
+      ownerContact=await one(`SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL AND lifecycle_status<>'merged'`,[b.ownerContactId],client);
+      if(!ownerContact)return {ownerError:'Select an existing Customer from Customer Master'};
+    }else{
+      if(!String(b.ownerName||'').trim())return {ownerError:'Select an existing Customer or enter a new owner name'};
+      const identity=validateContactIdentity(b.ownerEmail,b.ownerPhone);
+      if(identity.error)return {ownerError:identity.error};
+      const duplicates=await many(`SELECT DISTINCT c.id,c.full_name FROM contacts c LEFT JOIN contact_channels cc ON cc.contact_id=c.id
+        WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+        ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2)
+          OR LOWER(c.email)=$1 OR c.phone=$2)`,
+        [identity.email,identity.phone],client);
+      if(duplicates.length)return {ownerError:'A matching Customer already exists. Select that Customer instead of creating another owner.',duplicates};
+      const contactId=uuid(),contactType=b.ownerRole==='seller'?'seller':b.ownerRole==='developer'?'developer':'landlord';
+      ownerContact=await one(`INSERT INTO contacts
+        (id,full_name,email,phone,contact_type,preferred_channel,postal_address,owner_id,created_by,
+         email_status,phone_status,kyc_status,lifecycle_status,duplicate_review_status,source_first_seen)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'unverified','active','not_required','Inventory ownership intake') RETURNING *`,
+        [contactId,String(b.ownerName).trim(),identity.email,identity.phone,contactType,b.ownerPreferredChannel||'Phone',
+         String(b.ownerAddress||'').trim()||null,b.originatingAgentId,req.broker.id,identity.emailStatus,identity.phoneStatus],client);
+      await execute(`INSERT INTO contact_roles(id,contact_id,role_code,created_by) VALUES($1,$2,$3,$4)`,
+        [uuid(),contactId,contactType,req.broker.id],client);
+      if(identity.email)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+        VALUES($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),contactId,b.ownerEmail,identity.email,identity.emailStatus,req.broker.id],client);
+      if(identity.phone)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by)
+        VALUES($1,$2,'Phone','Primary',$3,$4,1,$5,$6)`,[uuid(),contactId,b.ownerPhone,identity.phone,identity.phoneStatus,req.broker.id],client);
+      await audit('Contact',contactId,'created_from_inventory_owner',req.broker.id,{kycStatus:'unverified',listingId:id},client);
+    }
+    const created=await one(`INSERT INTO listings (id,inventory_headline,project,developer,area,area_id,community,property_type,bedrooms,size_sqft,price,
     reference_price,currency,payment_plan_type,down_payment_percent,on_handover_percent,post_handover_years,
-    payment_plan_notes,handover_date,exclusivity_tier,posted_by,contact,notes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
-    [id,b.project,b.developer||null,b.area,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
+    payment_plan_notes,handover_date,handover_status,handover_expected_date,exclusivity_tier,posted_by,contact,notes,availability_confirmed_at,verification_status,
+    verification_expires_at,permit_number,permit_expires_at,portal_status,workflow_status,source_kind,responsible_agent_id,originating_agent_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NULL,$24,$25,$26,$27,$28,$29,'blocked','draft','manual',$30,$31) RETURNING *`,
+    [id,String(b.inventoryHeadline).trim(),b.project,b.developer||null,b.area,area.id,b.community,b.propertyType,b.bedrooms||null,b.sizeSqft??null,+b.price,
      b.referencePrice??null,b.currency||'AED',b.paymentPlanType||null,b.downPaymentPercent??null,
-     b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,
-     b.exclusivityTier||'Off-market',req.broker.id,b.contact||req.broker.phone||null,b.notes||null]);
-  await audit('Listing', id, 'created', req.broker.id, { project:b.project, area:b.area, price:+b.price });
-  res.status(201).json(withDiscount(listing));
+     b.onHandoverPercent??null,b.postHandoverYears??null,b.paymentPlanNotes||null,b.handoverDate||null,b.handoverStatus,b.handoverExpectedDate,
+     b.exclusivityTier||'Off-market',req.broker.id,b.notes||null,b.availabilityConfirmedAt||null,
+     'unverified',b.verificationExpiresAt||null,b.permitNumber||null,b.permitExpiresAt||null,b.responsibleAgentId,b.originatingAgentId],client);
+    const counterpartyId=uuid();
+    await one(`INSERT INTO inventory_counterparties
+      (id,listing_id,contact_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,identity_snapshot,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14) RETURNING id`,
+      [counterpartyId,id,ownerContact.id,b.ownerRole,b.ownerType||'person',ownerContact.fullName,ownerContact.phone,ownerContact.email,
+       String(b.ownerRepresentedParty||'').trim()||null,String(b.ownerSource).trim(),String(b.authorityEvidence).trim(),
+       String(b.ownerContactRestrictions||'').trim()||null,JSON.stringify({customerId:ownerContact.id,fullName:ownerContact.fullName,
+         phone:ownerContact.phone,email:ownerContact.email,postalAddress:ownerContact.postalAddress,kycStatus:ownerContact.kycStatus}),req.broker.id],client);
+    const agreementId=uuid();
+    await one(`INSERT INTO inventory_agreements
+      (id,listing_id,counterparty_id,agreement_type,representation_type,evidence_reference,effective_from,effective_to,
+       commission_terms,marketing_authorized,viewing_authorized,status,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active',$12) RETURNING id`,
+      [agreementId,id,counterpartyId,b.agreementType,b.representationType,String(b.agreementEvidenceReference).trim(),
+       b.agreementEffectiveFrom||null,b.agreementEffectiveTo||null,String(b.commissionTerms||'').trim()||null,
+       b.marketingAuthorized?1:0,b.viewingAuthorized?1:0,req.broker.id],client);
+    if(b.propertyType==='Bulk deal')await replaceBulkUnits(id,bulk.units,client);
+    await audit('Listing', id, 'draft_created', req.broker.id, {inventoryHeadline:b.inventoryHeadline,project:b.project,areaId:area.id,area:b.area,community:b.community,price:+b.price,sourceKind:'manual',bulkUnitCount:bulk.units.length,originatingAgentId:b.originatingAgentId,responsibleAgentId:b.responsibleAgentId,ownerContactId:ownerContact.id,inventoryCounterpartyId:counterpartyId,inventoryAgreementId:agreementId },client);
+    return created;
+  });
+  if(listing?.ownerError)return res.status(409).json({error:listing.ownerError,duplicates:listing.duplicates||[]});
+  res.status(201).json(withDiscount({...listing,bulkUnitCount:bulk.units.length,incompleteBulkUnitCount:0}));
+});
+
+r.patch('/listings/:id/workflow',async(req,res)=>{
+  return res.status(410).json({error:'Inventory approval was consolidated into mandatory Inventory verification'});
+  /*
+  const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
+  if(!listing)return res.status(404).json({error:'Listing not found'});
+  const action=String(req.body?.action||''),reason=String(req.body?.reason||'').trim(),reviewer=await canReview(req.broker,listing);
+  const error=validateListingWorkflowAction({current:listing.workflowStatus,action,reason,isOwner:ownsListing(req.broker,listing),canReview:reviewer});
+  if(error)return res.status(error.startsWith('Only')?403:400).json({error});
+  // Inventory governance is independent of external-portal publication readiness.
+  // Verification and media can block publication without blocking approval of the Inventory record.
+  const policy=action==='submit'?await listingApprovalPolicy():null,autoApproved=action==='submit'&&!policy.managerApprovalRequired;
+  const next=autoApproved?'approved':{submit:'in_review',approve:'approved',request_changes:'changes_requested',block:'blocked',restore:'draft'}[action];
+  const submitted=action==='submit',reviewed=autoApproved||['approve','request_changes','block','restore'].includes(action);
+  const reviewReason=autoApproved?'Automatically approved under the active listing-approval policy':reason||null;
+  const updated=await one(`UPDATE listings SET workflow_status=$1,
+    submitted_at=CASE WHEN $2 THEN NOW() ELSE submitted_at END,submitted_by=CASE WHEN $2 THEN $4 ELSE submitted_by END,
+    reviewed_at=CASE WHEN $3 THEN NOW() ELSE reviewed_at END,reviewed_by=CASE WHEN $3 THEN $4 ELSE reviewed_by END,
+    review_comment=$5,updated_at=NOW() WHERE id=$6 RETURNING *`,[next,submitted,reviewed,req.broker.id,reviewReason,listing.id]);
+  await audit('Listing',listing.id,autoApproved?'workflow_auto_approved_by_policy':`workflow_${action}`,req.broker.id,{from:listing.workflowStatus,to:next,reason:reviewReason,managerApprovalRequired:policy?.managerApprovalRequired??null});
+  res.json(withDiscount(updated));
+  */
 });
 
 r.patch('/listings/:id', async (req, res) => {
   const listing = await one('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (!canEdit(req.broker, listing)) return res.status(403).json({ error: 'Only the posting broker or an admin can edit this listing' });
-  const validationError = validateListingFields(req.body || {});
+  req.body={...(req.body||{})};
+  let area=null;
+  if(req.body.areaId!==undefined){area=await governedArea(req.body.areaId);if(!area)return res.status(400).json({error:'Select an active Area from Area Maintenance'});req.body.areaId=area.id;}
+  if(req.body.community!==undefined)req.body.community=String(req.body.community||'').trim()||null;
+  const targetPropertyType=req.body.propertyType??listing.propertyType;
+  let bulk=null;
+  if(req.body.bulkUnits!==undefined||req.body.propertyType!==undefined){bulk=normalizeBulkUnits(targetPropertyType,req.body.bulkUnits??[]);if(bulk.error)return res.status(400).json({error:bulk.error});if(targetPropertyType==='Bulk deal'){req.body.bedrooms=null;req.body.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);req.body.price=bulk.units.reduce((sum,item)=>sum+item.price,0);req.body.referencePrice=null;}}
+  for(const [field,label,required] of [['price','Asking price',true],['referencePrice','Reference / market price',false]])if(req.body[field]!==undefined){const amount=normalizeInventoryAmount(req.body[field],{required,label});if(amount.error)return res.status(400).json({error:amount.error});req.body[field]=amount.value;}
+  if(req.body.handoverStatus!==undefined||req.body.handoverExpectedDate!==undefined||req.body.handoverDate!==undefined){const handover=normalizeHandover(req.body);if(handover.error)return res.status(400).json({error:handover.error});Object.assign(req.body,{handoverStatus:handover.status,handoverExpectedDate:handover.expectedDate,handoverDate:handover.legacyValue});}
+  const validationError = validateListingFields(req.body);
   if (validationError) return res.status(400).json({ error: validationError });
   const changes = {}, sets = [], params = [];
   for (const field of EDITABLE) {
@@ -125,10 +574,22 @@ r.patch('/listings/:id', async (req, res) => {
     changes[field] = { from: listing[field], to: req.body[field] };
     params.push(req.body[field]); sets.push(`${COLUMN[field]} = $${params.length}`);
   }
-  if (!sets.length) return res.json(withDiscount(listing));
+  if(area){changes.area={from:listing.area,to:area.businessLabel};params.push(area.businessLabel);sets.push(`area = $${params.length}`);}
+  const replaceUnits=bulk!==null;
+  // Inventory activation is governed only by verification or an authorized exemption.
+  // Maintaining property, availability, permit, or verification-evidence fields must not silently deactivate a verified Inventory.
+  if(listing.workflowStatus==='draft'&&['verified','not_required'].includes(listing.verificationStatus)){
+    sets.push("workflow_status='approved'","review_comment=NULL","reviewed_at=COALESCE(reviewed_at,NOW())");
+    changes.workflowStatus={from:'draft',to:'approved',reason:'restored because system-controlled verification remains valid'};
+  }
+  if (!sets.length&&!replaceUnits) return res.json(withDiscount(listing));
   params.push(listing.id);
-  const updated = await one(`UPDATE listings SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`, params);
-  await audit('Listing', listing.id, 'edited', req.broker.id, changes);
+  await transaction(async client=>{
+    if(sets.length)await one(`UPDATE listings SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`, params,client);
+    if(replaceUnits)await replaceBulkUnits(listing.id,bulk.units,client);
+    await audit('Listing', listing.id, 'edited', req.broker.id, {...changes,bulkUnits:replaceUnits?{count:bulk.units.length}:undefined},client);
+  });
+  const updated=await refreshReadiness(listing.id);
   res.json(withDiscount(updated));
 });
 
@@ -136,13 +597,16 @@ r.patch('/listings/:id/status', async (req, res) => {
   const listing = await one('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (!canEdit(req.broker, listing)) return res.status(403).json({ error: 'Only the posting broker or an admin can change status' });
+  if(listing.workflowStatus!=='approved')return res.status(409).json({error:'Verify and activate the Inventory before changing operational availability'});
   const { status, closedReason } = req.body || {};
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-  if (status === 'Closed' && !CLOSED_REASONS.includes(closedReason)) return res.status(400).json({ error: 'Closing requires a reason: Sold, Withdrawn or Expired' });
-  const updated = status === 'Closed'
+  if(status==='Reserved')return res.status(409).json({error:'Reserved status is created only by the governed Booking workflow'});
+  if(listing.status==='Reserved')return res.status(409).json({error:'Reserved status cannot be cleared manually. Release the active Booking or use the manager-only legacy reconciliation shown in the Opportunity'});
+  if (status === 'Closed' && !CLOSED_REASONS.includes(closedReason)) return res.status(400).json({ error: 'Closing requires a reason: Sold, Rented, Withdrawn or Expired' });
+  let updated = status === 'Closed'
     ? await one('UPDATE listings SET status=$1, closed_reason=$2, closed_at=NOW(), updated_at=NOW() WHERE id=$3 RETURNING *', [status,closedReason,listing.id])
     : await one('UPDATE listings SET status=$1, closed_reason=NULL, closed_at=NULL, updated_at=NOW() WHERE id=$2 RETURNING *', [status,listing.id]);
-  await audit('Listing', listing.id, 'status_changed', req.broker.id, { from:listing.status, to:status, closedReason:closedReason||null });
+  updated=await refreshReadiness(listing.id);await audit('Listing', listing.id, 'status_changed', req.broker.id, { from:listing.status, to:status, closedReason:closedReason||null });
   res.json(withDiscount(updated));
 });
 

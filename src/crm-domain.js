@@ -1,12 +1,17 @@
 export const SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'];
 export const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
 export const STAGES = ['New','Contacted','Qualified','Viewing','Negotiation','Won','Lost'];
-export const TEMPERATURES = ['Hot','Warm','Cold'];
+export const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
 export const CONTACT_TYPES = ['buyer','seller','landlord','tenant','developer','investor','other'];
 export const CHANNELS = ['Phone','Email','WhatsApp','SMS'];
 export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
-export const JOB_ROLES = ['admin','sales_agent','listing_agent','manager','director','accountant'];
+export const JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
 export const COMPANY_TYPES = ['developer','agency','corporate_client','landlord_company','vendor','other'];
+
+export function normalizeDelimitedValues(value) {
+  const entries=(Array.isArray(value)?value:String(value??'').split(',')).map(x=>String(x).trim()).filter(Boolean),seen=new Set();
+  return entries.filter(x=>{const key=x.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;});
+}
 
 export const LEAD_TRANSITIONS = Object.freeze({
   New: ['Contacted','Lost'],
@@ -22,6 +27,10 @@ export function validateLeadTransition(from, to) {
   if (!STAGES.includes(from) || !STAGES.includes(to)) return 'Invalid lead stage';
   if (from === to) return null;
   return LEAD_TRANSITIONS[from].includes(to) ? null : `Lead cannot move from ${from} to ${to}`;
+}
+
+export function activityStageTransition(currentStage, activityType) {
+  return currentStage === 'New' && activityType === 'Call' ? 'Contacted' : null;
 }
 
 // Adds working minutes using a weekly calendar expressed in the calendar's UTC offset.
@@ -60,6 +69,11 @@ export function addBusinessMinutes(start, minutes, calendar = {}) {
 }
 
 export const QUALIFICATION_GUIDANCE = Object.freeze({
+  Unassessed: {
+    responseMinutes: 240,
+    cadence: 'Complete the approved qualification questions during the first substantive conversation',
+    strategy: 'Use the normal lead-response SLA and complete an assessment before relying on qualification priority.'
+  },
   Hot: {
     responseMinutes: 15,
     cadence: 'Same-day contact and daily follow-up while the requirement is active',
@@ -77,9 +91,20 @@ export const QUALIFICATION_GUIDANCE = Object.freeze({
   }
 });
 
+export function parseBusinessAmount(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+  const text=String(value).trim().replace(/,/g,'').replace(/^AED\s*/i,'').replace(/\s*AED$/i,'').trim();
+  const match=text.match(/^(\d+(?:\.\d+)?)\s*(K|M|B|THOUSAND|MILLION|BILLION)?$/i);
+  if(!match)return NaN;
+  const multiplier={K:1e3,THOUSAND:1e3,M:1e6,MILLION:1e6,B:1e9,BILLION:1e9}[String(match[2]||'').toUpperCase()]||1;
+  const amount=Number(match[1])*multiplier;
+  return Number.isFinite(amount)?amount:NaN;
+}
+
 export function validateBudget(minimum, maximum) {
-  const min = minimum === undefined || minimum === null || minimum === '' ? null : Number(minimum);
-  const max = maximum === undefined || maximum === null || maximum === '' ? null : Number(maximum);
+  const min = parseBusinessAmount(minimum);
+  const max = parseBusinessAmount(maximum);
   if ((min !== null && (!Number.isFinite(min) || min < 0)) || (max !== null && (!Number.isFinite(max) || max < 0)))
     return { error: 'Budget range is invalid' };
   if (min !== null && max !== null && max < min) return { error: 'Budget range is invalid' };
@@ -118,7 +143,7 @@ export function validateContactIdentity(email, phone) {
   };
 }
 
-export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmount, annualRatePercent, years, additionalCosts = 0, monthlyIncome, monthlyDebt = 0 }) {
+export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmount, annualRatePercent, years, additionalCosts = 0, monthlyIncome, monthlyDebt = 0, prudentDbrPercent=47, regulatoryDbrPercent=50 }) {
   const price = Number(propertyPrice), requestedLoan=loanAmount===undefined||loanAmount===null||loanAmount===''?null:Number(loanAmount),
     down = requestedLoan===null?Number(downPaymentPercent):((price-requestedLoan)/price)*100, rate = Number(annualRatePercent), term = Number(years), costs = Number(additionalCosts || 0);
   if (!Number.isFinite(price) || price <= 0) return { error: 'Property price must be positive' };
@@ -136,6 +161,30 @@ export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmoun
   const totalRepayment = monthlyPayment * months;
   const income=monthlyIncome===undefined||monthlyIncome===null||monthlyIncome===''?null:Number(monthlyIncome),debt=Number(monthlyDebt||0);
   if((income!==null&&(!Number.isFinite(income)||income<=0))||!Number.isFinite(debt)||debt<0)return {error:'Income and debt inputs are invalid'};
+  const debtBurdenRatio=income===null?null:Math.round((monthlyPayment+debt)/income*10000)/100;
+  const prudent=Number(prudentDbrPercent),regulatory=Number(regulatoryDbrPercent);
+  if(!Number.isFinite(prudent)||!Number.isFinite(regulatory)||prudent<=0||regulatory<=prudent||regulatory>100)return {error:'DBR thresholds are invalid'};
+  const affordabilityAt=percent=>{
+    if(income===null)return null;
+    const maximumTotalMonthlyDebt=Math.round(income*percent)/100,
+      maximumMortgagePayment=Math.max(0,Math.round((maximumTotalMonthlyDebt-debt)*100)/100),
+      maximumLoanPrincipal=monthlyRate===0?maximumMortgagePayment*months:
+        maximumMortgagePayment*(1-Math.pow(1+monthlyRate,-months))/monthlyRate,
+      equivalentPropertyPrice=down>=100?null:maximumLoanPrincipal/(1-down/100),
+      requiredExistingDebtReduction=Math.max(0,Math.round((monthlyPayment+debt-maximumTotalMonthlyDebt)*100)/100);
+    return {
+      percent,maximumTotalMonthlyDebt,maximumMortgagePayment,
+      maximumLoanPrincipal:Math.round(maximumLoanPrincipal*100)/100,
+      equivalentPropertyPrice:equivalentPropertyPrice===null?null:Math.round(equivalentPropertyPrice*100)/100,
+      maximumExistingMonthlyDebt:Math.max(0,Math.round((maximumTotalMonthlyDebt-monthlyPayment)*100)/100),
+      requiredExistingDebtReduction,
+      debtReductionAloneSufficient:requiredExistingDebtReduction<=debt
+    };
+  };
+  const prudentAffordability=affordabilityAt(prudent),regulatoryAffordability=affordabilityAt(regulatory);
+  const maximumExistingDebtAtPrudent=prudentAffordability?.maximumExistingMonthlyDebt??null;
+  const existingDebtReductionToPrudent=prudentAffordability?.requiredExistingDebtReduction??null;
+  const dbrBand=debtBurdenRatio===null?null:debtBurdenRatio<=prudent?'prudent':debtBurdenRatio<=regulatory?'limited_buffer':'above_regulatory_ceiling';
   return {
     propertyPrice: price,
     downPayment,
@@ -145,7 +194,8 @@ export function calculateMortgage({ propertyPrice, downPaymentPercent, loanAmoun
     totalRepayment,
     upfrontCash: downPayment + costs,
     months,loanToValue:Math.round(principal/price*10000)/100,
-    debtBurdenRatio:income===null?null:Math.round((monthlyPayment+debt)/income*10000)/100,
+    debtBurdenRatio,dbrBand,prudentDbrPercent:prudent,regulatoryDbrPercent:regulatory,
+    maximumExistingDebtAtPrudent,existingDebtReductionToPrudent,prudentAffordability,regulatoryAffordability,
     monthlyIncome:income,monthlyDebt:debt,additionalCosts:costs
   };
 }
@@ -157,17 +207,24 @@ export function calculateRoi(price, annualRent, annualCosts = 0) {
   return Math.round(((rent - costs) / p) * 10000) / 100;
 }
 
-const SENSITIVE_FACTOR_PATTERN=/(age|gender|sex|religion|ethnic|nationality|health|disability|social[_ -]?media|race|marital|politic)/i;
+const SENSITIVE_FACTOR_PATTERN=/\b(age|gender|sex|religion|religious|ethnic|ethnicity|nationality|health|disability|social\s+media|race|racial|marital|politic|political|politics)\b/i;
 export function validateQualificationFactors(factors){
   if(!Array.isArray(factors)||!factors.length)return 'At least one qualification factor is required';
   const codes=new Set();
   for(const f of factors){
     if(!f||!String(f.code||'').match(/^[a-z][a-z0-9_]{1,39}$/))return 'Every factor needs a stable lowercase code';
     if(codes.has(f.code))return `Duplicate factor code: ${f.code}`;codes.add(f.code);
-    if(SENSITIVE_FACTOR_PATTERN.test(`${f.code} ${f.label||''} ${f.inputSource||''}`))return `Sensitive or social factor is prohibited: ${f.code}`;
+    const factorText=`${f.code} ${f.label||''} ${f.question||''} ${f.inputSource||''}`.replace(/[_-]+/g,' '),sensitiveMatch=factorText.match(SENSITIVE_FACTOR_PATTERN);
+    if(sensitiveMatch)return `Qualification factor "${f.label||f.code}" cannot use the personal or social attribute "${sensitiveMatch[0]}"`;
     if(!Number.isFinite(Number(f.min))||!Number.isFinite(Number(f.max))||Number(f.max)<=Number(f.min)||!Number.isFinite(Number(f.weight))||Number(f.weight)<=0)
       return `Invalid range or weight for ${f.code}`;
     if(!['reject','zero','exclude'].includes(f.missingTreatment||'reject'))return `Invalid missing-input treatment for ${f.code}`;
+    const answerType=f.answerType||'scale';if(!['scale','yes_no','single_select'].includes(answerType))return `Invalid answer type for ${f.code}`;
+    if(answerType==='yes_no'&&(Number(f.min)!==0||Number(f.max)!==1))return `Yes/No factor ${f.code} must use a 0 to 1 range`;
+    if(answerType==='single_select'){
+      if(!Array.isArray(f.answerOptions)||f.answerOptions.length<2)return `Select-list factor ${f.code} needs at least two answer options`;
+      for(const option of f.answerOptions)if(!String(option?.label||'').trim()||!Number.isFinite(Number(option?.value))||Number(option.value)<Number(f.min)||Number(option.value)>Number(f.max))return `Invalid answer option for ${f.code}`;
+    }
   }
   return null;
 }

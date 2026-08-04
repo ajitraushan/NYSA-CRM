@@ -152,6 +152,77 @@ Verification evidence:
 3. Dependency audit, verified pre-deployment backup, and production smoke tests
 4. Final deployed-commit documentation and release-note reconciliation
 
+## Release 2.0/2.1 Opportunity Foundation — Local Implementation
+
+Approval and compatibility:
+
+- D-038 authorizes the recommended additive defaults.
+- Every behavior accepted through Release 1.1 remains unchanged unless the NYSA owner explicitly
+  approves a documented amendment.
+- The frozen Release 1.1 production candidate is outside the Release 2 branch and package scope.
+
+Implementation files:
+
+- `src/migrations/038_release2_opportunity_foundation.sql`
+- `src/opportunity-domain.js` and Opportunity helpers in `src/crm-policy.js`
+- `src/routes/opportunities.js` mounted separately by `src/server.js`
+- additive Opportunity workspace and lead action in `public/app.js`, with styles in
+  `public/index.html`
+
+Implemented contracts:
+
+- Qualified, assigned, in-scope Lead plus exact current Requirement and latest Qualification
+  Assessment are mandatory for explicit Opportunity creation.
+- Customer, Lead, Requirement, Qualification and Listing identities are referenced rather than
+  duplicated; Lead stages and history are never updated by Opportunity creation.
+- Stable `NYSA-OP-YYYYMM-NNNNNN` references, owner/team scope, explicit participants, immutable
+  stage history, optimistic concurrency and required next action are enforced.
+- Original source, campaign, external source, form, page and originating property provenance is
+  captured once with SHA-256 identity and a database trigger blocking mutation/deletion.
+- Duplicate open lead/listing/transaction pursuits are blocked. One unselected Requirements-stage
+  pursuit per lead/transaction type is the safe default.
+- R2.1 enables Requirements to Matching, a reasoned return to Requirements, and controlled/reasoned
+  Closed Lost. Viewing, Offer, Negotiation, Booking and Closed Won remain inaccessible.
+- Legacy Viewing, Negotiation, Won and ambiguous Lost leads enter a review ledger only. Migration
+  038 contains no Lead-stage rewrite and no automatic Opportunity/Deal insertion from Leads.
+
+Verification evidence:
+
+- 164/164 automated tests pass, including the complete 156-test Release 1.1 regression baseline.
+- JavaScript syntax validation and `git diff --check` pass.
+- Live PostgreSQL migration and reconciliation passed on 2026-07-22 against
+  `nysareal_nysa_r2_rehearsal`, restored from the verified CRM Test snapshot. Migration 038 was
+  recorded exactly once, Release 1.1 control counts remained unchanged and
+  `r2_opportunity_reconciliation` returned `5,5,0,0,0`.
+- Authenticated constraint, permission-denial, creation, duplicate, concurrency, transition and
+  browser workflow evidence remain open for CRM Test.
+- No CRM Test or production deployment has been performed.
+
+### Release 2.3A offer and negotiation
+
+Implementation files:
+
+- `src/migrations/045_release2_offer_negotiation.sql`
+- `src/offer-domain.js` and `src/offer-pdf.js`
+- offer APIs in `src/routes/opportunities.js`
+- `public/offer-ui.js` integrated into the Opportunity workspace
+
+Implemented contracts:
+
+- Offers originate only from an active, in-scope Opportunity and an approved considered or
+  shortlisted property.
+- Every revision has typed commercial terms, a numbered immutable row and an exact immutable PDF
+  document version. Every later revision requires a material correction/revision reason.
+- Sending records the exact revision, document version, recipient, delivery channel and
+  counterparty. Expired revisions cannot be sent or accepted.
+- Viewed, acknowledged, countered, accepted, rejected, expired and withdrawn events append to an
+  immutable chronological timeline. Rejection and withdrawal require a reason.
+- Acceptance retains the exact accepted revision and exposes only the future R2.3B handoff; it
+  neither reserves inventory nor enables Booking.
+- Record reads and writes reuse Opportunity scope enforcement and optimistic version checks.
+- Version `2.0.0-dev.39` passes all 190 automated tests. PostgreSQL rehearsal, CRM Test deployment,
+  cross-role UAT and explicit acceptance remain pending; Production is excluded.
+
 ### Acceptance hardening
 
 Implementation files:

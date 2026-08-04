@@ -71,8 +71,47 @@ exact-commit deployment, and production smoke testing.
 - Executive targets, comparisons, trends, forward-looking risk indicators, and
   hierarchical summary-to-record drill-down
 
+## Release 1.1: Listing Executive Workspace and Inventory Intake
+
+- Dedicated personalized Listing Executive workspace for the existing
+  `listing_agent` role
+- Manual draft listing creation through a guided inventory workflow
+- Controlled integration/import intake that creates reviewable, idempotent drafts
+- Listing source, ownership, property, commercial, availability, verification,
+  permit and readiness capture
+- Private multi-image, floor-plan and brochure upload with cover, order, caption,
+  source, rights, hash and approval controls
+- Own/team/company inventory permissions and complete audit history
+- Availability, expiry, completeness, duplicate, media and intake-exception queues
+- Manager/admin review and approval controls
+- Governed Area maintenance and area-specific lead routing with an `All areas`
+  fallback under R1.1-AMD-001
+- Business-friendly inventory amounts, structured handover, calculated publication
+  readiness and governed Payment Plan/Funding compatibility under R1.1-AMD-002
+
+The detailed boundary and acceptance criteria are in `RELEASE_1_1_SCOPE.md`.
+Live Property Finder, Bayut/dubizzle and other publication connectors remain
+Release 4 scope.
+
 ## Release 2: Opportunity and Deal Pipeline
 
+Status: Authorized to begin by the NYSA owner on 2026-07-22. The accepted Release 1.1 source is
+frozen in a separately checksummed production candidate on HOLD; Release 2 changes must remain
+outside that candidate.
+
+R2.0/R2.1A and R2.2 have progressed through their gated CRM Test work. My Diary dev.38 is deployed
+only to CRM Test and is under UAT. R2.3A offer and negotiation is implemented locally as dev.39
+with 190 passing automated tests; migration rehearsal, CRM Test deployment and explicit acceptance
+remain open. R2.3B booking/reservation has not begun. Production and the frozen Release 1.1
+candidate remain unchanged.
+
+Requirements reconciliation, lifecycle compatibility, proposed data contracts, delivery slices,
+acceptance criteria and decisions required before development are defined in
+`RELEASE_2_SCOPE.md`.
+
+- Reorganize the Agent workspace into a clear operational sequence from Customer
+  creation to Lead generation, inventory matching, contact/qualification, viewing,
+  offer, negotiation and outcome, without merging the customer and lead records
 - Opportunities created from qualified leads
 - Buyer-to-property matching
 - Viewing scheduling, attendance, feedback, and follow-up
@@ -81,20 +120,65 @@ exact-commit deployment, and production smoke testing.
 - Closed-won and closed-lost deals
 - Buyer, seller, landlord, tenant, broker, property, and developer relationships
 - Configurable sale and rental completion checklists
+- Preserve immutable original-enquiry campaign, advert, form, landing-page, source and property
+  attribution from Lead through Opportunity, Booking and Deal, without introducing campaign
+  management, spend or ROI calculations in Release 2
 
-## Release 3: Communications and External Lead Channels
+## Release 3: Campaign Management, Communications and External Lead Channels
 
+Release 3 is intentionally sequenced as:
+
+1. **Release 3A — Campaign Management MVP:** governed campaign master, ownership, objectives,
+   properties, audiences, channels, dates, budgets, status, source identifiers, targets and
+   operational lead/qualification/conversion reporting using the Release 2 attribution chain.
+2. **Release 3B — Channels and Automation:** approved communications, calendars, lead providers,
+   landing pages, advertisements, nurture and provider reconciliation consume the governed
+   campaign identities rather than creating disconnected campaign labels.
+
+Release 3 reporting may show lead volume, response, qualification and accepted deal conversion.
+Financially authoritative CPL, CPA and ROI remain Release 6 until governed spend, revenue and
+commission sources reconcile.
+
+- Governed campaign management covering campaign identity, owner, objective,
+  applicable properties, audience, channels, dates, budget, status, source identifiers
+  and performance targets
+- Preserve campaign, advert, form, landing-page and property attribution when an
+  external enquiry enters the common lead-management workflow
+- Expand automated routing only through an approved policy change, with candidate
+  dimensions including governed territory/Area, language, property type, source and
+  campaign; retain team-queue routing unless direct-to-agent assignment is separately
+  approved
 - Email connection, message logging, and approved templates
 - Google Calendar synchronization
 - WhatsApp Business Platform integration, approved templates, consent, and message logging
+- Approved SMS integration and nurture sequences where the provider, consent basis,
+  sender identity, opt-out handling and retention policy are confirmed
 - Property Finder lead retrieval after Enterprise API access and scopes are approved
 - Bayut lead retrieval after Profolio Leads API entitlement is approved
 - Meta Facebook/Instagram lead retrieval after business assets, permissions, and forms are approved
+- Google Ads lead/campaign attribution and LinkedIn lead integration only after
+  account ownership, supported APIs, privacy basis and sandbox access are approved
 - Optional Meta conversion-outcome feedback as a separate privacy-approved data flow
 - Integration failure queue, retry controls, and audit history
+- Provider-neutral Call, WhatsApp and Email action rail that preserves manual launchers
+  before configuration and automatically correlates connected conversations afterward
+- Connected meeting scheduling with provider event IDs, synchronization, cancellation,
+  failure recovery and a clearly labelled `.ics` fallback
+- Marketing landing-page capability for approved, localized property campaigns,
+  including governed inventory/media consumption, consent-aware lead capture and
+  immutable campaign attribution
+- Governed dynamic advertisement templates that consume approved inventory values and
+  media, surface availability/price changes for review and never silently publish
+  changed advertising content
+- Campaign reporting for lead volume, response, qualification and conversion, with
+  cost-per-lead available only after governed channel-spend data is reconciled
 
 The final sequence may move selected email or calendar work into Release 1 after
 provider accounts and compliance decisions are confirmed.
+
+Detailed planning records and acceptance dependencies are maintained in
+`PLANNED_ENHANCEMENTS.md`. `ENH-DASH-001` was explicitly promoted into Release 1.1 as
+`R1.1-AMD-016`; the broader sequential Agent workspace and deal pipeline remain Release 2.
 
 ## Release 4: Inventory and Partner Operations
 
@@ -106,6 +190,14 @@ provider accounts and compliance decisions are confirmed.
 - Portal-ready location, amenity, agent, permit, off-plan, and publication validation
 - Property Finder listing publication and reconciliation through the Enterprise API
 - Bayut/dubizzle listing publication and reconciliation through an approved XML feed
+- Provider-specific MLS/listing-feed adapters built on the Release 1.1 Draft-only
+  intake contract, with governed CORE-admin business-value mappings and technical
+  transformations retained in the integration/ETL layer
+- Controlled two-way synchronization with approved external CRM platforms such as
+  Salesforce, HubSpot or a bespoke system, only where field ownership, conflict
+  resolution, deletion, replay and authoritative-system rules are explicitly approved
+- Portal/source quality reporting that reconciles external listing, enquiry, campaign
+  and lead identifiers rather than relying on source labels alone
 - Co-broker and sharing controls only if NYSA later approves external access
 
 ## Release 5: Commissions and Finance Operations
@@ -123,7 +215,29 @@ provider accounts and compliance decisions are confirmed.
 - Configurable expiry reminders and completion checklists
 - Restricted document access and approval history
 - Lead conversion, inventory aging, source, revenue, and commission analytics
+- Governed regional marketing-material compliance review, including applicable RERA
+  permit/disclosure evidence, approval history, expiry and channel-specific release
+  controls for digital and physical material
+- Campaign cost-per-lead, cost-per-acquisition and marketing ROI only after channel
+  spend, authoritative Release 2 deal outcomes and applicable revenue/commission data
+  reconcile to the same campaign and property identities
+- Agent performance reporting extended from response/SLA and lead conversion to
+  authoritative viewings, offers, bookings, closed sales and booked value after the
+  Release 2 source modules are accepted
+- Privacy operations for integrated marketing data, including documented purpose,
+  consent/legal basis, retention, correction, restriction, deletion/anonymization,
+  vendor review and cross-border transfer controls
 - Advanced management exports
+
+## Reconciled Marketing and Lead-Management Planning Gate
+
+The additions above were reconciled on 2026-07-21 as planning inputs. They do not
+authorize development or production connection. Before implementation, NYSA must
+approve the relevant release allocation, business owner, provider/account ownership,
+authoritative data source, campaign and routing policy, privacy/compliance basis,
+controlled-value mappings, sandbox credentials, measurable acceptance criteria and
+CRM Test deployment plan. Google Ads and Google Calendar are separate integrations;
+Property Finder/Bayut lead retrieval and listing publication are also separate flows.
 
 ## Release Gates
 

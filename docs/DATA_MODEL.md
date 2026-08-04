@@ -73,6 +73,15 @@ Migration filenames already applied to the database.
   proposal footer, approved disclaimers, default currency, locale, and effective dates
 - Separate from external companies and never used as a customer or partner record
 
+#### `property_media_approval_policy`
+
+- Singleton Administrator-governed policy controlling whether future compliant
+  property-media uploads require responsible-Manager approval
+- Defaults safely to approval required; every decision records its reason,
+  Administrator and timestamp
+- Policy changes never rewrite existing pending media, preserving submission and
+  audit history
+
 #### `contacts`
 
 - Person identity and display name
@@ -182,6 +191,21 @@ an assessment used in a prior decision.
 
 ### Property media and sales enablement
 
+#### `listings`
+
+- Governed Area identity and retained customer-facing area label
+- Separate optional Community/building/district text
+- One property type, commercial package price and normal single-property attributes
+- Bulk Deal parents derive their combined size from relational property rows
+
+#### `listing_units`
+
+- Bulk Deal listing, unique unit/property reference and display order
+- Property-specific non-bulk type, bedrooms where applicable, size and asking price
+- Plot rows have no bedrooms; built-property rows require bedrooms
+- Rows are replaced atomically with a governed parent edit and retain database
+  constraints against incomplete or duplicate property schedules
+
 #### `property_media`
 
 - Listing, storage key, media type, title, sort order, approval status, hash,
@@ -266,6 +290,31 @@ also have typed columns.
 
 ### Release 1 integration foundation
 
+#### `listing_intake_events` (Release 1.1 implemented)
+
+- Stable event ID, provider code, source kind, external record ID and mapping version
+- SHA-256 payload identity, database-only normalized payload, processing status,
+  bounded safe error detail, attempt count and receive/process times
+- Assigned NYSA reviewer, resulting Draft listing or possible-duplicate listing, and
+  authorized replay actor
+- Accepted events link exactly one Draft; failed, unmapped and duplicate-review events
+  never create a partial or second listing
+
+#### `listing_mapping_versions` and `listing_value_mappings` (Release 1.1 implemented)
+
+- Provider/version stable identity, business name, Draft/Tested/Approved/Active/Retired
+  status, test and approval evidence, actors, effective times and replacement lineage
+- Listing field code, exact case-insensitive external value and governed CORE value;
+  entries are editable only while their version is Draft
+- One Active mapping version per provider; prior versions remain immutable and linked
+  from the event/listing records that consumed them
+
+#### `listings` integration identity (Release 1.1 implemented)
+
+- Source kind, provider code, external record ID, mapping version text and immutable
+  mapping-version identity are retained on integration/import-created inventory
+- A partial unique index prevents two live listings for one provider/external record
+
 #### `integration_accounts`
 
 - Provider, environment, external account reference, enabled capabilities,
@@ -287,20 +336,44 @@ also have typed columns.
 - Provider, external object type/ID, internal entity type/ID, mapping version,
   active status, and last reconciliation time
 
-## Later Entities
+## Release 2 Entities
 
 ### Opportunity and deal
 
-- `opportunities`
-- `opportunity_stage_history`
+- `opportunities`, `opportunity_stage_history`, `opportunity_attribution`,
+  `opportunity_participants`, `opportunity_number_counters`, `r2_legacy_lead_review` and
+  `r2_opportunity_reconciliation` — R2.0/R2.1 implemented locally in migration 038; database
+  rehearsal and CRM Test acceptance pending
 - `property_matches`
-- `viewings`
-- `viewing_attendees`
-- `offers`
-- `offer_revisions`
-- `negotiation_events`
-- `deals`
-- `deal_parties`
+- `viewings` and `viewing_attendees`
+- `offers`, `offer_revisions` and `negotiation_events`
+- `bookings` and `booking_status_history`
+- `deals` and `deal_parties`
+- `checklist_templates`, `checklist_template_items`, `deal_checklists` and
+  `deal_checklist_items`
+
+The field-level design, lifecycle ownership, compatibility rules and authorization baseline are
+in `RELEASE_2_SCOPE.md`. In particular, the roadmap requires explicit booking/reservation records;
+booking must not exist only as a stage label. Checklist configuration and operational completion
+move into Release 2, while sensitive document management and advanced compliance remain Release 6.
+The remaining records in this section are planned for later Release 2 slices.
+`opportunity_attribution` preserves the original lead/integration source plus stable campaign,
+advert, form, landing-page and property identifiers as immutable provenance. Deals resolve that
+provenance through their originating opportunity. Release 3 may map the stable identifiers to a
+governed campaign master without rewriting history; campaign spend and ROI are not Release 2 data.
+
+## Later Entities
+
+### Campaign management (Release 3A)
+
+- `campaigns` and `campaign_status_history`
+- `campaign_properties`, `campaign_audiences` and `campaign_channels`
+- `campaign_source_identifiers`, `campaign_targets` and governed budget records
+
+The campaign master owns maintained business identity, ownership, objective, scope, dates, budget,
+status and targets. It consumes rather than replaces the immutable Release 2 attribution chain.
+Provider execution/reconciliation remains in Release 3B; authoritative cost/acquisition/return
+analytics remain Release 6.
 
 ### Finance operations
 
@@ -313,10 +386,6 @@ also have typed columns.
 ### Documents and compliance
 
 - `document_access`
-- `checklist_templates`
-- `checklist_template_items`
-- `deal_checklists`
-- `deal_checklist_items`
 
 ### Integrations
 

@@ -1,9 +1,12 @@
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
 import { Router } from '../lib/http-kit.js';
 import { one, execute, transaction, uuid, audit } from '../db.js';
 import { hashPassword, verifyPassword, createSession, destroySession, requireAuth, publicBroker } from '../auth.js';
 
 const r = Router();
+const require = createRequire(import.meta.url);
+const { version: applicationVersion } = require('../../package.json');
 
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -11,7 +14,7 @@ const MAX_ATTEMPTS = 10;
 
 r.get('/health', async (req, res) => {
   await one('SELECT 1 AS database_ready');
-  res.json({ ok: true, database: 'ready' });
+  res.json({ ok: true, database: 'ready', version: applicationVersion });
 });
 
 function clientIp(req) {
@@ -30,6 +33,9 @@ function checkRateLimit(key) {
   item.count++;
   return item.count <= MAX_ATTEMPTS;
 }
+
+const resetCodeHash = code => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
+const RESET_RESPONSE = 'If this email belongs to an active NYSA user, the request is now available to an Administrator. Obtain the one-time reset code through an approved private channel.';
 
 function setSessionCookie(res, token) {
   res.setHeader('Set-Cookie', `nysa_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
@@ -102,10 +108,10 @@ r.post('/auth/register', async (req, res) => {
   if (error) return res.status(400).json({ error });
   if (inv.issuedToEmail && inv.issuedToEmail.toLowerCase() !== email.toLowerCase())
     return res.status(400).json({ error: 'This invitation is scoped to a different email address' });
-  if (await one('SELECT id FROM brokers WHERE LOWER(email) = LOWER($1)', [email]))
+  if (!inv.pendingBrokerId && await one('SELECT id FROM brokers WHERE LOWER(email) = LOWER($1)', [email]))
     return res.status(409).json({ error: 'An account with this email already exists' });
 
-  const id = uuid();
+  const id = inv.pendingBrokerId||uuid();
   await transaction(async (client) => {
     const consumed = await one(`UPDATE invitations
       SET used_count = used_count + 1,
@@ -113,11 +119,20 @@ r.post('/auth/register', async (req, res) => {
       WHERE id = $1 AND status = 'active' AND used_count < max_uses
       RETURNING id`, [inv.id], client);
     if (!consumed) throw new Error('Invitation is no longer available');
-    await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role, can_post, password_hash, invited_by)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [id, name.trim(), email.trim(), phone || null, brokerage || null, inv.role,
-       inv.jobRole || (inv.role === 'admin' ? 'admin' : inv.role === 'internal_broker' ? 'sales_agent' : null),
-       inv.role === 'partner_broker' ? 0 : 1, hashPassword(password), inv.issuedBy], client);
+    const jobRole=inv.jobRole || (inv.role === 'admin' ? 'admin' : inv.role === 'internal_broker' ? 'sales_agent' : null);
+    if(jobRole==='manager'&&inv.teamId){
+      const team=await one('SELECT id,name,manager_id FROM teams WHERE id=$1 AND active=1 FOR UPDATE',[inv.teamId],client);
+      if(!team)throw new Error('The invitation team is no longer active');
+      if(team.managerId&&team.managerId!==id)throw new Error(`${team.name} already has a Manager. Ask an administrator to issue a corrected invitation.`);
+    }
+    if(inv.pendingBrokerId)await execute(`UPDATE brokers SET name=$1,email=$2,phone=$3,brokerage=$4,password_hash=$5,status='active',updated_at=NOW() WHERE id=$6 AND status='pending_activation'`,[name.trim(),email.trim(),phone||null,brokerage||null,hashPassword(password),id],client);
+    else {await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role,team_id,can_post, password_hash, invited_by,user_classification)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'internal_user')`,
+      [id, name.trim(), email.trim(), phone || null, brokerage || null, inv.role,jobRole,inv.teamId||null,inv.role === 'partner_broker' ? 0 : 1, hashPassword(password), inv.issuedBy], client);
+      if(jobRole)await execute(`INSERT INTO user_role_assignments(id,broker_id,job_role,team_id,is_primary,status,approved_by,change_reason) VALUES($1,$2,$3,$4,1,'active',$5,'Invitation-approved primary role')`,[uuid(),id,jobRole,inv.teamId||null,inv.issuedBy],client);
+      if(inv.teamId)await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,$4,$5)`,[uuid(),inv.teamId,id,jobRole==='manager'?'manager':'member',inv.issuedBy],client);
+    }
+    if(jobRole==='manager'&&inv.teamId)await execute('UPDATE teams SET manager_id=$1 WHERE id=$2',[id,inv.teamId],client);
     await audit('Broker', id, 'registered', id, { via_invitation: inv.id }, client);
   });
 
@@ -134,10 +149,48 @@ r.post('/auth/login', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE LOWER(email) = LOWER($1)', [email]);
   if (!broker || !verifyPassword(password, broker.passwordHash))
     return res.status(401).json({ error: 'Invalid email or password' });
-  if (broker.status !== 'active') return res.status(403).json({ error: 'Access has been revoked' });
+  if (broker.status !== 'active') return res.status(403).json({ error: broker.status==='suspended'?'Access is suspended':'Access is not active' });
   const token = await createSession(broker.id);
   setSessionCookie(res, token);
   res.json({ broker: publicBroker(broker) });
+});
+
+r.post('/auth/password-reset-requests', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const key = `password-reset-request:${clientIp(req)}:${email}`;
+  if (!checkRateLimit(key)) return res.status(429).json({ error: 'Too many attempts; try again later' });
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const broker = await one("SELECT id FROM brokers WHERE LOWER(email)=LOWER($1) AND status='active'", [email]);
+    if (broker) await transaction(async client => {
+      await execute("UPDATE password_reset_requests SET status=CASE WHEN status='issued' AND expires_at<=NOW() THEN 'expired' ELSE 'cancelled' END,code_hash=NULL WHERE broker_id=$1 AND status IN ('pending','issued')", [broker.id], client);
+      await execute('INSERT INTO password_reset_requests(id,broker_id,requested_ip) VALUES($1,$2,$3)', [uuid(),broker.id,clientIp(req)], client);
+    });
+  }
+  res.json({ ok:true, message:RESET_RESPONSE });
+});
+
+r.post('/auth/password-resets/redeem', async (req, res) => {
+  const email=String(req.body?.email||'').trim().toLowerCase(),code=String(req.body?.code||'').trim(),password=String(req.body?.password||''),confirmPassword=String(req.body?.confirmPassword||'');
+  const key=`password-reset-redeem:${clientIp(req)}:${email}`;
+  if(!checkRateLimit(key))return res.status(429).json({error:'Too many attempts; try again later'});
+  if(!email||!code||!password||!confirmPassword)return res.status(400).json({error:'Email, reset code, new password and confirmation are required'});
+  if(password!==confirmPassword)return res.status(400).json({error:'New password and confirmation do not match'});
+  if(password.length<12)return res.status(400).json({error:'Password must be at least 12 characters'});
+  const completed=await transaction(async client=>{
+    const request=await one(`SELECT pr.*,b.status AS broker_status FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id
+      WHERE LOWER(b.email)=LOWER($1) AND pr.status='issued' AND pr.code_hash=$2 AND pr.expires_at>NOW()
+      ORDER BY pr.issued_at DESC LIMIT 1 FOR UPDATE OF pr`,[email,resetCodeHash(code)],client);
+    if(!request||request.brokerStatus!=='active')return false;
+    await execute('UPDATE brokers SET password_hash=$1,updated_at=NOW() WHERE id=$2',[hashPassword(password),request.brokerId],client);
+    await execute('DELETE FROM sessions WHERE broker_id=$1',[request.brokerId],client);
+    await execute("UPDATE password_reset_requests SET status='used',used_at=NOW(),code_hash=NULL WHERE id=$1",[request.id],client);
+    await execute("UPDATE password_reset_requests SET status='cancelled',code_hash=NULL WHERE broker_id=$1 AND id<>$2 AND status IN ('pending','issued')",[request.brokerId,request.id],client);
+    await audit('Broker',request.brokerId,'password_reset_completed',request.brokerId,{resetRequestId:request.id},client);
+    return true;
+  });
+  if(!completed)return res.status(400).json({error:'Reset code is invalid or expired'});
+  clearSessionCookie(res);
+  res.json({ok:true,message:'Password changed. Sign in with your new password.'});
 });
 
 r.post('/auth/logout', requireAuth, async (req, res) => {

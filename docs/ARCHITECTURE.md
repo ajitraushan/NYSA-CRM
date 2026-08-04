@@ -34,7 +34,8 @@ PostgreSQL
 
 ### Application server
 
-- Entry point: `src/server.js`
+- Hosting entry point: `app.cjs` (CommonJS wrapper for LiteSpeed/CloudLinux)
+- Application entry point: `src/server.js` (ESM server and migration startup)
 - HTTP/router helpers: `src/lib/http-kit.js`
 - Authentication and authorization: `src/auth.js`
 - Feature endpoints: `src/routes/`
@@ -93,6 +94,20 @@ Integrations
 Each module owns its validation and business rules. Cross-module operations use
 database transactions where consistency is required, such as converting a lead
 to an opportunity or closing a deal and creating commission expectations.
+
+For Release 2, Lead Operations remains authoritative for source, routing, assignment, SLA and
+qualification. Opportunity and Deals becomes authoritative only after qualification for matches,
+viewings, offers, negotiations, bookings and transaction outcome. Inventory remains authoritative
+for listing identity and availability. Cross-module creation, reservation and closure operations
+must be transactional, conflict-safe and audited; an opportunity stage must never silently rewrite
+inventory or manufacture a deal. The detailed compatibility design is in `RELEASE_2_SCOPE.md`.
+
+R2.1 implements the first additive boundary in migration 038 and `src/routes/opportunities.js`.
+Opportunity creation references the exact Lead, Customer, current Requirement and latest
+Qualification Assessment; it does not copy or mutate their authoritative business data. The
+original enquiry attribution is a trigger-protected immutable snapshot. API scope is resolved from
+Opportunity owner/team or explicit participation, and optimistic versions reject stale writes.
+Later-stage transitions remain disabled until their owning modules are implemented and accepted.
 
 ## Request and Authorization Flow
 
@@ -154,6 +169,23 @@ creates a new version rather than silently replacing a sent document.
 Integrations will use adapters behind internal interfaces. External webhook or
 API events are normalized, deduplicated, and recorded before changing CRM data.
 Retries must be idempotent and visible in an integration failure queue.
+
+Release 1.1 implements this boundary for inbound inventory at
+`POST /api/intake/listings`. Provider-specific adapters sign a common normalized
+contract; the server selects the provider credential and maintained NYSA reviewer
+from environment configuration. `listing_intake_events` records stable identifiers,
+safe processing state and a database-only payload for controlled correction/replay.
+An accepted first event creates a blocked Draft. Advisory locking and database
+uniqueness serialize concurrent provider/external-record attempts, while repeated or
+materially changed records remain review events instead of overwriting inventory.
+
+Provider adapters remain responsible for technical extraction and field-shape
+conversion. `listing_mapping_versions` and `listing_value_mappings` form the CORE-owned
+business translation boundary. A full Administrator maintains external values against
+stable CORE values, then records test, approval and activation evidence. Intake applies
+only the exact Active provider/version mapping before canonical validation. Unknown
+values remain reviewable exceptions, and every accepted event/listing retains the
+mapping-version UUID so later replacements never rewrite historical interpretation.
 
 Integration credentials are environment or secret-manager values. They never
 appear in browser code, database exports, repository files, or audit details.

@@ -1,17 +1,20 @@
 {
   "name": "nysa-crm",
-  "version": "1.1.0",
-  "description": "NYSA CRM Release 1 - lead lifecycle, customer activity, and real estate inventory on PostgreSQL",
+  "version": "2.1.0-dev.79",
+  "description": "NYSA CORE Release 2 development - additive opportunity pipeline on the accepted Release 1.1 foundation",
   "type": "module",
-  "main": "src/server.js",
+  "main": "app.cjs",
   "scripts": {
-    "start": "node src/server.js",
-    "test": "node --test --test-isolation=none"
+    "start": "node app.cjs",
+    "test": "node --test --test-isolation=none",
+    "test:dashboard:seed": "node scripts/seed-dashboard-fixtures.js",
+    "test:dashboard:roles": "node --test --test-isolation=none test/dashboard-domain.test.js test/dashboard-requirements.test.js"
   },
   "engines": {
     "node": ">=22.13"
   },
   "dependencies": {
-    "pg": "8.22.0"
+    "pg": "8.22.0",
+    "read-excel-file": "^9.3.2"
   }
 }

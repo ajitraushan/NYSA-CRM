@@ -1,7 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QUALIFICATION_GUIDANCE, JOB_ROLES, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
-  validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue } from '../src/crm-domain.js';
+import { readFileSync } from 'node:fs';
+import { QUALIFICATION_GUIDANCE, JOB_ROLES, parseBusinessAmount, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
+  validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue,
+  activityStageTransition } from '../src/crm-domain.js';
+import { normalizeDelimitedValues } from '../src/crm-domain.js';
+
+test('preferred areas normalize comma-separated values and remove case-insensitive duplicates',()=>{
+  assert.deepEqual(normalizeDelimitedValues(' Dubai Marina, Palm Jumeirah, dubai marina, Downtown '),['Dubai Marina','Palm Jumeirah','Downtown']);
+  assert.deepEqual(normalizeDelimitedValues(['Dubai Hills',' Arabian Ranches ','Dubai Hills']),['Dubai Hills','Arabian Ranches']);
+});
+
+test('recorded calls advance only new leads to Contacted',()=>{
+  assert.equal(activityStageTransition('New','Call'),'Contacted');
+  assert.equal(activityStageTransition('Contacted','Call'),null);
+  assert.equal(activityStageTransition('Qualified','Call'),null);
+  assert.equal(activityStageTransition('New','Note'),null);
+});
 
 test('qualification guidance gives Hot leads the fastest response target', () => {
   assert.ok(QUALIFICATION_GUIDANCE.Hot.responseMinutes < QUALIFICATION_GUIDANCE.Warm.responseMinutes);
@@ -28,7 +43,7 @@ test('Lost leads require a reason while Won leads do not', () => {
 });
 
 test('internal job roles cover the approved NYSA staff groups', () => {
-  assert.deepEqual(JOB_ROLES, ['admin','sales_agent','listing_agent','manager','director','accountant']);
+  assert.deepEqual(JOB_ROLES, ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant']);
 });
 
 test('contact identity validates email and international phone formats', () => {
@@ -52,6 +67,65 @@ test('ROI and assignment deadline calculations are deterministic', () => {
   assert.equal(calculateRoi(2_000_000, 140_000, 20_000), 6);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'New' }, new Date('2026-01-02T00:00:00Z')), true);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'Won' }, new Date('2026-01-02T00:00:00Z')), false);
+});
+
+test('mortgage calculator classifies DBR and calculates debt reduction to prudent threshold',()=>{
+  const result=calculateMortgage({propertyPrice:2_000_000,loanAmount:2_000_000,annualRatePercent:4.5,years:25,monthlyIncome:75_000,monthlyDebt:40_000});
+  assert.equal(result.dbrBand,'above_regulatory_ceiling');
+  assert.equal(result.prudentDbrPercent,47);
+  assert.equal(result.regulatoryDbrPercent,50);
+  assert.ok(result.existingDebtReductionToPrudent>15_800&&result.existingDebtReductionToPrudent<15_900);
+  assert.equal(Math.round((result.maximumExistingDebtAtPrudent+result.monthlyPayment)/75000*100),47);
+  assert.equal(result.prudentAffordability.percent,47);
+  assert.equal(result.regulatoryAffordability.percent,50);
+  assert.equal(result.regulatoryAffordability.maximumTotalMonthlyDebt,37_500);
+  assert.equal(result.regulatoryAffordability.maximumLoanPrincipal,0);
+});
+
+test('mortgage affordability gives explicit 47 and 50 percent corrective options',()=>{
+  const result=calculateMortgage({propertyPrice:4_000_000,loanAmount:3_200_000,annualRatePercent:4.5,years:25,monthlyIncome:50_000,monthlyDebt:20_000});
+  assert.equal(result.debtBurdenRatio,75.57);
+  assert.equal(result.prudentAffordability.maximumTotalMonthlyDebt,23_500);
+  assert.equal(result.prudentAffordability.maximumMortgagePayment,3_500);
+  assert.equal(result.prudentAffordability.requiredExistingDebtReduction,14_286.64);
+  assert.equal(result.regulatoryAffordability.maximumTotalMonthlyDebt,25_000);
+  assert.equal(result.regulatoryAffordability.maximumMortgagePayment,5_000);
+  assert.equal(result.regulatoryAffordability.requiredExistingDebtReduction,12_786.64);
+  assert.equal(result.regulatoryAffordability.maximumLoanPrincipal,899_551.61);
+  assert.equal(result.regulatoryAffordability.equivalentPropertyPrice,1_124_439.51);
+});
+
+test('business amounts accept thousand million and billion shorthand',()=>{
+  assert.equal(parseBusinessAmount('2 M'),2000000);
+  assert.equal(parseBusinessAmount('2.5m'),2500000);
+  assert.equal(parseBusinessAmount('AED 750K'),750000);
+  assert.equal(parseBusinessAmount('2,000,000'),2000000);
+  assert.deepEqual(validateBudget('1.5 M','2.5 M'),{min:1500000,max:2500000});
+});
+
+test('lead budget browser and intake routes use reviewed normalized business amounts',()=>{
+  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const crm=readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  const intake=readFileSync(new URL('../src/routes/website-intake.js',import.meta.url),'utf8');
+  assert.match(app,/data-business-amount/);assert.match(app,/Interpreted as/);assert.match(app,/e\.g\. 2 M/);
+  assert.match(crm,/normalizedBudget=validateBudget/);assert.match(intake,/budget\.min,budget\.max/);
+});
+
+test('new-customer lead capture is atomic and confirms only a committed lead',()=>{
+  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  const crm=readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  assert.match(crm,/post\('\/crm\/leads\/capture'/);
+  assert.match(crm,/transaction\(async client=>[\s\S]*created_with_lead[\s\S]*insertCapturedLead/);
+  assert.match(app,/parseBusinessAmountInput\(f\.budgetMin\)/);
+  assert.match(app,/both M and m are accepted/);
+  assert.match(app,/type="submit" class="btn btn-primary">Create lead/);
+  assert.match(app,/if\(!submit\)return toast\('Lead form is unavailable/);
+  assert.match(app,/Lead created successfully[\s\S]*assignment queue/);
+  assert.match(app,/Lead not created:/);
+  assert.match(app,/New customers require name, email, phone and preferred channel/);
+  assert.match(crm,/Budget from and Budget to are required/);
+  assert.match(crm,/At least one preferred area is required/);
+  assert.match(crm,/Complete the existing customer email, phone and preferred channel/);
 });
 
 test('lead lifecycle rejects skipped and terminal transitions',()=>{
@@ -78,8 +152,19 @@ test('qualification thresholds and factor contributions are explainable at bound
 });
 
 test('qualification excludes prohibited sensitive and social-media factors',()=>{
-  assert.match(validateQualificationFactors([{code:'nationality',label:'Nationality',min:0,max:1,weight:1}]),/prohibited/);
-  assert.match(validateQualificationFactors([{code:'social_media_score',label:'Profile',min:0,max:1,weight:1}]),/prohibited/);
+  assert.match(validateQualificationFactors([{code:'nationality',label:'Nationality',min:0,max:1,weight:1}]),/personal or social attribute "nationality"/i);
+  assert.match(validateQualificationFactors([{code:'social_media_score',label:'Profile',min:0,max:1,weight:1}]),/personal or social attribute "social media"/i);
+  assert.equal(validateQualificationFactors([{code:'mortgage_readiness',label:'Mortgage readiness',question:'Is mortgage approval available?',min:0,max:10,weight:100,required:true,missingTreatment:'reject'}]),null);
+});
+
+test('qualification factors support maintained business question controls',()=>{
+  const factors=[
+    {code:'finance_ready',label:'Finance ready',question:'Is finance approval ready?',answerType:'yes_no',min:0,max:1,weight:40,required:true,missingTreatment:'reject'},
+    {code:'purchase_timing',label:'Purchase timing',question:'When does the customer intend to purchase?',answerType:'single_select',answerOptions:[{label:'Within 30 days',value:10},{label:'More than 6 months',value:1}],min:0,max:10,weight:60,required:true,missingTreatment:'reject'}
+  ];
+  assert.equal(validateQualificationFactors(factors),null);
+  assert.match(validateQualificationFactors([{...factors[0],min:0,max:10}]),/0 to 1/);
+  assert.match(validateQualificationFactors([{...factors[1],answerOptions:[]}]),/at least two/);
 });
 
 test('qualification override requires authority and reason and model changes preserve prior results',()=>{

@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
 
 function compile(pattern) {
   const keys = [];
@@ -64,7 +65,7 @@ export function createApp() {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-src blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
     if (process.env.NODE_ENV === 'production') res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     // response helpers
     res.status = (code) => { res.statusCode = code; return res; };
@@ -81,7 +82,7 @@ export function createApp() {
     req.on('data', (c) => {
       if (bodyTooLarge) return;
       bodySize += c.length;
-      if (bodySize > Number(process.env.MAX_JSON_BODY_BYTES || 12582912)) {
+      if (bodySize > Number(process.env.MAX_JSON_BODY_BYTES || 33554432)) {
         bodyTooLarge = true;
         chunks.length = 0;
         return res.status(413).json({ error: 'Request body is too large' });

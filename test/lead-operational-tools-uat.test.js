@@ -1,0 +1,63 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname,join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+const read=path=>readFileSync(join(root,path),'utf8');
+
+test('lead tasks distinguish planned work from completed activities and expose ownership',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/lead-operations.js'),styles=read('public/index.html');
+  for(const contract of ['Lead action plan','future actions with an owner and deadline','Assigned to','Add a planned action','Instructions','Start','Cancellation reason'])assert.match(ui,new RegExp(contract));
+  assert.match(routes,/Only a team lead or administrator can select another task owner/);
+  assert.match(routes,/Completion outcome is required/);
+  assert.match(routes,/Cancellation reason is required/);
+  assert.match(styles,/\.task-card\{display:grid/);
+});
+
+test('financial scenarios use business forms and preserve immutable governed snapshots',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
+  assert.doesNotMatch(ui,/Inputs JSON/);
+  for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected occupancy rate (%)','Cash invested','indicative estimate','immutable snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
+  assert.match(ui,/openBusinessMortgageCalculator/);
+  assert.match(ui,/name="propertyPrice" data-business-amount/);
+  assert.match(ui,/name="loanAmount" data-business-amount/);
+  assert.match(ui,/f\.propertyPrice=scenarioMoney\(f\.propertyPrice,'Property price'\)/);
+  assert.match(ui,/hasCalculated=false,recalculationTimer=null,calculationSequence=0/);
+  assert.match(ui,/form\.addEventListener\('input'/);
+  assert.match(ui,/Inputs changed — recalculating/);
+  assert.match(ui,/setTimeout\(\(\)=>calculate\(\{quiet:true\}\),350\)/);
+  assert.match(ui,/existingDebtReductionToPrudent/);
+  for(const marker of ['Maximum total monthly debt','Maximum mortgage payment with current debt','Maximum supportable loan','Indicative property price at entered down payment','Reducing existing debt alone is insufficient'])
+    assert.match(ui,new RegExp(marker));
+  assert.match(ui,/data-business-amount/);
+  assert.match(routes,/input_snapshot,output_snapshot/);
+  assert.match(routes,/assumption_version_id/);
+  assert.match(styles,/\.financial-scenario-card\{display:grid/);
+});
+
+test('financial scenarios require active fee readiness and preview EMI DBR before save',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
+  for(const contract of ['Financial calculation is not ready','Regulatory and Fee Assumptions','Calculate and review','Monthly EMI','Debt-burden ratio','Save immutable snapshot','The active Regulatory and Fee Assumption changed after preview'])assert.match(ui+routes,new RegExp(contract));
+  assert.match(routes,/financial-scenarios\/preview/);
+  assert.match(routes,/activeAssumption/);
+  assert.match(routes,/expectedAssumptionVersionId/);
+  assert.match(routes,/buildScenarioCalculation/);
+  assert.match(ui,/scenarioReviewHtml/);
+  assert.match(ui,/preview\.assumption\.id/);
+  assert.match(styles,/\.scenario-result-grid\{display:grid/);
+});
+
+test('private lead documents have a scoped register, immutable versions and separate consent evidence',()=>{
+  const ui=read('public/app.js'),routes=read('src/routes/files-proposals.js'),styles=read('public/index.html');
+  for(const contract of ['Private lead document register','Document source / use','Access classification','Approved NYSA document template','Upload new version','Record executed marketing agreement','uploading a file alone never grants marketing consent'])assert.match(ui,new RegExp(contract));
+  assert.doesNotMatch(ui,/executeAgreement/);
+  assert.match(routes,/r\.get\('\/crm\/leads\/:id\/documents'/);
+  assert.match(routes,/stable_code='document_type'/);
+  assert.match(routes,/Restricted files|accessClassification==='restricted'/i);
+  assert.match(routes,/file_hash,immutable,recipient/);
+  assert.match(routes,/VALUES\(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,1,/);
+  assert.match(routes,/Recipient is required when recording a sent document/);
+  assert.match(styles,/\.document-card\{border:/);
+});

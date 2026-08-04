@@ -5,7 +5,7 @@
 - Application URL: https://crm.nysarealty.com
 - Health URL: https://crm.nysarealty.com/api/health
 - cPanel application root: `/home/nysareal/nysa-crm`
-- Startup file: `src/server.js`
+- Startup file: `app.cjs`
 - Node.js: 24.16.0
 - Mode: Production
 - PostgreSQL database: `nysareal_nysacrm`
@@ -158,7 +158,8 @@ before upload. Record its SHA-256 with the release.
    application files according to the approved release plan.
 4. Confirm `package.json`, `package-lock.json`, `public`, and `src` are directly
    inside the application root.
-5. Confirm the startup file remains `src/server.js`.
+5. Confirm the startup file is `app.cjs`. The CommonJS wrapper dynamically imports
+   the ESM server entry for LiteSpeed/CloudLinux compatibility.
 6. Confirm environment-variable names remain present.
 7. Run NPM Install only when dependencies or the clean runtime installation require it.
 8. Save cPanel application settings.
