@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { execute, one } from './db.js';
 
-const SESSION_HOURS = 24 * 7;
+const DEFAULT_SESSION_HOURS = 24 * 7;
 
 function sessionHash(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -22,11 +22,13 @@ export function verifyPassword(password, stored) {
   return expectedBuffer.length === candidateBuffer.length && crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
 }
 
-export async function createSession(brokerId) {
+export async function createSession(brokerId,{hours=DEFAULT_SESSION_HOURS}={}) {
+  const duration=Number(hours);
+  if(!Number.isFinite(duration)||duration<1||duration>DEFAULT_SESSION_HOURS)throw new Error('Invalid session duration');
   const token = crypto.randomBytes(32).toString('hex');
   await execute('DELETE FROM sessions WHERE expires_at <= NOW()');
   await execute("INSERT INTO sessions (token, broker_id, expires_at) VALUES ($1,$2,NOW() + ($3 * INTERVAL '1 hour'))",
-    [sessionHash(token), brokerId, SESSION_HOURS]);
+    [sessionHash(token), brokerId, duration]);
   return token;
 }
 

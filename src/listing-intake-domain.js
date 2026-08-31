@@ -1,7 +1,9 @@
 import { BEDROOMS, PAYMENT_PLANS, PROPERTY_TYPES, normalizeHandover, normalizeInventoryAmount } from './inventory-domain.js';
+import { validateInventoryPartyInput } from './inventory-party-domain.js';
 
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 const CODE=/^[a-z][a-z0-9_]{1,63}$/;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TIERS=['Exclusive to Nysa','Shared network','Off-market'];
 
 export function validateListingIntakePayload(body={}){
@@ -12,7 +14,8 @@ export function validateListingIntakePayload(body={}){
   if(!mappingVersion||mappingVersion.length>64)return{error:'mappingVersion is required and must not exceed 64 characters',code:'INVALID_MAPPING_VERSION'};
   if(!['integration','import'].includes(sourceKind))return{error:'sourceKind must be integration or import',code:'INVALID_SOURCE_KIND'};
   if(!listing||typeof listing!=='object'||Array.isArray(listing))return{error:'listing object is required',code:'INVALID_LISTING'};
-  const project=clean(listing.project),areaCode=clean(listing.areaCode)?.toLowerCase(),propertyType=clean(listing.propertyType);
+  const project=clean(listing.project),inventoryHeadline=clean(listing.inventoryHeadline)||project,areaCode=clean(listing.areaCode)?.toLowerCase(),propertyType=clean(listing.propertyType),
+    community=clean(listing.community),unitReference=clean(listing.unitReference),building=clean(listing.building);
   if(!project||project.length>250)return{error:'listing.project is required and must not exceed 250 characters',code:'INVALID_PROJECT'};
   if(!areaCode||!CODE.test(areaCode))return{error:'listing.areaCode must be a governed lowercase stable code',code:'UNMAPPED_AREA'};
   if(!PROPERTY_TYPES.includes(propertyType))return{error:'listing.propertyType is not mapped to a governed value',code:'UNMAPPED_PROPERTY_TYPE'};
@@ -30,11 +33,21 @@ export function validateListingIntakePayload(body={}){
   for(const field of ['downPaymentPercent','onHandoverPercent'])if(listing[field]!==undefined&&listing[field]!==null&&Number(listing[field])>100)return{error:`listing.${field} cannot exceed 100`,code:'INVALID_COMMERCIAL_TERMS'};
   const exclusivityTier=clean(listing.exclusivityTier)||'Off-market';if(!TIERS.includes(exclusivityTier))return{error:'listing.exclusivityTier is not mapped to a governed value',code:'UNMAPPED_EXCLUSIVITY'};
   const handover=normalizeHandover(listing);if(handover.error)return{error:handover.error,code:'INVALID_HANDOVER'};
+  const originatingAgentId=clean(listing.originatingAgentId),responsibleAgentId=clean(listing.responsibleAgentId)||originatingAgentId;
+  if(originatingAgentId&&!UUID.test(originatingAgentId))return{error:'listing.originatingAgentId must be a resolved NYSA user ID',code:'INVALID_AGENT_ATTRIBUTION'};
+  if(responsibleAgentId&&!UUID.test(responsibleAgentId))return{error:'listing.responsibleAgentId must be a resolved NYSA user ID',code:'INVALID_AGENT_ATTRIBUTION'};
+  let owner=null;
+  if(listing.owner!==undefined&&listing.owner!==null){
+    if(typeof listing.owner!=='object'||Array.isArray(listing.owner))return{error:'listing.owner must be a structured Inventory-side party',code:'INVALID_OWNER'};
+    owner={partyRole:clean(listing.owner.partyRole)?.toLowerCase(),partyType:clean(listing.owner.partyType)?.toLowerCase(),displayName:clean(listing.owner.displayName),
+      phone:clean(listing.owner.phone),email:clean(listing.owner.email)?.toLowerCase(),source:clean(listing.owner.source),authorityEvidence:clean(listing.owner.authorityEvidence)};
+    const ownerError=validateInventoryPartyInput(owner);if(ownerError)return{error:`listing.owner: ${ownerError}`,code:'INVALID_OWNER'};
+  }
   return{value:{eventId,provider,externalRecordId,mappingVersion,sourceKind,listing:{
-    project,developer:clean(listing.developer),areaCode,community:clean(listing.community),propertyType,bedrooms,sizeSqft,price:price.value,referencePrice:reference.value,currency,
+    inventoryHeadline,project,developer:clean(listing.developer),areaCode,community,unitReference,building,propertyType,bedrooms,sizeSqft,price:price.value,referencePrice:reference.value,currency,
     paymentPlanType,downPaymentPercent:listing.downPaymentPercent??null,onHandoverPercent:listing.onHandoverPercent??null,postHandoverYears:listing.postHandoverYears??null,
     paymentPlanNotes:clean(listing.paymentPlanNotes),handoverDate:handover.legacyValue,handoverStatus:handover.status,handoverExpectedDate:handover.expectedDate,
-    exclusivityTier,contact:clean(listing.contact),notes:clean(listing.notes)
+    exclusivityTier,owner,originatingAgentId,responsibleAgentId,contact:clean(listing.contact),notes:clean(listing.notes)
   }}};
 }
 

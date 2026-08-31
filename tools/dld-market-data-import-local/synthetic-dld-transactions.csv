@@ -1,0 +1,4 @@
+transaction_id,instance_date,trans_group_en,procedure_name_en,property_type_en,property_sub_type_en,property_usage_en,reg_type_en,area_id,area_name_en,procedure_area,actual_worth,project_number,project_name_en,master_project_en,building_name_en,rooms_en,has_parking,meter_sale_price
+DLD-SYN-POC-1,01-08-2026,Sales,Sell - Pre Registration,Unit,Flat,Residential,Off-Plan Properties,SYN-AREA-1,Synthetic Community,92.9,1950000,SYN-PROJ-1,Synthetic Residences,Synthetic Master,Synthetic Tower,2 B/R,1,20990.31
+DLD-SYN-POC-2,20-07-2026,Sales,Sell,Unit,Flat,Residential,Existing Properties,SYN-AREA-1,Synthetic Community,97.55,2050000,SYN-PROJ-1,Synthetic Residences,Synthetic Master,Synthetic Tower,2 B/R,1,21014.86
+DLD-SYN-POC-3,15-06-2026,Mortgage,Mortgage Registration,Unit,Flat,Residential,Existing Properties,SYN-AREA-1,Synthetic Community,91.04,2000000,SYN-PROJ-1,Synthetic Residences,Synthetic Master,Synthetic Tower,2 B/R,1,21968.37

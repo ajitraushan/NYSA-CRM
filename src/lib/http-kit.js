@@ -39,7 +39,14 @@ export function Router() {
 function runChain(handlers, req, res) {
   let i = 0;
   const next = (err) => {
-    if (err) { console.error(err); if (!res.headersSent) res.status(500).json({ error: 'Internal server error' }); return; }
+    if (err) {
+      console.error(err);
+      if (!res.headersSent) {
+        const status=Number.isInteger(err.statusCode)&&err.statusCode>=400&&err.statusCode<600?err.statusCode:500;
+        res.status(status).json(status===500?{error:'Internal server error'}:(err.responseBody||{error:err.message}));
+      }
+      return;
+    }
     const h = handlers[i++];
     if (!h) return;
     try {
@@ -75,14 +82,18 @@ export function createApp() {
     req.path = url.pathname;
     req.query = Object.fromEntries(url.searchParams);
 
-    // JSON body parsing
+    // JSON body parsing. The governed DLD staging endpoint alone accepts bounded raw CSV so the
+    // exact source bytes can be hashed without base64 inflation or a global JSON-limit increase.
+    const rawDldCsv = req.method === 'POST' && req.path === '/api/admin/dld-market-batches' &&
+      String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase() === 'text/csv';
     const chunks = [];
     let bodySize = 0;
     let bodyTooLarge = false;
     req.on('data', (c) => {
       if (bodyTooLarge) return;
       bodySize += c.length;
-      if (bodySize > Number(process.env.MAX_JSON_BODY_BYTES || 33554432)) {
+      const bodyLimit = rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
+      if (bodySize > bodyLimit) {
         bodyTooLarge = true;
         chunks.length = 0;
         return res.status(413).json({ error: 'Request body is too large' });
@@ -93,9 +104,20 @@ export function createApp() {
       if (bodyTooLarge) return;
       req.body = {};
       if (chunks.length) {
-        req.rawBody = Buffer.concat(chunks).toString('utf8');
-        try { req.body = JSON.parse(req.rawBody); }
-        catch { return res.status(400).json({ error: 'Invalid JSON body' }); }
+        const bytes = Buffer.concat(chunks);
+        if (rawDldCsv) {
+          req.rawBody = bytes;
+          req.body = {
+            fileName: String(req.headers['x-nysa-file-name'] || '').trim(),
+            sourceDatasetRef: String(req.headers['x-nysa-source-dataset'] || '').trim(),
+            sourceFormat: String(req.headers['x-nysa-source-format'] || '').trim(),
+            idempotencyKey: String(req.headers['x-idempotency-key'] || '').trim()
+          };
+        } else {
+          req.rawBody = bytes.toString('utf8');
+          try { req.body = JSON.parse(req.rawBody); }
+          catch { return res.status(400).json({ error: 'Invalid JSON body' }); }
+        }
       }
       dispatch(req, res);
     });
@@ -133,7 +155,15 @@ export function createApp() {
   }
 
   function streamFile(file, res) {
-    res.setHeader('Content-Type', MIME[path.extname(file)] || 'application/octet-stream');
+    const extension=path.extname(file).toLowerCase();
+    res.setHeader('Content-Type', MIME[extension] || 'application/octet-stream');
+    if (['.html','.js','.css'].includes(extension)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+      res.setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
+    }
     fs.createReadStream(file).pipe(res);
   }
 

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYSA CORE - Inventory Market Intelligence</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/chart.css">
+</head>
+<body>
+  <header><span class="logo">N</span><strong>NYSA CORE</strong><span>Inventory Master · Market Intelligence</span></header>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">RELEASE 4 · LOCAL FUNCTIONAL REVIEW</p>
+        <h1>Market context at Inventory Master level.</h1>
+        <p>Community linkage is governed. Comparable selection and calculations are deterministic, and customer-facing narrative requires human review. Missing market data never blocks normal Inventory work.</p>
+      </div>
+      <div class="status"><strong>DRAFT — NOT INTEGRATED</strong><span>Synthetic governed data only</span></div>
+    </section>
+    <section class="controls">
+      <label>Evidence scenario
+        <select id="scenario">
+          <option value="sufficient">Mapped community · Sufficient comparable evidence</option>
+          <option value="unmapped">Community not mapped</option>
+          <option value="insufficient">Only two eligible comparables</option>
+          <option value="mixed">Mixed valid and excluded records</option>
+          <option value="trend">Quarterly trend available</option>
+          <option value="stale">All observations stale</option>
+        </select>
+      </label>
+      <p>No live market source, CRM write, or AI service is called.</p>
+    </section>
+    <section id="linkage"></section>
+    <section id="gate"></section>
+    <section class="metrics" id="metrics"></section>
+    <section id="performance"></section>
+    <section class="workspace">
+      <div><p class="eyebrow">ELIGIBLE COMPARABLES</p><div id="comparables"></div></div>
+      <aside><p class="eyebrow">EXCLUSIONS & LIMITATIONS</p><div id="limitations"></div><p class="eyebrow">REVIEWED CUSTOMER SNAPSHOT</p><div id="snapshot"></div></aside>
+    </section>
+  </main>
+  <footer>INDICATIVE · NOT A VALUATION · NO LIVE DATA · NO AI CALL · NO CRM WRITE</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

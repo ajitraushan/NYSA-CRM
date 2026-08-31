@@ -207,7 +207,7 @@ r.post('/crm/contacts/:id/merge',async(req,res)=>{
 r.post('/crm/contacts/:id/roles',async(req,res)=>{
   const contact=await scopedContact(req,req.params.id);if(!contact)return res.status(404).json({error:'Contact not found'});
   if(isCrmReadOnly(req.broker))return res.status(403).json({error:'This role has read-only CRM access'});
-  const role=req.body?.roleCode,allowed=['buyer','seller','landlord','tenant','developer','investor','other'];
+  const role=req.body?.roleCode,allowed=['buyer','seller','landlord','tenant','investor','other'];
   if(!allowed.includes(role))return res.status(400).json({error:'Invalid roleCode'});
   const row=await one(`INSERT INTO contact_roles (id,contact_id,role_code,created_by) VALUES ($1,$2,$3,$4)
     ON CONFLICT (contact_id,role_code) WHERE status='active' DO UPDATE SET status='active' RETURNING *`,[uuid(),contact.id,role,req.broker.id]);
@@ -223,7 +223,7 @@ r.get('/crm/companies/:id/roles',async(req,res)=>{
 r.post('/crm/companies/:id/roles',async(req,res)=>{
   const company=await scopedCompany(req,req.params.id);if(!company)return res.status(404).json({error:'Company not found'});
   if(isCrmReadOnly(req.broker))return res.status(403).json({error:'This role has read-only CRM access'});
-  const role=req.body?.roleCode,allowed=['developer','agency','employer','supplier','corporate_client','landlord','vendor','other'];
+  const role=req.body?.roleCode,allowed=['developer','agency','referral_partner','service_provider','employer','supplier','corporate_client','landlord','vendor','other'];
   if(!allowed.includes(role))return res.status(400).json({error:'Invalid roleCode'});
   const row=await one(`INSERT INTO external_company_roles (id,company_id,role_code,is_primary,created_by) VALUES ($1,$2,$3,$4,$5)
     ON CONFLICT (company_id,role_code) WHERE status='active' DO UPDATE SET is_primary=EXCLUDED.is_primary RETURNING *`,

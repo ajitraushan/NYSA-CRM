@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NYSA CORE - Broker Action Queue</title><link rel="stylesheet" href="/styles.css"></head><body>
+<header><div class="brand"><b>N</b><span><strong>NYSA CORE</strong><small>Response-to-Work-Item Translation Review</small></span></div><div class="guards"><span>EXPLORATORY LOCAL MODULE</span><span>REUSE EXISTING CRM TASKS</span><span>NO SEND OR STATUS CHANGE</span></div></header>
+<main><section class="hero"><div><p class="eyebrow">R3C-NEXT-ACTION-52 · TRANSLATION REVIEW</p><h1>Map each customer response into the existing CRM work queue.</h1></div><p>This is not a new production queue. It validates the specific Task subject, priority, due time and working context that My Tasks, My Diary and Immediate Attention will later reuse.</p></section>
+<section id="stats" class="stats"></section>
+<div class="workspace"><section><div class="section-head"><div><p class="eyebrow">BROKER WORK QUEUE</p><h2>Actions requiring attention</h2></div><label>Show <select id="filter"><option value="all">All open actions</option><option value="overdue">Overdue only</option><option value="due_soon">Due soon</option></select></label></div><div id="queue" class="queue"></div></section>
+<aside id="detail" class="detail"><div class="empty"><span>SELECT AN ACTION</span><h2>Working context will appear here</h2><p>No action is applied merely by opening it.</p></div></aside></div>
+<section class="safety"><b>Functional boundary</b><span>No communication sent</span><span>No Inventory reservation</span><span>No Opportunity stage change</span><span>No automatic assignment</span></section>
+</main><script type="module" src="/app.js"></script></body></html>

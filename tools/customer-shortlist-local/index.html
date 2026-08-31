@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>NYSA CORE - Customer Shortlist Prototype</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/details.css">
+  <link rel="stylesheet" href="/feedback.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark">N</span><span><b>NYSA CORE</b><small>Customer Shortlist &amp; Response</small></span></div>
+    <div class="guards"><span>LOCAL ONLY</span><span>SYNTHETIC DATA</span><span>NO SEND CAPABILITY</span></div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div><p class="kicker">OFFLINE FUNCTIONAL PROTOTYPE</p><h1>Turn a reviewed match into properties prepared for customer review.</h1></div>
+      <p>Choose broker-shortlisted properties, revalidate live eligibility, review the exact customer-safe snapshot, and record a response that produces the next CRM action.</p>
+    </section>
+
+    <section class="context card">
+      <div><p class="step">CUSTOMER NEED</p><h2>Two-bedroom home in a family community</h2><p>AED 1.6M-2.1M · Ready or near-ready · School access · Mortgage purchase</p></div>
+      <dl><div><dt>Requirement</dt><dd>REQ-SYN-003 · v3</dd></div><div><dt>Match run</dt><dd>RUN-SYN-001</dd></div><div><dt>Eligible</dt><dd>3 properties</dd></div></dl>
+    </section>
+
+    <div class="layout">
+      <section>
+        <div class="section-head"><div><p class="step">01 · REVIEW</p><h2>Broker-shortlisted properties</h2></div><span id="selected-count" class="count">0 selected</span></div>
+        <div id="property-grid" class="property-grid"></div>
+      </section>
+
+      <aside class="side">
+        <section class="card controls">
+          <p class="step">02 · REVALIDATE</p><h2>Preparation controls</h2>
+          <label><span>Live Inventory scenario</span><select id="scenario"><option value="current">All selected properties remain available</option><option value="reserved">One property became reserved</option><option value="expired">One verification expired</option></select></label>
+          <label><span>Selection title</span><input id="selection-title" value="Homes selected for your review" maxlength="120"></label>
+          <label class="check"><input id="review-confirmed" type="checkbox"><span><b>I reviewed the facts and trade-offs</b><small>Required before preparing the immutable selection.</small></span></label>
+          <button id="prepare" class="primary" type="button">Prepare properties for customer review</button>
+          <p id="preparation-message" class="message neutral">Nothing is sent. This creates only a local preview.</p>
+        </section>
+
+        <section class="card audit">
+          <p class="step">CONTROL EVIDENCE</p>
+          <ul><li><span>External requests</span><b>Blocked</b></li><li><span>Contact information</span><b>Not collected</b></li><li><span>Inventory mutation</span><b>Not permitted</b></li><li><span>Opportunity stage change</span><b>Not permitted</b></li></ul>
+        </section>
+      </aside>
+    </div>
+
+    <section id="preview" class="preview card hidden" aria-live="polite">
+      <div class="section-head"><div><p class="step">03 · CUSTOMER VIEW</p><h2 id="preview-title">Prepared property selection</h2></div><span class="prepared">PREPARED · NOT SENT</span></div>
+      <div class="evidence"><span>Evidence hash</span><code id="evidence-hash"></code></div>
+      <div id="preview-properties" class="preview-properties"></div>
+    </section>
+
+    <section id="response-panel" class="response-panel card hidden">
+      <div><p class="step">04 · RECORD RESPONSE</p><h2>Translate customer feedback into the next action</h2><p>This prototype records synthetic evidence only. It never sends a message or changes an authoritative status.</p></div>
+      <div class="response-form">
+        <fieldset id="response-property-list"><legend>Apply this response to</legend></fieldset>
+        <label><span>Response</span><select id="response-outcome"><option value="interested">Interested</option><option value="viewing_requested">Viewing requested</option><option value="information_required">More information required</option><option value="more_options">Show more options</option><option value="not_suitable">Not suitable</option></select></label>
+        <section id="not-suitable-evidence" class="not-suitable-evidence hidden">
+          <p class="step">NOT-SUITABLE EVIDENCE</p>
+          <label><span>Why is the property not suitable?</span><select id="rejection-reason"><option value="">Select a controlled reason</option><option value="price_or_budget">Price or budget mismatch</option><option value="location_or_community">Location or community mismatch</option><option value="layout_or_size">Layout or size mismatch</option><option value="condition_or_timing">Condition, readiness or timing mismatch</option><option value="payment_terms">Payment terms mismatch</option><option value="amenities_or_features">Amenities or features mismatch</option><option value="other_governed_reason">Other recorded reason</option></select></label>
+          <label><span>What does this mean for the requirement?</span><select id="preference-impact"><option value="property_only">Property-specific feedback; requirement unchanged</option><option value="review_required">Possible preference change; agent review required</option><option value="confirmed_change">Customer confirmed a preference change; new requirement version required</option></select></label>
+          <label id="preference-change-row" class="hidden"><span>What preference may have changed?</span><textarea id="preference-change-detail" rows="2" maxlength="500" placeholder="Record only the business preference change; do not enter contact details."></textarea></label>
+          <div class="handoff-preview"><b>Internal handoff</b><span>Current responsible agent CRM work queue</span><small>Proposed only · no message sent · no requirement changed</small></div>
+        </section>
+        <label><span>Evidence note</span><textarea id="response-note" rows="3" maxlength="1000">Synthetic customer response recorded during local testing.</textarea></label>
+        <button id="record-response" class="secondary" type="button">Record selected responses and show next action</button>
+      </div>
+      <div id="next-action" class="next-action hidden"></div>
+    </section>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

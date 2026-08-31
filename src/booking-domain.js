@@ -1,18 +1,22 @@
-import { parseBusinessAmount } from './crm-domain.js';
-
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
+const DAY_MS=24*60*60*1000;
 export const BOOKING_TERMINAL_STATUSES=Object.freeze(['released','expired','cancelled']);
-export function validateBookingCreate(input={}){
-  const amount=parseBusinessAmount(input.bookingAmount),start=new Date(input.reservationStartsAt),expiry=new Date(input.expiresAt),
-    currency=String(input.currency||'').trim().toUpperCase(),refundableState=input.refundableState,
+export function validateBookingCreate(input={},now=new Date()){
+  const start=new Date(now),expiry=new Date(start.getTime()+7*DAY_MS),refundableState=input.refundableState,
     evidence=input.evidence||{};
-  if(!Number.isFinite(amount)||amount<=0)return{error:'Reservation amount must be greater than zero'};
-  if(!/^[A-Z]{3}$/.test(currency))return{error:'Currency must use a three-letter code'};
   if(!['refundable','non_refundable','conditional'].includes(refundableState))return{error:'Select the refundable state'};
-  if(Number.isNaN(start.valueOf())||Number.isNaN(expiry.valueOf())||expiry<=start)return{error:'Reservation expiry must be after its start'};
-  if(expiry<=new Date())return{error:'Reservation expiry must be in the future'};
   if(!evidence.fileName||!evidence.mediaType||!evidence.base64)return{error:'Reservation evidence document is required'};
-  return{value:{bookingAmount:amount,currency,refundableState,reservationStartsAt:start.toISOString(),expiresAt:expiry.toISOString(),evidence,notes:clean(input.notes)}};
+  return{value:{refundableState,reservationStartsAt:start.toISOString(),expiresAt:expiry.toISOString(),evidence,notes:clean(input.notes)}};
+}
+export function validateBookingExtension(booking,input={},now=new Date()){
+  const currentExpiry=new Date(booking.expiresAt),start=new Date(booking.reservationStartsAt),nextExpiry=new Date(input.expiresAt),reason=clean(input.reason);
+  if(booking.status!=='reserved')return{error:'Only an active reservation can be extended'};
+  if(Number.isNaN(currentExpiry.valueOf())||Number.isNaN(start.valueOf())||Number.isNaN(nextExpiry.valueOf()))return{error:'Select a valid extension expiry'};
+  if(currentExpiry<=now)return{error:'An expired reservation cannot be extended; record its expiry and create a new governed reservation if required'};
+  if(nextExpiry<=currentExpiry)return{error:'The approved expiry must be later than the current expiry'};
+  if(nextExpiry-start>14*DAY_MS)return{error:'Reservation extensions cannot exceed fourteen cumulative days from the original start'};
+  if(!reason||reason.length<10)return{error:'Manager extension reason must contain at least ten characters'};
+  return{value:{expiresAt:nextExpiry.toISOString(),reason}};
 }
 export function validateBookingTransition(status,input={},now=new Date()){
   const toStatus=input.toStatus,reason=clean(input.reason);

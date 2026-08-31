@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYSA CORE - Share & Response Audit</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header><span class="logo">N</span><strong>NYSA CORE</strong><span>Share & Response Audit</span></header>
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">R3C-SHARE-MIS-55 · LOCAL FUNCTIONAL REVIEW</p>
+        <h1>Trace every property selection without inventing customer activity.</h1>
+        <p>Only evidenced events are counted. Prepared never means shared; shared never means opened; and each property response must reconcile to the existing CRM Task.</p>
+      </div>
+      <div class="status"><strong>NOT INTEGRATED</strong><span>Synthetic evidence only</span></div>
+    </section>
+
+    <section class="controls" aria-label="Local review dataset">
+      <label for="dataset">Review dataset</label>
+      <select id="dataset">
+        <option value="prepared">Approved package — prepared, not sent</option>
+        <option value="gap">Synthetic response — follow-up gap</option>
+        <option value="tracked">Synthetic response — governed Task</option>
+      </select>
+      <p>This selector exists only to review MIS states. It is not a final CRM control.</p>
+    </section>
+
+    <section id="metrics" class="metrics" aria-label="Lifecycle totals"></section>
+    <section class="content">
+      <div>
+        <p class="eyebrow">SELECTION AUDIT</p>
+        <div id="audit"></div>
+      </div>
+      <aside>
+        <p class="eyebrow">FOLLOW-UP CONTROL</p>
+        <div id="follow-up"></div>
+      </aside>
+    </section>
+  </main>
+  <footer>NO PROVIDER · NO SEND · NO CRM WRITE · NO INVENTORY RESERVATION</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

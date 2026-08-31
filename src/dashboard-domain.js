@@ -10,8 +10,8 @@ export function buildDashboardMetric(code,label,current,prior,target,unit,defini
   return {code,label,current:c,prior:p,target:t,unit,varianceToPrior:hasPrior?c-p:null,varianceToTarget:t===null?null:c-t,trend:hasPrior?(c>p?'up':c<p?'down':'flat'):'unavailable',definition};
 }
 
-export const EXECUTIVE_DASHBOARD_VIEWS=['Executive','Sales','Inventory','Operations and Risk','Proposal approvals'];
-export const MANAGER_DASHBOARD_VIEWS=['Team performance','Listing approvals','Proposal approvals','Media approvals'];
+export const EXECUTIVE_DASHBOARD_VIEWS=['Executive','Sales','Inventory','Operations and Risk','My Team','Proposal approvals'];
+export const MANAGER_DASHBOARD_VIEWS=['Team performance','My Team','Listing approvals','Proposal approvals','Media approvals'];
 export const AGENT_LIFECYCLE_STAGES=[
   {stage:'New',label:'Lead',action:'Record first contact'},
   {stage:'Contacted',label:'Contacted',action:'Complete qualification'},
@@ -30,13 +30,14 @@ export const EXECUTIVE_KPI_CODES={
   Sales:['new_leads','won_leads','hot_leads','stale_risk'],
   Inventory:['inventory_available','inventory_stale','inventory_readiness_exposure','operational_exceptions'],
   'Operations and Risk':['sla_breaches','sla_risk','no_next_action','operational_exceptions'],
+  'My Team':[],
   'Proposal approvals':['proposal_workload']
 };
 
 export function dashboardViewFor(type,requested){
   if(type==='executive')return EXECUTIVE_DASHBOARD_VIEWS.includes(requested)?requested:'Executive';
   if(type==='manager')return MANAGER_DASHBOARD_VIEWS.includes(requested)?requested:'Team performance';
-  if(type==='agent')return 'My work';
+  if(type==='agent')return requested==='My Team'?'My Team':'My work';
   return 'Finance controls';
 }
 
@@ -97,12 +98,12 @@ export function buildRoleDashboardPresentation(input){
     customer_engagement:['Customer engagement','touchpoints','Recorded calls plus proposals sent in the selected period.','high_good']
   };
   const make=code=>{const [label,unit,definition,direction]=specs[code],hasPrior=Object.hasOwn(priors,code),prior=hasPrior?priors[code]:null,series=code==='new_leads'&&trend.length?trend:[...(hasPrior?[{period:'prior',value:prior}]:[]),{period:'current',value:values[code]}];return buildDashboardKpi({code,label,current:values[code],prior,unit,definition,direction,targets,series,dataAsOf});};
-  const kpiCodes=view==='Proposal approvals'?['proposal_workload']:
+  const kpiCodes=view==='My Team'?[]:view==='Proposal approvals'?['proposal_workload']:
     type==='agent'?['awaiting_acceptance','sla_risk','overdue_tasks','no_next_action']:
     type==='manager'?['unassigned_leads','sla_breaches','overdue_tasks','stale_risk']:
     view==='Sales'?['new_leads','won_leads','hot_leads','stale_risk']:
     EXECUTIVE_KPI_CODES[view]||EXECUTIVE_KPI_CODES.Executive;
-  const panels=view==='Proposal approvals'?['proposal_approvals']:
+  const panels=view==='My Team'?[type==='agent'?'reporting_line':type==='manager'?'manager_hierarchy':'executive_hierarchy']:view==='Proposal approvals'?['proposal_approvals']:
     type==='agent'?['agent_actions','lead_status','qualification','tasks','proposals','agent_exceptions','recent_activity']:
     type==='manager'?['manager_interventions','agent_workload','team_queue','sla','lead_aging','source_conversion','activity','proposals','exceptions','manager_hierarchy']:
     view==='Sales'?['executive_sales_funnel','source_quality','lead_velocity','qualification_aging','team_capacity','sales_hierarchy']:

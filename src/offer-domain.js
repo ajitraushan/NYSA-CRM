@@ -1,11 +1,12 @@
 import { parseBusinessAmount } from './crm-domain.js';
 
-export const OFFER_TYPES=['purchase','rental','off_plan','commercial'];
+export const OFFER_TYPES=['purchase','sale','rent','rent_out'];
 export const OFFER_STATUSES=['draft','sent','viewed','countered','accepted','rejected','expired','withdrawn'];
 export const OFFER_EVENT_TYPES=['viewed','acknowledged','countered','accepted','rejected','expired','withdrawn'];
-export const OFFER_COUNTERPARTY_ROLES=['customer','seller','landlord','developer','agent','other'];
+export const OFFER_COUNTERPARTY_ROLES=['customer','buyer','tenant','seller','landlord','developer','agent','other'];
 
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
+const storedPartyRole=value=>['buyer','tenant'].includes(value)?'customer':value;
 const amount=value=>{
   if(value===null||value===undefined||value==='')return null;
   const number=parseBusinessAmount(value);return Number.isFinite(number)?number:null;
@@ -23,7 +24,7 @@ export function validateOfferRevision(body={},revisionNumber=1){
   if(depositAmount!==null&&(depositAmount<0||depositAmount>value))return {error:'Deposit must be between zero and the offer amount'};
   if(!body.validityExpiresAt||Number.isNaN(expiry.valueOf())||expiry<=new Date())return {error:'Offer validity must end in the future'};
   if(revisionNumber>1&&!reason)return {error:'A reason is required for every material correction or revised offer'};
-  return {value:{offerType,direction,proposerRole,amount:value,depositAmount,currency,
+  return {value:{offerType,direction,proposerRole:storedPartyRole(proposerRole),amount:value,depositAmount,currency,
     financingMethod:clean(body.financingMethod),paymentTerms:clean(body.paymentTerms),
     conditions:clean(body.conditions),validityExpiresAt:expiry.toISOString(),materialCorrectionReason:reason}};
 }
@@ -32,6 +33,7 @@ const transitions={
   sent:['viewed','acknowledged','countered','accepted','rejected','expired','withdrawn'],
   viewed:['acknowledged','countered','accepted','rejected','expired','withdrawn'],
   countered:['accepted','rejected','expired','withdrawn'],
+  accepted:['expired','withdrawn'],
   draft:['withdrawn']
 };
 
@@ -49,7 +51,7 @@ export function validateOfferEvent(currentStatus,body={}){
     viewed:'Agent recorded that the counterparty viewed the offer',acknowledged:'Agent recorded that the customer confirmed receipt of the offer',
     countered:'Counterparty returned a counter position',accepted:'Exact offer revision accepted',
     rejected:'Offer rejected',expired:'Offer validity expired',withdrawn:'Offer withdrawn'
-  }[eventType],counterpartyRole,direction}};
+  }[eventType],counterpartyRole:storedPartyRole(counterpartyRole),direction}};
 }
 
 export function offerStatusAfterRevision(direction){

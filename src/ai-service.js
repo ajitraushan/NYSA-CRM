@@ -63,11 +63,32 @@ export const AI_SCHEMAS={
     }}}
   }},
   match_explanation:{type:'object',additionalProperties:false,required:['headline','whyItMatches','tradeOffs','customerSummary','evidenceUsed','requiresAgentReview','warning'],properties:{headline:{type:'string'},whyItMatches:{...stringArray,maxItems:4},tradeOffs:{...stringArray,maxItems:4},customerSummary:{type:'string'},evidenceUsed:stringArray,requiresAgentReview:{type:'boolean'},warning:nullableString}},
-  missing_information:{type:'object',additionalProperties:false,required:['blocking','recommended','questions','canProceed'],properties:{blocking:{type:'array',items:{type:'object',additionalProperties:false,required:['field','sourceRecord','reason'],properties:{field:{type:'string'},sourceRecord:{type:'string'},reason:{type:'string'}}}},recommended:{type:'array',items:{type:'object',additionalProperties:false,required:['field','sourceRecord','reason'],properties:{field:{type:'string'},sourceRecord:{type:'string'},reason:{type:'string'}}}},questions:stringArray,canProceed:{type:'boolean'}}}
+  missing_information:{type:'object',additionalProperties:false,required:['blocking','recommended','questions','canProceed'],properties:{blocking:{type:'array',items:{type:'object',additionalProperties:false,required:['field','sourceRecord','reason'],properties:{field:{type:'string'},sourceRecord:{type:'string'},reason:{type:'string'}}}},recommended:{type:'array',items:{type:'object',additionalProperties:false,required:['field','sourceRecord','reason'],properties:{field:{type:'string'},sourceRecord:{type:'string'},reason:{type:'string'}}}},questions:stringArray,canProceed:{type:'boolean'}}},
+  customer_next_action:{type:'object',additionalProperties:false,required:['summary','actionCode','actionLabel','whyNow','evidenceUsed','confidence','missingInformation','delayConsequence'],properties:{
+    summary:{type:'string'},
+    actionCode:{type:'string',enum:['review_contact_restriction','assign_agent','accept_assignment','record_first_contact','capture_requirements','complete_qualification','create_opportunity','opportunity_action','continue_follow_up']},
+    actionLabel:{type:'string'},whyNow:{...stringArray,maxItems:4},evidenceUsed:{...stringArray,maxItems:8},confidence:{type:'string',enum:['low','medium','high']},missingInformation:{...stringArray,maxItems:8},delayConsequence:{type:'string'}
+  }}
 };
+
+export function aiSchemaFor(functionCode,catalogue){
+  const schema=structuredClone(AI_SCHEMAS[functionCode]);
+  if(functionCode!=='requirements_draft')return schema;
+  if(!catalogue?.version?.code)throw new AiServiceError('The approved classification catalogue is unavailable for AI schema generation',{code:'classification_catalogue_unavailable',status:503});
+  const values=code=>catalogue.dimensions.find(item=>item.code===code)?.values.filter(item=>item.active).map(item=>item.code)||[];
+  const option=schema.properties.requirementOptions.items;
+  option.required=option.required.filter(field=>field!=='businessLine').concat(['customerObjective','marketStageRequirement','propertySegmentRequirement','classificationVersion']);
+  delete option.properties.businessLine;
+  option.properties.customerObjective={type:'string',enum:values('customer_objective')};
+  option.properties.marketStageRequirement={type:'string',enum:values('market_stage')};
+  option.properties.propertySegmentRequirement={type:'string',enum:values('property_segment')};
+  option.properties.classificationVersion={type:'string',const:catalogue.version.code};
+  return schema;
+}
 
 export const AI_INSTRUCTIONS={
   requirements_draft:'You assist a Dubai real-estate professional. Convert only the supplied conversation notes into one to three draft requirement options. Never invent facts. Put uncertain or absent details into unansweredQuestions. Separate must-haves, preferences and exclusions. The result is a draft that requires agent and customer confirmation and must not be saved automatically.',
   match_explanation:'You explain a deterministic property comparison. Use only the supplied requirement, property facts and computed comparison evidence. Never change eligibility, create a score, hide failed criteria, claim availability beyond the recorded evidence, or invent amenities. Keep the explanation concise and customer-friendly, and require agent review.',
-  missing_information:'Identify information missing for a reliable property match or proposal using only the supplied records and required-field catalogue. Blocking items prevent reliable completion; recommended items improve quality but do not automatically block. Ask concise business questions. Do not request full identity numbers, identity-document images or unrelated personal data.'
+  missing_information:'Identify information missing for a reliable property match or proposal using only the supplied records and required-field catalogue. Blocking items prevent reliable completion; recommended items improve quality but do not automatically block. Ask concise business questions. Do not request full identity numbers, identity-document images or unrelated personal data.',
+  customer_next_action:'Recommend one broker action using only the supplied authoritative evidence and allowedActions. Hard deadlines, communication restrictions and governed workflow prerequisites are authoritative. Never invent customer facts, change a deadline or record status, contact a customer, send content, reserve Inventory or execute a workflow action. Explain why the action matters now, identify missing information, and make clear that a broker must review and execute the action.'
 };

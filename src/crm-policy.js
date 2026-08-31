@@ -40,6 +40,15 @@ export function canWriteLead(broker, lead) {
   return broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId);
 }
 
+// Operational actions belong to the broker directly assigned to the Lead.
+// Team-level Manager authority remains available through canWriteLead for
+// governed review, approval, assignment and reassignment workflows.
+export function canOperateLead(broker, lead) {
+  if (!hasInternalCrmIdentity(broker) || isCrmReadOnly(broker)) return false;
+  if (broker.role === 'admin') return true;
+  return Boolean(lead?.assignedTo && String(lead.assignedTo) === String(broker.id));
+}
+
 export function canReadOpportunity(broker, opportunity) {
   if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return false;
   if (isCompanyReader(broker)) return true;
@@ -62,7 +71,7 @@ export function canApproveDeal(broker,opportunity,deal) {
 }
 
 export function canCreateOpportunity(broker, lead) {
-  return Boolean(canWriteLead(broker,lead) && ['admin','sales_agent','manager'].includes(broker.jobRole));
+  return Boolean(canOperateLead(broker,lead) && ['admin','sales_agent','manager'].includes(broker.jobRole));
 }
 
 export function canAssignLead(broker, lead) {

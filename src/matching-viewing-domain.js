@@ -2,14 +2,16 @@ const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 export const MATCH_FIT_STATUSES=['strong_fit','partial_fit','exception'];
 export const MATCH_DECISIONS=['considering','shortlisted','rejected'];
 export const VIEWING_STATUSES=['scheduled','completed','cancelled','no_show'];
+export const VIEWING_FEEDBACK_OUTCOMES=['selected_property','positive','maybe','not_interested','more_options'];
 
 export function validatePropertyMatch(body={}){
-  const listingId=clean(body.listingId),fitStatus=body.fitStatus,rationale=clean(body.rationale),exceptions=clean(body.exceptions);
+  const listingId=clean(body.listingId),fitStatus=body.fitStatus,rationale=clean(body.rationale),exceptions=clean(body.exceptions),availabilityLikelyConfirmed=body.availabilityLikelyConfirmed===true||body.availabilityLikelyConfirmed==='true'||body.availabilityLikelyConfirmed==='on';
   if(!listingId)return {error:'Select an approved property'};
   if(!MATCH_FIT_STATUSES.includes(fitStatus))return {error:'Select a valid fit status'};
   if(!rationale)return {error:'Explain why this property fits the current requirement'};
   if(fitStatus==='exception'&&!exceptions)return {error:'Describe the material fit exception'};
-  return {value:{listingId,fitStatus,rationale,exceptions,matchSource:'manual'}};
+  if(!availabilityLikelyConfirmed)return {error:'Confirm that this Inventory is likely to be available before assigning it'};
+  return {value:{listingId,fitStatus,rationale,exceptions,availabilityLikelyConfirmed,matchSource:'manual'}};
 }
 
 export function validateMatchDecision(body={}){

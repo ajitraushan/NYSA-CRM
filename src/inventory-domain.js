@@ -61,7 +61,9 @@ export function derivePublicationReadiness(listing={},approvedMediaCount=0,now=n
     if(Number(listing.bulkUnitCount||0)<2)blockers.push({code:'bulk_units',label:'At least two complete bulk-deal property rows are required'});
     if(Number(listing.incompleteBulkUnitCount||0)>0)blockers.push({code:'bulk_unit_completeness',label:'Every bulk-deal property row must be complete'});
   }else requireValue('sizeSqft','Built-up area');
-  if(listing.status!=='Available')blockers.push({code:'availability_status',label:'Listing must be Available'});
+  const effectiveStatus=listing.effectiveStatus;
+  if(!effectiveStatus)blockers.push({code:'effective_status',label:'Canonical Inventory status could not be derived'});
+  if(['Closed','Sold','Rented'].includes(effectiveStatus))blockers.push({code:'availability_status',label:`Inventory is ${effectiveStatus}`});
   const confirmed=listing.availabilityConfirmedAt?new Date(listing.availabilityConfirmedAt):null;
   if(!confirmed||Number.isNaN(confirmed.valueOf())||(now-confirmed)>7*86400000)blockers.push({code:'availability_confirmation',label:'Availability must be confirmed within the last 7 days'});
   if(!['verified','not_required'].includes(listing.verificationStatus))blockers.push({code:'verification',label:'Verification must be verified or not required'});

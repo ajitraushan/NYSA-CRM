@@ -1,8 +1,11 @@
 export const SOURCES = ['Website','WhatsApp','Current CRM','Referral','Social media','Walk-in','Phone','Property portal','Other'];
-export const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial'];
+export const BUSINESS_TYPES = ['Sale','Rental','Off-plan','Commercial','Unconfirmed'];
 export const STAGES = ['New','Contacted','Qualified','Viewing','Negotiation','Won','Lost'];
 export const TEMPERATURES = ['Unassessed','Hot','Warm','Cold'];
 export const CONTACT_TYPES = ['buyer','seller','landlord','tenant','developer','investor','other'];
+// `developer` remains readable for legacy Contact records only. New Developers are
+// governed corporate Company masters, never Customer-role classifications.
+export const CUSTOMER_ROLE_INPUT_TYPES = CONTACT_TYPES.filter(role=>role!=='developer');
 export const CHANNELS = ['Phone','Email','WhatsApp','SMS'];
 export const ACTIVITY_TYPES = ['Task','Note','Call','Email','WhatsApp','Meeting','Viewing'];
 export const JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
@@ -32,6 +35,7 @@ export function validateLeadTransition(from, to) {
 export function activityStageTransition(currentStage, activityType) {
   return currentStage === 'New' && activityType === 'Call' ? 'Contacted' : null;
 }
+
 
 // Adds working minutes using a weekly calendar expressed in the calendar's UTC offset.
 // This keeps API and SLA-worker calculations deterministic without relying on host timezone.
@@ -90,6 +94,30 @@ export const QUALIFICATION_GUIDANCE = Object.freeze({
     strategy: 'Keep communication concise, permission-based and useful; watch for a change in timing or intent.'
   }
 });
+
+export function qualificationFollowUpPlan({temperature,assessedAt=new Date(),policy}={}) {
+  const now=assessedAt instanceof Date?assessedAt:new Date(assessedAt);
+  if(Number.isNaN(now.valueOf())||!policy)return null;
+  const calendar={workDays:policy.workDays,startMinute:policy.workStartMinute,endMinute:policy.workEndMinute,utcOffsetMinutes:policy.utcOffsetMinutes};
+  const businessDayMinutes=Number(policy.workEndMinute)-Number(policy.workStartMinute);
+  if(!Number.isFinite(businessDayMinutes)||businessDayMinutes<=0)return null;
+  if(temperature==='Hot'){
+    const minutes=Number(policy.qualificationHotElapsedMinutes);
+    if(!Number.isInteger(minutes)||minutes<1)return null;
+    return {temperature,dueAt:new Date(now.getTime()+minutes*60000),timerBasis:'elapsed_minutes',targetMinutes:minutes,priority:'urgent',cadenceBusinessDays:null};
+  }
+  if(temperature==='Warm'){
+    const minutes=Number(policy.qualificationWarmBusinessMinutes);
+    if(!Number.isInteger(minutes)||minutes<1)return null;
+    return {temperature,dueAt:addBusinessMinutes(now,minutes,calendar),timerBasis:'business_minutes',targetMinutes:minutes,priority:'high',cadenceBusinessDays:null};
+  }
+  if(temperature==='Cold'){
+    const days=Number(policy.qualificationColdBusinessDays),cadenceBusinessDays=Number(policy.qualificationColdNurtureBusinessDays);
+    if(!Number.isInteger(days)||days<1||!Number.isInteger(cadenceBusinessDays)||cadenceBusinessDays<1)return null;
+    return {temperature,dueAt:addBusinessMinutes(now,days*businessDayMinutes,calendar),timerBasis:'business_days',targetMinutes:days*businessDayMinutes,priority:'normal',cadenceBusinessDays};
+  }
+  return null;
+}
 
 export function parseBusinessAmount(value) {
   if (value === undefined || value === null || value === '') return null;

@@ -13,8 +13,8 @@ export const REQUIRED_PARTIES=Object.freeze({
 });
 
 export function dealTypeForOffer(offerType,commercialMode){
-  if(offerType==='purchase')return'sale';
-  if(offerType==='rental')return'rental';
+  if(['purchase','sale'].includes(offerType))return'sale';
+  if(['rent','rent_out','rental'].includes(offerType))return'rental';
   if(offerType==='off_plan')return'off_plan';
   if(offerType==='commercial'&&['sale','rental'].includes(commercialMode))return`commercial_${commercialMode}`;
   return null;

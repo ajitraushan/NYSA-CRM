@@ -64,11 +64,11 @@ r.get('/crm/dashboard',async(req,res)=>{
   f.broker=req.broker;proposalF.broker=req.broker;callF.broker=req.broker;
   const prior=priorWhere(f),priorProposal=priorWhere(proposalF,'l','p.updated_at'),priorCall=priorWhere(callF,'l','a.created_at'),type=dashboardTypeFor(req.broker),canSeeIntegration=isManager(req.broker)||isCompanyReader(req.broker);
   const [current,previous,stages,sources,priorSources,campaigns,teams,agents,trend,tasks,exceptions,previousExceptions,proposals,calls,priorProposals,priorCalls,priorAgents,inventory,targets,hierarchyRows,accountabilityRows,integrationFailures,previousIntegrationFailures]=await Promise.all([
-    one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
-      COUNT(*) FILTER(WHERE temperature='Warm' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS warm_converted,
-      COUNT(*) FILTER(WHERE temperature='Warm' AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id) AND stage NOT IN('Lost'))::int AS warm_pending,
-      COUNT(*) FILTER(WHERE temperature='Hot' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS hot_converted,
-      COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
+    one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active')::int AS warm,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')))::int AS warm_converted,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active' AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')) AND stage NOT IN('Lost'))::int AS warm_pending,
+      COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')))::int AS hot_converted,
+      COUNT(*) FILTER(WHERE current_status='closed_won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND accepted_at IS NULL)::int AS awaiting_acceptance,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND ((accepted_at IS NULL AND acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR
@@ -76,10 +76,10 @@ r.get('/crm/dashboard',async(req,res)=>{
       COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
       COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS stale_risk,
-      COUNT(*) FILTER(WHERE temperature IN('Hot','Warm') AND updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS hot_warm_aging,
+      COUNT(*) FILTER(WHERE temperature IN('Hot','Warm') AND current_status='active' AND updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS hot_warm_aging,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost'))::int AS open FROM leads l WHERE ${f.where}`,f.params),
-    one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
-      COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
+    one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active')::int AS warm,
+      COUNT(*) FILTER(WHERE current_status='closed_won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
@@ -121,18 +121,19 @@ r.get('/crm/dashboard',async(req,res)=>{
       COUNT(*) FILTER(WHERE p.status='reviewed')::int AS send,COUNT(*) FILTER(WHERE p.status='sent')::int AS sent FROM proposals p JOIN leads l ON l.id=p.lead_id WHERE ${priorProposal.where}`,priorProposal.params),
     one(`SELECT COUNT(*)::int AS total FROM activities a JOIN leads l ON l.id=a.lead_id WHERE a.activity_type='Call' AND ${priorCall.where}`,priorCall.params),
     many(`SELECT l.assigned_to AS id,COUNT(*) FILTER(WHERE l.stage NOT IN('Won','Lost'))::int AS open FROM leads l WHERE ${prior.where} GROUP BY l.assigned_to`,prior.params),
-    one(`SELECT COUNT(*)::int AS total,COUNT(*) FILTER(WHERE status='Available')::int AS available,COUNT(*) FILTER(WHERE status='Reserved')::int AS reserved,
-      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '30 days' AND status<>'Closed')::int AS stale,
-      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '60 days' AND status<>'Closed')::int AS stale60,
-      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '90 days' AND status<>'Closed')::int AS stale90,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days'))::int AS availability_unconfirmed,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days')::int AS permit_exposure,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND (verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days'))::int AS verification_exposure,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND portal_status NOT IN('ready','published'))::int AS portal_not_ready,
+    one(`SELECT COUNT(*)::int AS total,COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id)='Available')::int AS available,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id)='Reserved')::int AS reserved,
+      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '30 days' AND nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented'))::int AS stale,
+      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '60 days' AND nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented'))::int AS stale60,
+      COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '90 days' AND nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented'))::int AS stale90,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days'))::int AS availability_unconfirmed,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days')::int AS permit_exposure,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND (verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days'))::int AS verification_exposure,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND portal_status NOT IN('ready','published'))::int AS portal_not_ready,
       COUNT(*) FILTER(WHERE NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))::int AS media_not_ready,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND (updated_at<NOW()-INTERVAL '30 days' OR availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days'))::int AS aging_exposure,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND ((permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))))::int AS compliance_exposure,
-      COUNT(*) FILTER(WHERE status<>'Closed' AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days' OR (permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR portal_status NOT IN('ready','published') OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))))::int AS readiness_exposure FROM listings WHERE deleted_at IS NULL`),
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND (updated_at<NOW()-INTERVAL '30 days' OR availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days'))::int AS aging_exposure,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND ((permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))))::int AS compliance_exposure,
+      COUNT(*) FILTER(WHERE nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented') AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days' OR (permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR portal_status NOT IN('ready','published') OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))))::int AS readiness_exposure FROM listings WHERE deleted_at IS NULL`),
     many(`SELECT metric_code,target_value,unit,definition,exception_threshold,threshold_direction,benchmark_source,scope_type,scope_id FROM dashboard_targets
       WHERE status='active' AND period_start<=$1 AND period_end>=$2 AND (scope_type='company' OR (scope_type='business_line' AND scope_id=$3) OR (scope_type='team' AND scope_id=$4) OR (scope_type='agent' AND scope_id=$5))
       ORDER BY CASE scope_type WHEN 'agent' THEN 1 WHEN 'team' THEN 2 WHEN 'business_line' THEN 3 ELSE 4 END`,[f.end,f.start,f.selected.businessType,f.selected.teamId,f.selected.agentId]),
@@ -183,8 +184,8 @@ r.get('/crm/dashboard',async(req,res)=>{
 
 r.get('/crm/dashboard/proposal-approvals',async(req,res)=>{if(!isProposalApprover(req.broker))return res.status(403).json({error:'Proposal approval access requires Team Manager or Managing Director'});const selected={teamId:clean(req.query.teamId),managerId:clean(req.query.managerId),agentId:clean(req.query.agentId),businessType:clean(req.query.businessType)},result=await loadProposalApprovalQueue(req,selected,clean(req.query.q)||'',req.query.page,req.query.pageSize);res.json({proposalApprovalQueue:result.rows,count:result.count,page:result.page,pageSize:result.pageSize});});
 
-r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_at');if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT a.id,a.created_at,a.direction,a.outcome,a.duration_seconds,a.details,a.follow_up_required,a.due_at,a.completed_at,
-  a.lead_stage_snapshot,a.qualification_snapshot,l.id AS lead_id,l.title,c.id AS contact_id,c.full_name AS contact_name,x.project AS listing_project,b.name AS agent_name
+r.get('/crm/reports/calls',async(req,res)=>{const f=filters(req,'l','a.created_at');if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT a.id,a.created_at,a.direction,a.outcome,a.duration_seconds,a.details,a.follow_up_required,a.due_at,a.next_action_due_at,a.completed_at,
+  a.lead_stage_snapshot,a.qualification_snapshot,a.opportunity_stage_snapshot,l.id AS lead_id,l.title,c.id AS contact_id,c.full_name AS contact_name,x.project AS listing_project,b.name AS agent_name
   FROM activities a JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=a.contact_id LEFT JOIN listings x ON x.id=l.listing_id JOIN brokers b ON b.id=a.owner_id
   WHERE a.activity_type='Call' AND ${f.where} ORDER BY a.created_at DESC`,f.params);res.json({dataAsOf:new Date(),filters:f.selected,count:rows.length,calls:rows});});
 
@@ -192,11 +193,11 @@ r.get('/crm/dashboard/records',async(req,res)=>{
   const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const segment=req.query.segment||'new_leads';
   const lifecycle=AGENT_LIFECYCLE_STAGES.find(item=>`lifecycle_${item.stage.toLowerCase()}`===segment);
   if(segment.startsWith('guided_')){
-    const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)'};
+    const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)',requirements:'EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL)'};
     let rows;
     if(Object.hasOwn(leadSteps,step)){
       const params=[],scope=agentWorkLeadScopeSql('l',req.broker,params),distinct=step==='customer'?'DISTINCT ON (l.contact_id)':'';
-      rows=await many(`SELECT ${distinct} l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+      rows=await many(`SELECT ${distinct} l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
         t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
         FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
         WHERE ${scope.clause} AND ${leadSteps[step]} ORDER BY ${step==='customer'?'l.contact_id,':''}l.created_at DESC`,params);
@@ -206,7 +207,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
         deal:'EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id)'};
       if(!conditions[step])return res.status(400).json({error:'Unknown operating-sequence step'});
       const params=[],scope=opportunityScopeSql('o',req.broker,params);
-      rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,
+      rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,o.opportunity_reference,o.stage AS opportunity_stage,o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,
         t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
         FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=o.assigned_team_id
         LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=o.owner_id
@@ -216,11 +217,11 @@ r.get('/crm/dashboard/records',async(req,res)=>{
   }
   if(['inventory_available','inventory_stale','inventory_media_not_ready','inventory_readiness_exposure','inventory_aging_exposure','inventory_compliance_exposure'].includes(segment)){
     if(!isCompanyReader(req.broker))return res.status(403).json({error:'Company inventory drill-down requires Director or Administrator access'});
-    const conditions={inventory_available:"status='Available'",inventory_stale:"updated_at<NOW()-INTERVAL '30 days' AND status<>'Closed'",inventory_media_not_ready:"NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))",
-      inventory_aging_exposure:"status<>'Closed' AND (updated_at<NOW()-INTERVAL '30 days' OR availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days')",
-      inventory_compliance_exposure:"status<>'Closed' AND ((permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))",
-      inventory_readiness_exposure:"status<>'Closed' AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days' OR (permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR portal_status NOT IN('ready','published') OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))"};
-    const records=await many(`SELECT id,project AS title,area,status,property_type,updated_at,availability_confirmed_at,verification_status,verification_expires_at,permit_number,permit_expires_at,portal_status FROM listings WHERE deleted_at IS NULL AND ${conditions[segment]} ORDER BY updated_at LIMIT 500`);
+    const active="nysa_inventory_effective_status(id) NOT IN('Closed','Sold','Rented')",conditions={inventory_available:"nysa_inventory_effective_status(id)='Available'",inventory_stale:`updated_at<NOW()-INTERVAL '30 days' AND ${active}`,inventory_media_not_ready:"NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()))",
+      inventory_aging_exposure:`${active} AND (updated_at<NOW()-INTERVAL '30 days' OR availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days')`,
+      inventory_compliance_exposure:`${active} AND ((permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))`,
+      inventory_readiness_exposure:`${active} AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days' OR (permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR portal_status NOT IN('ready','published') OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))`};
+    const records=await many(`SELECT id,project AS title,area,nysa_inventory_effective_status(id) AS status,property_type,updated_at,availability_confirmed_at,verification_status,verification_expires_at,permit_number,permit_expires_at,portal_status FROM listings WHERE deleted_at IS NULL AND ${conditions[segment]} ORDER BY updated_at LIMIT 500`);
     return res.json({entityType:'listing',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE','Inventory'],records:records.map(row=>({...row,breadcrumbs:['NYSA CORE','Inventory',row.area,row.title].filter(Boolean)}))});
   }
   if(['proposal_workload','customer_engagement'].includes(segment)){
@@ -264,7 +265,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
     proposal_workload:"EXISTS(SELECT 1 FROM proposals dp WHERE dp.lead_id=l.id AND dp.status IN('draft','generated','reviewed'))",
     };
   const extra=lifecycle?`l.stage='${lifecycle.stage}'`:clauses[segment];
-  const rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+  const rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
     t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
     WHERE ${f.where}${extra?' AND '+extra:''} ORDER BY l.created_at DESC LIMIT 500`,f.params);
@@ -273,7 +274,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
 });
 
 const csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-r.get('/crm/dashboard/export',async(req,res)=>{const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT l.id,l.title,c.full_name AS contact_name,l.source,l.business_type,l.stage,l.temperature,t.name AS team_name,b.name AS agent_name,l.created_at,l.next_follow_up_at FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${f.where} ORDER BY l.created_at DESC`,f.params);const headers=['id','title','contactName','source','businessType','stage','temperature','teamName','agentName','createdAt','nextFollowUpAt'],csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');await audit('DashboardExport',uuid(),'exported',req.broker.id,{filters:f.selected,rowCount:rows.length,dashboardType:dashboardTypeFor(req.broker)});res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="nysa-dashboard-export.csv"');res.end(csv);});
+r.get('/crm/dashboard/export',async(req,res)=>{const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,c.full_name AS contact_name,l.source,l.business_type,l.stage,l.temperature,t.name AS team_name,b.name AS agent_name,l.created_at,l.next_follow_up_at FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${f.where} ORDER BY l.created_at DESC`,f.params);const headers=['id','leadReference','currentStatus','title','contactName','source','businessType','stage','temperature','teamName','agentName','createdAt','nextFollowUpAt'],csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');await audit('DashboardExport',uuid(),'exported',req.broker.id,{filters:f.selected,rowCount:rows.length,dashboardType:dashboardTypeFor(req.broker)});res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="nysa-dashboard-export.csv"');res.end(csv);});
 
 r.get('/admin/dashboard-metrics',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});res.json({metrics:Object.entries(DASHBOARD_METRICS).map(([code,x])=>({code,...x}))});});
 r.get('/admin/dashboard-targets',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});res.json({targets:await many('SELECT d.*,b.name AS approved_by_name FROM dashboard_targets d LEFT JOIN brokers b ON b.id=d.approved_by ORDER BY d.created_at DESC')});});

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYSA CORE - Document Requirements</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header><span class="logo">N</span><strong>NYSA CORE</strong><span>Document Requirements</span></header>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">RELEASE 4 · LOCAL FUNCTIONAL REVIEW</p>
+        <h1>Maintain document requirements without changing the CRM workflow.</h1>
+        <p>Workflow steps are predefined. Admin may add a document type and associate it with an existing step; agents see only active requirements and verified evidence.</p>
+      </div>
+      <div class="status"><strong>DRAFT — NOT INTEGRATED</strong><span>Local memory only · resets on refresh</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="Document requirement views">
+      <button data-tab="admin" class="active">Admin Maintenance</button>
+      <button data-tab="agent">Agent View</button>
+    </nav>
+
+    <section id="admin-panel" class="panel">
+      <div class="boundary"><strong>Governance boundary</strong><span>Admin selects from predefined workflow steps. A new CRM workflow step requires a controlled product release.</span></div>
+      <div class="maintenance-grid">
+        <article class="maintenance-card">
+          <p class="step-number">1</p><h2>Add document type</h2>
+          <p class="muted">Creates an immutable draft first. Activation is a separate action.</p>
+          <div class="form-grid">
+            <label>Stable document code<input id="doc-code" value="developer_clearance_letter"></label>
+            <label>Document name<input id="doc-label" value="Developer Clearance Letter"></label>
+            <label>Expected issuer<input id="doc-issuer" value="Property Developer"></label>
+            <label>Verification result<select id="doc-status"><option value="external_verified">External issuer verified</option><option value="official_captured">Official document captured</option></select></label>
+            <label class="checkbox"><input id="doc-expiry" type="checkbox" checked> Track expiry date</label>
+          </div>
+          <button id="create-document" class="primary">Create document draft</button>
+          <div id="document-draft" class="draft-slot"></div>
+        </article>
+
+        <article class="maintenance-card">
+          <p class="step-number">2</p><h2>Associate with workflow step</h2>
+          <p class="muted">The workflow step is read-only and comes from the governed CRM catalogue.</p>
+          <div class="form-grid">
+            <label>Predefined workflow step<select id="rule-step"></select></label>
+            <label>Active document type<select id="rule-document"></select></label>
+            <label>Requirement level<select id="rule-level"><option value="required">Required — blocks step</option><option value="advisory">Advisory — does not block</option></select></label>
+            <label class="span-two">Business reason<input id="rule-reason" value="Obtain current developer clearance before completing this step"></label>
+          </div>
+          <button id="create-rule" class="primary">Create association draft</button>
+          <div id="rule-draft" class="draft-slot"></div>
+        </article>
+      </div>
+
+      <section class="register-grid">
+        <div><p class="eyebrow">ACTIVE DOCUMENT CATALOGUE</p><div id="catalogue" class="register"></div></div>
+        <div><p class="eyebrow">ACTIVE STEP ASSOCIATIONS</p><div id="rules" class="register"></div></div>
+      </section>
+    </section>
+
+    <section id="agent-panel" class="panel hidden">
+      <section class="controls">
+        <label>Workflow step<select id="step"></select></label>
+        <label>Review state<select id="state"><option value="missing">Official document not obtained</option><option value="pending">Uploaded — pending verification</option><option value="verified">Verified and linked</option><option value="returned">Returned for correction</option><option value="expired">Expired evidence</option><option value="wrong">Linked to another case</option></select></label>
+        <p>Local test controls only; no real document is selected or stored.</p>
+      </section>
+      <section id="gate"></section>
+      <section class="evidence-grid"><div><p class="eyebrow">DOCUMENT REQUIREMENTS</p><div id="requirements"></div></div><aside><p class="eyebrow">UPLOAD & VERIFICATION RECORD</p><div id="record"></div></aside></section>
+      <section><p class="eyebrow">IMMUTABLE VERSION HISTORY</p><div id="history"></div></section>
+    </section>
+  </main>
+  <footer>NO REAL FILE · NO EXTERNAL SUBMISSION · NO TASK CREATION · NO WORKFLOW CREATION · NO CRM WRITE</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

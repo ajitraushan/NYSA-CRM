@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NYSA CORE - Inventory Duplicate Review</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+  <header><span class="logo">N</span><strong>NYSA CORE</strong><span>Inventory Duplicate Review</span></header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">RELEASE 4 · MODULE 9 · LOCAL REVIEW</p><h1>Stop duplicate Inventory before it is maintained.</h1><p>A background pre-save gate checks Unit Reference/Number + Building + Size + Community + Area before every create, identity update or import. Exact duplicates are blocked; uncertain intake is held for review.</p></div><div class="status"><strong>DRAFT — NOT INTEGRATED</strong><span>No CRM or Inventory write</span></div></section>
+    <section class="controls"><label>Review scenario<select id="scenario"><option value="exact">Matching active Inventory</option><option value="closed">Matching closed Inventory</option><option value="external">Same external source record</option><option value="strong">Strong building and unit match</option><option value="possible">Possible descriptive match</option><option value="separate">Similar but separate properties</option></select></label><p>Candidate review uses the existing CRM work-item queue.</p></section>
+    <section id="summary"></section>
+    <section class="records" id="records"></section>
+    <section class="workspace"><div><p class="eyebrow">MATCH EVIDENCE</p><div id="evidence"></div></div><aside><p class="eyebrow">HUMAN REVIEW DECISION</p><div id="decision"></div></aside></section>
+    <section><p class="eyebrow">IMMUTABLE DECISION PREVIEW</p><div id="result"></div></section>
+  </main>
+  <footer>LOCAL ONLY · BACKGROUND PRE-SAVE GATE · NO DUPLICATE MAINTENANCE · NO AUTOMATIC MERGE · EXISTING WORK ITEM · NO CRM WRITE</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

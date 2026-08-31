@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { Router } from '../lib/http-kit.js';
-import { one, execute, transaction, uuid, audit } from '../db.js';
+import { one, execute, transaction, uuid, audit, checkDatabaseReadiness } from '../db.js';
 import { hashPassword, verifyPassword, createSession, destroySession, requireAuth, publicBroker } from '../auth.js';
 
 const r = Router();
@@ -12,9 +12,17 @@ const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
 
-r.get('/health', async (req, res) => {
-  await one('SELECT 1 AS database_ready');
-  res.json({ ok: true, database: 'ready', version: applicationVersion });
+r.get('/health', (req, res) => {
+  res.json({ ok: true, process: 'ready', version: applicationVersion });
+});
+
+r.get('/readiness', async (req, res) => {
+  try{
+    const ready=await checkDatabaseReadiness();
+    return res.status(ready?200:503).json({ok:ready,database:ready?'ready':'unavailable',version:applicationVersion});
+  }catch{
+    return res.status(503).json({ok:false,database:'unavailable',version:applicationVersion});
+  }
 });
 
 function clientIp(req) {
@@ -37,8 +45,9 @@ function checkRateLimit(key) {
 const resetCodeHash = code => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
 const RESET_RESPONSE = 'If this email belongs to an active NYSA user, the request is now available to an Administrator. Obtain the one-time reset code through an approved private channel.';
 
-function setSessionCookie(res, token) {
-  res.setHeader('Set-Cookie', `nysa_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+function setSessionCookie(res, token,{persistent=true}={}) {
+  const maxAge=persistent?`; Max-Age=${7 * 24 * 60 * 60}`:'';
+  res.setHeader('Set-Cookie', `nysa_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/${maxAge}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
 }
 
 function clearSessionCookie(res) {
@@ -142,7 +151,7 @@ r.post('/auth/register', async (req, res) => {
 });
 
 r.post('/auth/login', async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password } = req.body || {},rememberMe=req.body?.rememberMe===true||req.body?.rememberMe==='true';
   if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
   const key = `${clientIp(req)}:${String(email).toLowerCase()}`;
   if (!checkRateLimit(key)) return res.status(429).json({ error: 'Too many attempts; try again later' });
@@ -150,8 +159,8 @@ r.post('/auth/login', async (req, res) => {
   if (!broker || !verifyPassword(password, broker.passwordHash))
     return res.status(401).json({ error: 'Invalid email or password' });
   if (broker.status !== 'active') return res.status(403).json({ error: broker.status==='suspended'?'Access is suspended':'Access is not active' });
-  const token = await createSession(broker.id);
-  setSessionCookie(res, token);
+  const token = await createSession(broker.id,{hours:rememberMe?24*7:12});
+  setSessionCookie(res, token,{persistent:rememberMe});
   res.json({ broker: publicBroker(broker) });
 });
 

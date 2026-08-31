@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NYSA CORE — Inventory organization provenance</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+  <header><div class="brand"><span class="logo">N</span><div><strong>NYSA CORE</strong><small>Local functional review</small></div></div><nav aria-label="Prototype views"><a href="/">Company maintenance</a><a class="active" href="/inventory">Inventory provenance</a></nav></header>
+  <main>
+    <section class="hero compact"><div><p class="eyebrow">RELEASE 4 · GATE 3 UX REVIEW</p><h1>Optional organization provenance.</h1><p>This section sits inside the existing Inventory transaction. It records where an organization relationship is useful without replacing Inventory ownership or existing developer text.</p></div><div class="status"><strong>LOCAL PROTOTYPE</strong><span>Nothing is saved</span></div></section>
+    <section class="inventory-shell">
+      <div class="inventory-heading"><div><span class="eyebrow">INVENTORY MASTER</span><h2>NYSA-INV-SYN-018 · Marina Residence 1408</h2></div><span class="pill active-pill">Available</span></div>
+      <div class="inventory-facts"><div><span>Existing developer text</span><strong>Synthetic Developments</strong></div><div><span>Area</span><strong>Dubai Marina</strong></div><div><span>Owner / represented party</span><strong>Maintained privately elsewhere</strong></div></div>
+      <div class="divider"></div>
+      <div class="section-heading"><div><p class="eyebrow">ORGANIZATION PROVENANCE</p><h3>Link a governed organization version</h3><p>Optional. Missing or pending Partner Master information never blocks this Inventory save. Service providers are reference organizations and cannot be linked to Inventory.</p></div><span class="optional">OPTIONAL</span></div>
+      <section class="controls embedded"><label>Inventory origin<select id="inventory-origin"><option value="direct_owner">Direct owner</option><option value="developer">Developer</option><option value="external_agency">External agency</option><option value="referral_partner">Referral partner</option><option value="portal_import">Portal / import</option></select></label><label>Organization scenario<select id="organization-scenario"><option value="active">Compatible active version</option><option value="pending">Only pending version</option><option value="none">No maintained organization</option></select></label></section>
+      <div id="inventory-link" aria-live="polite"></div>
+      <div class="inventory-actions"><button type="button" class="secondary">Cancel</button><button type="button" class="primary">Save Inventory</button></div>
+    </section>
+    <section class="event-preview"><p class="eyebrow">APPEND-ONLY PREVIEW</p><div id="event-history"></div></section>
+  </main>
+  <footer>NO OWNER DETAILS · NO EXISTING TEXT REPLACEMENT · NO EXTERNAL REQUEST · NO CRM WRITE</footer>
+  <script type="module" src="/inventory.js"></script>
+</body>
+</html>
