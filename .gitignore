@@ -22,6 +22,15 @@ tmp/
 *.zip
 crm-backups/
 
+# Local build, audit, and rendered evidence artifacts
+artifacts/
+output/
+outputs/
+release-artifacts/
+section3-full-output.txt
+section3-output.txt
+uat*-output.txt
+
 # Operating-system and editor files
 .DS_Store
 Thumbs.db
