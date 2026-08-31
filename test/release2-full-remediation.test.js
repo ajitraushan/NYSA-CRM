@@ -48,7 +48,7 @@ test('Inventory verification migration API and Manager queue preserve separate w
     assert.match(migration,new RegExp(marker));
   for(const marker of ['/inventory-verification-queue','/listings/:id/verification-requests','/inventory-verification-requests/:id/decision','decision_'])
     assert.match(routes,new RegExp(marker.replaceAll('/','\\/')));
-  for(const marker of ['Submit for verification','Request Not required exemption','Verification cleared — Not required','Status is system-controlled'])
+  for(const marker of ['Submit for verification','Not required exemption','Verification cleared — Not required','System stamped by an authorized verifier'])
     assert.match(app,new RegExp(marker));
   for(const marker of ['Inventory verification','Approve exemption','data-verification-decision','Every decision requires a reason'])
     assert.match(dashboard,new RegExp(marker));
@@ -112,10 +112,11 @@ test('UI shell, calendar, closure, diary and cache regressions have explicit con
     'environment-badge'])assert.match(page,new RegExp(marker.replace(/[{}[\]]/g,'\\$&')));
   for(const marker of ['representative email and phone','Administration','User management','correctionRoute'])
     assert.match(integrations,new RegExp(marker));
-  for(const marker of ['Return for correction','Reject closure request','Record management decision'])
+  for(const marker of ['Return for correction','Use the governed Close Lost path','Record management decision'])
     assert.match(deal,new RegExp(marker));
   assert.match(opportunities,/Complete mandatory transaction parties before management review/);
   assert.match(migration,/GRANT UPDATE ON deal_checklists/);
   assert.match(diary,/SELECT DISTINCT b\.id,b\.name,b\.job_role,b\.team_id,[\s\S]*AS diary_order[\s\S]*ORDER BY diary_order,b\.name/);
-  assert.match(app,/NYSA CORE \$\{esc\(APP_VERSION\)\}/);
+  assert.match(app,/About NYSA CORE/);
+  assert.match(app,/Application version<\/span><b>\$\{esc\(APP_VERSION\)\}/);
 });

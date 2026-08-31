@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../src/opportunity-domain.js';
 
-test('opportunity creation requires an explicit genuine service decision and next action',()=>{
-  assert.match(validateOpportunityCreate({}).error,/genuine opportunity/);
-  assert.match(validateOpportunityCreate({serviceOpportunityConfirmed:true}).error,/Explain why/);
-  assert.match(validateOpportunityCreate({serviceOpportunityConfirmed:true,serviceOpportunityReason:'Inventory fit',title:'Marina home',transactionType:'Unknown',nextAction:'Review',nextActionDueAt:'2026-07-23'}).error,/transaction type/);
-  const checked=validateOpportunityCreate({serviceOpportunityConfirmed:true,serviceOpportunityReason:'Approved inventory fits the customer requirement',title:' Marina home ',transactionType:'Sale',priority:'high',nextAction:' Review shortlist ',nextActionDueAt:'2026-07-23T10:00:00+04:00'});
+test('opportunity creation is the explicit pursuit decision and requires a governed next action',()=>{
+  assert.match(validateOpportunityCreate({}).error,/title/);
+  assert.match(validateOpportunityCreate({title:'Marina home',transactionType:'Unknown',nextActionCode:'send_property_details',nextActionDueAt:'2026-07-23'}).error,/transaction type/);
+  const checked=validateOpportunityCreate({title:' Marina home ',transactionType:'Sale',priority:'high',nextActionCode:'send_property_details',nextActionDueAt:'2026-07-23T10:00:00+04:00'});
   assert.equal(checked.error,undefined);
   assert.equal(checked.value.title,'Marina home');
-  assert.equal(checked.value.nextAction,'Review shortlist');
+  assert.equal(checked.value.nextActionCode,'send_property_details');
+  assert.equal(checked.value.nextAction,'Send suitable property details / shortlist and seek feedback');
   assert.equal(checked.value.priority,'high');
-  assert.equal(checked.value.serviceOpportunityReason,'Approved inventory fits the customer requirement');
+  assert.equal('serviceOpportunityReason' in checked.value,false);
 });
 
 test('Release 2.2 exposes Requirements Matching Viewing and reasoned Closed Lost',()=>{

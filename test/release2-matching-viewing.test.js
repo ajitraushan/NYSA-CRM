@@ -10,7 +10,8 @@ const root=join(dirname(fileURLToPath(import.meta.url)),'..'),read=path=>readFil
 test('R2.2 match rationale and exception evidence are explicit',()=>{
   assert.match(validatePropertyMatch({}).error,/approved property/);
   assert.match(validatePropertyMatch({listingId:'l1',fitStatus:'exception',rationale:'Location works'}).error,/material fit exception/);
-  assert.equal(validatePropertyMatch({listingId:'l1',fitStatus:'strong_fit',rationale:'Budget and location match'}).value.matchSource,'manual');
+  assert.match(validatePropertyMatch({listingId:'l1',fitStatus:'strong_fit',rationale:'Budget and location match'}).error,/likely to be available/);
+  assert.equal(validatePropertyMatch({listingId:'l1',fitStatus:'strong_fit',rationale:'Budget and location match',availabilityLikelyConfirmed:true}).value.matchSource,'manual');
   assert.match(validateMatchDecision({shortlistStatus:'rejected',expectedVersion:1}).error,/rejection reason/);
   assert.equal(validateMatchDecision({shortlistStatus:'shortlisted',expectedVersion:2}).value.status,'shortlisted');
 });

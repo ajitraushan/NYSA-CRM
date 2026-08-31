@@ -128,11 +128,12 @@ test('manager to director reporting is explicit governed maintenance',()=>{
   assert.match(migration,/HAVING COUNT\(\*\)=1/);assert.match(migration,/brokers_reports_to_not_self_ck/);
 });
 
-test('administration navigation consolidates read-only website intake into audit operations',()=>{
+test('administration navigation separates actionable integration failures from immutable audit history',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Audit and Operations/);
   assert.match(ui,/WebsiteIntake/);
-  assert.doesNotMatch(ui,/data-admin-section="website-intake"/);
+  assert.match(ui,/\['integration_failures','Integration failures'\]/);
+  assert.match(ui,/Website intake history/);
 });
 
 test('operational qualification is questionnaire-driven and not manually selectable',()=>{
@@ -147,13 +148,13 @@ test('operational qualification is questionnaire-driven and not manually selecta
 
 test('qualification maintenance guides business users through governed activation',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html'),api=read('src/routes/qualification-finance.js');
-  for(const label of ['All business lines','Draft','Test','Approve','Activate','Factor name','Question shown to agent','Answer format','Weight %','Move up','Move down','Active questionnaire coverage','No active version'])assert.match(ui,new RegExp(label));
-  assert.match(ui,/<select name="businessLine">/);assert.doesNotMatch(ui,/<input name="businessLine">/);
+  for(const label of ['Customer objective','Buy a property','Sell my property','Rent a property','Rent out my property','Draft','Test','Approve','Activate','Factor name','Question shown to agent','Answer format','Weight %','Move up','Move down','Active questionnaire coverage','No active version'])assert.match(ui,new RegExp(label));
+  assert.doesNotMatch(ui,/Legacy business line/);
   assert.match(ui,/qualification-model-form" class="form-grid hidden"/);
   assert.match(styles,/qualification-factor-card/);assert.match(styles,/qualification-lifecycle/);
-  assert.match(api,/BUSINESS_TYPES\.includes\(clean\(b\.businessLine\)\)/);
-  assert.match(api,/ORDER BY \(business_line=\$1\) DESC/);
-  assert.match(api,/Ask an administrator to test, approve and activate a version/);
+  assert.match(api,/customer_objective=\$1/);
+  assert.match(api,/No active Lead Qualification Version is available for Customer objective/);
+  assert.match(api,/completed substantive Customer discussion/);
 });
 
 test('customers are a primary workspace and lead KYC links to the customer master',()=>{
@@ -169,7 +170,7 @@ test('customers are a primary workspace and lead KYC links to the customer maste
   assert.match(files,/r\.get\('\/crm\/customers\/:id\/documents'/);assert.match(files,/d\.lead_id IN \(SELECT id FROM leads WHERE contact_id=\$1\)/);
   assert.match(ui,/contactId:customer\.id/);assert.match(ui,/Private customer document uploaded/);
   assert.match(ui,/id="customer-add">\+ Create customer/);assert.match(ui,/openNewCustomerForm/);assert.match(ui,/Customer record created/);
-  assert.match(crm,/New customers require email, phone and preferred channel/);
+  assert.match(crm,/New customers require email and phone/);
   assert.match(crm,/kyc_verified_by=CASE WHEN \$4='verified' THEN \$5::uuid ELSE NULL::uuid END/);
   const styles=read('public/index.html');assert.match(styles,/#customer-results td small\{display:block/);assert.match(styles,/#customer-results table\{min-width:1120px;table-layout:fixed/);
 });
@@ -178,8 +179,8 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
   const ui=read('public/app.js'),crm=read('src/routes/crm.js'),styles=read('public/index.html');
   assert.match(crm,/SELECT c\.id FROM contacts c WHERE \$\{where\.join\(' AND '\)\}/);
   assert.match(crm,/WHERE c\.id=ANY\(\$1::uuid\[\]\)/);
-  assert.match(crm,/pageSize=Math\.min\(100,Math\.max\(1,Number\.parseInt\(req\.query\.pageSize,10\)\|\|10\)\)/);
-  assert.match(crm,/res\.json\(\{ count: total, pageSize, contacts \}\)/);
+  assert.match(crm,/pageSize=Math\.min\(100,Math\.max\(1,Number\.parseInt\(req\.query\.pageSize,10\)\|\|25\)\)/);
+  assert.match(crm,/res\.json\(\{ count: total, page, pageSize, contacts \}\)/);
   assert.match(crm,/stageHistory/);
   assert.match(ui,/Customer.*Lead.*Contacted.*Qualified.*Viewing.*Negotiation.*Won/s);
   assert.match(ui,/One customer may have several leads, and each lead can be at a different stage\./);
@@ -202,16 +203,17 @@ test('existing customer selection displays matches and requires explicit confirm
   assert.match(ui,/Type a name, email or phone, e\.g\. Ajit/);
   assert.match(ui,/rankCustomerChoices/);
   assert.match(ui,/Select one explicitly/);
-  assert.match(crm,/ORDER BY LOWER\(c\.full_name\)/);
+  assert.match(crm,/ORDER BY array_position\(\$1::uuid\[\],c\.id\)/);
 });
 
 test('customer-originated lead creation carries a locked Customer Master reference',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
-  assert.match(ui,/const preselectedCustomer=preselectedCustomerId\?contacts\.find/);
+  assert.match(ui,/preselectedCustomerId\?api\(`\/crm\/customers\/\$\{encodeURIComponent\(preselectedCustomerId\)\}`\)/);
+  assert.match(ui,/preselectedCustomer=customerResponse\?\.customer\|\|null/);
   assert.match(ui,/Customer carried from Customer Master/);
   assert.match(ui,/type="hidden" name="contactId" value=/);
   assert.match(ui,/This lead will be linked to the existing customer record/);
-  assert.match(ui,/if\(!preselectedCustomerId\)\(\{companies\}=await api\('\/crm\/companies'\)\)/);
+  assert.match(ui,/preselectedCustomerId\?Promise\.resolve\(\{companies:\[\]\}\):api\('\/crm\/companies'\)/);
   assert.match(styles,/\.customer-lead-feed\{/);
   assert.match(ui,/Search existing leads/);
   assert.match(ui,/Opportunity or linked customer name/);
@@ -221,13 +223,14 @@ test('customer-originated lead creation carries a locked Customer Master referen
 
 test('lead capture explains the original property link in business language',()=>{
   const ui=read('public/app.js');
-  assert.match(ui,/Property that prompted this enquiry \(optional\)/);
+  assert.match(ui,/Customer objective/);
+  assert.match(ui,/Property \/ Inventory being offered/);
   assert.match(ui,/No specific property linked/);
   assert.match(ui,/It does not restrict later inventory matching/);
   assert.match(ui,/Original property enquiry/);
   assert.doesNotMatch(ui,/Related listing \(optional\)/);
-  assert.match(ui,/Preferred areas \(comma-separated\)/);
-  assert.match(ui,/will prefill Structured requirements/);
+  assert.match(ui,/Preferred areas/);
+  assert.match(ui,/Seller and Landlord requirements inherit the governed Inventory location/);
   assert.match(ui,/initialAreas=.*lead\.preferredAreas/);
 });
 
@@ -370,7 +373,7 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/Revise same proposal/);
   assert.match(app,/Generate corrected immutable version/);
   assert.match(app,/task completes automatically/);
-  assert.match(read('public/dashboard-ui.js'),/\['My dashboard','My tasks'\]/);
+  assert.match(read('public/dashboard-ui.js'),/\['My dashboard','My Team','My tasks'\]/);
   assert.match(read('public/dashboard-ui.js'),/id="dashboard-task-workspace"/);
   assert.match(read('public/dashboard-ui.js'),/window\.renderTaskWorkspace/);
   assert.doesNotMatch(read('public/dashboard-ui.js'),/id="dashboard-tasks"/);
@@ -380,7 +383,8 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(http,/X-Frame-Options', 'DENY'/);
   assert.match(styles,/\.proposal-builder-modal\{max-width:1100px/);
   assert.match(styles,/\.proposal-media-choices/);
-  assert.match(styles,/\.proposal-review-modal\{max-width:1180px/);
+  assert.match(styles,/\.proposal-review-overlay\{align-items:stretch;padding:8px;overflow:hidden\}/);
+  assert.match(styles,/\.proposal-review-modal\{position:relative;display:flex;flex-direction:column;width:100%;max-width:none;height:calc\(100vh - 16px\)/);
 });
 
 test('organization profile copy action cannot silently clear an unsaved first profile',()=>{
@@ -432,7 +436,7 @@ test('fee rule-set lifecycle supports safe draft editing comparison approval act
 
 test('browser typography is increased consistently for operational readability',()=>{
   const styles=read('public/index.html');
-  for(const contract of ['font-size:16.1px','font-size:14.95px','font-size:12.65px','font-size:13.8px','font-size:39.1px'])assert.match(styles,new RegExp(contract.replace('.','\\.')));
+  for(const contract of ['font-size:16.1px','font-size:14.95px','font-size:12.65px','font-size:13.8px','font-size:clamp(28px,2.2vw,39px)'])assert.match(styles,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(styles,/\.ai-suggestion-meta\{font-size:12\.65px/);
   assert.match(styles,/\.requirement-version-card small\{display:block;color:var\(--muted\);font-size:12\.65px/);
 });

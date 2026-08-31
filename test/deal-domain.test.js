@@ -69,7 +69,8 @@ test('R2.4A migration, API and workspace preserve exact commercial evidence and 
   assert.match(ui,/partyAdditionAllowed=dealEditable/);
   assert.match(ui,/Complete all mandatory transaction parties before management review/);
   assert.match(ui,/Return for correction/);
-  assert.match(ui,/Reject closure request/);
+  assert.doesNotMatch(ui,/Reject closure request/);
+  assert.match(ui,/Use the governed Close Lost path/);
   assert.match(ui,/requiredPartiesComplete\?'Add another transaction party':'Add missing required transaction party'/);
   assert.match(ui,/Transaction parties are locked because this Deal has entered approval or closure/);
   assert.match(correction,/DROP CONSTRAINT opportunities_stage_check/);

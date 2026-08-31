@@ -7,6 +7,9 @@
 - Add external integrations only after the underlying CRM records are stable.
 - Treat customer-facing financial outputs as transparent estimates.
 - Keep business rules configurable and migration-safe.
+- Develop and iterate on CRM Test; use the R2 production clone only for acceptance of a frozen
+  candidate. After Production promotion, align both environments to the Production application
+  version and migrations before starting the next release.
 
 ## Release 0: Production Inventory MVP - Implemented
 
@@ -126,6 +129,13 @@ acceptance criteria and decisions required before development are defined in
 
 ## Release 3: Campaign Management, Communications and External Lead Channels
 
+Scope and sequencing were frozen by the NYSA owner on 2026-07-31 around the governing outcome
+**broker speed with accuracy**. The four acceptance-sized phases, stable requirement identifiers,
+entry gates and change-control rules are authoritative in
+`RELEASE_3_TO_6_FROZEN_EXECUTION_PLAN_2026-07-31.md`. The summary below is retained as the original
+capability allocation; where its earlier two-phase wording is broader, the frozen four-phase plan
+controls execution order.
+
 Release 3 is intentionally sequenced as:
 
 1. **Release 3A — Campaign Management MVP:** governed campaign master, ownership, objectives,
@@ -154,6 +164,11 @@ commission sources reconcile.
 - Approved SMS integration and nurture sequences where the provider, consent basis,
   sender identity, opt-out handling and retention policy are confirmed
 - Property Finder lead retrieval after Enterprise API access and scopes are approved
+- Property Finder enquiry ingestion into one deduplicated potential Lead linked to the PF listing
+  and Internal Inventory, followed by the central communication-policy decision; AI text or
+  automated voice first response remains a separately approved action with human handoff
+- Provider-neutral subscription, unsubscribe, suppression and DNCR governance evaluated
+  immediately before every automated communication attempt
 - Bayut lead retrieval after Profolio Leads API entitlement is approved
 - Meta Facebook/Instagram lead retrieval after business assets, permissions, and forms are approved
 - Google Ads lead/campaign attribution and LinkedIn lead integration only after
@@ -189,6 +204,8 @@ Detailed planning records and acceptance dependencies are maintained in
 - Listing media and document management
 - Portal-ready location, amenity, agent, permit, off-plan, and publication validation
 - Property Finder listing publication and reconciliation through the Enterprise API
+- Read-only discovery of existing agency-owned Property Finder listings, explicit match preview
+  and selected PF-only import as Internal Inventory Drafts without silent overwrite or deletion
 - Bayut/dubizzle listing publication and reconciliation through an approved XML feed
 - Provider-specific MLS/listing-feed adapters built on the Release 1.1 Draft-only
   intake contract, with governed CORE-admin business-value mappings and technical
@@ -205,12 +222,25 @@ Detailed planning records and acceptance dependencies are maintained in
 - Percentage rules at broker and deal level
 - NYSA, internal-agent, referral, and approved partner splits
 - Approval workflow and exception handling
-- Expected, approved, invoiced, received, and paid statuses
-- Statements and accounting exports
-- Director and accountant reporting
+- CORE commission receipt and Director-only agent payout status; invoice, receivable and accounting
+  settlement remain authoritative in NYSA's existing accounting system and will not be duplicated
+- Optional bounded accounting-system interface, statements or reconciliation only after the existing
+  system and supported exchange method are explicitly approved
+- Director and accountant reporting across CORE-authoritative facts and approved accounting interfaces
 
 ## Release 6: Documents, Compliance, and Advanced Reporting
 
+Current local sequence (14 August 2026): **Customer and Transaction Document Compliance is locally
+complete through Gate 4; migration 090 remains unapplied**. The implementation reuses Customer KYC, existing private Documents/Versions,
+Release 4 official-document evidence and My Task Queue; it does not create a duplicate file store,
+official evidence register, work queue or accounting workflow. See
+`RELEASE_6_CUSTOMER_TRANSACTION_DOCUMENT_COMPLIANCE_GATE_1.md` and
+`RELEASE_6_LOCAL_FUNCTIONAL_MODULES_CHECKPOINT_2026-08-14.md`.
+
+- Governed agent workforce administration: employment status and reporting-manager assignment,
+  Admin-maintained leave types and entitlement policies, agent leave applications, Manager approval,
+  leave balances, team calendar and immutable decision history. This is a controlled scope addition
+  recorded on 2026-08-14 and requires its own gated design before implementation.
 - Buyer, seller, landlord, tenant, and transaction document records
 - Configurable expiry reminders and completion checklists
 - Restricted document access and approval history
@@ -229,6 +259,23 @@ Detailed planning records and acceptance dependencies are maintained in
   vendor review and cross-border transfer controls
 - Advanced management exports
 
+Owner planning decision recorded on 14 August 2026: a broad new management-reporting build is
+deferred because it would duplicate the existing CRM dashboard. Any future reporting slice must
+extend the current dashboard only for proven transaction-funnel gaps (Viewings → Offers → Bookings →
+Closed Won and booked value) and must not duplicate the Director-only Payout workspace. Privacy
+Operations is also deferred for later consideration.
+
+Marketing Material Compliance Gate 1 was owner-approved on 14 August 2026. Its accepted
+boundary is a complete versioned marketing item with channel-specific approval and current release
+eligibility. It reuses Property Media rights/approval, Inventory, Documents/Versions, Campaigns,
+Release 4 official evidence, Tasks and audit. It does not publish or send material, verify permits
+externally, seed legal requirements, duplicate existing authorities, or include Property Finder.
+Migration `091` is created locally and remains unapplied. Gates 1-4 are owner-approved and the story
+is locally complete with focused tests 33/33 and full suite 949/949. See
+`RELEASE_6_MARKETING_MATERIAL_COMPLIANCE_GATE_1.md`,
+`RELEASE_6_MARKETING_MATERIAL_COMPLIANCE_GATE_2_MIGRATION_API_CONTRACT.md` and
+`RELEASE_6_MARKETING_MATERIAL_COMPLIANCE_GATE_4_COMPLETION.md`.
+
 ## Reconciled Marketing and Lead-Management Planning Gate
 
 The additions above were reconciled on 2026-07-21 as planning inputs. They do not
@@ -238,6 +285,8 @@ authoritative data source, campaign and routing policy, privacy/compliance basis
 controlled-value mappings, sandbox credentials, measurable acceptance criteria and
 CRM Test deployment plan. Google Ads and Google Calendar are separate integrations;
 Property Finder/Bayut lead retrieval and listing publication are also separate flows.
+The intended Property Finder listings, enquiries, AI/voice response and DNCR end state is recorded
+in `PROPERTY_FINDER_END_STATE_INTEGRATION_BLUEPRINT.md`; every capability remains separately gated.
 
 ## Release Gates
 

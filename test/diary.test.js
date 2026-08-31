@@ -41,7 +41,7 @@ test('diary flags only active overlapping appointments for the same agent',()=>{
 });
 
 test('My Diary combines CRM schedules with role scope and direct operating actions',()=>{
-  const route=read('src/routes/diary.js'),server=read('src/server.js'),ui=read('public/app.js'),page=read('public/index.html');
+  const route=read('src/routes/diary.js'),server=read('src/server.js'),ui=read('public/app.js'),page=read('public/index.html')+read('public/bootstrap.js');
   for(const contract of ['activities','tasks','viewings','activity_calendar_events','viewing_calendar_events','selectedAgentId','allowedAgents','Asia/Dubai','Company diary access is restricted'])assert.match(route,new RegExp(contract));
   assert.match(server,/diaryRoutes/);
   for(const contract of ['My Diary','Today','Week','All company appointments','Calls','Meetings','Viewings','Tasks & follow-ups','Scheduling conflict','Due now','Due later','Overdue','Every item below is scheduled or due on this date','Email has been sent','The Google Calendar invitation has not been sent','View Customer over Diary','View Lead over Diary','View Opportunity over Diary','Open Google Meet video room','Open Google Calendar event details','Copy phone number','Open phone app to call','Record call outcome','Record viewing outcome'])assert.match(ui,new RegExp(contract.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
@@ -51,7 +51,7 @@ test('My Diary combines CRM schedules with role scope and direct operating actio
   assert.doesNotMatch(ui,/data-diary-customer[\s\S]{0,500}switchTab\('customers'\)/);
   assert.match(page,/\.diary-item/);
   assert.match(page,/\.diary-conflict/);
-  assert.match(page,/app\.js\?v=r2\.6-dev79/);
+  assert.match(page,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','app\.js','dashboard-ui\.js'\]/);
   assert.match(page,/\.diary-item\{grid-template-columns:130px minmax\(0,1fr\)\}/);
   assert.match(page,/\.diary-actions\{grid-column:1\/-1;justify-content:flex-start/);
 });

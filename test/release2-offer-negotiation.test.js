@@ -22,13 +22,14 @@ test('offer state changes require governed sequence and adverse reasons',()=>{
   assert.equal(validateOfferEvent('sent',{eventType:'viewed'}).value.eventType,'viewed');
   assert.equal(validateOfferEvent('sent',{eventType:'acknowledged'}).value.eventType,'acknowledged');
   assert.match(validateOfferEvent('sent',{eventType:'rejected'}).error,/reason is required/);
-  assert.match(validateOfferEvent('accepted',{eventType:'withdrawn',reason:'invalid'}).error,/cannot follow/);
+  assert.match(validateOfferEvent('accepted',{eventType:'withdrawn'}).error,/reason is required/);
+  assert.equal(validateOfferEvent('accepted',{eventType:'withdrawn',reason:'NYSA withdrew after reservation',direction:'outbound'}).value.eventType,'withdrawn');
   assert.equal(validateOfferEvent('viewed',{eventType:'accepted',summary:'Customer accepted exact terms'}).value.eventType,'accepted');
 });
 
 test('offer document is a valid deterministic PDF containing the exact revision',()=>{
   const pdf=makeOfferPdf({
-    offer:{offerReference:'NYSA-OF-202607-000001'},
+    offer:{offerReference:'NYSA-OF-202607-000001',offerType:'purchase'},
     revision:{revisionNumber:2,createdAt:new Date(),amount:1250000,currency:'AED',depositAmount:125000,financingMethod:'Mortgage',paymentTerms:'10 percent deposit',conditions:'Subject to finance',validityExpiresAt:future(),direction:'outbound',proposerRole:'customer',materialCorrectionReason:'Payment timing corrected'},
     opportunity:{opportunityReference:'NYSA-OP-202607-000001',title:'Marina purchase'},
     customer:{fullName:'Controlled Test Customer'},
@@ -40,7 +41,9 @@ test('offer document is a valid deterministic PDF containing the exact revision'
   assert.ok(pdf.length>500);
   assert.match(pdf.toString('latin1'),/Revision 2/);
   assert.match(pdf.toString('latin1'),/NYSA Realty/);
-  assert.match(pdf.toString('latin1'),/PRIVATE COMMERCIAL OFFER/);
+  assert.match(pdf.toString('latin1'),/PRIVATE OFFER TO PURCHASE/);
+  assert.match(pdf.toString('latin1'),/NYSA acts as the brokerage facilitator/);
+  assert.match(pdf.toString('latin1'),/not legally binding/);
 });
 
 test('R2.3A migration and API preserve immutable exact-document negotiation evidence',()=>{
@@ -60,19 +63,22 @@ test('R2.3A migration and API preserve immutable exact-document negotiation evid
 });
 
 test('Opportunity UI presents one clear immutable offer and negotiation flow',()=>{
-  const ui=read('public/offer-ui.js'),page=read('public/index.html'),app=read('public/app.js');
+  const ui=read('public/offer-ui.js'),page=read('public/index.html')+read('public/bootstrap.js'),app=read('public/app.js');
   for(const marker of ['Create Offer Revision 1 and branded PDF','Review Revision','Record sending this exact revision','Material correction / revision reason','Negotiation timeline - latest first','Reason (required for rejection or withdrawal)','All immutable offer revisions','Draft - not sent','Customer confirmed receipt (recorded by agent)','Recipient name','recipientEmail','recipientPhone','Inventory remains available','R2.3B','No property is ready for an offer','Viewing-feedback prerequisite confirmed','Offer created without prior viewing-feedback evidence','writable&&governedEvidence&&offer.status'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/data-business-amount/);
   assert.match(ui,/completedViewingMatches/);
-  assert.match(page,/offer-ui\.js\?v=r2\.5-dev52/);
+  assert.match(page,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','app\.js','dashboard-ui\.js'\]/);
   assert.match(app,/bindOfferWorkspace/);
   for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','4. Negotiation','opportunity-flow-sequence',"flowButton('inventory'","flowButton('viewing'","flowButton('offer'","flowButton('negotiation'","flowButton('booking'",'showFlowStep','Viewing completed - customer feedback recorded','This property cannot proceed to Offer until customer feedback is saved'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  for(const marker of ['View or edit Opportunity reminder','Reminder only - not a workflow status','Opportunity reminder *','Update Opportunity reminder','Viewing status:','Scheduled - outcome pending','Record viewing outcome and feedback','Opportunity reminder updated; viewing status was not changed'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['View or edit Opportunity reminder','Reminder only - not a workflow status','Governed customer action *','Update Opportunity action','Viewing status:','Scheduled - outcome pending','Record viewing outcome and feedback','Opportunity reminder updated; viewing status was not changed'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['Open Viewing &amp; feedback',"showFlowStep('viewing')"])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['data-flow-pane="offer negotiation"','flow-offer-only','flow-negotiation-only'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(page,/offer-workspace\.flow-show-negotiation \.flow-offer-only/);
   assert.match(page,/opportunity-modal \[data-flow-pane\]:not\(\.flow-pane-active\)\{display:none!important\}/);
-  assert.match(app,/classList\.toggle\('flow-pane-active',active\)/);
+  assert.match(app,/pane\.classList\.add\('flow-pane-active'\)/);
+  assert.match(app,/stagePage\.className='opportunity-stage-page'/);
+  assert.match(app,/document\.body\.append\(stagePage\)/);
+  assert.match(app,/Save as draft/);
   for(const marker of ['Completed','In progress','Not completed','Reminder only - not a workflow status','View or edit Opportunity reminder','Create and send an offer before negotiation can begin.','The record is labelled Negotiation, but no governed offer has been sent.','if(reminderDetails)sourceEvidenceDetails.append(reminderDetails)','opportunity-stage-guidance'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(page,/opportunity-flow-sequence button small/);
   assert.match(page,/opportunity-reminder-details/);

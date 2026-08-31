@@ -8,7 +8,7 @@ readonly NODE_BIN="/home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/
 readonly EXPECTED_CURRENT_VERSION="2.0.0-dev.44"
 readonly EXPECTED_VERSION="2.0.0-dev.45"
 readonly EXPECTED_BASELINE="050_release2_customer_kyc_uat_corrections.sql"
-readonly EXPECTED_SHA256="0eb32eb642555a70fc7b27744f812ce31c4b755b52f10ab08300591421afaf4c"
+readonly EXPECTED_SHA256="42cc3bba3aedb68542a9326530acce0f12a57c0f71530b480c3197dc91e7c084"
 readonly PACKAGE="${1:-}"
 readonly STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 

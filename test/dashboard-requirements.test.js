@@ -137,26 +137,28 @@ test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
   const domain=fs.readFileSync(new URL('../src/dashboard-domain.js',import.meta.url),'utf8');
-  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
-  for(const marker of ['MY LEAD LIFECYCLE','Pipeline at a glance','customers are represented across','Select a stage to see the exact leads and next action','agentLifecycle(data)','data-dashboard-segment="${x.segment}"','exact leads'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8')+fs.readFileSync(new URL('../public/bootstrap.js',import.meta.url),'utf8');
+  for(const marker of ['OPERATIONS OVERVIEW','Pipeline at a glance','customers are represented across','Where your active work is now','agentLifecycle(data)','data-dashboard-segment="${x.segment}"','exact leads'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const action of ['Record first contact','Complete qualification','Schedule viewing','Record viewing outcome','Progress negotiation','Review completed lead','Review loss outcome'])assert.match(domain,new RegExp(action));
   assert.match(routes,/buildAgentLifecycle\(stages\)/);
   assert.match(routes,/COUNT\(DISTINCT contact_id\)::int AS customers/);
   assert.match(routes,/const lifecycle=AGENT_LIFECYCLE_STAGES\.find/);
   assert.match(routes,/l\.stage='\$\{lifecycle\.stage\}'/);
   assert.match(ui,/result\.stageAction/);
-  assert.match(ui,/id="dashboard-lifecycle"[\s\S]*id="dashboard-filters"[\s\S]*id="dashboard-kpis"/);
-  assert.match(ui,/dashboard-lifecycle'\)\.innerHTML=likelyType==='agent'&&!showingTasks\?agentLifecycle\(data\):''/);
+  assert.match(ui,/agent-dashboard-filter-drawer/);
+  assert.match(ui,/const filterMarkup=`<form id="dashboard-filters"/);
+  assert.match(ui,/\$\{agentCommandBar\}[\s\S]*id="dashboard-lifecycle"[\s\S]*id="dashboard-kpis"/);
+  assert.match(ui,/dashboard-lifecycle'\)\.innerHTML=likelyType==='agent'&&!showingTasks&&!showingMyTeam\?agentLifecycle\(data\):''/);
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/<script src="dashboard-ui\.js\?v=r2\.5-dev52"><\/script>/);
+  assert.match(page,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','app\.js','dashboard-ui\.js'\]/);
 });
 
-test('Role dashboards show the maintained reporting structure at the top without widening access',()=>{
+test('Role dashboards move the maintained reporting structure into My Team without widening access',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
-  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8')+fs.readFileSync(new URL('../public/bootstrap.js',import.meta.url),'utf8');
   assert.match(routes,/async function loadOrganizationContext/);
   assert.match(routes,/contextVersion:3,kind:'director',supervisors:\[\],reports:/);
   assert.match(routes,/contextVersion:3,kind:'manager',supervisors:directors,reports/);
@@ -181,7 +183,14 @@ test('Role dashboards show the maintained reporting structure at the top without
   assert.match(ui,/item\.unitName/);
   assert.match(ui,/No maintained reporting line/);
   assert.match(ui,/Administration → CRM teams and User management/);
-  assert.match(ui,/dashboard-side/);
+  assert.match(ui,/\['My dashboard','My Team','My tasks'\]/);
+  assert.match(ui,/\['Team performance','My Team'/);
+  assert.match(ui,/\['Executive','Sales','Inventory','Operations and Risk','My Team'/);
+  assert.match(ui,/showingMyTeam\?myTeamBody/);
+  assert.match(ui,/Team structure is kept out of operational dashboards to preserve working space/);
+  assert.doesNotMatch(ui,/dashboard-side"><div id="dashboard-organization"/);
+  assert.doesNotMatch(ui,/dashTable\('Operational exceptions',objectRows\(data\.exceptions\)\),hierarchy\(data,true\)/);
+  assert.doesNotMatch(ui,/leading\(data\),hierarchy\(data\)/);
   assert.match(page,/\.dashboard-organization\{/);
   assert.match(page,/\.dashboard-org-list\{/);
 });
@@ -194,9 +203,9 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/Proposal approvals/);
   assert.match(ui,/data-dashboard-view/);
   assert.match(ui,/data-approval-tab/);
-  assert.match(ui,/ME\.jobRole==='director'\?\['Executive','Sales','Inventory','Operations and Risk','Proposal approvals','My tasks'\]/);
+  assert.match(ui,/dashboardViewsFor\(likelyType,ME\.jobRole\)/);
   assert.match(ui,/if\(data\.view==='Proposal approvals'\)return proposalApprovals\(data\)/);
-  assert.match(ui,/showingTasks\|\|showingKycReviews\|\|showingVerification\|\|showingListingApprovals\|\|showingMediaApprovals\|\|showingProposalApprovals\?'':kpiCards\(data\)/);
+  assert.match(ui,/showingTasks\|\|showingMyTeam\|\|showingKycReviews\|\|showingVerification\|\|showingListingApprovals\|\|showingMediaApprovals\|\|showingProposalApprovals\?'':kpiCards\(data\)/);
   assert.doesNotMatch(ui,/\[proposalApprovals\(data\),/);
   assert.match(ui,/Latest generated proposal version from each managed-team proposal awaiting review/);
   assert.match(ui,/Latest generated proposal version from each company proposal awaiting review/);
@@ -207,6 +216,9 @@ test('manager and director dashboards expose a scoped proposal approval queue',(
   assert.match(ui,/Pending approval/);
   assert.match(ui,/Submitted \/ waiting/);
   assert.match(ui,/minute.*waiting/);
+  assert.match(ui,/readableElapsedMinutes/);
+  assert.match(ui,/week\$\{weeks===1\?'':'s'\}/);
+  assert.doesNotMatch(ui,/Overdue by \$\{Math\.max\(1,Math\.abs\(x\.dueMinutes\)\)\} min/);
   assert.doesNotMatch(ui,/Less than 1 hour/);
   assert.match(ui,/crm\/dashboard\/proposal-approvals/);
   assert.match(routes,/loadProposalApprovalQueue/);
@@ -257,6 +269,20 @@ test('manager dashboard consolidates Inventory approval into its verification qu
   assert.match(app,/There is no separate Inventory approval/);
 });
 
+test('manager verification stays visible in the header and Immediate attention',()=>{
+  const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
+  const routes=fs.readFileSync(new URL('../src/routes/opportunities.js',import.meta.url),'utf8');
+  const shortcut=ui.indexOf('data-inventory-verification-shortcut');
+  const guided=ui.indexOf('class="dashboard-workspace"');
+  assert.ok(shortcut>=0,'Inventory verification shortcut must be rendered');
+  assert.ok(guided>=0,'guided priority workspace must be rendered');
+  assert.ok(shortcut<guided,'Inventory verification shortcut must appear above the long priority workspace');
+  assert.match(ui,/data-inventory-verification-tab/);
+  assert.match(ui,/data-guided-verification/);
+  assert.match(routes,/inventory_verification_request_id/);
+  assert.match(routes,/review_inventory_verification/);
+});
+
 test('dashboard period presets replace manual date entry for every role',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   for(const preset of ['last_week','last_month','last_quarter','last_6_months','older_than_6_months'])assert.match(ui,new RegExp(`'${preset}'`));
@@ -280,15 +306,15 @@ test('campaign filter is a role-scoped source-dependent dropdown on every dashbo
 test('lifecycle drill-down refreshes the filtered dashboard after a successful stage change',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8')+fs.readFileSync(new URL('../public/bootstrap.js',import.meta.url),'utf8');
   assert.match(app,/async function openLead\(id,\{afterStageChange=null\}=\{\}\)/);
   assert.match(app,/if\(afterStageChange\)await afterStageChange\(\)/);
   assert.match(app,/openLead\(id,\{afterStageChange\}\)/);
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
   assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
-  assert.match(page,/app\.js\?v=r2\.6-dev79/);
-  assert.match(page,/dashboard-ui\.js\?v=r2\.5-dev52/);
+  assert.match(page,/asset-manifest/);
+  assert.match(page,/script\.src=`\/\$\{file\}\?v=\$\{encodeURIComponent\(build\)\}`/);
 });
 
 test('inventory cards identify the listing creator and make the full-detail action explicit',()=>{

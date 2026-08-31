@@ -1,0 +1,1862 @@
+{
+  "release": "NYSA CORE consolidated CRM Test candidate",
+  "version": "2.1.0-dev.174",
+  "package": "nysa-core-consolidated-crm-test-dev174.zip",
+  "packageSha256": "30ecf73113f5d6ed3b9ec325075fceffc854d5bbb08da8bd486fca9cab177a71",
+  "sourceBaselineCommit": "a6af2ec2f6b2def3af968682511e671f03b43735",
+  "sourceState": "dirty worktree preserved; exact identity is the embedded file manifests",
+  "target": "CRM Test only",
+  "expectedRoot": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+  "expectedDatabase": "nysareal_nysa_r2_rehearsal",
+  "baselineVersion": "2.1.0-dev.173",
+  "baselineMigration": "107_dev169_versioned_opportunity_stage_drafts.sql",
+  "latestMigration": "110_dev174_financial_illustration.sql",
+  "migrationCount": 110,
+  "requirements": [
+    "DEF-097",
+    "DEF-098",
+    "DEF-099",
+    "SPEC-GAP-001",
+    "DEF-101",
+    "DEF-102",
+    "DEF-103",
+    "DEF-104",
+    "DEF-105",
+    "DEF-106"
+  ],
+  "verification": {
+    "ordinary": {
+      "total": 1291,
+      "passed": 1261,
+      "failed": 0,
+      "skippedProtected": 30
+    },
+    "focusedLinkedFunctions": {
+      "total": 47,
+      "passed": 47,
+      "failed": 0
+    },
+    "humanUat": "All post-dev.173 items remain pending deployed human retest; no pass inferred"
+  },
+  "deploymentPlan": "docs/CRM_TEST_DEV174_REMEDIATION_AND_DEPLOYMENT_PLAN.md",
+  "providerState": {
+    "propertyFinder": "disabled and excluded",
+    "nativeWhatsApp": "not included",
+    "microsoft365Email": "disabled pending integration",
+    "calendly": "disabled pending integration"
+  },
+  "protectedEnvironments": [
+    "Production",
+    "Production/R2 clone"
+  ],
+  "zipPathSeparator": "/",
+  "entryCount": 302,
+  "files": [
+    {
+      "path": ".env.example",
+      "sha256": "5b38f7c7f9f00b4075b1875a30f8b27451925f08a719ebd870d29c550f9c2c89",
+      "bytes": 4477,
+      "runtimeInstall": true
+    },
+    {
+      "path": "app.cjs",
+      "sha256": "5616414c94192975967f2838e26d475c6f3b0e805925107e53debe37d4ddfbd8",
+      "bytes": 142,
+      "runtimeInstall": true
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "32e0d3c319cae17b2d53c036bbe3eaa7dce546d4e9e0892618a4e17120e32113",
+      "bytes": 8067,
+      "runtimeInstall": true
+    },
+    {
+      "path": "package.json",
+      "sha256": "f965496d4b2e4df4d45189c0df75b4bd0b54b9e18dfc622fb8edb19dfdd3e80d",
+      "bytes": 1718,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/agent-leave-ui.js",
+      "sha256": "d3afda7bd2f0142af03e31f7521cf72d89966b546632df8ca1767723676fd5f9",
+      "bytes": 14874,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/app.js",
+      "sha256": "38f136dfd81d7afdfa479203e798cd91ffccfadb75ee65641c697c7b7dc1b01b",
+      "bytes": 856939,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/bootstrap.js",
+      "sha256": "965624e330bcad009418254bd193b777c9c334bb0e01b2aff469fbd2f51e66d9",
+      "bytes": 3528,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/dubai-skyline-auth-golden-hour-palms.png",
+      "sha256": "d5ac72a312c88492ccc2e056e36c9a85c8f74fb7d8544745dddfec8b6fb2c7be",
+      "bytes": 2227622,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/dubai-skyline-auth-golden-hour.png",
+      "sha256": "f82253ea448acae40c3dcd68a4032f5998ed643109a627dac95c811350846bff",
+      "bytes": 1876879,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/dubai-skyline-auth.png",
+      "sha256": "32882fb557ee1724ae41172516075bb67cb28384ac7f2b57a2b83dd15b243f4a",
+      "bytes": 1622322,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa-uae-badge-256.png",
+      "sha256": "af7b5b96173a53037bc439608569e57608518584335e68ace3633df8b0cb5ad5",
+      "bytes": 77219,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa-uae-badge-512.webp",
+      "sha256": "a956e6a64f7047b9d3aeb715dc13cde34fc54110c7759891b529132e6accdd55",
+      "bytes": 39040,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa-uae-badge.png",
+      "sha256": "4b6da512ce357522f7b11c4bc1977a10880ed6e24389538c87f284cfe639c249",
+      "bytes": 1157280,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa-uae-logo-transparent.png",
+      "sha256": "092934068bd024fd9ffd0493f2af1be7f7e73f68e6e960aaaa208f3a79af900c",
+      "bytes": 1081677,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/SOURCE_README.md",
+      "sha256": "55a28f895d28052a7e79d7361866b08a3e52b2dd9279ee3d24411f30dab5b62c",
+      "bytes": 1087,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/brand-assets.json",
+      "sha256": "d929bb1a26bfe901de1f5d485ffe8f2c342645599a81f5b629b5003c1a96fb31",
+      "bytes": 1375,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/nysa-social-share.svg",
+      "sha256": "8fad61bcb485fb1572901291b00265e411402a05666dc0f23047ce8e0389f385",
+      "bytes": 3847,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/apple-touch-icon.png",
+      "sha256": "d42c0166df1a97e60e45bd7b24a94b6006ace8c638c3457aecc54344daf79ea1",
+      "bytes": 9718,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/favicon-16.png",
+      "sha256": "e20568b3b13aba6096b45a5387ac227654067197033bb66d2f6dfddd7d5e2dea",
+      "bytes": 472,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/favicon-32.png",
+      "sha256": "12081ff65ec758d5146f8201088330cd5ca135438afa088ce1c156ff8b724a66",
+      "bytes": 911,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/favicon-48.png",
+      "sha256": "688febad046c266f27bff20f3978c8108db7d579f003c7460d568c466689ee2b",
+      "bytes": 1293,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-app-icon-512.png",
+      "sha256": "4f8f8aa4d01397f8a958a2cb149e818a8b2a6b3de6c02193d3762a3019a3bcf8",
+      "bytes": 15832,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-dark@1x.png",
+      "sha256": "dbb968f5b3abfc8cb677380f1e18438871c683d059806c147d8eff5abf8f8b7d",
+      "bytes": 20252,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-dark@2x.png",
+      "sha256": "a0d8e245b4fe7d656957a5d18823f8c5a8f6fb664873b1e74887e02b6965fad8",
+      "bytes": 41953,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-dark@3x.png",
+      "sha256": "c0899a689f25f3aa9375c83abc716c88adae824d0bb5f69de536da9f9658958e",
+      "bytes": 65575,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-light@1x.png",
+      "sha256": "f9db1a6b6ddade3ddec96a5d04e02feff887998c2ae82c1edae66defc631f353",
+      "bytes": 24176,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-light@2x.png",
+      "sha256": "38ff747d94f8a9d717e354a30874dd55284b3496325f58f4c51fe621bac19ad9",
+      "bytes": 49996,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-horizontal-light@3x.png",
+      "sha256": "3a7385c464a89d1ec63f8abb33a9519ad9486de3ce5c504f2a7da5a1c8c1e084",
+      "bytes": 78047,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-social-share-1200x630.png",
+      "sha256": "d45904506eaa06a2a9a56aab2633e383203d8bd871aed2b568c676d1763051c5",
+      "bytes": 21882,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-dark@1x.png",
+      "sha256": "7d6d88d37ffd037f38c347849917deb5087ce7b7fa8421b8558f3a8173cc6cb3",
+      "bytes": 20202,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-dark@2x.png",
+      "sha256": "da1a0f49db1a6ead5f695d7651b0c786d39752968c8f656d72b78802780f7feb",
+      "bytes": 42631,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-dark@3x.png",
+      "sha256": "6a0425dc312abb749ed8ee230730807e9735bc6391ccd2ae4ff321b50aa2152b",
+      "bytes": 65920,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-light@1x.png",
+      "sha256": "86ef1e45b6b113fdf50b2d621719323ade1e668e8a4121ed4ca9de128047b574",
+      "bytes": 24200,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-light@2x.png",
+      "sha256": "47d4b24a3ca1fb70b9e5356c94fb87e3aa3ec7e233967af71225c943aac681c1",
+      "bytes": 51373,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/raster/nysa-stacked-light@3x.png",
+      "sha256": "a2597e6aef5422d8ca12abc5def32d2daa31e23e3882c7db130101fdb29ed6fb",
+      "bytes": 79597,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-app-icon.svg",
+      "sha256": "df9dd9f056c57c9d1192465ec47eb3a9d34409dc81774ac54aa93167838c0490",
+      "bytes": 1680,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-horizontal-dark.svg",
+      "sha256": "f6ec61633006f4c7ba09b3c6913b44e817725af4af742d9580a00801cccd0abb",
+      "bytes": 3709,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-horizontal-light.svg",
+      "sha256": "860cbf5abd865fd144c2d981e4d1d9824165ab607e59a150f3ee9ffa466a9a1f",
+      "bytes": 3709,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-mark-dark.svg",
+      "sha256": "757b51982f26d9630ee00698bd7595ccad7ed1ee8a177c7bb7bcb5511d2f4861",
+      "bytes": 1568,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-mark-light.svg",
+      "sha256": "0a1c2782d0e70a732f969649ed098e7fffcc7d316dd63eefe5c127726e2eea06",
+      "bytes": 1568,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-mono-positive.svg",
+      "sha256": "f66706f97b1872778d7e47d4092e8127806da1de8bd587d590eee35d0716db8a",
+      "bytes": 3709,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-mono-reversed.svg",
+      "sha256": "0b158479c72ed607b0f33ff00734149897169b342aee8a31ed4503cee73193b2",
+      "bytes": 3709,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-stacked-dark.svg",
+      "sha256": "ed2dbdcc96dfd7183a33ec8924333d776f3f1c15c4114bedee4dee3377792a16",
+      "bytes": 3621,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/brand/nysa/vector/nysa-stacked-light.svg",
+      "sha256": "db8fbb38819c292572920d46d519e206b104f1aec26df2aeadd0c0fb979d2f06",
+      "bytes": 3621,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/commission-payout-ui.js",
+      "sha256": "aca9f20de862f37131281f642431121360be7c93d300cbafec1008ae786b6d81",
+      "bytes": 18370,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/dashboard-ui.js",
+      "sha256": "104514c3b7d8aa3505dbd1923956604fc4ff80a123a55f7cd312acade3bb9b72",
+      "bytes": 71881,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/deal-ui.js",
+      "sha256": "a394fc1d4e09d7d7cae65531e94332202e5e71b7b911d9ffa00ee91942ff5071",
+      "bytes": 19433,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/document-compliance-ui.js",
+      "sha256": "b4d137af6c5bb5c430205d71398871f84180ec4f79614826dedd42fe8c8d8776",
+      "bytes": 17540,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/email-calendly-ui.js",
+      "sha256": "0c2c8c096dc402ac49ea8c1ec42f73922d56da318b0f7c16d4df4d2398aa87b9",
+      "bytes": 5441,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/fonts/Montserrat-Variable.woff2",
+      "sha256": "06b16db7a969135d48d38c49183be7fb88d4452e2a3011957c7851941f4e4879",
+      "bytes": 37956,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/index.html",
+      "sha256": "7451f9c66c68e7172bdb6213c80bb14d120e8c1807464ef32cdcbe2e5cb32e2f",
+      "bytes": 143329,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/inventory-workspace-ui.js",
+      "sha256": "bc7d1bd7280ee1f9e4f550cba0683ad68f3e7120f3fdbe6caac1f4119d28d316",
+      "bytes": 2723,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/market-intelligence-ui.js",
+      "sha256": "dd7a570c9435f6d8e9895813db1976a45c17fcf0fc83169faa4863b3394e5578",
+      "bytes": 17363,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/marketing-material-compliance-ui.js",
+      "sha256": "2cd988ddfc8361af101078707258071541baebc1f3b794e932228be2ac640c49",
+      "bytes": 17559,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/matching-completion-ui.js",
+      "sha256": "0dbaefbf33297707c3af10950b2aa960b6802c5de578b0cbaa71c30b2371ebbe",
+      "bytes": 10341,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/nysa-logo.svg",
+      "sha256": "67bcbee3b073917366326cc12fe05a4af22586bc4e990e0dfebb8f3be5936e0a",
+      "bytes": 7997,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/offer-ui.js",
+      "sha256": "9000bd4949a8b6f0f8421f25f4431a15ae8cdf5c8b974813097d357797aab5eb",
+      "bytes": 32803,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/official-document-ui.js",
+      "sha256": "2a9c45a3665d84dae4234dc69266626b3dfe32f9d8794719b8187a185d0d555b",
+      "bytes": 12679,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/templates/area-import-template.xlsx",
+      "sha256": "3b462676d83b5d43a156c945d4e28903f783cfdfad54d2d840ca53b09b7135bc",
+      "bytes": 11915,
+      "runtimeInstall": true
+    },
+    {
+      "path": "public/templates/inventory-import-template.xlsx",
+      "sha256": "558ddf711e75beb1730c298f6c13387d9f6623b8942483b5dc5c77ded5a0f3e7",
+      "bytes": 27946,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/admin-governance.js",
+      "sha256": "890c4a2bfe204752dc2b68af4816ec4c88be51f797336ee6e9d32700804f40cf",
+      "bytes": 17729,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/agent-leave-domain.js",
+      "sha256": "bafc975597c03cd388ad1727519378aed2b1b5987389f2f793dac43a30f7e758",
+      "bytes": 6185,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/ai-domain.js",
+      "sha256": "4461873689b0e3934dd7826291353bef4f209d6a2f19db91ce0c1a3276304153",
+      "bytes": 7840,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/ai-service.js",
+      "sha256": "6294cbf70036a7e40eb9c218d4f580f09bab50c3ff1acfa977854eabae9e83fa",
+      "bytes": 9607,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/area-import.js",
+      "sha256": "0b064c27edd79650a8b6d7401761c10fa2a4759d2d597ac490cdca1cb84b163f",
+      "bytes": 4528,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/auth.js",
+      "sha256": "51d346a0d954bdf5be2355625ed5d849780f046f00dabfbc99adb810fae39fab",
+      "bytes": 3573,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/booking-domain.js",
+      "sha256": "fa43cdfbb32c838714b5cc28e309eecf1e4a2ac8842031ddc292550d2f458663",
+      "bytes": 2471,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/broker-next-action-domain.js",
+      "sha256": "d428dca6ff00810f0c0c18c561df4bf5c0b68341b9e77bd5626067ca54483e89",
+      "bytes": 7200,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/calendar-sync.js",
+      "sha256": "000b3aae6ec9b333555e520d4e9638d765c7cca06704f49d8a7c8fc18575185e",
+      "bytes": 2789,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/calendly-connector.js",
+      "sha256": "62656a9a9dc5b26f274740f5d0111e5a122cd9eb25e18ac5d5a86186089651a6",
+      "bytes": 3132,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/classification-catalogue.js",
+      "sha256": "3fb9fc1855fc59e5d422da46dbba9dea31cc19900235a464f002e1cedffb7e50",
+      "bytes": 3866,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/commission-payout-domain.js",
+      "sha256": "019e3da814b33999bf21cd59fdcf68234e124aaae606a2c37b7f47c09a8e4649",
+      "bytes": 12411,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/communication-connector.js",
+      "sha256": "0a3a8acd72181902b3aaaa42644ec372e79257c6c5ab9b69779464172c39042c",
+      "bytes": 588,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/communication-domain.js",
+      "sha256": "89e79341d2ed005a4de96143141bb66eb1878787844ab7dd82dbd2cb8bf2cae2",
+      "bytes": 8017,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/communication-local-connector.js",
+      "sha256": "3f801abbdff8adfb9acb67733090fe4bef30b18b9126e42c6fbdfb470691dd58",
+      "bytes": 5250,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/crm-domain.js",
+      "sha256": "5bc144e1c3fbc83eafa3568b3b47187960d05225a6b8bd8a3cd082a1c21326db",
+      "bytes": 18566,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/crm-policy.js",
+      "sha256": "7eab41f0dba497b5053b9ffa9a9dbed00a71a555c97452873f778ffd61de2547",
+      "bytes": 8022,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/customer-intelligence-domain.js",
+      "sha256": "ef3eaf132d506070e2b3924f1ce154b1de9ca80453fa8ccccadfcf5ea367be8a",
+      "bytes": 7227,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/customer-shortlist-domain.js",
+      "sha256": "c007f6e3c8d5031dc67fa47b29fe8ba72d77c5fff37ad89e96c73b6e95059c93",
+      "bytes": 13731,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/dashboard-domain.js",
+      "sha256": "30e2aa16e844df9d430c8b8ecc786436799485462511060cb1397cf9a9993c10",
+      "bytes": 16886,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/db.js",
+      "sha256": "8a098492d4de3d8f2030930f76980e7f1c6446456a9c5e1599de4dd126696767",
+      "bytes": 4532,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/deal-domain.js",
+      "sha256": "562f9ac0cf6f0329d9294219ea78c81d68a115b219615d3979b9c4fb511b4438",
+      "bytes": 6134,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/diary-domain.js",
+      "sha256": "c169e07cc244db508cd7eccacf6bd8e8b412444fa4081d901f19a267951fd13a",
+      "bytes": 1833,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/dld-market-data-import-domain.js",
+      "sha256": "f50f488ee4629e1d21449514be3988e1e8db168f7615c609370146afee47e90e",
+      "bytes": 16754,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/document-compliance-domain.js",
+      "sha256": "b0c06ed7b5069c83f0d117d3fc1c9b96a85ffe81d7f75921b3c2808663d6fa9b",
+      "bytes": 10072,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/document-compliance-gate.js",
+      "sha256": "594a1622ec17b9e0f7e7907a68be41d11be50dd60ec1ba69271c456174ab030e",
+      "bytes": 5400,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/document-governance-mapper-domain.js",
+      "sha256": "ef9b20023dabcb348e59334daa63fd4177db356ce90b2126959484119eeb14a0",
+      "bytes": 7317,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/email-calendly-domain.js",
+      "sha256": "33ef835315eacff15dda75f2cff1860dc9888ccd5acb32e8d22cbca15d63b06d",
+      "bytes": 10220,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/email-credibility-domain.js",
+      "sha256": "e675aff4a9f9edae502a1f8f3b10181eada58b8449a7c0c6f4a03904f7b2778a",
+      "bytes": 8747,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/external-portal-reconciliation-domain.js",
+      "sha256": "4c2108a9b958d87220f2f46c02981dcb0880b4504638f73c6203602b6566c296",
+      "bytes": 5177,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/google-calendar.js",
+      "sha256": "ac5750428717ed871eefce76608ec9d150952348e5ada1da2f6bb13568bcd31f",
+      "bytes": 7552,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/governed-document-assembly-domain.js",
+      "sha256": "fe58590588078d0b9bb3ef915977d4b225a6d0459163a3d9b77eb37abaa57c86",
+      "bytes": 10723,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/governed-matching-domain.js",
+      "sha256": "3971ef2ca39a47b5257adcf783db770d4caa9cdc7be0ddd46a92c5a87b4865c1",
+      "bytes": 10267,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/governed-share-preflight-domain.js",
+      "sha256": "1a69c7d6cb0eab1379990962b9858887ec4ec464f4060b11c0ed9e92f0b4c8c5",
+      "bytes": 6272,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-agent-governance.js",
+      "sha256": "0660a7e173dd531d23af268f718276bd7e26f7c5faacc093cbd7cd22b5b657c8",
+      "bytes": 901,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-domain.js",
+      "sha256": "83344f34291c9d547da46ab717f1b2127ad17ff297ad7009a04c1320e920abc0",
+      "bytes": 6354,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-duplicate-gate.js",
+      "sha256": "2d9efe94c7680b1d7429ed299e9b43107aaeba22b887a6394ae9d721a00b83b2",
+      "bytes": 3244,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-duplicate-review-domain.js",
+      "sha256": "fd9c64693b2b9c668ab4f38b3fb59f12d9eb3c10b3d55e7fbef3c5ef062351f8",
+      "bytes": 15520,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-eligibility-domain.js",
+      "sha256": "43960252502c7e7c58634631c118fbce1c0f16539cc3c18a17dc26ce99436419",
+      "bytes": 14752,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-eligibility-service.js",
+      "sha256": "bef00ed43d86e8d397daaa803b5993c251b97c1b879c0606943c608e1ff1c453",
+      "bytes": 2553,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-history-domain.js",
+      "sha256": "fe5168a4282806eb6ae3fca4bfd8dd3f36040d28a7f061e4fa3a2ceee8a9dc1f",
+      "bytes": 5191,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-import.js",
+      "sha256": "1a6746f334a37bfed34d782f1242f4f25843cc9d23dbde4be5cc4d6e97349956",
+      "bytes": 11688,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-market-intelligence-domain.js",
+      "sha256": "a6331176a1a74efdec11c6d8c4085bacbd8e3074a7377e31312b54cfbed0b0f9",
+      "bytes": 9001,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-party-domain.js",
+      "sha256": "f7b3838f02526351d8311346788ac5d07efe68a83eccd936d2cd10b7c480f30a",
+      "bytes": 709,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/inventory-verification-domain.js",
+      "sha256": "510b79bc842abe2a5e7bbd44eadc3a6ecec90adff67f50c154833f1cf58d6a2a",
+      "bytes": 1930,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/lib/http-kit.js",
+      "sha256": "6f325d030a1fed9724689985b04d8ce2541cec0cacbb093d516356d039c0cedb",
+      "bytes": 6964,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/lib/runtime-lifecycle.js",
+      "sha256": "441baecaea2483949698fdf34d53d92ac4ccc7812ec44e3c0a7a25460f012bdd",
+      "bytes": 2358,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/listing-agreement-readiness-domain.js",
+      "sha256": "3ece0dd862b302c1c8f3557a90a586860e7a9894787491be28ef7104c535bd76",
+      "bytes": 8641,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/listing-intake-domain.js",
+      "sha256": "db2a8ecd59f92956d681521153c1d11ab8ae577117c2e665347aae634771edad",
+      "bytes": 6707,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/listing-mapping-domain.js",
+      "sha256": "81e17840de13ea7391dee30b87943bb3853f6e1a3ff0e1f77cd629e2c8ae95db",
+      "bytes": 3325,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/listing-workflow-domain.js",
+      "sha256": "bb6761a2f2528242b4b582b1ce847ae5b1b106b95062b6c5c3ba1029719b8e50",
+      "bytes": 4315,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/market-area-projection.js",
+      "sha256": "c5c861e860fa2ab192d2e5a279c7313ae5ef7749fc034bd7b81a0262279b2fb9",
+      "bytes": 2011,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/market-intelligence-integration-domain.js",
+      "sha256": "f2d39b6bb8202d2a6e77b434a80bf3410a16e6238fa1c33c604af7ab3037bbec",
+      "bytes": 6549,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/marketing-material-compliance-domain.js",
+      "sha256": "a0aca5e0745a41aa5d45ff7454c5913037425d7e36d641c1dbe954408600bbb4",
+      "bytes": 8152,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/matching-viewing-domain.js",
+      "sha256": "dc2c409053ab832dcd9433f64daefc7bcbc9a6fefdf685256ba32d99aa4b54c9",
+      "bytes": 5355,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/media-governance.js",
+      "sha256": "ac038e0e82b2cc5b3e728f2bc3ee7637539a197158076f822d45d7a4c9621580",
+      "bytes": 3010,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/microsoft365-email-connector.js",
+      "sha256": "a3594794362777b16de166ffebf5b97da452743834de0e3b49247869157325eb",
+      "bytes": 3647,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/001_initial.sql",
+      "sha256": "e0ecb08d4733a8ecc2efbda813d7b7aa6fc5df78c7025c4726a11940a1e33cc8",
+      "bytes": 4100,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/002_crm_foundation.sql",
+      "sha256": "bc5ba68ba5c3a190d21b0d9cdf4926c07cc6d1b89c2513dfd2ebb5ecd7f4d1b4",
+      "bytes": 4158,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/003_phase1_completion.sql",
+      "sha256": "3927a0cb17d9a2a088fb17edcd2db602c5f366683eaa83150127231a4f8fc0eb",
+      "bytes": 4107,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/004_governance_and_scope.sql",
+      "sha256": "c0fbc4a964268711a7fac7cfd7c91f2c6f4b00582ae642078c162d045d5175e8",
+      "bytes": 13264,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/005_lead_operations.sql",
+      "sha256": "34210e1b15f0825003f1dfdfc05296ba9e2d40f277fe352694803c473081899c",
+      "bytes": 8833,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/006_qualification_and_finance.sql",
+      "sha256": "b2c7ea42a4d97f2874bb32ab9b47bbf18eb0a24d72325e8e0f9351dfee058838",
+      "bytes": 3834,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/007_media_documents_proposals.sql",
+      "sha256": "9e8bebcff5d4dcdc1fd267fd262dd0fbc2ebdf37695ce192c9f30f0a565c7ec7",
+      "bytes": 5392,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/008_dashboards_reporting.sql",
+      "sha256": "e33357e976c86ab2b2a3cb18711b8adbcb3747b278c5d24a387e0aba7fed0e80",
+      "bytes": 2225,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/009_acceptance_hardening.sql",
+      "sha256": "14309addf3e9b92915d06f12ae049cfff43c8276f8265b25f5060abf6f8ec593",
+      "bytes": 4748,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/010_role_dashboard_rebuild.sql",
+      "sha256": "3aaa5b46206f7aec35fe9f006040fc226f2d67c63c9247f8e25e9ce19a59664f",
+      "bytes": 1612,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/011_organization_profile_governance.sql",
+      "sha256": "e78f19572ba184802bd7aa0db8d98f97fcb859cab92b7596cc3a2691932a090f",
+      "bytes": 1623,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/012_release1_admin_uat_corrections.sql",
+      "sha256": "4ba6b911dd6795434fc8d2aae1ee691dd45d4ff9993e4f98dff4ed6cf15bdfdb",
+      "bytes": 5870,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/013_customer_proposal_address.sql",
+      "sha256": "30543628515bc804776fd9a5aec19a6044c512a9dac3f8834c9855c6431b38d8",
+      "bytes": 70,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/014_customer_kyc_summary.sql",
+      "sha256": "1c5afb977d19f37d84af2624e0ea811d0959b6b1a21637814922b1e0ac142c58",
+      "bytes": 676,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/015_inventory_business_reference.sql",
+      "sha256": "4baff91af337b57ee60372274ae19a567e2072211665c28aa93dc2cd8cd899ab",
+      "bytes": 613,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/016_ai_assistance_runs.sql",
+      "sha256": "0e5d046680b8577bc358ae8bc5783a44d9dec12b5401e9db35e65be200ea7eda",
+      "bytes": 867,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/017_operational_qualification_questionnaire.sql",
+      "sha256": "abc2df6999ee4eedc132055a381fab86ff07bca98e333845d9fa3d04befb6e5e",
+      "bytes": 256,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/018_team_queue_only_lead_intake.sql",
+      "sha256": "f92277b3579c90637b485eee1d8329cb58dcdd79185390ec35a830273ccd33d0",
+      "bytes": 292,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/019_ai_assistance_audit_constraint.sql",
+      "sha256": "0029df0492cac4a0869b10da552b0c220400a0de158c9652aa1b3e356d8cee52",
+      "bytes": 836,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/020_proposal_business_numbers.sql",
+      "sha256": "44a8f7d4f240cae205f5e2e99a141466454c9952c9edd5cc0dab369d7b6f66b3",
+      "bytes": 1177,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/021_password_reset_requests.sql",
+      "sha256": "efdba9e239bd07448bde0f606fe39806e461505d2efe20e9426132f8a2b735fd",
+      "bytes": 799,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/022_proposal_changes_requested.sql",
+      "sha256": "b042ed803dae0d54270a70b1ed78c96ddce0a7bb0a654337b1c4bddaa83b2044",
+      "bytes": 941,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/023_proposal_correction_tasks.sql",
+      "sha256": "9917894643989927c8b0a1039aa9b574450f63c9d869d47de3391aa168a86958",
+      "bytes": 1259,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/024_team_reporting_lines.sql",
+      "sha256": "b0cdd0747e6b416bd4cad689da95f7c74760a91973c7b6ad7ef5eae28303854b",
+      "bytes": 1317,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/025_manager_director_reporting.sql",
+      "sha256": "48996399d1e73149e4630bd836b80a303b7799ed9e301c6d2eb7d3b69896ff5a",
+      "bytes": 940,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/026_routing_rule_governance.sql",
+      "sha256": "7dc938cdd10db393df2c93075b099c32eaf6d6c8fd0892b9805afd8590932481",
+      "bytes": 733,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/027_inventory_commercial_readiness.sql",
+      "sha256": "6b9ac30f2716e048cb93290d49b0c5cb1c397e3d4e0054df5291f795feb26f29",
+      "bytes": 763,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/028_governed_areas_and_routing.sql",
+      "sha256": "534203fcee075b9213db2cdac94be755a3c92904870afdd7e4b5b1267919c6af",
+      "bytes": 2361,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/029_listing_executive_workflow.sql",
+      "sha256": "44efcd4114f65d2c2dc4b2c61698f0150ae5e9c2e04f860c0fd3863301406288",
+      "bytes": 828,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/030_property_media_governance.sql",
+      "sha256": "12741be0a546b1af6089ba856914f40c904599d67ba80598abe5b430ed3263f1",
+      "bytes": 896,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/031_orphaned_property_media_approval.sql",
+      "sha256": "7de3b57516553087080fd1c9ceb28835d513818be7ff226baaa55ad1b2561309",
+      "bytes": 1536,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/032_listing_location_and_bulk_deals.sql",
+      "sha256": "7911d41f67eb7add6e5ae25be07ff8757674591dd9d63c6429314b40adc5b940",
+      "bytes": 1235,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/033_property_media_approval_policy.sql",
+      "sha256": "b75c7c05f7b399c213cd58b1d4f6814f615b0a0b941035c9b0510d8aba0a0aac",
+      "bytes": 526,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/034_property_media_policy_audit.sql",
+      "sha256": "b933054acbbe8040893803d970c9b4c244fcbdd2d8e96831c5c05705610a3080",
+      "bytes": 876,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/035_listing_approval_policy.sql",
+      "sha256": "6602d57855eb66b7196c9fd94091c3246876ab979828417050a12ad1cf9a91dd",
+      "bytes": 1413,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/036_provider_neutral_listing_intake.sql",
+      "sha256": "e07a3714279993ce2ee256015b7f279545f0c31c5b761ccd0b8c13fb1e14cb5e",
+      "bytes": 2385,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/037_listing_mapping_governance.sql",
+      "sha256": "8d0e2708035516aafbffe196778e51e8dc0bcd44173446eb453f004fc151f33d",
+      "bytes": 3542,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/038_release2_opportunity_foundation.sql",
+      "sha256": "cc87af85f2a63cb38b536a1b56ec74fd61f0184d7df905364bbbe9b6895198a3",
+      "bytes": 7724,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/039_release2_connected_operations.sql",
+      "sha256": "1ce6d5e63ddee1a2ef381cfad23c3f132c897d88a3adb0ff8da752fbcd6dc281",
+      "bytes": 2434,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/040_release2_matching_viewing.sql",
+      "sha256": "5cfebc348729d547288320a02ac72350fdc4ac9e6d7f708eeeb98d9ce6e537a5",
+      "bytes": 6088,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/041_google_calendar_integration.sql",
+      "sha256": "188aae9e958dae4726ee07e90bf056032a1d83efa970b46e2e06ad88305baf2c",
+      "bytes": 2470,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/042_google_calendar_sync_reconciliation.sql",
+      "sha256": "c4331191f74bb7436ba1e054decc06d5087bb2e1d3d696249f173b8d095f32d9",
+      "bytes": 511,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/043_activity_google_meet.sql",
+      "sha256": "cb7184a1225203830186d88225da7f8c3493aab6729b42847783415ed2fe9549",
+      "bytes": 778,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/044_viewing_client_message.sql",
+      "sha256": "b4d707fb1692371448047895eb4845ad35b7db2737056cfe72113cef9578c649",
+      "bytes": 300,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/045_release2_offer_negotiation.sql",
+      "sha256": "ee066d0cbed4689c389ff9872b5cb473739e73b1b886401a11adc6e06ac0abe3",
+      "bytes": 6693,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/046_release2_booking_reservation.sql",
+      "sha256": "3dbc15b6a0e6b916e49a9cadf4641f6d2605b8249be549e140ba43fb645c2e83",
+      "bytes": 4829,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/047_release2_deal_foundation.sql",
+      "sha256": "68ab6812381d7e5e3478e32064e7cfdaf52a7a328e3f153df92d7d7474586697",
+      "bytes": 11752,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/048_release2_deal_stage_constraint.sql",
+      "sha256": "cf2c2a82c680fe41cb9b14f6cfba4b26ab064d2d952c6985e748cf65212d36b5",
+      "bytes": 262,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/049_release2_release_candidate.sql",
+      "sha256": "0aa6c31bbff23ed4236068ad3540baffd9a675e51963f2e5ed899b3da1a31cb2",
+      "bytes": 2394,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/050_release2_customer_kyc_uat_corrections.sql",
+      "sha256": "b8e7cb227728ed1dc899814fb707462b0c91999490ab5ec881106d81e36596e0",
+      "bytes": 1829,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/051_release2_final_uat_remediation.sql",
+      "sha256": "6e4e0e8e154d381ba9a8f026212592b0755a980ad1353dd9aa24f9c0e50b500c",
+      "bytes": 171,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/052_release2_full_remediation_foundation.sql",
+      "sha256": "b7822c0b0dbd395d2d9b3055a8c6ace63d36a7aee6172b998472c48d9077818e",
+      "bytes": 13026,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/053_release2_uat_evidence_and_queue.sql",
+      "sha256": "38d4c8cd3374a6cdcd026cda1d34efed59c7842d0623f866c84fedd39dfa55c1",
+      "bytes": 441,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/054_release26_consolidated.sql",
+      "sha256": "3d602b891f106629382d5048e51926b619437067a45bd8b0d3f16061cd22a3f0",
+      "bytes": 3590,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/055_release26_transaction_inventory_finance.sql",
+      "sha256": "5e0a125d797f68db9ea5f37e741eabcf974e78a9a51939b92d0a2355af548e43",
+      "bytes": 4346,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/056_release26_agent_assignment_scope.sql",
+      "sha256": "d82b92ec23b144007e25fd04ca9118ff4727bc1f5fb567b4ecc1a1c1eb2f4555",
+      "bytes": 646,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/057_release26_inventory_ownership_capture.sql",
+      "sha256": "784a5d4f83ddcebeb72eb5dc2c9ba4b6439d2a563ded39b23bc396f6fc848908",
+      "bytes": 688,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/058_release26_lead_first_representation.sql",
+      "sha256": "3c7fbdaae645c3ca273b99bd630c6e5054d42a8a2db9660a0f17dddf7d27cde9",
+      "bytes": 1606,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/059_release26_inventory_owner_and_activation.sql",
+      "sha256": "8e61424a5e8256fde681fcc73e455ee4e33d642a9b76de806a7e636c6965a8ca",
+      "bytes": 1166,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/060_consolidated_lead_opportunity_remediation.sql",
+      "sha256": "ebf8bd266ecaa78bcc60c0726efeeacf530a2090c6d4830e40cba1c3cb61e59b",
+      "bytes": 3394,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/061_dev90_reference_and_status_governance.sql",
+      "sha256": "cad9a8abb64eeeca574871bd534671f37532c571121ae1235b0c43956917f6c0",
+      "bytes": 3573,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/062_release3a_customer_action_suggestions.sql",
+      "sha256": "d7dc5ec71fcf91d27feadef3644df95222aaba90ffa225ad9e3ab5f428a69233",
+      "bytes": 2324,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/063_release3a_trusted_intake_evidence.sql",
+      "sha256": "cb801c0a4675e0acf1bca76f42e9eb8d8aebae95a296fc4cbf2b982e1b26e53a",
+      "bytes": 1419,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/064_release3a_website_profile_evidence.sql",
+      "sha256": "a93faeb3bdc1cf384f656cbdf915d186ba159ff7742458a90119be71591117e2",
+      "bytes": 1006,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/065_release3a_campaign_governance.sql",
+      "sha256": "0b267a13d951d2c8e989b86670972d008e71fd6b8360766e591579f6ab143053",
+      "bytes": 3937,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/066_release3a_duplicate_lead_review.sql",
+      "sha256": "9aa548d9334a5fd59a301edbd6e5ea8f92d40ff154bad470e0b1a57dfd73693d",
+      "bytes": 795,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/067_release3a_lead_recovery_cases.sql",
+      "sha256": "419d89e74bdcf61bdeba88554437efb86929a778ea444453a792dea2d10c575c",
+      "bytes": 1464,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/068_release3a_contact_enrichment_evidence.sql",
+      "sha256": "2be6b6b2814e3b0853ef3970d10262b258976d7bceccd2145262db9af25d076f",
+      "bytes": 125,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/069_release3a_contact_credibility_details.sql",
+      "sha256": "aedd0d409e8e7136e5d29ba963ef4411a81fc345f7c6215e02aa663eea7b1aea",
+      "bytes": 124,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/070_release3a_email_only_intake_gate.sql",
+      "sha256": "7f4fb07802c399361c2f81a012571535da7a5995dd68f96a3f4caad7c72252cc",
+      "bytes": 2657,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/071_release3a_advisory_customer360_evidence.sql",
+      "sha256": "2bdc0aa92b6a02f6ebb064258ccd37ed9b9dd0aa879263544e6d2e0ed8b7a433",
+      "bytes": 6476,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/072_release3a_website_journey_continuity.sql",
+      "sha256": "905477e0a79a01d93a450e3bb27333ca543cd78a3351c5c5776aea21dae6e712",
+      "bytes": 280,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/073_release3ai_lossless_website_recommendations.sql",
+      "sha256": "7286bbdbedc2e9b5f760f093953832ce79323d8110bc00a5082786b928a6e301",
+      "bytes": 559,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/074_release3ai_governed_website_routing.sql",
+      "sha256": "ef48fdefd832e898a014a2c1e8b336cb3313e26145ad8153bf5847a70fd01db4",
+      "bytes": 926,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/075_release3b_governed_inventory_matching.sql",
+      "sha256": "0058d0a7c471ab76055512794343e33d76f422a74de0aafd0ed4c715b5aec05f",
+      "bytes": 2290,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/076_release3b_match_decisions_and_feedback.sql",
+      "sha256": "9c1d6ac60efe5ea167b576f426387a3bf7df31a94e5c54eea5004ef54c01ea9f",
+      "bytes": 4006,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/077_release3b_requirement_confirmation.sql",
+      "sha256": "5d1eb0cb651ffc46ec54f5557489bb1bf9e2f8e70383f1529e7f31f87d7721ad",
+      "bytes": 2880,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/078_release3b_inventory_progressive_governance.sql",
+      "sha256": "25aab05c02d86a31983ae9aa4e95cf5c8954eb66f6005c19fcbb63701f7be920",
+      "bytes": 1554,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/079_release3b_reservation_expiry_governance.sql",
+      "sha256": "a984bf699c8479414415d62bcabe5bfe3bdb4fe625aa1cf2162cdbc07624a85c",
+      "bytes": 1879,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/080_release3b_external_portal_preparation.sql",
+      "sha256": "583a7cea1d78a310c5d5128b8fe25d27757b7e92d4a3872401a6b3383fecc371",
+      "bytes": 2934,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/081_release3b_portal_permit_reconciliation.sql",
+      "sha256": "c9ce3df6ffa834d58603c240468357eaf9ce372c69d1162f5453e6a70bb5e275",
+      "bytes": 1674,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/082_release3b_property_finder_media_derivatives.sql",
+      "sha256": "852d148c8301b5a0d81c4155b3cb759db1c7c79b7bba00b269e6cea8973b52dc",
+      "bytes": 824,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/083_inventory_duplicate_prevention.sql",
+      "sha256": "3fb43e0ada18cf4ba5ea69bb1bc851e5df98083ae134d387e22032945aea5d58",
+      "bytes": 1334,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/084_partner_organization_integration.sql",
+      "sha256": "bc71d29f69c68a46b264ecb6cc1b25087812d121df2ca75deaa653156917931d",
+      "bytes": 10002,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/085_release3c_governed_share_response.sql",
+      "sha256": "8275f0cd08dedf0a50834427ca1614168859eb79cecf159f4ae3aa9bcb3eede2",
+      "bytes": 15513,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/086_release4_official_document_evidence.sql",
+      "sha256": "2eb8d6c3b1917bc6fb62798a92199320cfeb2b2361b540476621deebfc7feb74",
+      "bytes": 9188,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/087_release4_dld_market_intelligence.sql",
+      "sha256": "e84264d0071591e8186bbb7d8540464a521b75b46eb90e0359b17f87b380eccd",
+      "bytes": 11835,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/088_release5_commission_receipt_realtime_payout.sql",
+      "sha256": "9a902490c1155a3df1e18ceaa4a43f6a23e2d25b23fef5f60d9c3370b9b8db49",
+      "bytes": 27617,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/089_agent_employment_leave.sql",
+      "sha256": "f5d3a18dd66bec7d6caba464855c65410d6e7d159cfbaf402c86609f0a60d5f0",
+      "bytes": 12384,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/090_release6_customer_transaction_document_compliance.sql",
+      "sha256": "29e4a5a3a5a4cf1fa4394b4056ea533b79f876a2d80004b82a3513b70fc284d6",
+      "bytes": 14088,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/091_release6_marketing_material_compliance.sql",
+      "sha256": "fce4075e069cdc592abda224fd0c7c72eb6410d949caaca16b990e6be7b905c8",
+      "bytes": 18170,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/092_release3b_matching_completion.sql",
+      "sha256": "64d6c1ec410124a0baba65075f05c2a8c17bb1796728d8a9de22883aeb3bdb77",
+      "bytes": 6501,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/093_release3d_microsoft365_email.sql",
+      "sha256": "832378d443011e61eb718fb4850999f2095f90b79105fe4e492b180c0f7ec262",
+      "bytes": 11349,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/094_release3d_calendly_scheduling.sql",
+      "sha256": "b47f5fe87c26cbcc4ae393e6ae8d37899469514dee81d8bd71ff945b1fce8079",
+      "bytes": 9777,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/095_dev146_full_scope_uat_governance.sql",
+      "sha256": "a2cb4ff5ccc310b43c355212f034c12f3811ec02ddc096e9bcc90434cc8ceb7d",
+      "bytes": 4179,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/096_activity_opportunity_stage_snapshot.sql",
+      "sha256": "c6042b1516997fc9d96fe638b15065f8359edbffab305cff758001a6948ec8b9",
+      "bytes": 923,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/097_activity_enrichment_pathways.sql",
+      "sha256": "4ac1045c305bb331f23eb8ef04278b0b0d326b21560c9da64f5422317081aebe",
+      "bytes": 1131,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/098_developer_arrangement_and_listing_noc.sql",
+      "sha256": "303691f8bb77b4bbb638fb35d4dcee6a93c26d16fafba98fc615b8a2b58f984b",
+      "bytes": 8172,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/099_dev153_inventory_assignment_lifecycle.sql",
+      "sha256": "3ffeb371b95a43259a328004434b6926c5ba47827d3cbdcf2eb76d254be5352a",
+      "bytes": 14877,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/100_dev158_uat040_048_operational_corrections.sql",
+      "sha256": "804f52c077026ce16452dae0436debd6ad2cbf7d3ba2efb0c15064c3634915a2",
+      "bytes": 2689,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/101_dev159_customer_fit_ranking_only.sql",
+      "sha256": "89a199d27212ec94a3d1b73420d5488c4b6c081fd67f33c5fa8a6a155a6df718",
+      "bytes": 1267,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/102_dev159_uat008_049_069_corrections.sql",
+      "sha256": "4332cc97d6802797a9a13370346f0497463f955c7bb2f302bfd016c3781ddaea",
+      "bytes": 5310,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/103_dev159_uat062_single_source_classification.sql",
+      "sha256": "a5f6673c659b268670cc4e089b87f1da3b8b7448505896b449f3764ce8bd7fb9",
+      "bytes": 13025,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/104_dev160_uat070_079_journey_unblock.sql",
+      "sha256": "5dc8a854648d3b7bc8f06ba027f0b2b5de199da3186021cccf3469d5f791cd1d",
+      "bytes": 3525,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/105_dev163_uat081_qualification_follow_up_sla.sql",
+      "sha256": "7e8b10acb10909e5841a785cfdf20e5906a9d6ffc8a9cc5ccad0905296275364",
+      "bytes": 1879,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/106_dev165_opportunity_requirement_realignment.sql",
+      "sha256": "2c8ddfce6278dabac87b81dc1c02d59b41417eefe1f9706347cc7f3601b3477e",
+      "bytes": 404,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/107_dev169_versioned_opportunity_stage_drafts.sql",
+      "sha256": "2dc87ce3ada5d9be99671ab70f0645b34898340e6e5a3c8d15abd2b93ff50c24",
+      "bytes": 1195,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/108_dev174_single_area_maintenance.sql",
+      "sha256": "617bc578a34f34495bf0a734459dcc4783c76ed44d93e5891ba5a788e45f19f2",
+      "bytes": 2805,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/109_dev174_inventory_parking_spaces.sql",
+      "sha256": "89a25cb59c48df2b5f66cc3ce353ca986159578a929bad22b1cd395ec25c1262",
+      "bytes": 341,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/migrations/110_dev174_financial_illustration.sql",
+      "sha256": "16bc727b6c7643b12f10038eb9fa9d4b5135efbe02ebe2e20493a1a2b1128bc6",
+      "bytes": 3291,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/offer-domain.js",
+      "sha256": "4efb0636798ce6e26f9122aece10061699c2f1696167fc7686de365ca4ba1bfc",
+      "bytes": 4159,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/offer-pdf.js",
+      "sha256": "53b3fe241669133142a1c5ea85818604843659028d7931f599a683505d7dfcc5",
+      "bytes": 4616,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/official-document-config-domain.js",
+      "sha256": "0ac51bdc7b5a8297af3d516313ce47a5fed65abe8dc4f57fe9288f3153143168",
+      "bytes": 5077,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/official-document-evidence-domain.js",
+      "sha256": "382ccd71a8bc9844b6c30b41df4753cc0c9a6e6dbbe8acbac3172b4e29748e33",
+      "bytes": 5020,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/official-document-integration-domain.js",
+      "sha256": "d5f5b8a4ab4d1eac9500780aaf5927b52f27c5d1130848b1db52cb24d51b0e21",
+      "bytes": 6738,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/opportunity-domain.js",
+      "sha256": "23e6e6080c361e42bac7e7c0dbe4f72857adcf3de77429432f6c06cb9f6ffe95",
+      "bytes": 8610,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/organization-domain.js",
+      "sha256": "51f7394c1c3704dff61e5708b3a6626d1ede73c7286b6e2bb06abc89a54e95db",
+      "bytes": 2594,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/partner-master-domain.js",
+      "sha256": "ffea2a4d1c9b263b747a5bd4974b1460282e6851ebf23bce63159f0ce329a66a",
+      "bytes": 8231,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/partner-organization-domain.js",
+      "sha256": "a43fd3782bbda17129a7b6ce0b0ea892b83da4f525ea947ff63d780995fcbb8d",
+      "bytes": 7059,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/portal-publication-domain.js",
+      "sha256": "46a20aeb37312cd5d69e6d53202efb970dcc5084d4cc7ebd3d7b08822e06594f",
+      "bytes": 20741,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/private-files.js",
+      "sha256": "514b602035c6ff4f0e69cac536331c9a87eb96498008c2bffecb71f3855f298c",
+      "bytes": 5641,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-listing-import.js",
+      "sha256": "319dbacff81c6196d7d046e2d99d797af78a5fe034adc699faa2e62d42c085df",
+      "bytes": 10988,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-media-delivery.js",
+      "sha256": "f49f20bfe6d882c7fcf5aba555ccab1edcaa2eef198c7cee837daf8c5f391c3f",
+      "bytes": 4885,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-media-derivative.js",
+      "sha256": "1568842fdab67534a4a1608593474a05676311b591d7423bfd2be8b633ccb5a0",
+      "bytes": 3164,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-preflight.js",
+      "sha256": "4ed59de92ec9b203ba44107340b795d83978fc2d2a4b2f493807128b239d0ac4",
+      "bytes": 12843,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-production-draft.js",
+      "sha256": "0c0a8ec9be1db7c22b549ca18c4d0949b7cc7a6d98344617292b1f7747952f45",
+      "bytes": 29363,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/property-finder-sandbox.js",
+      "sha256": "25fdc581d78cb6f98e74dc6ce9c882ffa9b03b114f784ce0537bb5433951df40",
+      "bytes": 19310,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/proposal-pdf.js",
+      "sha256": "28d2fd921bfd53d614958a707aeef81adf833ea5cbe53e7c6cca9efa7c357dda",
+      "bytes": 21988,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/release3c-crm-integration-domain.js",
+      "sha256": "fe4f98195c07eb8ca5c6d54d591b6a06c903a3770c3daab37658be53faf31ffc",
+      "bytes": 7488,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/requirement-confirmation-domain.js",
+      "sha256": "3ddf85da3bd76f1e6032b3a0f7f20b7225a9e72cff12ddd397fac632504512dc",
+      "bytes": 2967,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/admin.js",
+      "sha256": "90ac073bf3323fce5d4fa2625722832ecd1003ccf14c2edfe40aef21aefa4911",
+      "bytes": 29585,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/agent-leave.js",
+      "sha256": "6eb151a7d7db3e241c4bcc1a5c67007e17beb285c1bab984b4c4efdf726a87d8",
+      "bytes": 26942,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/ai.js",
+      "sha256": "410cf28010b73b3b4a9433dbf8072a47adaf324050565046729af447c3e2b5f8",
+      "bytes": 17244,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/auth.js",
+      "sha256": "ffba8ae33f103dfe1ce9d20ce045d959d3c169f47394c7674e4d6574d172c1a9",
+      "bytes": 12920,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/campaigns.js",
+      "sha256": "915cc4f62e082f32ef05645ce55bdb9b430a01cc5f70b51f6c30595f153fe7a1",
+      "bytes": 8005,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/classification-catalogue.js",
+      "sha256": "94f0ea25b53a9c1b27ff74882b0f1e3e15287df361e13c000c266276f938dfe0",
+      "bytes": 1077,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/comments.js",
+      "sha256": "a99c8db4d317adc68b318a982cb55217d879d0a83c1ba585c2fcc309f8395266",
+      "bytes": 3670,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/commission-payout.js",
+      "sha256": "a035fcb7dc5cccceb79b7098f104a30cb416221ad78a4c356c44dcf438917afe",
+      "bytes": 32351,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/crm.js",
+      "sha256": "4510b47cf405017b3d1f6f035e9664c9533daecf4ecee0d2dda26323d52cea8c",
+      "bytes": 116701,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/dashboards.js",
+      "sha256": "95e661717c50ccfaaa24743c25a8e9bdbe053d2c5406d47af65643f0f630475c",
+      "bytes": 53495,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/diary.js",
+      "sha256": "b7e1c346556681c0a3573553472c41440a90e89ad4d39bfe5892558071981aa6",
+      "bytes": 6263,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/dld-market-intelligence.js",
+      "sha256": "1093ea5ee091c91b8fa90eeddad3c58a01675f5f92d16811a67b0b88735e8259",
+      "bytes": 32942,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/document-compliance.js",
+      "sha256": "8608874b7c27b187d1e96ae3d5cdf4fe499259877ed29e0563fe43093e9df29b",
+      "bytes": 31821,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/email-calendly.js",
+      "sha256": "5f49c0c639dafb5577cd04bd45e335e38f0ce0ca4290f14a69c74236d0131390",
+      "bytes": 24711,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/files-proposals.js",
+      "sha256": "e7f47aa76738fe69f6fb269a3dfc76aa3674ab5edf715192a1cafe9661d8d6b0",
+      "bytes": 73493,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/governance.js",
+      "sha256": "1b609a48416fb5ef44f91e76a5fb95f80a2e9467efd2a45f8be9ceb985b6bbbf",
+      "bytes": 35455,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/governed-matching.js",
+      "sha256": "39fb9743cbebbc5dba9a92fab04234c2259a9b8306c921dd874e8b8ebe7a99c1",
+      "bytes": 34002,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/integrations.js",
+      "sha256": "0cdfff1a0c9e00550bcec6eadf302b643f91805cff75382b546148c9e24f2c5a",
+      "bytes": 9334,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/inventory-import.js",
+      "sha256": "2229d3468193028a7a81ef2e6f6328a2aa799b2400834677f7405275ab6db916",
+      "bytes": 9697,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/lead-operations.js",
+      "sha256": "57f370661dbed0a8cd635413d3cf90ecf8f7a721f0b283a4fde24fe36660419d",
+      "bytes": 62237,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/listing-intake.js",
+      "sha256": "660c4c4afea1af63aceb2141e63ae0ab481590d113dad459cd9f35f007c36fd3",
+      "bytes": 17814,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/listing-mappings.js",
+      "sha256": "05744833dd3676a9cb94a267c399c7abd9207c02c2e1b8fc70cb2c3e437dcb2b",
+      "bytes": 7645,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/listings.js",
+      "sha256": "0ba9e20788033e16ac82c1361189e76c3842c7c6651690f994d2b5788d552ec4",
+      "bytes": 102163,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/marketing-material-compliance.js",
+      "sha256": "b83aac78aa09e572397beb81a0b6f090d47b223b75fd1e3efa1ee8fc04bc8a90",
+      "bytes": 39857,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/official-document-evidence.js",
+      "sha256": "adecd5a700482ecbfe5929df84a33765313b471a66b16291309fed7702e8ce45",
+      "bytes": 31460,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/opportunities.js",
+      "sha256": "72705f5fa95bc20a1859692a1fe7596cb878fdebb897bebef222ec892cd69415",
+      "bytes": 214472,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/partner-organizations.js",
+      "sha256": "2264d1caa3bca3cc18af4787740521b261eccdf30549ec49f4523dcfd84e745b",
+      "bytes": 29004,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/property-finder-media-delivery.js",
+      "sha256": "9a51f5f55d2e7b8d43a6e500f29c21425f33726ae8b9056a3126b7362844421e",
+      "bytes": 1368,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/property-finder-sandbox.js",
+      "sha256": "4c747d7c31456a8bb404dce5b81ff346e435df16b8a39ecb7313f750c05a1f7c",
+      "bytes": 21971,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/qualification-finance.js",
+      "sha256": "a2182b80ec002c326d0bf312651999207cdc969ce3a8531358157e93bfee4c88",
+      "bytes": 29404,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/release3c-governed-shares.js",
+      "sha256": "1dace56e5f2324929207376b3e39b8810abbdd3c348d8d7dce5dc3967be15e31",
+      "bytes": 28070,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/transaction-representation.js",
+      "sha256": "b4154f121132fea53c176c13c6feca63a7f0a84ced0fc7670e19543f9b40769f",
+      "bytes": 16717,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routes/website-intake.js",
+      "sha256": "c5e996fe736f740a32c501757f0fc700b6ceec5ec64bb06e5d9ab03711244e77",
+      "bytes": 57908,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/routing-service.js",
+      "sha256": "572b208930000478f83d0b656ced2b97dd4d853fc1d5a1887c7f95f0ee8d73d3",
+      "bytes": 1168,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/server.js",
+      "sha256": "a30afe0ed3536921df6a133b625e1a5520f50d5cfb120e56d05b03a4b5338414",
+      "bytes": 4630,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/share-response-mis-domain.js",
+      "sha256": "c124019159fa672519c98b37d02130457e91d1d893a2ff84f5ec0b69a0316f78",
+      "bytes": 6437,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/simple-pdf.js",
+      "sha256": "0fe161f9010f2f6e675f7729ffa93793700e230b5ab3fd13a4b1cacaac8317c3",
+      "bytes": 2607,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/transaction-representation-domain.js",
+      "sha256": "495fb13311989fb13322b09e4aff4b57bf13fedcc43021addd33029f4333a39d",
+      "bytes": 5540,
+      "runtimeInstall": true
+    },
+    {
+      "path": "src/website-ai-routing.js",
+      "sha256": "110ed87549e909a93adfdc8f12c1ebb8f49ce80b9067de989355f2941a329aa6",
+      "bytes": 1921,
+      "runtimeInstall": true
+    },
+    {
+      "path": "docs/CONSOLIDATED_CRM_TEST_END_TO_END_UAT.md",
+      "sha256": "da2670bebd8da859ae49bc9d784fb49f0af4c74887f563b99ca7b008adf8dbda",
+      "bytes": 405410,
+      "runtimeInstall": false
+    },
+    {
+      "path": "docs/CRM_TEST_DEV174_POST_DEV173_DEFECT_CONSOLIDATION.md",
+      "sha256": "87d4e3d0e14fd6a1b8ee333a50947e072a9bf3d58db10b4ceedb264c98ccbb20",
+      "bytes": 3692,
+      "runtimeInstall": false
+    },
+    {
+      "path": "docs/CRM_TEST_DEV174_REMEDIATION_AND_DEPLOYMENT_PLAN.md",
+      "sha256": "d1f472ac7d192e1760a1e1816b92674b0dafed8a98318a770de1efc4afb12c30",
+      "bytes": 2006,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-financial-illustration.test.js",
+      "sha256": "b7e4c0356e05ce0e412827a4cc61bbf3e11c453f71715721164402d0d29e766f",
+      "bytes": 4913,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-fullscreen-proposal-review.test.js",
+      "sha256": "38d0addf051d584dae13e750b12f95d01231458a0ef13499e524516167b8c14c",
+      "bytes": 1060,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-inventory-parking-spaces.test.js",
+      "sha256": "d577fdde2937951a0d00c3ba3a2dbf9549f1ddad0ab6a9461f2d9a82ceec632a",
+      "bytes": 2597,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-listing-executive-developer-creation.test.js",
+      "sha256": "d4c9549140cfbd11ba10296828224fd8d9eaad965d018d0d2682934c955f1629",
+      "bytes": 2307,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-manager-agent-lead-boundary.test.js",
+      "sha256": "ed6eeb72858a3ffca87b28df3403bdc169d5e759f4a2ddbea4326abb1949481c",
+      "bytes": 1843,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-opportunity-cta-visibility.test.js",
+      "sha256": "9b672d8da3fa4917b15efb199953300780bf26a0db465e27b45c4549c9d77f2d",
+      "bytes": 635,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-opportunity-stage-top-layer.test.js",
+      "sha256": "7c576afb7c61aeb5722010e71cd0af823228a7e374673d94ac4cd40fe4c4873e",
+      "bytes": 1214,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-single-area-maintenance.test.js",
+      "sha256": "6884ebdae3b6795bf098a8c0d80e39862afc3fb8f8844ef85974533007020c9a",
+      "bytes": 2449,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-value-brief-proposal.test.js",
+      "sha256": "bfaa7c114005c676326c1de9cd759c78b390cfc670edfb98cfcc5bdfa6fe032d",
+      "bytes": 2716,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-value-brief-return.test.js",
+      "sha256": "d56db7e3008e2da612e24d57c56eeff5dc94798971578840c57e14de75595de6",
+      "bytes": 646,
+      "runtimeInstall": false
+    },
+    {
+      "path": "test/dev174-consolidated-package.test.js",
+      "sha256": "b2929ef33405d06bb35e195f7b66bb06e090e26d78df0f0478cec0db2c2275b9",
+      "bytes": 2186,
+      "runtimeInstall": false
+    },
+    {
+      "path": "RUNTIME_MANIFEST.sha256",
+      "sha256": "543e3f1954458e9004d9b389d317d1ab232f9c44fa6ba650c87c528488872250",
+      "bytes": 30717,
+      "runtimeInstall": false
+    }
+  ]
+}

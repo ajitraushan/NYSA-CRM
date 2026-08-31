@@ -40,9 +40,9 @@ test('Customer identity and Leads are company-visible but Lead work is assignmen
   assert.match(policy,/export function canReadLead[\s\S]*return true/);
   assert.match(policy,/export function canWriteLead[\s\S]*lead\.assignedTo === broker\.id/);
   assert.match(policy,/export function contactScopeSql[\s\S]*clause:'1=1'/);
-  assert.match(routes,/canWrite:canWriteLead/);
+  assert.match(routes,/canWrite:canOperateLead/);
   assert.match(ui,/Company-visible Lead · read only/);
-  assert.match(ui,/Only the assigned Sales Agent or responsible Manager can work it/);
+  assert.match(ui,/Only the assigned Agent can initiate operational actions/);
 });
 
 test('Customer UI explains consent evidence and uses visible confirmation dialogs',()=>{

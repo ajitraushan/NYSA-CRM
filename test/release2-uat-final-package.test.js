@@ -24,8 +24,10 @@ test('reviewed AI requirement evidence is immutable and expandable',()=>{
   const route=read('src/routes/lead-operations.js'),ui=read('public/app.js');
   for(const marker of ['ai_conversation_notes','ai_reviewed_evidence','ai_reviewed_at','ai_reviewed_by'])assert.match(migration,new RegExp(marker));
   assert.match(route,/reviewedAiEvidence:Boolean/);
-  assert.match(ui,/View complete saved requirement/);
-  assert.match(ui,/Unreviewed suggestions are never authoritative/);
+  assert.match(ui,/View complete saved Requirement evidence/);
+  assert.match(ui,/Reviewed AI requirement summary/);
+  assert.match(ui,/Nothing is saved until you review a suggestion/);
+  assert.match(ui,/Human-reviewed evidence/);
 });
 
 test('user contact maintenance, viewing alignment and multiple Lead entry are explicit',()=>{
@@ -47,7 +49,7 @@ test('new User creation requires and persists the representative phone',()=>{
 
 test('User management groups Add User and existing User records together',()=>{
   const ui=read('public/app.js');
-  assert.match(ui,/\['users','User management'\],\['users','User records'\],\['operations','Operations & audit'\]/);
+  assert.match(ui,/\['listing_policy','Listing approval policy'\],\['users','User management'\],\['user_records','User records'\],\['integration_failures','Integration failures'\],\['operations','Operations & audit'\]/);
   assert.doesNotMatch(ui,/\['listing_policy','Inventory approval policy'\]/);
   assert.match(ui,/<h2>User records<\/h2>/);
   assert.match(ui,/id="broker-table"/);

@@ -38,7 +38,7 @@ test('bulk deals require a complete property-level schedule',()=>{
 });
 
 test('publication readiness is derived from recorded evidence',()=>{
-  const listing={project:'Home',area:'Dubai Marina',propertyType:'Apartment',price:1500000,currency:'AED',sizeSqft:900,status:'Available',availabilityConfirmedAt:'2026-07-18T08:00:00Z',verificationStatus:'verified'};
+  const listing={project:'Home',area:'Dubai Marina',propertyType:'Apartment',price:1500000,currency:'AED',sizeSqft:900,status:'Available',effectiveStatus:'Available',availabilityConfirmedAt:'2026-07-18T08:00:00Z',verificationStatus:'verified'};
   assert.equal(derivePublicationReadiness(listing,1,new Date('2026-07-19T08:00:00Z')).status,'ready');
   const blocked=derivePublicationReadiness({...listing,sizeSqft:null},0,new Date('2026-07-19T08:00:00Z'));
   assert.equal(blocked.status,'blocked');assert.deepEqual(blocked.blockers.map(x=>x.code),['sizeSqft','approved_media']);
@@ -49,10 +49,10 @@ test('publication readiness is derived from recorded evidence',()=>{
 test('inventory browser and API enforce the governed commercial workflow',()=>{
   const ui=readFileSync(new URL('../public/app.js',import.meta.url),'utf8'),routes=readFileSync(new URL('../src/routes/listings.js',import.meta.url),'utf8'),media=readFileSync(new URL('../src/routes/files-proposals.js',import.meta.url),'utf8');
   assert.match(ui,/name="price" data-business-amount/);assert.match(ui,/name="referencePrice" data-business-amount/);
-  assert.match(ui,/Handover status/);assert.match(ui,/Expected handover quarter/);assert.match(ui,/Listing publication readiness/);
+  assert.match(ui,/Handover status/);assert.match(ui,/Expected handover quarter/);assert.match(ui,/External portal fields are maintained separately/);
   assert.match(ui,/Select from Area Maintenance/);assert.match(ui,/name="community"/);assert.match(ui,/Bulk deal property schedule/);
   assert.match(ui,/Calculated Bulk Deal total/);assert.match(ui,/data-single-commercial/);assert.match(ui,/toLocaleString\('en-US'/);
-  assert.doesNotMatch(ui,/name="portalStatus"/);assert.match(ui,/Buyer funding is maintained separately/);
+  assert.doesNotMatch(ui,/name="portalStatus"/);assert.match(ui,/Buyer funding is maintained separately/);assert.match(ui,/NYSA CORE \/ EXTERNAL PORTAL LISTINGS/);
   assert.match(routes,/normalizeInventoryAmount/);assert.match(routes,/normalizeBulkUnits/);assert.match(routes,/replaceBulkUnits/);assert.match(routes,/b\.price=bulk\.units\.reduce/);assert.match(routes,/Portal readiness is calculated by the system/);
   assert.match(media,/refreshListingReadiness/);
 });

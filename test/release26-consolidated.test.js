@@ -30,11 +30,11 @@ test('Release 2.6 persists multi-property WhatsApp sharing and customer response
 
 test('Release 2.6 separates Internal Inventory from optional external portal Listings',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/listings.js');
-  assert.match(ui,/Step 1: maintain Inventory/);
-  assert.match(ui,/external Listing and submit it to a portal/);
-  assert.match(ui,/External listing publications/);
+  assert.match(ui,/Maintain Internal Inventory, then complete its mandatory verification/);
+  assert.match(ui,/Create an external portal Listing draft/);
+  assert.match(ui,/External publication register/);
   assert.match(routes,/external_listing_publications/);
-  assert.match(routes,/workflow_auto_approved_by_policy/);
+  assert.match(routes,/noAutomaticPublication:true/);
   assert.match(routes,/External publication cannot move from/);
 });
 

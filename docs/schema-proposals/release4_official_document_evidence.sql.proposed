@@ -1,0 +1,117 @@
+-- REVIEW-ONLY PROPOSAL. DO NOT APPLY TO ANY ENVIRONMENT.
+-- Proposed future migration: 086_release4_official_document_evidence.sql
+
+CREATE TABLE official_document_definitions (
+  id UUID PRIMARY KEY,
+  stable_code TEXT NOT NULL UNIQUE CHECK (stable_code ~ '^[a-z][a-z0-9_]*$'),
+  created_by UUID NOT NULL REFERENCES brokers(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE official_document_definition_versions (
+  id UUID PRIMARY KEY,
+  definition_id UUID NOT NULL REFERENCES official_document_definitions(id),
+  version_number INTEGER NOT NULL CHECK (version_number > 0),
+  label TEXT NOT NULL CHECK (LENGTH(BTRIM(label)) >= 3),
+  expected_issuer TEXT NOT NULL CHECK (LENGTH(BTRIM(expected_issuer)) >= 3),
+  accepted_status TEXT NOT NULL CHECK (accepted_status IN ('official_captured','external_verified')),
+  expiry_tracked BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL CHECK (status IN ('draft','active','superseded','retired')),
+  supersedes_version_id UUID REFERENCES official_document_definition_versions(id),
+  created_by UUID NOT NULL REFERENCES brokers(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  approved_by UUID REFERENCES brokers(id),
+  approved_at TIMESTAMPTZ,
+  retired_by UUID REFERENCES brokers(id),
+  retired_at TIMESTAMPTZ,
+  retirement_reason TEXT,
+  UNIQUE (definition_id, version_number),
+  CHECK (status NOT IN ('active','superseded','retired') OR (approved_by IS NOT NULL AND approved_at IS NOT NULL)),
+  CHECK (status <> 'retired' OR (retired_by IS NOT NULL AND retired_at IS NOT NULL AND LENGTH(BTRIM(COALESCE(retirement_reason,''))) >= 10))
+);
+CREATE UNIQUE INDEX official_document_definition_active_uq ON official_document_definition_versions(definition_id) WHERE status='active';
+CREATE UNIQUE INDEX official_document_definition_draft_uq ON official_document_definition_versions(definition_id) WHERE status='draft';
+
+CREATE TABLE official_document_step_rule_versions (
+  id UUID PRIMARY KEY,
+  step_code TEXT NOT NULL CHECK (step_code IN ('external_listing','buyer_representation','sale_agreement','transfer')),
+  definition_id UUID NOT NULL REFERENCES official_document_definitions(id),
+  definition_version_id UUID NOT NULL REFERENCES official_document_definition_versions(id),
+  version_number INTEGER NOT NULL CHECK (version_number > 0),
+  requirement_level TEXT NOT NULL CHECK (requirement_level IN ('required','advisory')),
+  business_reason TEXT NOT NULL CHECK (LENGTH(BTRIM(business_reason)) >= 5),
+  accepted_status TEXT NOT NULL CHECK (accepted_status IN ('official_captured','external_verified')),
+  status TEXT NOT NULL CHECK (status IN ('draft','active','superseded','retired')),
+  supersedes_version_id UUID REFERENCES official_document_step_rule_versions(id),
+  created_by UUID NOT NULL REFERENCES brokers(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  approved_by UUID REFERENCES brokers(id),
+  approved_at TIMESTAMPTZ,
+  retired_by UUID REFERENCES brokers(id),
+  retired_at TIMESTAMPTZ,
+  retirement_reason TEXT,
+  UNIQUE (step_code, definition_id, version_number),
+  CHECK (status NOT IN ('active','superseded','retired') OR (approved_by IS NOT NULL AND approved_at IS NOT NULL)),
+  CHECK (status <> 'retired' OR (retired_by IS NOT NULL AND retired_at IS NOT NULL AND LENGTH(BTRIM(COALESCE(retirement_reason,''))) >= 10))
+);
+CREATE UNIQUE INDEX official_document_step_rule_active_uq ON official_document_step_rule_versions(step_code,definition_id) WHERE status='active';
+CREATE UNIQUE INDEX official_document_step_rule_draft_uq ON official_document_step_rule_versions(step_code,definition_id) WHERE status='draft';
+
+CREATE TABLE official_document_evidence_versions (
+  id UUID PRIMARY KEY,
+  evidence_reference TEXT NOT NULL UNIQUE,
+  document_version_id UUID NOT NULL UNIQUE REFERENCES document_versions(id),
+  definition_id UUID NOT NULL REFERENCES official_document_definitions(id),
+  definition_version_id UUID NOT NULL REFERENCES official_document_definition_versions(id),
+  official_reference TEXT NOT NULL CHECK (LENGTH(BTRIM(official_reference)) > 0),
+  issuer_reference TEXT NOT NULL CHECK (LENGTH(BTRIM(issuer_reference)) > 0),
+  issued_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ,
+  listing_id UUID REFERENCES listings(id),
+  deal_id UUID REFERENCES deals(id),
+  opportunity_id UUID REFERENCES opportunities(id),
+  lead_id UUID REFERENCES leads(id),
+  contact_id UUID REFERENCES contacts(id),
+  context_hash CHAR(64) NOT NULL CHECK (context_hash ~ '^[a-f0-9]{64}$'),
+  idempotency_key TEXT NOT NULL UNIQUE,
+  request_fingerprint CHAR(64) NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
+  supersedes_evidence_id UUID REFERENCES official_document_evidence_versions(id),
+  uploaded_by UUID NOT NULL REFERENCES brokers(id),
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (listing_id IS NOT NULL OR deal_id IS NOT NULL),
+  CHECK (expires_at IS NULL OR expires_at > issued_at)
+);
+CREATE INDEX official_document_evidence_listing_idx ON official_document_evidence_versions(listing_id,definition_id,uploaded_at DESC);
+CREATE INDEX official_document_evidence_deal_idx ON official_document_evidence_versions(deal_id,definition_id,uploaded_at DESC);
+
+CREATE TABLE official_document_evidence_review_events (
+  id UUID PRIMARY KEY,
+  evidence_id UUID NOT NULL UNIQUE REFERENCES official_document_evidence_versions(id),
+  decision TEXT NOT NULL CHECK (decision IN ('verified','returned','rejected')),
+  reason TEXT,
+  reviewer_id UUID NOT NULL REFERENCES brokers(id),
+  reviewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  request_fingerprint CHAR(64) NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
+  CHECK (decision='verified' OR LENGTH(BTRIM(COALESCE(reason,''))) >= 10)
+);
+
+CREATE TABLE official_document_followup_task_links (
+  id UUID PRIMARY KEY,
+  task_id UUID NOT NULL UNIQUE REFERENCES tasks(id),
+  rule_version_id UUID NOT NULL REFERENCES official_document_step_rule_versions(id),
+  listing_id UUID REFERENCES listings(id),
+  deal_id UUID REFERENCES deals(id),
+  context_hash CHAR(64) NOT NULL CHECK (context_hash ~ '^[a-f0-9]{64}$'),
+  followup_reason TEXT NOT NULL CHECK (followup_reason IN ('missing','returned','rejected','expiring')),
+  cycle_number INTEGER NOT NULL CHECK (cycle_number > 0),
+  request_fingerprint CHAR(64) NOT NULL UNIQUE CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
+  created_by UUID NOT NULL REFERENCES brokers(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (listing_id IS NOT NULL OR deal_id IS NOT NULL),
+  UNIQUE(rule_version_id,listing_id,deal_id,context_hash,followup_reason,cycle_number)
+);
+
+-- The implemented migration must also extend the existing audit_log entity-type constraint with:
+-- OfficialDocumentDefinition, OfficialDocumentStepRule, OfficialDocumentEvidence,
+-- OfficialDocumentFollowup.
+-- Existing document_links already accepts Listing, Opportunity, Deal, Lead and Contact.

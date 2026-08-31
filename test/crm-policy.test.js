@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canAssignLead,
+import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canOperateLead,canAssignLead,
   canReadOpportunity,canWriteOpportunity,canApproveDeal,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
@@ -36,6 +36,11 @@ test('Lead identity is company-visible while operational changes remain assignme
   assert.equal(canWriteLead(agent,otherLead),false);
   assert.equal(canWriteLead(agent,{...otherLead,assignedTo:'u'}),true);
   assert.equal(canWriteLead(manager,teamLead),true);
+  assert.equal(canOperateLead(manager,teamLead),false);
+  assert.equal(canOperateLead(manager,{...teamLead,assignedTo:'m'}),true);
+  assert.equal(canOperateLead(agent,{...otherLead,assignedTo:'u'}),true);
+  assert.equal(canOperateLead(agent,otherLead),false);
+  assert.equal(canOperateLead(admin,otherLead),true);
   assert.equal(canWriteLead(manager,otherLead),false);
   assert.equal(canReadLead(accountant,teamLead),false);
 });

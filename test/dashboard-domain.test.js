@@ -42,6 +42,15 @@ test('agent manager and managing director presentations are separate contracts',
   assert.ok(director.panels.includes('executive_hierarchy'));
 });
 
+test('My Team is a dedicated hierarchy-only view for every role',()=>{
+  for(const [type,panel] of [['agent','reporting_line'],['manager','manager_hierarchy'],['executive','executive_hierarchy']]){
+    const presentation=buildRoleDashboardPresentation({...fixtureInput(),type,view:'My Team'});
+    assert.equal(presentation.view,'My Team');
+    assert.deepEqual(presentation.panels,[panel]);
+    assert.deepEqual(presentation.kpis,[]);
+  }
+});
+
 test('managing director executive tabs have distinct content contracts',()=>{
   assert.equal(dashboardViewFor('executive','Unknown'),'Executive');
   const sales=buildRoleDashboardPresentation({...fixtureInput(),view:'Sales'});

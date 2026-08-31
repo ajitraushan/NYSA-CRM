@@ -19,11 +19,12 @@ test('Inventory preserves originating and responsible agent identities',()=>{
   assert.match(ui,/Immutable attribution/);
 });
 
-test('Lead conversion inherits Inventory seller, mandate and responsible agent',()=>{
+test('Lead conversion inherits Inventory seller and mandate but uses the assigned Sales Agent',()=>{
   const route=read('src/routes/opportunities.js');
   assert.match(route,/inventory_counterparties/);
   assert.match(route,/inventory_agreements/);
-  assert.match(route,/representationListing\.responsibleAgentId/);
+  assert.match(route,/inventorySideAgentId=\['inventory','dual'\]\.includes\(input\.representationPath\)\?lead\.assignedTo:null/);
+  assert.doesNotMatch(route,/representationListing\.responsibleAgentId/);
   assert.match(route,/inventoryOriginatingAgentId:representationListing\?\.originatingAgentId/);
   assert.match(route,/the qualified Lead party must be the owner maintained on the selected Inventory/);
 });
