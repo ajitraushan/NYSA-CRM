@@ -30,6 +30,17 @@ test('matrix resolution creates exact party instances and deterministic context'
   const first=resolveComplianceMatrix({deal,parties:[buyer],requirements:[rule]}),second=resolveComplianceMatrix({deal:{...deal,version:99},parties:[buyer],requirements:[rule]});assert.equal(first.valid,true);assert.equal(first.instances.length,1);assert.equal(first.instances[0].dealPartyId,buyer.id);assert.equal(first.partyContextHash,second.partyContextHash);assert.equal(first.requestFingerprint,second.requestFingerprint);
 });
 
+test('transaction completion requirements create one Deal-level instance without a seller record',()=>{
+  const completion={...rule,id:'sale-deed-v1',requirementId:'sale-deed',label:'Sale Deed',partyRole:'transaction',partyKind:'transaction',gateCode:'before_close_won',expiryMode:'not_tracked'};
+  const result=resolveComplianceMatrix({deal,parties:[],requirements:[completion]});
+  assert.equal(result.valid,true);assert.equal(result.instances.length,1);assert.equal(result.instances[0].dealPartyId,null);assert.equal(result.instances[0].partyRole,'transaction');
+});
+
+test('transaction requirement validation rejects a party-specific customer kind',()=>{
+  const result=validateRequirementDraft({requirementCode:'sale_deed',label:'Sale Deed',businessReason:'Required transaction completion record',transactionFamily:'sale',partyRole:'transaction',partyKind:'individual',gateCode:'before_close_won',requirementLevel:'required',evidenceAuthority:'generic_document',documentType:'transaction_completion_document',reviewRequired:true,expiryMode:'not_tracked',reminderOffsetsDays:[0,7],effectiveFrom:'2026-08-14'});
+  assert.equal(result.valid,false);assert.match(result.errors.join(' '),/Transaction scope/);
+});
+
 test('matrix resolution reports unpromoted transaction counterparties without an evidence instance',()=>{
   const result=resolveComplianceMatrix({deal,parties:[{id:'party-x',partyRole:'buyer',transactionCounterpartyId:'counterparty-1'}],requirements:[rule]});assert.equal(result.instances.length,0);assert.equal(result.unsupportedParties[0].state,'governed_party_required');
 });

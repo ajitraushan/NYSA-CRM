@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {unzipSync} from 'fflate';
+
+const root=path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/,'$1')),'..'),artifact=name=>path.join(root,'release-artifacts/release-3/consolidated',name),sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+
+test('dev200 is a checksum-bound migration-neutral CRM-Test delta from deployed dev199',()=>{const name='nysa-core-consolidated-crm-test-dev200-r1.zip',bytes=fs.readFileSync(artifact(name)),manifest=JSON.parse(fs.readFileSync(artifact(name.replace('.zip','.manifest.json')),'utf8')),checksum=fs.readFileSync(artifact(name.replace('.zip','.sha256.txt')),'utf8').trim();assert.equal(checksum,`${sha(bytes)}  ${name}`);assert.equal(manifest.packageSha256,sha(bytes));assert.equal(manifest.version,'2.1.0-dev.200');assert.equal(manifest.sourceBaselinePackageSha256,'1637473b24085ba43e24088c01cee4c5da6ab6f9c45e8e70567951e260e7a631');assert.equal(manifest.migrationNeutral,true);assert.deepEqual(manifest.newMigrations,[]);assert.equal(manifest.latestMigration,'126_executing_agent_tier_and_social_uplift.sql');});
+
+test('dev200 package changes only the approved batch-payment UI runtime files',()=>{const current=unzipSync(fs.readFileSync(artifact('nysa-core-consolidated-crm-test-dev200-r1.zip'))),baseline=unzipSync(fs.readFileSync(artifact('nysa-core-consolidated-crm-test-dev199-r1.zip'))),expected=['package-lock.json','package.json','public/commission-payout-ui.js'],runtime=name=>['app.cjs','.env.example','package.json','package-lock.json'].includes(name)||name.startsWith('src/')||name.startsWith('public/'),changed=Object.keys(current).filter(name=>runtime(name)&&!name.endsWith('/')&&(!baseline[name]||sha(current[name])!==sha(baseline[name]))).sort();assert.deepEqual(changed,expected);for(const [name,bytes] of Object.entries(baseline))if(name.startsWith('src/migrations/'))assert.equal(sha(current[name]),sha(bytes),name);assert.equal(JSON.parse(Buffer.from(current['package.json'])).version,'2.1.0-dev.200');});
+
+test('dev200 deployer is dev199 baseline-bound and backup-first',()=>{const deployer=fs.readFileSync(artifact('deploy-crm-test-consolidated-dev200-r1.sh'),'utf8'),manifest=JSON.parse(fs.readFileSync(artifact('nysa-core-consolidated-crm-test-dev200-r1.manifest.json'),'utf8'));assert.match(deployer,/EXPECTED_VERSION=2\.1\.0-dev\.200/);assert.match(deployer,/PREVIOUS_VERSION=2\.1\.0-dev\.199/);assert.ok(deployer.includes(`APPROVED_SHA256=${manifest.packageSha256}`));assert.match(deployer,/pg_dump[\s\S]*pre-dev200\.dump[\s\S]*tar -czf/);assert.match(deployer,/Production and R2 clone snapshots: unchanged/);assert.doesNotMatch(deployer,/\r/);});

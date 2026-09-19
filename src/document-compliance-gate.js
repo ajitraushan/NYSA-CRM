@@ -5,14 +5,19 @@ export async function checkDocumentComplianceGate({dealId,gateCode,client}){
   const deal=await one(`SELECT d.id,d.version,d.deal_type,dc.id AS checklist_id FROM deals d JOIN deal_checklists dc ON dc.deal_id=d.id WHERE d.id=$1`,[dealId],client);
   if(!deal)return{canProceed:false,blocking:[{label:'Deal not found',state:'missing'}]};
   const family=transactionFamily(deal.dealType);if(!family)return{canProceed:false,blocking:[{label:'Unsupported Deal type',state:'context_mismatch'}]};
-  const applicable=await many(`SELECT DISTINCT v.id,v.label,v.requirement_level,dp.id AS deal_party_id,dp.party_role,
+  const applicable=await many(`SELECT v.id,v.label,v.requirement_level,NULL::uuid AS deal_party_id,'transaction'::text AS party_role,'transaction'::text AS party_kind
+    FROM document_compliance_requirement_versions v
+    WHERE v.transaction_family=$2 AND v.party_role='transaction' AND v.party_kind='transaction'
+      AND v.gate_code=$3 AND v.status='active' AND v.effective_from<=NOW()
+    UNION ALL
+    SELECT DISTINCT v.id,v.label,v.requirement_level,dp.id AS deal_party_id,dp.party_role,
       CASE WHEN dp.contact_id IS NOT NULL THEN 'individual' WHEN dp.company_id IS NOT NULL THEN 'organization' ELSE 'unpromoted' END AS party_kind
     FROM deal_parties dp JOIN document_compliance_requirement_versions v ON v.transaction_family=$2 AND v.party_role=dp.party_role
-      AND v.gate_code=$3 AND v.status='active' AND v.effective_from<=NOW()
+      AND v.party_role<>'transaction' AND v.gate_code=$3 AND v.status='active' AND v.effective_from<=NOW()
       AND (dp.transaction_counterparty_id IS NOT NULL OR v.party_kind=CASE WHEN dp.contact_id IS NOT NULL THEN 'individual' ELSE 'organization' END)
     WHERE dp.deal_id=$1 AND dp.effective_to IS NULL`,[deal.id,family,gateCode],client);
   const required=applicable.filter(x=>x.requirementLevel==='required');if(!required.length)return{canProceed:true,blocking:[]};
-  const unsupported=required.filter(x=>x.partyKind==='unpromoted').map(x=>({label:`Governed ${x.partyRole} required`,state:'governed_party_required',partyRole:x.partyRole}));
+  const unsupported=(gateCode==='before_close_won'?[]:required.filter(x=>x.partyKind==='unpromoted')).map(x=>({label:`${x.partyRole[0].toUpperCase()+x.partyRole.slice(1)} details required`,state:'party_details_required',partyRole:x.partyRole}));
   const snapshot=await one("SELECT * FROM deal_document_compliance_snapshots WHERE deal_checklist_id=$1 AND status='active'",[deal.checklistId],client);
   if(!snapshot)return{canProceed:false,blocking:[...unsupported,{label:'Resolve the current document compliance checklist',state:'missing'}]};
   const parties=await many(`SELECT id,party_role,contact_id,company_id,effective_from FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL AND party_role IN('buyer','seller','landlord','tenant') AND (contact_id IS NOT NULL OR company_id IS NOT NULL) ORDER BY id`,[deal.id],client),partyContextHash=complianceFingerprint({dealId:deal.id,dealType:deal.dealType,parties:parties.map(x=>({id:x.id,partyRole:x.partyRole,contactId:x.contactId||null,companyId:x.companyId||null,effectiveFrom:x.effectiveFrom?new Date(x.effectiveFrom).toISOString():null}))});

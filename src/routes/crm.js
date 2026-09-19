@@ -12,6 +12,7 @@ import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.
 import { buildCustomer360Profile } from '../customer-intelligence-domain.js';
 import { checkEmailCredibility,checkApolloProfessionalEvidence,contactEnrichmentConfiguration } from '../email-credibility-domain.js';
 import { loadActiveClassificationCatalogue,validateClassificationSelection,legacyBusinessType,isInventorySideObjective } from '../classification-catalogue.js';
+import {CAPABILITY,hasCapability} from '../role-access.js';
 
 const r = Router();
 const EXTERNAL_COMPANY_ROLES=['developer','agency','referral_partner','service_provider','employer','supplier','corporate_client','landlord','vendor','other'];
@@ -119,7 +120,7 @@ r.get('/crm/overview', async (req, res) => {
 
 r.get('/crm/staff', async (req, res) => {
   const params=[];let scope='id=$1';params.push(req.broker.id);
-  if(isCompanyReader(req.broker)||req.broker.jobRole==='admin_assistant'){scope="role IN ('admin','internal_broker')";params.length=0;}
+  if(isCompanyReader(req.broker)||hasCapability(req.broker,CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ)){scope="role IN ('admin','internal_broker')";params.length=0;}
   else if(isManager(req.broker)){scope=`(id=$1 OR EXISTS (SELECT 1 FROM team_memberships managed
     JOIN team_memberships member ON member.team_id=managed.team_id AND member.ends_at IS NULL
     WHERE managed.broker_id=$1 AND managed.membership_role='manager' AND managed.ends_at IS NULL AND member.broker_id=brokers.id))`;}
@@ -131,7 +132,7 @@ r.get('/crm/staff', async (req, res) => {
 });
 
 r.get('/crm/teams', async (req, res) => {
-  const scope=req.broker.jobRole==='admin_assistant'?{clause:'1=1',params:[]}:teamScopeSql('t',req.broker,[]);
+  const scope=hasCapability(req.broker,CAPABILITY.TEAM_CONFIGURATION)?{clause:'1=1',params:[]}:teamScopeSql('t',req.broker,[]);
   const teams = await many(`SELECT t.*, b.name AS manager_name,
     (SELECT COUNT(*)::int FROM brokers x WHERE x.team_id=t.id AND x.status='active') AS member_count
     FROM teams t LEFT JOIN brokers b ON b.id=t.manager_id WHERE t.active=1 AND ${scope.clause} ORDER BY t.name`,scope.params);
@@ -139,7 +140,7 @@ r.get('/crm/teams', async (req, res) => {
 });
 
 r.post('/crm/teams', async (req, res) => {
-  if (req.broker.role !== 'admin' && req.broker.jobRole !== 'admin_assistant') return res.status(403).json({ error: 'Only administrators and Admin Assistants can create teams' });
+  if (!hasCapability(req.broker,CAPABILITY.TEAM_CONFIGURATION)) return res.status(403).json({ error: 'Admin team-configuration access required' });
   const { name, managerId, leadResponseHours=4 } = req.body || {};
   if (!clean(name)) return res.status(400).json({ error: 'name is required' });
   if (!Number.isInteger(+leadResponseHours) || +leadResponseHours < 1 || +leadResponseHours > 168)
@@ -157,7 +158,7 @@ r.post('/crm/teams', async (req, res) => {
 });
 
 r.patch('/crm/teams/:id', async (req, res) => {
-  if (req.broker.role !== 'admin' && req.broker.jobRole !== 'admin_assistant') return res.status(403).json({ error: 'Only administrators and Admin Assistants can edit teams' });
+  if (!hasCapability(req.broker,CAPABILITY.TEAM_CONFIGURATION)) return res.status(403).json({ error: 'Admin team-configuration access required' });
   const team = await one('SELECT * FROM teams WHERE id=$1', [req.params.id]);
   if (!team) return res.status(404).json({ error: 'Team not found' });
   const { name, managerId, leadResponseHours, active } = req.body || {};
@@ -198,9 +199,9 @@ r.post('/crm/companies', async (req, res) => {
   if(b.companyRole&&!EXTERNAL_COMPANY_ROLES.includes(b.companyRole))return res.status(400).json({error:'Invalid companyRole'});
   const ownerId=b.ownerId||req.broker.id;
   if (!(await staffMember(ownerId))) return res.status(400).json({ error:'Invalid ownerId' });
-  const company=await transaction(async client=>{const id=uuid(),created=await one(`INSERT INTO companies (id,name,company_type,website,email,phone,address,notes,owner_id,created_by)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [id,clean(b.name),b.companyType||'other',clean(b.website),clean(b.email)?.toLowerCase()||null,clean(b.phone),clean(b.address),clean(b.notes),ownerId,req.broker.id],client);
+  const company=await transaction(async client=>{const id=uuid(),created=await one(`INSERT INTO companies (id,name,company_type,website,email,phone,address,trade_license_number,vat_registration_number,notes,owner_id,created_by)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [id,clean(b.name),b.companyType||'other',clean(b.website),clean(b.email)?.toLowerCase()||null,clean(b.phone),clean(b.address),clean(b.tradeLicenseNumber),clean(b.vatRegistrationNumber),clean(b.notes),ownerId,req.broker.id],client);
     if(b.companyRole){const role=await one(`INSERT INTO external_company_roles(id,company_id,role_code,is_primary,created_by) VALUES($1,$2,$3,1,$4) RETURNING *`,[uuid(),id,b.companyRole,req.broker.id],client);await audit('CompanyRole',role.id,'created',req.broker.id,{companyId:id,role:b.companyRole},client);}
     await audit('Company',id,'created',req.broker.id,{name:created.name,type:created.companyType,initialRole:b.companyRole||null},client);return created;});
   res.status(201).json(company);
@@ -209,11 +210,11 @@ r.post('/crm/companies', async (req, res) => {
 r.patch('/crm/companies/:id', async (req,res)=>{
   const company=await one('SELECT * FROM companies WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
   if(!company) return res.status(404).json({error:'Company not found'});
-  if(!canWriteCrm(req.broker)||(req.broker.role!=='admin'&&company.ownerId!==req.broker.id)) return res.status(403).json({error:'Only the company owner or an admin can edit it'});
+  if(!canWriteCrm(req.broker)||company.ownerId!==req.broker.id) return res.status(403).json({error:'Only the company owner can edit it'});
   const b=req.body||{};
   if(b.companyType!==undefined&&!COMPANY_TYPES.includes(b.companyType)) return res.status(400).json({error:'Invalid companyType'});
   if(b.ownerId&&!(await staffMember(b.ownerId))) return res.status(400).json({error:'Invalid ownerId'});
-  const map={name:'name',companyType:'company_type',website:'website',email:'email',phone:'phone',address:'address',notes:'notes',ownerId:'owner_id'};
+  const map={name:'name',companyType:'company_type',website:'website',email:'email',phone:'phone',address:'address',tradeLicenseNumber:'trade_license_number',vatRegistrationNumber:'vat_registration_number',notes:'notes',ownerId:'owner_id'};
   const sets=[],params=[],changes={};
   for(const [field,column] of Object.entries(map)) if(b[field]!==undefined){const value=field==='email'?clean(b[field])?.toLowerCase()||null:clean(b[field]);params.push(value);sets.push(`${column}=$${params.length}`);changes[field]={from:company[field],to:value};}
   if(!sets.length) return res.json(company);
@@ -282,7 +283,7 @@ r.get('/crm/customers/:id',async(req,res)=>{
     LEFT JOIN LATERAL (SELECT o.* FROM opportunities o WHERE o.lead_id=l.id ORDER BY CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.updated_at DESC LIMIT 1) opportunity ON TRUE
     LEFT JOIN LATERAL (SELECT a.created_at,a.activity_type,a.subject FROM activities a WHERE a.lead_id=l.id ORDER BY a.created_at DESC LIMIT 1) activity ON TRUE
     WHERE l.contact_id=$1 ORDER BY l.created_at DESC`,[customer.id]);
-  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(req.broker.role==='admin'||canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
+  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(customer.ownerId===req.broker.id||customer.createdBy===req.broker.id),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
   const [roles,channels,consent,documents,intakeEvidence]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
@@ -311,8 +312,8 @@ r.post('/crm/customers/:id/contact-credibility',async(req,res)=>{
   const contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!contact)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
   const serviceLeads=await many('SELECT id,assigned_to,assigned_team_id,created_by FROM leads WHERE contact_id=$1',[contact.id]);
-  const mayRefresh=canWriteCrm(req.broker)&&(req.broker.role==='admin'||isManager(req.broker)||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id||serviceLeads.some(lead=>canWriteLead(req.broker,lead)));
-  if(!mayRefresh)return res.status(403).json({error:'The Customer owner, serving Lead broker, Manager or Administrator is required to refresh contact evidence'});
+  const mayRefresh=canWriteCrm(req.broker)&&(isManager(req.broker)||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id||serviceLeads.some(lead=>canWriteLead(req.broker,lead)));
+  if(!mayRefresh)return res.status(403).json({error:'The Customer owner, serving Lead broker or Manager is required to refresh contact evidence'});
   if(!contact.email)return res.status(409).json({error:'This Customer has no email address to assess'});
   const evidence=await checkEmailCredibility(contact.email);
   const updated=await transaction(async client=>{
@@ -331,8 +332,8 @@ r.post('/crm/customers/:id/apollo-professional-evidence',async(req,res)=>{
   const contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!contact)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
   const serviceLeads=await many('SELECT id,assigned_to,assigned_team_id,created_by FROM leads WHERE contact_id=$1',[contact.id]);
-  const mayRefresh=canWriteCrm(req.broker)&&(req.broker.role==='admin'||isManager(req.broker)||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id||serviceLeads.some(lead=>canWriteLead(req.broker,lead)));
-  if(!mayRefresh)return res.status(403).json({error:'The Customer owner, serving Lead broker, Manager or Administrator is required to run Apollo professional evidence'});
+  const mayRefresh=canWriteCrm(req.broker)&&(isManager(req.broker)||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id||serviceLeads.some(lead=>canWriteLead(req.broker,lead)));
+  if(!mayRefresh)return res.status(403).json({error:'The Customer owner, serving Lead broker or Manager is required to run Apollo professional evidence'});
   if(!contact.email)return res.status(409).json({error:'This Customer has no email address to assess'});
   if(!contactEnrichmentConfiguration().apolloConfigured)return res.status(503).json({error:'Apollo professional evidence is not configured'});
   const professionalEvidence=await checkApolloProfessionalEvidence(contact.email);
@@ -346,16 +347,14 @@ r.post('/crm/customers/:id/apollo-professional-evidence',async(req,res)=>{
 });
 
 r.get('/crm/kyc-review-queue',async(req,res)=>{
-  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for KYC reviews'});
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager access is required for KYC reviews'});
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||25));
   const params=[],where=["c.archived_at IS NULL","c.lifecycle_status='active'","c.duplicate_review_status IN ('not_required','approved')","c.kyc_status='pending_review'"];
-  if(req.broker.role!=='admin'){
-    params.push(req.broker.id);
-    where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
+  params.push(req.broker.id);
+  where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
       JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
       WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
         AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`);
-  }
   if(clean(req.query.q)){
     params.push(`%${clean(req.query.q)}%`);
     where.push(`(c.full_name ILIKE $${params.length} OR COALESCE(c.email,'') ILIKE $${params.length} OR COALESCE(c.phone,'') ILIKE $${params.length} OR COALESCE(owner.name,'') ILIKE $${params.length} OR COALESCE(owner_team.name,membership_team.name,'') ILIKE $${params.length})`);
@@ -373,15 +372,13 @@ r.get('/crm/kyc-review-queue',async(req,res)=>{
 });
 
 r.get('/crm/duplicate-review-queue',async(req,res)=>{
-  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for duplicate Customer reviews'});
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager access is required for duplicate Customer reviews'});
   const params=[],where=["c.archived_at IS NULL","c.duplicate_review_status='pending'"];
-  if(req.broker.role!=='admin'){
-    params.push(req.broker.id);
-    where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
+  params.push(req.broker.id);
+  where.push(`(owner_team.manager_id=$${params.length} OR EXISTS (SELECT 1 FROM team_memberships member
       JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
       WHERE member.broker_id=c.owner_id AND member.ends_at IS NULL
         AND reviewer.broker_id=$${params.length} AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`);
-  }
   const from=`FROM contacts c LEFT JOIN brokers owner ON owner.id=c.owner_id
     LEFT JOIN brokers creator ON creator.id=c.created_by
     LEFT JOIN teams owner_team ON owner_team.id=owner.team_id WHERE ${where.join(' AND ')}`;
@@ -438,19 +435,17 @@ r.post('/crm/contacts', async (req, res) => {
 });
 
 r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
-  if(!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access is required for duplicate resolution'});
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager access is required for duplicate resolution'});
   const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
   if(!contact)return res.status(404).json({error:'Customer not found'});
   if(contact.duplicateReviewStatus!=='pending')return res.status(409).json({error:'Only a pending duplicate draft can receive a resolution'});
-  if(req.broker.role!=='admin'){
-    const responsible=await one(`SELECT 1 AS permitted FROM brokers owner
+  const responsible=await one(`SELECT 1 AS permitted FROM brokers owner
       LEFT JOIN teams t ON t.id=owner.team_id AND t.active=1
       WHERE owner.id=$1 AND (t.manager_id=$2 OR EXISTS(
         SELECT 1 FROM team_memberships member JOIN team_memberships reviewer ON reviewer.team_id=member.team_id
         WHERE member.broker_id=owner.id AND member.ends_at IS NULL AND reviewer.broker_id=$2
           AND reviewer.membership_role='manager' AND reviewer.ends_at IS NULL))`,[contact.ownerId,req.broker.id]);
-    if(!responsible)return res.status(403).json({error:'This duplicate draft is outside your responsible team'});
-  }
+  if(!responsible)return res.status(403).json({error:'This duplicate draft is outside your responsible team'});
   const decision=clean(req.body?.decision),reviewNotes=clean(req.body?.reviewNotes);
   if(!['approved','rejected'].includes(decision))return res.status(400).json({error:'Decision must be approved or rejected'});
   if(!reviewNotes)return res.status(400).json({error:'Resolution notes are required'});
@@ -464,8 +459,8 @@ r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
 r.patch('/crm/contacts/:id', async (req, res) => {
   const contact = await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL', [req.params.id]);
   if (!contact) return res.status(404).json({ error: 'Contact not found' });
-  if (!canWriteCrm(req.broker) || (req.broker.role !== 'admin' && contact.ownerId !== req.broker.id))
-    return res.status(403).json({ error: 'Only the contact owner or an admin can edit it' });
+  if (!canWriteCrm(req.broker) || contact.ownerId !== req.broker.id)
+    return res.status(403).json({ error: 'Only the contact owner can edit it' });
   const map = { fullName:'full_name',email:'email',phone:'phone',contactType:'contact_type',companyName:'company_name',companyId:'company_id',
     preferredChannel:'preferred_channel',nationality:'nationality',language:'language',notes:'notes',ownerId:'owner_id',publicProfileUrl:'public_profile_url',postalAddress:'postal_address' };
   const enumError = invalidEnum(req.body.contactType, CUSTOMER_ROLE_INPUT_TYPES, 'contactType') ||
@@ -515,7 +510,7 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   const scopeParams=[req.params.id],scope=contactScopeSql('c',req.broker,scopeParams);
   const contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!contact)return res.status(404).json({error:'Contact not found'});
-  const canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||contact.ownerId===req.broker.id||contact.createdBy===req.broker.id),canReview=isManager(req.broker);
+  const canMaintain=canWriteCrm(req.broker)&&(contact.ownerId===req.broker.id||contact.createdBy===req.broker.id),canReview=isManager(req.broker);
   if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the contact owner or an authorized manager can maintain KYC details'});
   const b=req.body||{},requestedStatus=clean(b.kycStatus)||'unverified',
     managerSelfVerification=canMaintain&&canReview&&['pending_review','verified'].includes(requestedStatus),
@@ -530,7 +525,7 @@ r.patch('/crm/contacts/:id/kyc',async(req,res)=>{
   if(type&&!['passport','emirates_id'].includes(type))return res.status(400).json({error:'ID type must be Passport or Emirates ID'});
   if(last4&&!/^[A-Z0-9]{4}$/.test(last4))return res.status(400).json({error:'Record only the final four letters or digits of the ID; never enter the full ID number'});
   if(!['unverified','pending_review','verified','expired','rejected'].includes(status))return res.status(400).json({error:'Invalid KYC status'});
-  if(['verified','expired','rejected'].includes(status)&&!canReview)return res.status(403).json({error:'Manager or administrator approval is required for this KYC decision'});
+  if(['verified','expired','rejected'].includes(status)&&!canReview)return res.status(403).json({error:'Manager approval is required for this KYC decision'});
   if(!canMaintain&&!reviewDecision)return res.status(403).json({error:'Managers may decide a pending KYC review but cannot alter the submitted identity details'});
   if(reviewDecision&&contact.kycStatus!=='pending_review')return res.status(409).json({error:'This KYC record is not pending review. Refresh the KYC review queue before deciding it.'});
   if(reviewDecision&&['expired','rejected'].includes(status)&&!reviewNotes)return res.status(400).json({error:'Review notes are required when rejecting or marking KYC expired'});
@@ -930,7 +925,7 @@ r.post('/crm/leads/:id/coordinated-reassignment',async(req,res)=>{
   const result=await transaction(async client=>{
     const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id],client);
     if(!lead)return {code:404,error:'Lead not found'};
-    if(!canAssignLead(req.broker,lead))return {code:403,error:'Administrator, responsible Team Manager or Director reassignment access required'};
+    if(!canAssignLead(req.broker,lead))return {code:403,error:'Responsible Team Manager or Director reassignment access required'};
     if(b.expectedLeadUpdatedAt&&new Date(lead.updatedAt).toISOString()!==new Date(b.expectedLeadUpdatedAt).toISOString())return {code:409,error:'This Lead changed after the reassignment preview; reopen it before saving'};
     const assignee=await one(`SELECT b.id,b.name FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND b.job_role='sales_agent'
       AND EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.team_id=$2 AND tm.ends_at IS NULL)`,[assignedTo,assignedTeamId],client);

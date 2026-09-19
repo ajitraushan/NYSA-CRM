@@ -43,7 +43,7 @@ function checkRateLimit(key) {
 }
 
 const resetCodeHash = code => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
-const RESET_RESPONSE = 'If this email belongs to an active NYSA user, the request is now available to an Administrator. Obtain the one-time reset code through an approved private channel.';
+const RESET_RESPONSE = 'If this email belongs to an active NYSA user, the request is now available to an Admin. Obtain the one-time reset code through an approved private channel.';
 
 function setSessionCookie(res, token,{persistent=true}={}) {
   const maxAge=persistent?`; Max-Age=${7 * 24 * 60 * 60}`:'';
@@ -132,7 +132,7 @@ r.post('/auth/register', async (req, res) => {
     if(jobRole==='manager'&&inv.teamId){
       const team=await one('SELECT id,name,manager_id FROM teams WHERE id=$1 AND active=1 FOR UPDATE',[inv.teamId],client);
       if(!team)throw new Error('The invitation team is no longer active');
-      if(team.managerId&&team.managerId!==id)throw new Error(`${team.name} already has a Manager. Ask an administrator to issue a corrected invitation.`);
+      if(team.managerId&&team.managerId!==id)throw new Error(`${team.name} already has a Manager. Ask Admin to issue a corrected invitation.`);
     }
     if(inv.pendingBrokerId)await execute(`UPDATE brokers SET name=$1,email=$2,phone=$3,brokerage=$4,password_hash=$5,status='active',updated_at=NOW() WHERE id=$6 AND status='pending_activation'`,[name.trim(),email.trim(),phone||null,brokerage||null,hashPassword(password),id],client);
     else {await execute(`INSERT INTO brokers (id, name, email, phone, brokerage, role, job_role,team_id,can_post, password_hash, invited_by,user_classification)

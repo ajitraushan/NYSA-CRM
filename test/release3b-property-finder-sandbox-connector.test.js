@@ -116,11 +116,11 @@ test('configured request ceiling is enforced locally before another sandbox call
   assert.equal(calls, 1);
 });
 
-test('HTTP boundary is full-admin, explicit-confirmation, read-only and server-side', () => {
+test('HTTP boundary is Director-only, explicit-confirmation, read-only and server-side', () => {
   const route = read('src/routes/property-finder-sandbox.js');
   const server = read('src/server.js');
   const envExample = read('.env.example');
-  for (const marker of ['requireAuth', "req.broker.role === 'admin'", "req.broker.jobRole === 'admin'", 'VERIFY_PROPERTY_FINDER_SANDBOX', 'verifySafeReads']) {
+  for (const marker of ['requireAuth', "req.broker.jobRole === 'director'", 'VERIFY_PROPERTY_FINDER_SANDBOX', 'verifySafeReads']) {
     assert.match(route, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.doesNotMatch(route, /listings\/{0,1}.*publish|createListing|updateListing|deleteListing/);

@@ -77,7 +77,7 @@ r.post('/crm/external-properties/:id/verification',async(req,res)=>{
     const updated=await one("UPDATE provisional_external_properties SET status='verification_pending',verification_notes=$1,updated_at=NOW() WHERE id=$2 RETURNING *",[notes,row.id]);
     await audit('ExternalProperty',row.id,'verification_submitted',req.broker.id,{notes});return res.json(updated);
   }
-  if(!isManager(req.broker))return res.status(403).json({error:'Manager or Administrator decision required'});
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager decision required'});
   if(row.status!=='verification_pending'||!['approve','reject'].includes(action)||!notes)return res.status(409).json({error:'A pending external property, valid decision and reason are required'});
   const status=action==='approve'?'approved_for_opportunity':'rejected',updated=await one('UPDATE provisional_external_properties SET status=$1,verification_notes=$2,verified_by=$3,verified_at=NOW(),updated_at=NOW() WHERE id=$4 RETURNING *',[status,notes,req.broker.id,row.id]);
   await audit('ExternalProperty',row.id,action==='approve'?'approved_for_opportunity':'rejected',req.broker.id,{notes});res.json(updated);

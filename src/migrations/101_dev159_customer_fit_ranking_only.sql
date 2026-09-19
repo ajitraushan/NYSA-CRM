@@ -10,3 +10,4 @@ VALUES(
   '{"scoreMaximum":100,"weights":{"budget":25,"areaCommunity":20,"propertyType":15,"bedrooms":15,"size":10,"fundingPayment":5,"timelineHandover":5,"customerDeclarations":5},"customerFitVariancesRemainSelectable":true,"tieBreak":["score_desc","missing_count_asc","inventory_reference_asc"],"aiAssistance":"advisory_explanation_only"}'::jsonb,
   '2026-08-21T00:00:00Z'
 );
+

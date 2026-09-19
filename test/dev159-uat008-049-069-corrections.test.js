@@ -71,7 +71,7 @@ test('UAT-065 through UAT-068 static source-parity guard (not runtime or databas
   assert.match(admin,/operational-impact/);
   assert.match(leave,/employmentEndOwnershipGate/);
   assert.match(offer,/accepted:'Customer \/ counterparty accepted this revision'/);
-  assert.match(offer,/Customer acceptance is already recorded in Negotiation/);
+  assert.match(offer,/Customer acceptance is already recorded against the exact Offer revision/);
   assert.match(routes,/accepted_offer_revision_id/);
   assert.match(routes,/INSERT INTO deals\(id,deal_reference,opportunity_id,deal_type/);
   assert.match(routes,/Initial Deal linkage from exact accepted Offer and Booking/);

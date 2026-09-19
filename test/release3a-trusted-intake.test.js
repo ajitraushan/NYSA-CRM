@@ -56,7 +56,7 @@ test('R3A-CAMPAIGN-45 governs campaign identity while preserving raw intake evid
   for(const marker of ['source_code','campaign_code','source_page','source_form'])assert.match(route,new RegExp(marker));
   assert.match(route,/campaign_external_mappings/);assert.match(route,/campaignMappingStatus/);assert.match(route,/governedCampaignCode/);
   for(const marker of ['marketing_campaigns','campaign_external_mappings','campaign_mapping_status','planned_budget','operational_targets'])assert.match(migration,new RegExp(marker));
-  assert.match(campaigns,/Administrator or Director campaign authority is required/);assert.match(campaigns,/campaign_status_changed|status_changed/);assert.match(campaigns,/reconciledEvents/);assert.match(campaigns,/campaign_mapping_status='unmapped'/);
+  assert.match(campaigns,/Director campaign authority is required/);assert.match(campaigns,/campaign_status_changed|status_changed/);assert.match(campaigns,/reconciledEvents/);assert.match(campaigns,/campaign_mapping_status='unmapped'/);
   for(const metric of ['accepted_count','responded_count','qualified_count','opportunity_count','won_count'])assert.match(campaigns,new RegExp(metric));
   assert.match(server,/campaignRoutes/);assert.match(ui,/Campaign governance/);assert.match(ui,/Unmapped incoming campaign values/);assert.match(ui,/original campaign value/);
   assert.match(ui,/Operational outcomes/);assert.match(ui,/Financial ROI remains outside Release 3A/);

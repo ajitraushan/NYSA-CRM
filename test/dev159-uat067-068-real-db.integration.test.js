@@ -9,6 +9,9 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
 const enabled=process.env.NYSA_RUN_DB_INTEGRATION==='1';
+const commissionJourney=process.env.NYSA_RUN_DEV176_CLOSURE==='1';
+const commercialClosureType=process.env.NYSA_RUN_MANAGER_COMMERCIAL||'';
+const pendingReceipt=process.env.NYSA_CLOSURE_PENDING_RECEIPT==='1';
 const gate={skip:enabled?false:'Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture',timeout:30000};
 const id=()=>crypto.randomUUID();
 const emit=(event,data)=>process.stdout.write(`${JSON.stringify({event,...data})}\n`);
@@ -73,10 +76,24 @@ before(async()=>{
     VALUES($1,$2,$3,$4,$5,NOW()-INTERVAL '2 days',NOW()-INTERVAL '2 days'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer confirmed interest after viewing',$6,$5,$5)`,
     [id(),opportunityId,matchId,listingId,fixture.agent,`${prefix}-viewing`]);
 
+  fixture.tokens={agent:token};
+  if(commissionJourney){
+    const guard=await import('../tools/local-postgres-fixture/fixture-guard.mjs');
+    assert.ok(['localhost','127.0.0.1','::1'].includes(process.env.PGHOST));
+    const pool=guard.createFixturePool();try{await guard.assertDedicatedFixture(pool);}finally{await pool.end();}
+    await execute('UPDATE opportunities SET buyer_commission_percent=2,seller_commission_percent=0 WHERE id=$1',[opportunityId]);
+    fixture.accountant=id();
+    await execute(`INSERT INTO brokers(id,name,email,role,status,password_hash,job_role) VALUES($1,$2,$3,'internal_broker','active','synthetic-only','accountant')`,[fixture.accountant,`${prefix} accountant`,`${prefix}-accountant@example.invalid`]);
+    for(const role of ['manager','accountant']){
+      const roleToken=crypto.randomBytes(32).toString('hex');fixture.tokens[role]=roleToken;
+      await execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[crypto.createHash('sha256').update(roleToken).digest('hex'),fixture[role]]);
+    }
+  }
   const app=createApp();app.mount('/api',opportunityRoutes);
+  if(commissionJourney)app.mount('/api',(await import('../src/routes/commission-payout.js')).default);
   server=await new Promise((resolve,reject)=>{const listening=app.listen(0,()=>resolve(listening));listening.once('error',reject);});server.unref();
-  request=async(path,{method='GET',body}={})=>{
-    const response=await fetch(`http://127.0.0.1:${server.address().port}${path}`,{method,headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+  request=async(path,{method='GET',body,actor='agent'}={})=>{
+    const response=await fetch(`http://127.0.0.1:${server.address().port}${path}`,{method,headers:{authorization:`Bearer ${fixture.tokens[actor]}`,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
     let payload;try{payload=await response.json();}catch{payload={};}
     return{status:response.status,payload};
   };
@@ -147,6 +164,7 @@ test('UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate 
   assert.equal(deal.opportunityId,fixture.opportunityId);
   assert.equal(deal.dealType,'sale');
   assert.equal(deal.status,'draft');
+  fixture.dealId=deal.id;
   assert.equal(deal.listingId,fixture.listingId);
   assert.equal(deal.offerId,offer.payload.id);
   assert.equal(deal.acceptedOfferRevisionId,acceptedState.acceptedRevisionId);
@@ -172,4 +190,79 @@ test('UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate 
   emit('UAT-068',{httpStatus:dealResult.status,dealId:deal.id,bookingId:deal.bookingId,listingId:deal.listingId,
     offerId:deal.offerId,acceptedRevisionId:deal.acceptedOfferRevisionId,linkageId:deal.currentInventoryLinkageId,
     checklistCount:1,buyerPartyCount:1,duplicateStatus:duplicate.status});
+});
+
+test('Manager closes with commission outstanding; Accountant collects afterward without changing transaction closure',
+  {...gate,skip:gate.skip||!commissionJourney},async()=>{
+  const dealId=fixture.dealId,base=`/api/crm/deals/${dealId}`;
+  // Optional closure-authorization fixture: mutate only this disposable Deal after the ordinary
+  // lineage test, not real records or frozen production templates. This is not commercial-offer UAT.
+  if(commercialClosureType){
+    assert.ok(['commercial_sale','commercial_rental'].includes(commercialClosureType));
+    await database.execute('UPDATE deals SET deal_type=$1 WHERE id=$2',[commercialClosureType,dealId]);
+    if(commercialClosureType==='commercial_rental')await database.execute("UPDATE deal_parties SET party_role='tenant' WHERE deal_id=$1 AND party_role='buyer'",[dealId]);
+    await database.execute(`UPDATE deal_checklist_items SET responsible_role='director',item_code='DIRECTOR_REVIEW',label='Director-designated commercial review'
+      WHERE deal_checklist_id IN (SELECT id FROM deal_checklists WHERE deal_id=$1) AND responsible_role='manager'`,[dealId]);
+  }
+  const seller=id();
+  await database.execute(`INSERT INTO contacts(id,full_name,email,contact_type,owner_id,created_by) VALUES($1,$2,$3,'seller',$4,$4)`,
+    [seller,`${fixture.prefix} seller`,`${fixture.prefix}-seller@example.invalid`,fixture.agent]);
+  const added=await request(base+'/parties',{method:'POST',body:{contactId:seller,partyRole:commercialClosureType==='commercial_rental'?'landlord':'seller',side:'seller_side',isPrimary:true,sourceEvidence:'Synthetic maintained seller'}});
+  assert.equal(added.status,201,JSON.stringify(added.payload));
+  const items=await database.many('SELECT i.* FROM deal_checklist_items i JOIN deal_checklists c ON c.id=i.deal_checklist_id WHERE c.deal_id=$1 ORDER BY i.display_order',[dealId]);
+  for(const item of items){
+    const response=await request(base+`/checklist-items/${item.id}`,{method:'PATCH',actor:['manager','director'].includes(item.responsibleRole)?'manager':'agent',body:{expectedVersion:item.version,status:'completed',evidenceReference:'Synthetic checklist evidence'}});
+    assert.equal(response.status,200,JSON.stringify(response.payload));
+    if(commercialClosureType&&item.itemCode==='DIRECTOR_REVIEW'){
+      const saved=await database.one('SELECT completed_by,responsible_role,item_code FROM deal_checklist_items WHERE id=$1',[item.id]);
+      assert.deepEqual(saved,{completedBy:fixture.manager,responsibleRole:'director',itemCode:'DIRECTOR_REVIEW'});
+    }
+  }
+  let state=await database.one('SELECT * FROM deals WHERE id=$1',[dealId]);
+  const approval=await request(base+'/approval',{method:'POST',actor:'manager',body:{expectedVersion:state.version,decision:'approved',reason:'Synthetic governed closure review completed',evidenceReference:'Synthetic approval evidence'}});
+  assert.equal(approval.status,200,JSON.stringify(approval.payload));
+  const closeBody={expectedVersion:approval.payload.version,confirmAuthoritativeClosure:true,actualCompletionAt:new Date(Date.now()-60000).toISOString(),evidenceReference:'Synthetic final completion evidence',completionNote:'Synthetic transaction completed'};
+  if(pendingReceipt){
+    const partial=await request(base+'/commission-receipts',{method:'POST',actor:'accountant',body:{idempotencyKey:id(),amount:10000,receivedDate:'2026-09-02',receiptMethod:'bank_transfer',financeReference:`Synthetic-partial-${id()}`,evidenceReference:'Synthetic partial collection reference'}});
+    assert.equal(partial.status,201,JSON.stringify(partial.payload));
+  }
+  const financeCounts=()=>database.one(`SELECT
+    (SELECT COUNT(*)::int FROM deal_commission_receipts WHERE deal_id=$1) AS receipts,
+    (SELECT COUNT(*)::int FROM deal_commission_receipt_confirmations WHERE deal_id=$1) AS confirmations,
+    (SELECT COUNT(*)::int FROM deal_agent_credit_versions WHERE deal_id=$1) AS credits,
+    (SELECT COUNT(*)::int FROM agent_payout_calculations WHERE deal_id=$1) AS payouts`,[dealId]);
+  const financeBefore=await financeCounts();
+  assert.deepEqual(financeBefore,{receipts:pendingReceipt?1:0,confirmations:0,credits:0,payouts:0});
+  assert.equal((await request(base+'/close-won',{method:'POST',actor:'accountant',body:closeBody})).status,403);
+  assert.equal((await request(base+'/close-won',{method:'POST',actor:'agent',body:closeBody})).status,403);
+  assert.equal((await request(base+'/close-won',{method:'POST',actor:'manager',body:{...closeBody,expectedVersion:closeBody.expectedVersion+1}})).status,409);
+  assert.equal((await request(base+'/close-won',{method:'POST',actor:'manager',body:{...closeBody,evidenceReference:''}})).status,400);
+  const closed=await request(base+'/close-won',{method:'POST',actor:'manager',body:closeBody});
+  assert.equal(closed.status,200,JSON.stringify(closed.payload));
+  assert.deepEqual(await financeCounts(),financeBefore,'Closure must not create receipts, confirmations, credits or payout');
+  const financeList=await request('/api/finance/commission-deals?q='+encodeURIComponent(closed.payload.dealReference),{actor:'accountant'});
+  assert.equal(financeList.status,200);
+  assert.ok(financeList.payload.deals.some(d=>d.id===dealId&&d.opportunityId===fixture.opportunityId&&d.status==='closed_won'&&d.confirmedActualReceived===null),'Uncollected closed Opportunity remains in Finance Receipts');
+  const blockedCredit=await request(base+'/agent-credit',{method:'POST',actor:'manager',body:{idempotencyKey:id()}});
+  assert.equal(blockedCredit.status,409);assert.match(blockedCredit.payload.error,/confirmed commission receipt/i);
+  assert.equal((await request(base+'/close-won',{method:'POST',actor:'manager',body:closeBody})).status,409,'Repeat closure cannot create duplicate state transitions');
+  const {PdfDoc}=await import('../src/proposal-pdf.js'),pdf=new PdfDoc();
+  pdf.page(['BT /F1 12 Tf 40 800 Td (SYNTHETIC COMMISSION PROOF ONLY) Tj ET']);
+  const upload=await request(base+'/commission-proofs',{method:'POST',body:{fileName:'synthetic-closure-proof.pdf',mediaType:'application/pdf',base64:pdf.finish().toString('base64'),idempotencyKey:id()}});
+  assert.equal(upload.status,201,JSON.stringify(upload.payload));
+  const expectation=await request(base+'/commission-expectations',{method:'POST',body:{idempotencyKey:id(),referralAmount:0,referralSettlementBasis:'none'}});
+  assert.equal(expectation.status,201,JSON.stringify(expectation.payload));
+  assert.equal((await request(`/api/crm/deal-commission-expectations/${expectation.payload.expectation.id}/freeze`,{method:'POST',body:{}})).status,200);
+  const receipt=await request(base+'/commission-receipts',{method:'POST',actor:'accountant',body:{idempotencyKey:id(),amount:pendingReceipt?10000:20000,receivedDate:'2026-09-02',receiptMethod:'bank_transfer',financeReference:`Synthetic-${id()}`,proofId:upload.payload.proof.id}});
+  assert.equal(receipt.status,201,JSON.stringify(receipt.payload));
+  const confirmation=await request(base+'/commission-receipt-confirmations',{method:'POST',actor:'accountant',body:{idempotencyKey:id(),reason:'Synthetic company account reconciled',evidenceReference:upload.payload.proof.proofReference}});
+  assert.equal(confirmation.status,201,JSON.stringify(confirmation.payload));
+  assert.equal(Number(confirmation.payload.confirmation.confirmedActualReceived),20000);
+  assert.deepEqual(await financeCounts(),{receipts:pendingReceipt?2:1,confirmations:1,credits:0,payouts:0},'Collection must not automatically grant credit or payout');
+  assert.equal((await database.one('SELECT version FROM deals WHERE id=$1',[dealId])).version,closed.payload.version,'Collection must not change closed Deal version');
+  const records=await database.one(`SELECT d.status AS deal_status,o.stage,b.status AS booking_status,nysa_inventory_effective_status(d.listing_id) AS inventory_status
+    FROM deals d JOIN opportunities o ON o.id=d.opportunity_id JOIN bookings b ON b.id=d.booking_id WHERE d.id=$1`,[dealId]);
+  assert.deepEqual(records,{dealStatus:'closed_won',stage:'Closed Won',bookingStatus:'completed',inventoryStatus:commercialClosureType==='commercial_rental'?'Rented':'Sold'});
+  assert.equal((await database.one('SELECT closed_by FROM deals WHERE id=$1',[dealId])).closedBy,fixture.manager);
+  emit('INDEPENDENT-CLOSURE',{closedBeforeCollection:true,pendingReceipt,proofLinked:true,financeConfirmedAfterClosure:true,accountantClosureDenied:true,noAutomaticPayout:true,...records});
 });

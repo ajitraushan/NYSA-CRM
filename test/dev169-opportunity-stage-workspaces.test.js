@@ -35,10 +35,11 @@ test('DEF-092 stage draft API creates immutable actor-scoped numbered versions',
   assert.doesNotMatch(route,/UPDATE opportunity_stage_draft_versions/);
 });
 
-test('DEF-092 draft capture excludes files and final Save retains governed form submissions',()=>{
-  const app=read('public/app.js');
+test('DEF-092/111 draft capture excludes files and named actions retain governed form submissions',()=>{
+  const app=read('public/app.js'),forms=app+read('public/offer-ui.js')+read('public/deal-ui.js');
   assert.match(app,/control\.type!=='file'/);
   assert.match(app,/Files must be selected again when you return/);
-  assert.match(app,/form\.requestSubmit\(\)/);
-  for(const form of ['#property-match-form','#viewing-create-form','#offer-create-form','.offer-event-form','#booking-create-form','#deal-create-form'])assert.ok(app.includes(form),`missing governed form ${form}`);
+  assert.doesNotMatch(app,/<button[^>]*data-stage-save>Save<\/button>/);
+  assert.match(app,/Use each named action/);
+  for(const form of ['#property-match-form','#viewing-create-form','#offer-create-form','.offer-event-form','#booking-create-form','#deal-create-form'])assert.ok(forms.includes(form),`missing governed form ${form}`);
 });

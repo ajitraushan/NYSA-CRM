@@ -81,9 +81,9 @@ test('controlled PF resolution calls only users, locations, optional project and
   assert.doesNotMatch(JSON.stringify(result), /private@example|privateOwner|never return/);
 });
 
-test('dev.138 HTTP boundary is full-admin, exact-confirmation, tagged-test-only, audit-minimised and write-free', () => {
+test('dev.138 HTTP boundary is Director-only, exact-confirmation, tagged-test-only, audit-minimised and write-free', () => {
   const route = read('src/routes/property-finder-sandbox.js'), listingsRoute = read('src/routes/listings.js'), connector = read('src/property-finder-sandbox.js'), ui = read('public/app.js');
-  for (const marker of ["req.broker.role === 'admin'", "req.broker.jobRole === 'admin'", 'PROPERTY_FINDER_PREFLIGHT_CONFIRMATION', 'isExplicitlyTaggedTestInventory', 'current_preparation_version_id', 'property_finder_sandbox_listing_preflighted', 'creditsSpent: 0']) assert.ok(route.includes(marker), marker);
+  for (const marker of ["req.broker.jobRole === 'director'", 'PROPERTY_FINDER_PREFLIGHT_CONFIRMATION', 'isExplicitlyTaggedTestInventory', 'current_preparation_version_id', 'property_finder_sandbox_listing_preflighted', 'creditsSpent: 0']) assert.ok(route.includes(marker), marker);
   assert.doesNotMatch(route, /client\.(create|update|delete|publish|unpublish|registerWebhook)/);
   assert.doesNotMatch(connector, /method:\s*['"](?:PUT|PATCH|DELETE)['"]|\/v1\/webhooks/);
   assert.match(connector, /request\(`\/v1\/listings\?page=\$\{safePage\}&perPage=\$\{safePerPage\}`/);
@@ -95,6 +95,6 @@ test('dev.138 HTTP boundary is full-admin, exact-confirmation, tagged-test-only,
   const outwardHarness = read('scripts/property-finder-outward-pre-uat.js'), pkg = JSON.parse(read('package.json'));
   for (const marker of ['credential-free-outward-pre-uat', 'externalNetworkCalls: 0', 'propertyFinderWrites: 0', 'publicationPerformed: false', 'creditsSpent: 0', "flag: 'wx'"]) assert.ok(outwardHarness.includes(marker), marker);
   assert.equal(pkg.scripts['uat:property-finder:outward:pre'], 'node scripts/property-finder-outward-pre-uat.js');
-  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.174');
-  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.174');
+  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.208');
+  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.208');
 });

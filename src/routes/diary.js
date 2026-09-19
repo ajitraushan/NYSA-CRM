@@ -33,7 +33,7 @@ r.get('/crm/diary',async(req,res)=>{
   const allowedAgents=await diaryAgents(req.broker),allowedIds=new Set(allowedAgents.map(x=>x.id)),companyView=isCompanyReader(req.broker);
   let selectedAgentId=cleanAgent(req.query.agentId);
   if(!selectedAgentId)selectedAgentId=companyView?'all':req.broker.id;
-  if(selectedAgentId==='all'&&!companyView)return res.status(403).json({error:'Company diary access is restricted to Directors and Administrators'});
+  if(selectedAgentId==='all'&&!companyView)return res.status(403).json({error:'Company diary access is restricted to Directors'});
   if(selectedAgentId!=='all'&&!allowedIds.has(selectedAgentId))return res.status(403).json({error:'The selected agent is outside your diary scope'});
   const ownerClause=selectedAgentId==='all'?'':` AND %ALIAS%=$3`;
   const params=selectedAgentId==='all'?[range.from,range.to]:[range.from,range.to,selectedAgentId];

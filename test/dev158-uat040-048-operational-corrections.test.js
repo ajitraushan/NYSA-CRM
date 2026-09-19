@@ -33,7 +33,7 @@ test('UAT-041 owner and internal-use authority are first, explicit and do not cr
 
 test('UAT-042 market evidence and linked organization purpose are explained without operational mutation',()=>{
   const market=read('public/market-intelligence-ui.js'),ui=read('public/app.js');
-  for(const marker of ['Comparable market evidence','not a valuation','never changes Inventory price, availability, verification or lifecycle status','Comparable-sales Community','Why does this Inventory belong to this Community?','Save Community mapping','Comparable evidence not ready'])assert.match(market,new RegExp(marker,'i'));
+  for(const marker of ['Optional DLD sales comparison','does not set or change the property price','Comparison area','Comparable-sales Community','Why does this Inventory belong to this Community?','Save Community mapping','Comparable evidence not ready'])assert.match(market,new RegExp(marker,'i'));
   for(const marker of ['Linked organizations and source history','never changes the owner/party, price, availability','Organizations are maintained in CRM'])assert.match(ui,new RegExp(marker,'i'));
 });
 

@@ -65,7 +65,7 @@ test('server mounts the official document evidence API',()=>{assert.match(read('
 
 test('Deal UI exposes controlled evidence, exact PDF review and existing Task follow-up',()=>{
   const ui=read('public/official-document-ui.js'),deal=read('public/deal-ui.js'),bootstrap=read('public/bootstrap.js'),html=read('public/index.html');
-  for(const marker of ['CONTROLLED EXTERNAL EVIDENCE','CORE does not generate or submit official forms','Upload official PDF evidence','Independent evidence review','Review exact PDF','Create or reuse follow-up Task','reviewConfirmation','idempotencyKey'])assert.match(ui,new RegExp(marker,'i'));
+  for(const marker of ['REQUIRED TRANSACTION DOCUMENTS','CORE stores the exact file and its review history','Upload official PDF evidence','Independent evidence review','Review exact PDF','Create or reuse follow-up Task','reviewConfirmation','idempotencyKey'])assert.match(ui,new RegExp(marker,'i'));
   assert.match(deal,/officialDocumentWorkspaceHTML/);assert.match(deal,/bindOfficialDocumentWorkspace/);assert.match(bootstrap,/official-document-ui\.js/);assert.match(html,/official-document-workspace/);
   assert.doesNotMatch(ui,/Property Finder|recipient|ownerPhone|ownerEmail|authorityName/i);
 });

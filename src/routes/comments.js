@@ -48,12 +48,10 @@ r.patch('/comments/:id', async (req, res) => {
 r.delete('/comments/:id', async (req, res) => {
   const comment = await one('SELECT * FROM comments WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
   if (!comment) return res.status(404).json({ error: 'Comment not found' });
-  const isAdmin = req.broker.role === 'admin';
   const isAuthor = comment.authorId === req.broker.id;
-  if (!isAdmin && !isAuthor) return res.status(403).json({ error: 'You can only delete your own comments' });
-  if (isAuthor && !isAdmin && !withinEditWindow(comment)) return res.status(403).json({ error: 'Own comments can only be deleted within the edit window; ask an admin' });
+  if (!isAuthor) return res.status(403).json({ error: 'You can only delete your own comments' });
+  if (!withinEditWindow(comment)) return res.status(403).json({ error: 'Own comments can only be deleted within the edit window' });
   await execute('UPDATE comments SET deleted_at=NOW() WHERE id=$1', [comment.id]);
-  if (isAdmin && !isAuthor) await audit('Comment', comment.id, 'moderated_deleted', req.broker.id, { listingId:comment.listingId });
   res.json({ ok:true });
 });
 

@@ -30,12 +30,12 @@ import {
 const r = Router();
 const client = createPropertyFinderSandboxClient();
 const listingImportClient = createPropertyFinderListingImportClient();
-const isFullAdmin = req => req.broker.role === 'admin' && req.broker.jobRole === 'admin';
-const requireFullAdmin = (req, res, next) => isFullAdmin(req)
+const isSandboxOperator = req => req.broker.jobRole === 'director';
+const requireSandboxOperator = (req, res, next) => isSandboxOperator(req)
   ? next()
-  : res.status(403).json({ error: 'Full Administrator access is required' });
+  : res.status(403).json({ error: 'Director access is required for the Property Finder sandbox' });
 
-r.use(requireAuth, requireFullAdmin);
+r.use(requireAuth, requireSandboxOperator);
 
 r.get('/integrations/property-finder/sandbox/status', (req, res) => {
   const status = client.status(), listingImport = listingImportClient.status();

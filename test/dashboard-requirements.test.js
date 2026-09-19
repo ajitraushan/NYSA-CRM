@@ -133,17 +133,17 @@ test('Agent dashboards remove hierarchy filters fixed by maintained identity',()
   assert.match(ui,/const organizationalFilters=likelyType==='agent'\?'':/);
 });
 
-test('Agent dashboard provides lifecycle counts, exact lead drill-down and stage actions',()=>{
+test('Agent dashboard provides Opportunity lifecycle counts, exact record drill-down and stage actions',()=>{
   const ui=fs.readFileSync(new URL('../public/dashboard-ui.js',import.meta.url),'utf8');
   const routes=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');
   const domain=fs.readFileSync(new URL('../src/dashboard-domain.js',import.meta.url),'utf8');
   const page=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8')+fs.readFileSync(new URL('../public/bootstrap.js',import.meta.url),'utf8');
-  for(const marker of ['OPERATIONS OVERVIEW','Pipeline at a glance','customers are represented across','Where your active work is now','agentLifecycle(data)','data-dashboard-segment="${x.segment}"','exact leads'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['OPERATIONS OVERVIEW','Pipeline at a glance','each current Opportunity counted at its present stage','Where your active work is now','agentLifecycle(data)','data-dashboard-segment="${x.segment}"','exact records'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const action of ['Record first contact','Complete qualification','Schedule viewing','Record viewing outcome','Progress negotiation','Review completed lead','Review loss outcome'])assert.match(domain,new RegExp(action));
-  assert.match(routes,/buildAgentLifecycle\(stages\)/);
+  assert.match(routes,/buildAgentLifecycle\(lifecycleRows\)/);
   assert.match(routes,/COUNT\(DISTINCT contact_id\)::int AS customers/);
   assert.match(routes,/const lifecycle=AGENT_LIFECYCLE_STAGES\.find/);
-  assert.match(routes,/l\.stage='\$\{lifecycle\.stage\}'/);
+  assert.match(routes,/loadOpportunityPipelineCounts/);
   assert.match(ui,/result\.stageAction/);
   assert.match(ui,/agent-dashboard-filter-drawer/);
   assert.match(ui,/const filterMarkup=`<form id="dashboard-filters"/);

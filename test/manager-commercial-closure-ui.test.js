@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../public/deal-ui.js',import.meta.url),'utf8');
+function render(dealType,status,jobRole='manager',writable=true){
+  const context=vm.createContext({window:{},ME:{jobRole},esc:v=>String(v??''),fmtPrice:String,fmtDate:String});
+  vm.runInContext(source,context);
+  return context.dealWorkspaceHTML({writable,deals:[{id:'synthetic',dealType,status,parties:[],
+    closureGates:['terms','reservation','parties','checklist'].map(code=>({code,complete:true,label:code})),
+    checklistItems:[{id:'review',itemCode:'DIRECTOR_REVIEW',responsibleRole:'director',label:'Director-designated commercial review',required:true,evidenceRequired:true,status:'pending'}]}]});
+}
+for(const type of ['commercial_sale','commercial_rental'])test(`${type}: Manager gets standard review, approval and closure actions without MD dependency`,()=>{
+  const draft=render(type,'draft');
+  assert.match(draft,/Commercial completion review/);
+  assert.match(draft,/deal-checklist-form/);
+  assert.match(draft,/deal-approval-form/);
+  assert.doesNotMatch(draft,/A Director must approve/);
+  const approved=render(type,'approved');
+  assert.match(approved,/deal-close-won-form/);
+  assert.match(approved,/deal-close-lost-form/);
+  for(const [role,writable] of [['sales_agent',true],['accountant',false],['manager',false]]){
+    assert.doesNotMatch(render(type,'approved',role,writable),/id="deal-close-(?:won|lost)-form"/);
+    assert.doesNotMatch(render(type,'draft',role,writable),/id="deal-approval-form"/);
+  }
+});

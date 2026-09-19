@@ -6,3 +6,4 @@ ALTER TABLE property_matches
 
 CREATE UNIQUE INDEX IF NOT EXISTS property_matches_opportunity_requirement_listing_uq
   ON property_matches(opportunity_id,requirement_id,listing_id);
+

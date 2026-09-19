@@ -1,5 +1,6 @@
 export function dashboardTypeFor(broker){
-  if(broker?.role==='admin'||broker?.jobRole==='director')return 'executive';
+  if(broker?.role==='admin')return 'admin';
+  if(broker?.jobRole==='director')return 'executive';
   if(broker?.jobRole==='manager')return 'manager';
   if(broker?.jobRole==='listing_agent')return 'listing';
   if(broker?.jobRole==='accountant')return 'accounting';
@@ -17,7 +18,10 @@ export const AGENT_LIFECYCLE_STAGES=[
   {stage:'Contacted',label:'Contacted',action:'Complete qualification'},
   {stage:'Qualified',label:'Qualified',action:'Schedule viewing'},
   {stage:'Viewing',label:'Viewing',action:'Record viewing outcome'},
+  {stage:'Offer',label:'Offer',action:'Review offer'},
   {stage:'Negotiation',label:'Negotiation',action:'Progress negotiation'},
+  {stage:'Booking',label:'Booking',action:'Review reservation'},
+  {stage:'Deal',label:'Closure Steps',action:'Continue closure steps'},
   {stage:'Won',label:'Won',action:'Review completed lead'},
   {stage:'Lost',label:'Lost',action:'Review loss outcome',terminal:true}
 ];

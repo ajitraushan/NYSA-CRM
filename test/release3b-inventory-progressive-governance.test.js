@@ -132,7 +132,7 @@ test('BOOKING-DEPOSIT-CARRYFORWARD-73 derives reservation value from the exact a
   assert.match(route,/acceptedRevision\.currency/);
   assert.doesNotMatch(domain,/input\.bookingAmount|input\.currency/);
   assert.match(ui,/Reservation amount from accepted revision/);
-  assert.match(ui,/Read-only\. CORE carries forward the exact accepted Offer deposit/);
+  assert.match(ui,/This amount comes from the accepted Offer revision and cannot be changed here/);
   assert.match(ui,/Evidence required before Inventory blocking/);
   assert.match(ui,/button\.disabled=!\(file&&allowed&&withinLimit\)/);
   assert.doesNotMatch(bookingUi,/name="bookingAmount"|name="currency"/);
@@ -159,7 +159,7 @@ test('BOOKING-EXPIRY-GOVERNANCE-74 defaults seven days and records Manager-only 
 test('R3B-IMPORT-ATTRIBUTION-53 retains historical attribution while disabling transferable custody',()=>{
   const migration=read('src/migrations/078_release3b_inventory_progressive_governance.sql'),route=read('src/routes/listings.js'),importRoute=read('src/routes/inventory-import.js'),agentGovernance=read('src/inventory-agent-governance.js');
   assert.match(migration,/CREATE TABLE inventory_agent_assignment_history/);assert.match(migration,/BEFORE UPDATE OR DELETE/);assert.match(migration,/Historical Inventory attribution snapshot/);assert.doesNotMatch(migration,/INSERT INTO schema_migrations/);
-  assert.match(route,/Inventory has no transferable custodian/);assert.doesNotMatch(route,/expectedResponsibleAgentId/);assert.match(importRoute,/inventoryAgentResolutionDirectory/);assert.match(importRoute,/defaultOriginatingAgentReference/);assert.match(importRoute,/FOR SHARE/);assert.match(importRoute,/requestedAgentReferences\(sourceRows\)/);assert.match(agentGovernance,/\['admin_assistant','listing_agent'\]/);assert.doesNotMatch(importRoute,/listing@nysarealty\.com/);
+  assert.match(route,/Inventory has no transferable custodian/);assert.doesNotMatch(route,/expectedResponsibleAgentId/);assert.match(importRoute,/inventoryAgentResolutionDirectory/);assert.match(importRoute,/defaultOriginatingAgentReference/);assert.match(importRoute,/FOR SHARE/);assert.match(importRoute,/requestedAgentReferences\(sourceRows\)/);assert.match(agentGovernance,/broker\.jobRole==='listing_agent'/);assert.doesNotMatch(agentGovernance,/admin_assistant|broker\.role==='admin'/);assert.doesNotMatch(importRoute,/listing@nysarealty\.com/);
 });
 
 test('R3B-INVENTORY-VERIFY-55 makes pending verification a manager operating queue',()=>{

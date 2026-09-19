@@ -27,6 +27,11 @@ artifacts/
 output/
 outputs/
 release-artifacts/
+.tmp/
+.audit-*/
+remediation-baselines/
+uat-evidence/
+docs/uat-evidence/
 section3-full-output.txt
 section3-output.txt
 uat*-output.txt

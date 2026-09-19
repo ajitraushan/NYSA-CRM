@@ -204,7 +204,7 @@ r.get('/crm/opportunities/:id/governed-property-shares/:shareId',async(req,res)=
     FROM inventory_match_feedback f LEFT JOIN customer_response_task_provenance p ON p.match_feedback_id=f.id LEFT JOIN tasks t ON t.id=p.task_id
     WHERE f.share_item_id=ANY($1::uuid[]) ORDER BY f.occurred_at,f.created_at`,[share.items.map(item=>item.id)]);res.json({...share,events,responses});});
 
-r.get('/crm/reports/governed-property-shares',async(req,res)=>{if(!isManager(req.broker))return res.status(403).json({code:'report_scope_required',error:'Manager or administrator scope is required'});
+r.get('/crm/reports/governed-property-shares',async(req,res)=>{if(!isManager(req.broker))return res.status(403).json({code:'report_scope_required',error:'Manager scope is required'});
   const checked=validateGovernedShareReportQuery(req.query||{});if(checked.error)return res.status(400).json({code:'invalid_request',error:checked.error});const v=checked.value,params=[v.from,v.to],scope=opportunityScopeSql('o',req.broker,params),where=[scope.clause,
     's.governed_contract_version IS NOT NULL',`s.prepared_at>=$1`,`s.prepared_at<=$2`];if(v.ownerId){params.push(v.ownerId);where.push(`o.owner_id=$${params.length}`);}
   const rows=await many(`SELECT s.id AS share_id,s.opportunity_id,s.governed_status,s.prepared_at,o.owner_id,

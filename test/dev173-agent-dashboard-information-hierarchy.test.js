@@ -8,10 +8,10 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 test('dev.173 puts the compact operations overview before the Agent attention queue',()=>{
   const dashboard=read('public/dashboard-ui.js');
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'2.1.0-dev.174');
+  assert.equal(pkg.version,'2.1.0-dev.208');
   assert.match(dashboard,/OPERATIONS OVERVIEW/);
   assert.match(dashboard,/Your business at a glance/);
-  assert.match(dashboard,/View full operating sequence · Customer to Deal/);
+  assert.match(dashboard,/View full operating sequence · Customer to Opportunity/);
   assert.match(dashboard,/Pipeline at a glance/);
   assert.match(dashboard,/dashboard-lifecycle[\s\S]*dashboard-guided-flow/);
 });

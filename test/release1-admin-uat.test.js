@@ -35,7 +35,7 @@ test('password recovery is private administrator-governed and revokes existing s
   assert.match(ui,/Forgot password\?/);assert.match(ui,/Confirm new password/);assert.match(ui,/Password reset requests/);
   assert.match(auth,/RESET_RESPONSE/);assert.match(auth,/password-reset-requests/);assert.match(auth,/password-resets\/redeem/);
   assert.match(auth,/DELETE FROM sessions WHERE broker_id=\$1/);assert.match(auth,/Reset code is invalid or expired/);
-  assert.match(admin,/Administrator access required/);assert.match(admin,/code_hash/);assert.match(admin,/INTERVAL '30 minutes'/);
+  assert.match(admin,/Admin access required/);assert.match(admin,/code_hash/);assert.match(admin,/INTERVAL '30 minutes'/);
   assert.match(migration,/password_reset_requests_one_open_uq/);assert.match(migration,/code_hash CHAR\(64\)/);
 });
 
@@ -93,14 +93,13 @@ test('proposal creation consumes administrator-defined prompts and snapshots the
   assert.match(api,/makeProposalPdf/);
 });
 
-test('Admin Assistant can maintain routine teams settings and listings without approval authority',()=>{
-  const crm=read('src/routes/crm.js'),governance=read('src/routes/governance.js'),qualification=read('src/routes/qualification-finance.js'),files=read('src/routes/files-proposals.js'),listings=read('src/routes/listings.js');
-  assert.match(crm,/Admin Assistants can create teams/);
-  assert.match(crm,/Admin Assistants can edit teams/);
-  assert.match(governance,/Administrator or Admin Assistant access required/);
-  assert.match(qualification,/admin_assistant.*approve\|activate/);
-  assert.match(files,/admin_assistant.*approve\|activate/);
-  assert.match(listings,/admin_assistant/);
+test('Admin combines configuration and governed leave administration',()=>{
+  const roleAccess=read('src/role-access.js'),crm=read('src/routes/crm.js');
+  assert.match(roleAccess,/workspaceTabs:frozen\(\['admin','myLeave','leaveAdministration'\]\)/);
+  assert.match(roleAccess,/Admin access is limited to configuration and leave administration/);
+  assert.match(roleAccess,/approverAccountRole:'admin'/);
+  assert.match(crm,/Admin team-configuration access required/);
+  assert.doesNotMatch(crm,/Only administrators and Admin Assistants can (?:create|edit) teams/);
 });
 
 test('user-management API returns effective role assignments with browser-facing field names',()=>{
@@ -113,7 +112,7 @@ test('team manager is the authoritative reporting line shown in user management'
   assert.match(admin,/reporting_manager_name/);assert.match(admin,/syncManagerAssignment/);
   assert.match(admin,/already managed by .*Change its manager deliberately in Team maintenance/);
   assert.match(crm,/eligibleTeamManager/);assert.match(crm,/Select an active user with a Manager role/);
-  assert.match(crm,/isCompanyReader\(req\.broker\)\|\|req\.broker\.jobRole==='admin_assistant'/);
+  assert.match(crm,/isCompanyReader\(req\.broker\)\|\|hasCapability\(req\.broker,CAPABILITY\.STAFF_CONFIGURATION_REFERENCE_READ\)/);
   assert.match(auth,/already has a Manager/);assert.match(auth,/UPDATE teams SET manager_id=\$1/);
   assert.match(ui,/Team \/ reporting line/);assert.match(ui,/Reports to:/);assert.match(ui,/Manages:/);
   assert.match(ui,/Reporting manager not assigned/);assert.match(ui,/s\.jobRole==='manager'/);
@@ -245,11 +244,12 @@ test('structured requirements use governed property choices and save blank bedro
   assert.match(routes,/,bedroomsMin,bedroomsMax,/);assert.match(ai,/propertyTypeArray/);
 });
 
-test('administration uses a left maintenance menu and proposal designer enforces buyer booklet controls',()=>{
+test('administration uses one sidebar plus a maintenance selector and proposal designer enforces buyer booklet controls',()=>{
   const app=read('public/app.js'),routes=read('src/routes/files-proposals.js'),pdf=read('src/proposal-pdf.js');
   assert.match(app,/setupAdminWorkspace\(\)/);
   assert.match(app,/className='admin-workspace'/);
-  assert.match(app,/admin-maintenance-nav/);
+  assert.match(app,/admin-maintenance-select/);
+  assert.doesNotMatch(app,/workspace\.innerHTML='<aside class="admin-maintenance-nav"/);
   assert.match(app,/\['users','User management'\]/);
   assert.match(app,/Maximum matched properties/);
   assert.match(app,/max="3"/);
@@ -359,9 +359,9 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(routes,/task_type.*proposal_id.*proposal_version_id/);
   assert.match(routes,/completed_by_proposal_version/);
   assert.match(routes,/returnedTo:current\.createdBy/);
-  assert.match(app,/My action requests/);
-  assert.match(app,/Work returned to you appears here/);
-  assert.match(app,/crm\/tasks\?mine=1&bucket=open/);
+  assert.doesNotMatch(app,/Administrator dashboard|System administration|Open Administration/);
+  assert.match(app,/initialTab==='admin'\?renderAdmin\(\):renderDashboard\(\)/);
+  assert.doesNotMatch(app,/<div id="admin-my-task-table"/);
   assert.match(read('src/routes/lead-operations.js'),/req\.query\.mine==='1'/);
   assert.match(read('src/routes/lead-operations.js'),/proposal correction completes automatically/);
   assert.doesNotMatch(app,/data-tab="tasks">Tasks/);

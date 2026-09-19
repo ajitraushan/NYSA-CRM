@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {CAPABILITY,hasCapability} from './role-access.js';
 
 const date=value=>{const text=String(value||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(text))throw new Error('A valid ISO date is required');const parsed=new Date(`${text}T12:00:00Z`);if(Number.isNaN(parsed.valueOf()))throw new Error('A valid ISO date is required');return parsed;};
 const dayKey=value=>value.toISOString().slice(0,10);
@@ -30,13 +31,9 @@ export function validateLeavePolicy(input={}){
   return{valid:!errors.length,errors,value};
 }
 
-export function resolveLeaveApprover({applicantId,applicantJobRole,reportingManagerId,directorId}){
-  const approverId=applicantJobRole==='manager'?directorId:reportingManagerId;if(!approverId)throw new Error(applicantJobRole==='manager'?'An active Director is required':'An active reporting Manager is required');if(String(approverId)===String(applicantId))throw new Error('Self-approval is prohibited');return{approverId,routingReason:applicantJobRole==='manager'?'manager_leave_to_director':'employment_reporting_manager'};
-}
-
 export function validateLeaveApplication({startDate,endDate,startPortion='full',endPortion='full',reason,availableUnits,allowNegativeBalance=false,employmentStartDate,employmentEndDate}){
   const calculation=calculateLeaveUnits({startDate,endDate,startPortion,endPortion});const errors=[];if(String(reason||'').trim().length<5)errors.push('A leave reason is required');if(startDate<employmentStartDate||employmentEndDate&&endDate>employmentEndDate)errors.push('Leave dates must fall within active employment');if(!allowNegativeBalance&&calculation.units>Number(availableUnits||0))errors.push('Available leave balance is insufficient');return{valid:!errors.length,errors,...calculation};
 }
 
-export function mayMaintainLeave(broker){return broker?.role==='admin';}
-export function mayDecideLeave({broker,application}){return Boolean(broker&&application&&String(broker.id)===String(application.approverId)&&String(broker.id)!==String(application.applicantId)&&['manager','director'].includes(broker.jobRole));}
+export function mayMaintainLeave(broker){return hasCapability(broker,CAPABILITY.LEAVE_ADMINISTER);}
+export function mayDecideLeave({broker,application}){return Boolean(broker&&application&&hasCapability(broker,CAPABILITY.LEAVE_DECIDE)&&String(broker.id)!==String(application.applicantId));}

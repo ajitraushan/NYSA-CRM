@@ -26,7 +26,7 @@ function authenticate(req,provider){
 }
 async function assignedActor(provider){
   const {actorId}=providerConfiguration(provider);
-  return actorId?one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role IN ('admin','internal_broker') AND (role='admin' OR job_role IN ('listing_agent','manager','admin_assistant'))",[actorId]):null;
+  return actorId?one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role='internal_broker' AND job_role IN ('listing_agent','manager')",[actorId]):null;
 }
 async function translateProviderPayload(payload={},options={}){
   const provider=String(payload.provider||'').trim().toLowerCase(),versionCode=String(payload.mappingVersion||'').trim();
@@ -111,11 +111,11 @@ r.post('/intake/listings',async(req,res)=>{
   catch(error){await execute("UPDATE listing_intake_events SET status='failed',error_code='PROCESSING_FAILED',error_detail='Processing failed; review server diagnostics by event ID',processed_at=NOW() WHERE id=$1",[event.id]);throw error;}
 });
 
-function queueAccess(req,res,next){if(req.broker.role!=='admin'&&!['listing_agent','manager','admin_assistant'].includes(req.broker.jobRole))return res.status(403).json({error:'Listing intake queue is outside your role'});next();}
+function queueAccess(req,res,next){if(!['listing_agent','manager'].includes(req.broker.jobRole))return res.status(403).json({error:'Listing intake queue is outside your role'});next();}
 r.get('/listing-intake',requireAuth,queueAccess,async(req,res)=>{
   const params=[],where=[];
   if(req.broker.jobRole==='manager'&&req.broker.role!=='admin'){params.push(req.broker.managedTeamIds||[]);where.push(`b.team_id=ANY($${params.length}::uuid[])`);}
-  else if(req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant'){params.push(req.broker.id);where.push(`e.assigned_to=$${params.length}`);}
+  else{params.push(req.broker.id);where.push(`e.assigned_to=$${params.length}`);}
   if(['processing','accepted','failed','unmapped','duplicate_review'].includes(req.query.status)){params.push(req.query.status);where.push(`e.status=$${params.length}`);}
   const events=await many(`SELECT e.id,e.event_id,e.provider_code,e.source_kind,e.external_record_id,e.mapping_version,e.received_mapping_version,e.status,e.error_code,e.error_detail,e.listing_id,e.duplicate_listing_id,e.attempt_count,e.received_at,e.processed_at,b.name AS assigned_to_name
     FROM listing_intake_events e JOIN brokers b ON b.id=e.assigned_to ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY e.received_at DESC LIMIT 200`,params);
@@ -126,7 +126,7 @@ r.post('/listing-intake/:provider/:eventId/replay',requireAuth,queueAccess,async
     WHERE e.provider_code=$1 AND e.event_id=$2`,[req.params.provider,req.params.eventId]);if(!current)return res.status(404).json({error:'Listing intake event not found'});
   if(!['failed','unmapped'].includes(current.status))return res.status(409).json({error:'Only failed or unmapped events can be corrected and replayed'});
   if(req.broker.role!=='admin'&&req.broker.jobRole==='manager'&&!(req.broker.managedTeamIds||[]).includes(String(current.assignedTeamId||'')))return res.status(403).json({error:'This intake exception is outside your managed team'});
-  if(req.broker.role!=='admin'&&!['manager','admin_assistant'].includes(req.broker.jobRole)&&current.assignedTo!==req.broker.id)return res.status(403).json({error:'This intake exception is assigned to another reviewer'});
+  if(req.broker.jobRole!=='manager'&&current.assignedTo!==req.broker.id)return res.status(403).json({error:'This intake exception is assigned to another reviewer'});
   const candidate={...(current.payload||{}),...(req.body||{}),eventId:current.eventId,provider:current.providerCode,externalRecordId:current.externalRecordId},translated=await translateProviderPayload(candidate,{currentActive:true});
   const checked=translated.error?{error:translated.error,code:translated.code}:validateListingIntakePayload(translated.payload);if(checked.error)return res.status(400).json({error:checked.error,code:checked.code});
   const event=await one("UPDATE listing_intake_events SET status='processing',payload=$1,payload_hash=$2,mapping_version=$3,mapping_version_id=$4,attempt_count=attempt_count+1,replayed_by=$5,error_code=NULL,error_detail=NULL,processed_at=NULL WHERE id=$6 RETURNING *",[checked.value,hash(JSON.stringify(checked.value)),checked.value.mappingVersion,translated.mappingVersionId,req.broker.id,current.id]);

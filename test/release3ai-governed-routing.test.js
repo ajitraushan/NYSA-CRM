@@ -30,7 +30,7 @@ test('CRM reroutes only unassigned journey Leads and preserves assigned ownershi
   assert.match(route,/applyContinuationAiRouting/);assert.match(route,/if\(lead\.assignedTo&&requiresChange\)return queueRoutingReview/);
   assert.match(route,/Review Website AI routing change/);assert.match(route,/Website AI routing decision before agent assignment/);
   assert.match(migration,/ai_routing_status/);assert.match(migration,/ai_routing_decision JSONB/);assert.doesNotMatch(migration,/schema_migrations/);
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.174');assert.match(plugin,/VERSION = '1.9.4'/);
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.208');assert.match(plugin,/VERSION = '1.9.4'/);
 });
 
 test('dev.110 deployment is checksum-bound, rerunnable and CRM-Test-only',()=>{

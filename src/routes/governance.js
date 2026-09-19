@@ -17,8 +17,8 @@ function requireGovernanceAccess(req,res,next){
 }
 
 function clean(value){const v=typeof value==='string'?value.trim():value;return v===''?null:v;}
-function adminOnly(req,res){if(req.broker.role!=='admin'){res.status(403).json({error:'Administrator access required'});return false;}return true;}
-function settingsOnly(req,res){if(req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant'){res.status(403).json({error:'Administrator or Admin Assistant access required'});return false;}return true;}
+function adminOnly(req,res){if(req.broker.role!=='admin'){res.status(403).json({error:'Admin access required'});return false;}return true;}
+const settingsOnly=adminOnly;
 
 r.get('/admin/property-media-approval-policy',async(req,res)=>{
   if(!adminOnly(req,res))return;
@@ -89,11 +89,13 @@ async function createOrganizationDraft(req,res){
     const active=await one("SELECT logo_file_name,logo_media_type,logo_file_size_bytes,logo_storage_key,logo_file_hash FROM organization_settings WHERE status='active'",[],client);
     const row=await one(`INSERT INTO organization_settings
       (id,version,legal_name,display_name,trade_license_number,registration_authority,registered_address,primary_phone,primary_email,
-       website_url,default_currency,timezone,locale,brand_version,proposal_footer,default_disclaimer,status,created_by,
+       website_url,default_currency,timezone,locale,brand_version,proposal_footer,default_disclaimer,vat_registration_number,
+       bank_account_name,bank_name,bank_account_number,bank_iban,bank_swift_code,bank_currency,bank_branch,status,created_by,
        logo_file_name,logo_media_type,logo_file_size_bytes,logo_storage_key,logo_file_hash)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'draft',$17,$18,$19,$20,$21,$22) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'draft',$25,$26,$27,$28,$29,$30) RETURNING *`,
       [id,current.version+1,b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,
-       b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,req.broker.id,active?.logoFileName||null,
+       b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,
+       b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,req.broker.id,active?.logoFileName||null,
        active?.logoMediaType||null,active?.logoFileSizeBytes||null,active?.logoStorageKey||null,active?.logoFileHash||null],client);
     await audit('OrganizationSettings',id,'draft_created',req.broker.id,{version:row.version},client);return row;
   });
@@ -109,7 +111,8 @@ r.patch('/admin/organization-settings/:id',async(req,res)=>{
   const checked=validateOrganizationProfile(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});const b=checked.profile;
   const row=await one(`UPDATE organization_settings SET legal_name=$1,display_name=$2,trade_license_number=$3,registration_authority=$4,registered_address=$5,
     primary_phone=$6,primary_email=$7,website_url=$8,default_currency=$9,timezone=$10,locale=$11,brand_version=$12,proposal_footer=$13,
-    default_disclaimer=$14,updated_at=NOW() WHERE id=$15 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,current.id]);
+    default_disclaimer=$14,vat_registration_number=$15,bank_account_name=$16,bank_name=$17,bank_account_number=$18,bank_iban=$19,
+    bank_swift_code=$20,bank_currency=$21,bank_branch=$22,updated_at=NOW() WHERE id=$23 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,current.id]);
   await audit('OrganizationSettings',row.id,'draft_edited',req.broker.id,{version:row.version});res.json(publicOrganization(row));
 });
 
@@ -185,7 +188,7 @@ r.post('/crm/contacts/:id/merge',async(req,res)=>{
   const source=await scopedContact(req,req.params.id),target=await scopedContact(req,req.body?.targetContactId);
   if(!source||!target)return res.status(404).json({error:'Source or target contact not found'});
   if(source.id===target.id)return res.status(400).json({error:'A contact cannot be merged into itself'});
-  if(!(req.broker.role==='admin'||isManager(req.broker))||!clean(req.body?.reason))return res.status(403).json({error:'Manager/admin permission and a merge reason are required'});
+  if(!isManager(req.broker)||!clean(req.body?.reason))return res.status(403).json({error:'Manager permission and a merge reason are required'});
   await transaction(async client=>{
     await execute(`DELETE FROM contact_channels s USING contact_channels t WHERE s.contact_id=$1 AND t.contact_id=$2
       AND s.channel_kind=t.channel_kind AND s.normalized_value=t.normalized_value`,[source.id,target.id],client);
@@ -311,7 +314,7 @@ r.patch('/admin/value-definitions/:id',async(req,res)=>{
   const usage=Number((await one('SELECT COUNT(*)::int AS count FROM value_definition_usage WHERE value_definition_id=$1',[current.id])).count);
   if(req.body?.stableCode!==undefined&&req.body.stableCode!==current.stableCode){const error=stableCodeError(req.body.stableCode);if(error)return res.status(400).json({error});if(current.definitionStatus!=='draft'||usage)return res.status(400).json({error:'Stable codes are immutable after activation or use'});}
   const b=req.body||{};if(b.definitionStatus&&b.definitionStatus!==current.definitionStatus&&(!clean(b.changeReason)||!clean(b.impactReview)))return res.status(400).json({error:'Status changes require changeReason and impactReview'});
-  if(b.definitionStatus&&b.definitionStatus!==current.definitionStatus&&req.broker.role!=='admin')return res.status(403).json({error:'Administrator approval is required for controlled-value status changes'});
+  if(b.definitionStatus&&b.definitionStatus!==current.definitionStatus&&req.broker.role!=='admin')return res.status(403).json({error:'Admin approval is required for controlled-value status changes'});
   if(['deprecated','retired'].includes(b.definitionStatus)&&usage>0&&!b.effectiveTo)return res.status(400).json({error:'Used values require an effectiveTo date when deprecated or retired'});
   const map={stableCode:'stable_code',displayLabelEn:'display_label_en',displayLabelAr:'display_label_ar',description:'description',definitionStatus:'definition_status',displayOrder:'display_order',isDefault:'is_default',effectiveFrom:'effective_from',effectiveTo:'effective_to',replacementValueId:'replacement_value_id',changeReason:'change_reason',impactReview:'impact_review'};
   const sets=[],params=[],changes={};for(const [f,c] of Object.entries(map))if(b[f]!==undefined){let v=b[f];if(f==='isDefault')v=v?1:0;params.push(v);sets.push(`${c}=$${params.length}`);changes[f]=v;}
@@ -320,7 +323,7 @@ r.patch('/admin/value-definitions/:id',async(req,res)=>{
   await audit('ValueDefinition',current.id,'edited',req.broker.id,changes);res.json(updated);
 });
 
-r.patch('/admin/value-sets/:id',async(req,res)=>{if(!settingsOnly(req,res))return;const current=await one('SELECT * FROM value_sets WHERE id=$1',[req.params.id]);if(!current)return res.status(404).json({error:'Value set not found'});const usage=Number((await one('SELECT COUNT(*)::int AS count FROM value_definition_usage u JOIN value_definitions d ON d.id=u.value_definition_id WHERE d.value_set_id=$1',[current.id])).count),b=req.body||{};if(b.status&&b.status!==current.status&&req.broker.role!=='admin')return res.status(403).json({error:'Administrator approval is required for value-set status changes'});if(b.stableCode!==undefined&&b.stableCode!==current.stableCode){const error=stableCodeError(b.stableCode);if(error)return res.status(400).json({error});if(current.status!=='draft'||usage)return res.status(409).json({error:'Set stable code is immutable after activation or use'});}if(b.status==='retired'&&!clean(b.reason))return res.status(400).json({error:'Retirement reason is required'});const row=await one('UPDATE value_sets SET stable_code=COALESCE($1,stable_code),name=COALESCE($2,name),description=$3,status=COALESCE($4,status),updated_at=NOW() WHERE id=$5 RETURNING *',[b.stableCode===undefined?null:clean(b.stableCode),b.name===undefined?null:clean(b.name),b.description===undefined?current.description:clean(b.description),b.status||null,current.id]);await audit('ValueSet',row.id,'edited',req.broker.id,{...b,usageCount:usage});res.json(row);});
+r.patch('/admin/value-sets/:id',async(req,res)=>{if(!settingsOnly(req,res))return;const current=await one('SELECT * FROM value_sets WHERE id=$1',[req.params.id]);if(!current)return res.status(404).json({error:'Value set not found'});const usage=Number((await one('SELECT COUNT(*)::int AS count FROM value_definition_usage u JOIN value_definitions d ON d.id=u.value_definition_id WHERE d.value_set_id=$1',[current.id])).count),b=req.body||{};if(b.status&&b.status!==current.status&&req.broker.role!=='admin')return res.status(403).json({error:'Admin approval is required for value-set status changes'});if(b.stableCode!==undefined&&b.stableCode!==current.stableCode){const error=stableCodeError(b.stableCode);if(error)return res.status(400).json({error});if(current.status!=='draft'||usage)return res.status(409).json({error:'Set stable code is immutable after activation or use'});}if(b.status==='retired'&&!clean(b.reason))return res.status(400).json({error:'Retirement reason is required'});const row=await one('UPDATE value_sets SET stable_code=COALESCE($1,stable_code),name=COALESCE($2,name),description=$3,status=COALESCE($4,status),updated_at=NOW() WHERE id=$5 RETURNING *',[b.stableCode===undefined?null:clean(b.stableCode),b.name===undefined?null:clean(b.name),b.description===undefined?current.description:clean(b.description),b.status||null,current.id]);await audit('ValueSet',row.id,'edited',req.broker.id,{...b,usageCount:usage});res.json(row);});
 r.delete('/admin/value-sets/:id',async(req,res)=>{if(!settingsOnly(req,res))return;const row=await one("DELETE FROM value_sets v WHERE v.id=$1 AND v.status='draft' AND NOT EXISTS(SELECT 1 FROM value_definitions d WHERE d.value_set_id=v.id) RETURNING id",[req.params.id]);if(!row)return res.status(409).json({error:'Only an unused empty draft set can be deleted'});await audit('ValueSet',row.id,'draft_deleted',req.broker.id);res.json({ok:true});});
 r.delete('/admin/value-definitions/:id',async(req,res)=>{if(!settingsOnly(req,res))return;const row=await one("DELETE FROM value_definitions d WHERE d.id=$1 AND d.definition_status='draft' AND NOT EXISTS(SELECT 1 FROM value_definition_usage u WHERE u.value_definition_id=d.id) RETURNING id",[req.params.id]);if(!row)return res.status(409).json({error:'Only an unused draft definition can be deleted'});await audit('ValueDefinition',row.id,'draft_deleted',req.broker.id);res.json({ok:true});});
 r.post('/admin/value-sets/:id/consumers',async(req,res)=>{if(!settingsOnly(req,res))return;const b=req.body||{},error=stableCodeError(b.consumerCode);if(error||!clean(b.businessLabel)||!clean(b.moduleName)||!clean(b.fieldName))return res.status(400).json({error:error||'Consumer label, module and field are required'});const row=await one('INSERT INTO controlled_value_consumers(id,value_set_id,consumer_code,business_label,module_name,field_name,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[uuid(),req.params.id,b.consumerCode,clean(b.businessLabel),clean(b.moduleName),clean(b.fieldName),req.broker.id]);await audit('ValueSet',req.params.id,'consumer_connected',req.broker.id,{consumerCode:b.consumerCode});res.status(201).json(row);});

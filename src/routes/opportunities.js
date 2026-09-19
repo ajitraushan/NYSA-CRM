@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,canApproveDeal,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,canApproveDeal,canCompleteDealChecklistItem,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityNextAction,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
@@ -1327,7 +1327,7 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
       WHERE i.id=$1 AND c.deal_id=$2 FOR UPDATE OF i`,[req.params.itemId,deal.id],client);
     if(!item)return{code:404,error:'Checklist item not found'};
     if(item.version!==expectedVersion)return{code:409,error:'This checklist item changed after it was opened; reload before updating it'};
-    const roleAllowed=item.responsibleRole==='sales_agent'?['sales_agent','manager'].includes(req.broker.jobRole):item.responsibleRole===req.broker.jobRole;
+    const roleAllowed=canCompleteDealChecklistItem(req.broker,opportunity,deal,item);
     if(!roleAllowed)return{code:403,error:`This item is assigned to the ${item.responsibleRole.replaceAll('_',' ')} role`};
     if(status==='completed'&&item.evidenceRequired&&!evidenceReference)return{code:400,error:'Evidence reference is required to complete this item'};
     if(status==='completed'&&['manager','director'].includes(item.responsibleRole)){
@@ -1358,8 +1358,7 @@ r.post('/crm/deals/:dealId/approval',async(req,res)=>{
     if(!deal)return{code:404,error:'Deal not found'};
     const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
     if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
-    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
-      'Commercial Deal closure approval requires a Director':'Only the managed-team Manager or a Director may approve this Deal for closure'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:'Only the managed-team Manager or a Director may approve this Deal for closure'};
     if(!['draft','completion_in_progress'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before approving'};
     if(decision!=='approved'){
@@ -1412,18 +1411,13 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
     if(!deal)return{code:404,error:'Deal not found'};
     const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
     if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
-    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
-      'Commercial Deal closure requires a Director':'Only the managed-team Manager or a Director may close this Deal'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:'Only the managed-team Manager or a Director may close this Deal'};
     if(deal.status!=='approved')return{code:409,error:'The Deal requires a separate recorded closure approval before Closed Won'};
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
     const documentCompliance=await requireDocumentComplianceGates({dealId:deal.id,gateCodes:['before_close_won'],client});
     if(!documentCompliance.canProceed)return{code:409,error:`Required document compliance is incomplete: ${documentCompliance.blocking.map(x=>`${x.label} (${x.state.replaceAll('_',' ')})`).join('; ')}`};
-    const commissionReceiptReady=await one(`SELECT c.id FROM deal_commission_receipt_confirmations c
-      JOIN deal_commission_expectation_versions e ON e.id=c.expectation_version_id
-      WHERE c.deal_id=$1 AND c.status='confirmed' AND c.deal_version=$2 AND e.status='frozen'
-        AND (c.variance_amount=0 OR EXISTS(SELECT 1 FROM deal_commission_variance_decisions v
-          WHERE v.confirmation_id=c.id AND v.decision='approved')) LIMIT 1`,[deal.id,deal.version],client);
-    if(!commissionReceiptReady)return{code:409,error:'Confirmed actual commission receipt is required before Close Won'};
+    // Transaction completion is independent of commission collection. Finance receipts,
+    // reconciliation and payout remain separate; closure must not fabricate those records.
     if(deal.bookingStatus!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)||deal.opportunityStage!=='Deal')
       return{code:409,error:`Closure records are not aligned: Booking ${deal.bookingStatus}, property ${deal.listingStatus}, Opportunity ${deal.opportunityStage}`};
     const v=checked.value,inventoryOutcome=['rental','commercial_rental'].includes(deal.dealType)?'Rented':'Sold';
@@ -1484,8 +1478,7 @@ r.post('/crm/deals/:dealId/close-lost',async(req,res)=>{
     if(!deal)return{code:404,error:'Deal not found'};
     const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
     if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
-    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:['commercial_sale','commercial_rental'].includes(deal.dealType)?
-      'Closing a commercial Deal lost requires a Director':'Only the managed-team Manager or a Director may close this Deal lost'};
+    if(!canApproveDeal(req.broker,opportunity,deal))return{code:403,error:'Only the managed-team Manager or a Director may close this Deal lost'};
     if(!['draft','completion_in_progress','approved'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
     const lockedBooking=deal.bookingId?await one('SELECT * FROM bookings WHERE id=$1 FOR UPDATE',[deal.bookingId],client):null;
@@ -1549,7 +1542,7 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
       const lead=await one('SELECT * FROM leads WHERE id=$1 FOR UPDATE',[req.params.id],client);
       if(!lead)return {code:404,error:'Lead not found'};
       if(!canReadLead(req.broker,lead))return {code:403,error:'Lead is outside your permitted scope'};
-      if(!canCreateOpportunity(req.broker,lead))return {code:403,error:'Only the assigned Agent or Administrator can create this opportunity'};
+      if(!canCreateOpportunity(req.broker,lead))return {code:403,error:'Only the assigned Agent or responsible Manager can create this opportunity'};
       if(!['Qualified','Viewing','Negotiation','Won'].includes(lead.stage))return {code:409,error:'Complete qualification before creating an opportunity'};
       if(!lead.assignedTo)return {code:409,error:'Assign the qualified lead to a responsible Sales Agent before creating an opportunity'};
       const catalogue=await loadActiveClassificationCatalogue(client);
@@ -1780,8 +1773,8 @@ r.patch('/crm/opportunities/:id/next-action',async(req,res)=>{
 });
 
 r.get('/crm/release2/reconciliation',async(req,res)=>{
-  if(req.broker.role!=='admin'&&!['manager','director'].includes(req.broker.jobRole))
-    return res.status(403).json({error:'Release-candidate reconciliation requires Manager, Director or Administrator access'});
+  if(!['manager','director'].includes(req.broker.jobRole))
+    return res.status(403).json({error:'Release-candidate reconciliation requires Manager or Director access'});
   const params=[],scope=opportunityScopeSql('o',req.broker,params);
   const [opportunityStages,dealStatuses,sourceOutcomes,exceptions,offerRecovery]=await Promise.all([
     many(`SELECT o.stage,COUNT(*)::int AS count FROM opportunities o WHERE ${scope.clause}
@@ -1821,7 +1814,7 @@ r.get('/crm/release2/reconciliation',async(req,res)=>{
 });
 
 r.get('/crm/release2/legacy-lead-review',async(req,res)=>{
-  if(req.broker.role!=='admin'&&!['manager','director'].includes(req.broker.jobRole))return res.status(403).json({error:'Manager, Director or Administrator review access required'});
+  if(!['manager','director'].includes(req.broker.jobRole))return res.status(403).json({error:'Manager or Director review access required'});
   const params=[],scope=leadScopeSql('l',req.broker,params);
   const records=await many(`SELECT review.*,l.title,c.full_name AS contact_name,l.assigned_to,l.assigned_team_id,owner.name AS owner_name,t.name AS team_name
     FROM r2_legacy_lead_review review JOIN leads l ON l.id=review.lead_id JOIN contacts c ON c.id=l.contact_id
@@ -1831,7 +1824,7 @@ r.get('/crm/release2/legacy-lead-review',async(req,res)=>{
 });
 
 async function refreshRecoveryCases(broker){
-  const companyWide=broker.role==='admin'||broker.jobRole==='director',teamIds=(broker.managedTeamIds||[]).map(String),refreshAt=new Date(),cases=[];
+  const companyWide=broker.jobRole==='director',teamIds=(broker.managedTeamIds||[]).map(String),refreshAt=new Date(),cases=[];
   const [leads,tasks,intake]=await Promise.all([
     many(`SELECT l.id,l.lead_reference,l.title,l.assigned_team_id,l.assigned_to,l.assignment_status,l.accepted_at,l.first_contact_at,
       l.acceptance_due_at,l.first_contact_due_at,l.next_follow_up_at,l.queue_cycle_no,l.received_at,c.full_name AS customer_name,t.name AS team_name,
@@ -1876,12 +1869,12 @@ async function refreshRecoveryCases(broker){
 }
 
 r.get('/crm/operations/guided-work',async(req,res)=>{
-  const canCoordinateAssignment=req.broker.role==='admin'||['director','manager'].includes(req.broker.jobRole);
+  const canCoordinateAssignment=['director','manager'].includes(req.broker.jobRole);
   const nextCaseResponsibility=req.broker.jobRole==='manager'?"AND l.assigned_to IS NULL AND l.assignment_status IN ('unassigned','reassignment_due')":'';
   const leadParams=[],leadScope=agentWorkLeadScopeSql('l',req.broker,leadParams),opportunityParams=[],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams),
     nextParams=[],nextLeadScope=agentWorkLeadScopeSql('l',req.broker,nextParams),nextOpportunityScope=opportunityScopeSql('x',req.broker,nextParams);
   const dealParams=[],dealScope=opportunityScopeSql('o',req.broker,dealParams);
-  const verificationParams=[],verificationScope=req.broker.role==='admin'?'TRUE':req.broker.jobRole==='manager'?(verificationParams.push(req.broker.id),`(t.manager_id=$1 OR EXISTS(
+  const verificationParams=[],verificationScope=req.broker.jobRole==='director'?'TRUE':req.broker.jobRole==='manager'?(verificationParams.push(req.broker.id),`(t.manager_id=$1 OR EXISTS(
     SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1
       AND tm.membership_role='manager' AND tm.ends_at IS NULL
   ) OR EXISTS(
@@ -1937,7 +1930,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       ORDER BY CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 0 ELSE 1 END,
         CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN COALESCE(assignment_offer.acceptance_due_at,l.acceptance_due_at) ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
         l.updated_at DESC LIMIT 8`,nextLeadScope.params),
-    req.broker.role==='admin'||['manager','director'].includes(req.broker.jobRole)?many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,
+    ['manager','director'].includes(req.broker.jobRole)?many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,
       l.stage AS lead_stage,l.assigned_to,l.accepted_at,owner.name AS owner_name,o.id AS opportunity_id,o.opportunity_reference,
       o.stage AS opportunity_stage,'Review Deal closure approval' AS next_action,d.updated_at AS due_at,d.id AS deal_id
       FROM deals d JOIN opportunities o ON o.id=d.opportunity_id JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id
@@ -1945,7 +1938,7 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       AND NOT EXISTS(SELECT 1 FROM deal_checklist_items i JOIN deal_checklists dc ON dc.id=i.deal_checklist_id
         WHERE dc.deal_id=d.id AND i.required AND i.status<>'completed')
       ORDER BY d.updated_at LIMIT 8`,dealScope.params):Promise.resolve([]),
-    req.broker.role==='admin'||['manager','director'].includes(req.broker.jobRole)?many(`SELECT event_id AS intake_event_id,
+    ['manager','director'].includes(req.broker.jobRole)?many(`SELECT event_id AS intake_event_id,
       CONCAT('Website event ',event_id) AS title,'Website enquiry awaiting Customer decision' AS customer_name,
       source_code AS source,campaign_code,received_at,review_due_at AS due_at,status AS current_status,error_code
        FROM website_intake_events WHERE status IN ('email_review','identity_review','duplicate_review') ORDER BY review_due_at NULLS LAST,received_at LIMIT 12`):Promise.resolve([]),

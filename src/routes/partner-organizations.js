@@ -11,10 +11,9 @@ import {
 
 const r=Router();
 r.use(requireAuth);
-const isAdmin=broker=>broker.role==='admin';
-const isGovernanceAuthority=broker=>isAdmin(broker)||['manager','director'].includes(broker.jobRole);
+const isGovernanceAuthority=broker=>['manager','director'].includes(broker.jobRole);
 const canCreateGovernanceDraft=broker=>isGovernanceAuthority(broker)||broker.jobRole==='listing_agent';
-const canReadGovernance=broker=>canCreateGovernanceDraft(broker)||broker.jobRole==='admin_assistant';
+const canReadGovernance=canCreateGovernanceDraft;
 const clean=value=>String(value??'').trim();
 const evidenceDigest=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -48,7 +47,7 @@ async function duplicateCandidates(value,companyId,client){
 }
 
 r.get('/admin/partner-organizations',async(req,res)=>{
-  if(!canReadGovernance(req.broker))return res.status(403).json({error:'Listing Executive, Manager, Director, Administrator or Admin Assistant access required'});
+  if(!canReadGovernance(req.broker))return res.status(403).json({error:'Listing Executive, Manager, Director, Listing Executive, Manager or Director access required'});
   const params=[],ownerFilter=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),' AND c.owner_id=$1'):'';
   const rows=await many(`SELECT c.id AS company_id,c.name,c.company_type,c.status,
       active.id AS active_version_id,active.version_number AS active_version_number,active.classification AS active_classification,
@@ -62,7 +61,7 @@ r.get('/admin/partner-organizations',async(req,res)=>{
 });
 
 r.get('/admin/partner-organizations/:companyId',async(req,res)=>{
-  if(!canReadGovernance(req.broker))return res.status(403).json({error:'Listing Executive, Manager, Director, Administrator or Admin Assistant access required'});
+  if(!canReadGovernance(req.broker))return res.status(403).json({error:'Listing Executive, Manager, Director, Listing Executive, Manager or Director access required'});
   const params=[req.params.companyId],ownerFilter=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),' AND owner_id=$2'):'';
   const company=await one(`SELECT id AS company_id,name,company_type,status FROM companies
     WHERE id=$1 AND archived_at IS NULL AND status<>'merged'${ownerFilter}`,params);
@@ -99,7 +98,7 @@ r.get('/admin/partner-organizations/:companyId',async(req,res)=>{
 });
 
 r.post('/admin/partner-organizations/:companyId/versions',async(req,res)=>{
-  if(!canCreateGovernanceDraft(req.broker))return res.status(403).json({error:'Listing Executive, Manager, Director or Administrator authority is required'});
+  if(!canCreateGovernanceDraft(req.broker))return res.status(403).json({error:'Listing Executive, Manager or Director authority is required'});
   const checked=validatePartnerOrganizationVersionInput(req.body||{});
   if(!checked.valid)return res.status(400).json({error:checked.errors[0],errors:checked.errors});
   const result=await transaction(async client=>{
@@ -137,7 +136,7 @@ r.post('/admin/partner-organizations/:companyId/versions',async(req,res)=>{
 });
 
 r.post('/admin/partner-organization-versions/:versionId/duplicate-decision',async(req,res)=>{
-  if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});
+  if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});
   const checked=validatePartnerDuplicateDecision(req.body||{});
   if(!checked.valid)return res.status(400).json({error:checked.errors[0],errors:checked.errors});
   const result=await transaction(async client=>{
@@ -160,7 +159,7 @@ r.post('/admin/partner-organization-versions/:versionId/duplicate-decision',asyn
 });
 
 r.post('/admin/partner-organization-versions/:versionId/verification',async(req,res)=>{
-  if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});
+  if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});
   const result=await transaction(async client=>{
     const version=await one('SELECT * FROM partner_organization_versions WHERE id=$1 FOR UPDATE',[req.params.versionId],client);
     if(!version)return{code:404,error:'Governed organization version not found'};
@@ -194,7 +193,7 @@ r.post('/admin/partner-organization-versions/:versionId/verification',async(req,
 });
 
 r.post('/admin/partner-organization-versions/:versionId/retirement',async(req,res)=>{
-  if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});
+  if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});
   const reason=clean(req.body?.reason);if(reason.length<10)return res.status(400).json({error:'A meaningful retirement reason is required'});
   const result=await transaction(async client=>{
     const version=await one('SELECT * FROM partner_organization_versions WHERE id=$1 FOR UPDATE',[req.params.versionId],client);
@@ -210,7 +209,7 @@ r.post('/admin/partner-organization-versions/:versionId/retirement',async(req,re
 });
 
 r.post('/admin/partner-organization-versions/:versionId/brokerage-arrangements',async(req,res)=>{
-  if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});
+  if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});
   const file=decodeAndValidateFile({...req.body,maxBytes:Number(process.env.MAX_DOCUMENT_BYTES||10485760),allowedTypes:['application/pdf']});
   if(file.error)return res.status(400).json({error:file.error});
   const reference=meaningful(req.body?.arrangementReference,'Arrangement reference'),scope=meaningful(req.body?.scope,'Arrangement scope',10),
@@ -232,7 +231,7 @@ r.post('/admin/partner-organization-versions/:versionId/brokerage-arrangements',
 });
 
 r.post('/admin/partner-organization-versions/:versionId/listing-nocs',async(req,res)=>{
-  if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});
+  if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});
   const file=decodeAndValidateFile({...req.body,maxBytes:Number(process.env.MAX_DOCUMENT_BYTES||10485760),allowedTypes:['application/pdf']});
   if(file.error)return res.status(400).json({error:file.error});
   const listingId=clean(req.body?.listingId),reference=meaningful(req.body?.nocReference,'NOC reference'),issuedAt=dateOnly(req.body?.issuedAt,'Issue date'),expiresAt=dateOnly(req.body?.expiresAt,'Expiry',false),
@@ -270,7 +269,7 @@ async function reviewDeveloperEvidence({table,entityType,id,decision,reason,brok
   await audit(entityType,row.id,decision==='activate'?'activated':'rejected',broker.id,{partnerVersionId:row.partnerVersionId,listingId:row.listingId||null,reason:clean(reason)},client);return{evidence:updated};
 }
 
-r.post('/admin/developer-brokerage-arrangements/:id/review',async(req,res)=>{if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});const result=await transaction(client=>reviewDeveloperEvidence({table:'developer_brokerage_arrangement_versions',entityType:'DeveloperBrokerageArrangement',id:req.params.id,decision:clean(req.body?.decision),reason:req.body?.reason,broker:req.broker},client));if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
-r.post('/admin/property-listing-nocs/:id/review',async(req,res)=>{if(!isAdmin(req.broker))return res.status(403).json({error:'Administrator access required'});const result=await transaction(client=>reviewDeveloperEvidence({table:'property_listing_noc_versions',entityType:'PropertyListingNoc',id:req.params.id,decision:clean(req.body?.decision),reason:req.body?.reason,broker:req.broker},client));if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
+r.post('/admin/developer-brokerage-arrangements/:id/review',async(req,res)=>{if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});const result=await transaction(client=>reviewDeveloperEvidence({table:'developer_brokerage_arrangement_versions',entityType:'DeveloperBrokerageArrangement',id:req.params.id,decision:clean(req.body?.decision),reason:req.body?.reason,broker:req.broker},client));if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
+r.post('/admin/property-listing-nocs/:id/review',async(req,res)=>{if(!isGovernanceAuthority(req.broker))return res.status(403).json({error:'Manager or Director access required'});const result=await transaction(client=>reviewDeveloperEvidence({table:'property_listing_noc_versions',entityType:'PropertyListingNoc',id:req.params.id,decision:clean(req.body?.decision),reason:req.body?.reason,broker:req.broker},client));if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
 
 export default r;

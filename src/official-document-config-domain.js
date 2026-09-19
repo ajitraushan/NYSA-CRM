@@ -27,7 +27,7 @@ export function createOfficialDocumentTypeDraft(input = {}, existing = []) {
   if (clean(input.label).length < 3) errors.push('Document name is required');
   if (clean(input.issuer).length < 3) errors.push('Expected issuer is required');
   if (!ACCEPTED_STATUSES.has(input.acceptedStatus)) errors.push('Select a supported verification status');
-  if (!clean(input.createdByRef)) errors.push('Administrator reference is required');
+  if (!clean(input.createdByRef)) errors.push('Admin reference is required');
   if (!createdAt) errors.push('now must be an ISO timestamp');
   if (existing.some(item => item.code === code && item.status !== 'retired')) errors.push('Document code already exists');
   return {
@@ -66,7 +66,7 @@ export function createStepDocumentRuleDraft(input = {}, activeDocuments = [], ex
   if (!document) errors.push('Select an active document type');
   if (!REQUIREMENT_LEVELS.has(input.level)) errors.push('Select Required or Advisory');
   if (clean(input.reason).length < 5) errors.push('Business reason is required');
-  if (!clean(input.createdByRef)) errors.push('Administrator reference is required');
+  if (!clean(input.createdByRef)) errors.push('Admin reference is required');
   if (!createdAt) errors.push('now must be an ISO timestamp');
   if (existingRules.some(item => item.stepCode === input.stepCode && item.documentType === input.documentType && item.status !== 'retired')) errors.push('This document is already associated with the workflow step');
   return {

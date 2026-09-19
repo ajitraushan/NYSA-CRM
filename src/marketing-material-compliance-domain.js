@@ -42,7 +42,6 @@ export function resolveMaterialApprover({route,submitterId,managerId,directorId,
 
 export function mayReviewMaterial({broker,request,submitterId}){
   if(!broker||!request)return false;
-  if(broker.role==='admin')return true;
   if(broker.id===submitterId||broker.id!==request.assignedApproverId)return false;
   if(request.assignedApproverRole==='director')return broker.jobRole==='director';
   return request.assignedApproverRole==='manager'&&broker.jobRole==='manager'&&(!request.assignedTeamId||(broker.managedTeamIds||[]).map(String).includes(String(request.assignedTeamId)));

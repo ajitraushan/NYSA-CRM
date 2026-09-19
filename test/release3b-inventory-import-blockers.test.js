@@ -26,7 +26,7 @@ test('owner policy supersedes R3B-INVENTORY-CUSTODY-57 with Listing Executive ma
   const route=read('src/routes/listings.js'),ui=read('public/app.js');
   assert.doesNotMatch(route,/listing\.responsibleAgentId === broker\.id/);
   assert.doesNotMatch(ui,/l\.responsibleAgentId === ME\.id|Current custodian|Reassign responsible agent/);
-  assert.match(route,/Only the Listing Executive who created this Inventory or an authorized Administrator can submit it for verification/);
+  assert.match(route,/Only the Listing Executive who created this Inventory can submit it for verification/);
   assert.match(route,/Inventory has no transferable custodian/);
   assert.match(ui,/Selecting Inventory creates an Opportunity-specific linkage; no Inventory custodian approval is required/);
 });

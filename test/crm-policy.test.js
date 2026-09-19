@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasInternalCrmIdentity,isCompanyReader,isManager,isProposalApprover,canApproveProposal,isCrmReadOnly,canReadLead,canWriteLead,canOperateLead,canAssignLead,
-  canReadOpportunity,canWriteOpportunity,canApproveDeal,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
+  canReadOpportunity,canWriteOpportunity,canApproveDeal,canCompleteDealChecklistItem,canCreateOpportunity,leadScopeSql,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql,teamScopeSql,contactScopeSql,companyScopeSql } from '../src/crm-policy.js';
 
 const admin={id:'a',role:'admin',jobRole:'admin'};
 const director={id:'d',role:'internal_broker',jobRole:'director'};
@@ -10,13 +10,14 @@ const agent={id:'u',role:'internal_broker',jobRole:'sales_agent',teamId:'t1'};
 const accountant={id:'x',role:'internal_broker',jobRole:'accountant'};
 
 test('internal CRM identity requires an approved access and job role',()=>{
-  assert.equal(hasInternalCrmIdentity(admin),true);
+  assert.equal(hasInternalCrmIdentity(admin),false);
+  assert.equal(hasInternalCrmIdentity(agent),true);
   assert.equal(hasInternalCrmIdentity({role:'partner_broker',jobRole:null}),false);
   assert.equal(hasInternalCrmIdentity({role:'internal_broker',jobRole:null}),false);
 });
 
 test('company readers and read-only roles are explicit',()=>{
-  assert.equal(isCompanyReader(admin),true);
+  assert.equal(isCompanyReader(admin),false);
   assert.equal(isCompanyReader(director),true);
   assert.equal(isManager(manager),true);
   assert.equal(isManager(director),false);
@@ -27,7 +28,7 @@ test('company readers and read-only roles are explicit',()=>{
 test('Lead identity is company-visible while operational changes remain assignment-controlled',()=>{
   const teamLead={assignedTo:'someone',assignedTeamId:'t1',createdBy:'other'};
   const otherLead={assignedTo:'someone',assignedTeamId:'t2',createdBy:'other'};
-  assert.equal(canReadLead(admin,otherLead),true);
+  assert.equal(canReadLead(admin,otherLead),false);
   assert.equal(canReadLead(director,otherLead),true);
   assert.equal(canReadLead(manager,teamLead),true);
   assert.equal(canReadLead(manager,{...teamLead,assignedTeamId:'t3'}),true);
@@ -40,19 +41,19 @@ test('Lead identity is company-visible while operational changes remain assignme
   assert.equal(canOperateLead(manager,{...teamLead,assignedTo:'m'}),true);
   assert.equal(canOperateLead(agent,{...otherLead,assignedTo:'u'}),true);
   assert.equal(canOperateLead(agent,otherLead),false);
-  assert.equal(canOperateLead(admin,otherLead),true);
+  assert.equal(canOperateLead(admin,otherLead),false);
   assert.equal(canWriteLead(manager,otherLead),false);
   assert.equal(canReadLead(accountant,teamLead),false);
 });
 
-test('administrators and directors have assignment intervention while routine director writes remain restricted',()=>{
+test('directors and scoped managers have assignment intervention while administrators remain outside business operations',()=>{
   const teamLead={assignedTo:'someone',assignedTeamId:'t1',createdBy:'other'};
   assert.equal(canWriteLead(director,teamLead),false);
   assert.equal(canAssignLead(director,teamLead),true);
   assert.equal(canWriteLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,teamLead),true);
   assert.equal(canAssignLead(manager,{...teamLead,assignedTeamId:'t2'}),false);
-  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),true);
+  assert.equal(canAssignLead(admin,{...teamLead,assignedTeamId:'t2'}),false);
 });
 
 test('proposal approval is team-scoped for managers and company-wide for directors',()=>{
@@ -73,13 +74,33 @@ test('proposal approval is team-scoped for managers and company-wide for directo
   assert.equal(proposalApprovalScopeSql('l',agent,[]).clause,'1=0');
 });
 
-test('Deal closure approval is managed-team scoped and commercial closure is Director-only',()=>{
+test('Manager Deal approval and closure includes commercial sales/rentals but stays managed-team scoped',()=>{
   const managed={assignedTeamId:'t1'},other={assignedTeamId:'t2'};
   assert.equal(canApproveDeal(manager,managed,{dealType:'sale'}),true);
   assert.equal(canApproveDeal(manager,other,{dealType:'sale'}),false);
-  assert.equal(canApproveDeal(manager,managed,{dealType:'commercial_sale'}),false);
+  for(const dealType of ['sale','rental','off_plan','commercial_sale','commercial_rental']){
+    assert.equal(canApproveDeal(manager,managed,{dealType}),true);
+    assert.equal(canApproveDeal(manager,{assignedTeamId:'t3'},{dealType}),true);
+    assert.equal(canApproveDeal(manager,other,{dealType}),false);
+    assert.equal(canApproveDeal(manager,{assignedTeamId:null},{dealType}),false);
+    for(const actor of [agent,accountant,admin,{...manager,role:'partner_broker'}])
+      assert.equal(canApproveDeal(actor,managed,{dealType}),false);
+  }
   assert.equal(canApproveDeal(director,other,{dealType:'commercial_sale'}),true);
   assert.equal(canApproveDeal(admin,managed,{dealType:'sale'}),false);
+});
+
+test('Manager may complete standard commercial management review without rewriting Director-only custom items',()=>{
+  const opportunity={assignedTeamId:'t1'},item={responsibleRole:'director',itemCode:'DIRECTOR_REVIEW'};
+  for(const dealType of ['commercial_sale','commercial_rental']){
+    const deal={dealType};
+    assert.equal(canCompleteDealChecklistItem(manager,opportunity,deal,item),true);
+    assert.equal(canCompleteDealChecklistItem(manager,{assignedTeamId:'t2'},deal,item),false);
+    assert.equal(canCompleteDealChecklistItem(manager,opportunity,deal,{...item,itemCode:'CUSTOM_RISK_REVIEW'}),false);
+    for(const actor of [agent,accountant,admin])assert.equal(canCompleteDealChecklistItem(actor,opportunity,deal,item),false);
+    assert.equal(canCompleteDealChecklistItem(director,opportunity,deal,item),true);
+  }
+  assert.equal(canCompleteDealChecklistItem(manager,opportunity,{dealType:'sale'},item),false);
 });
 
 test('SQL scopes are parameterized and deny accountants',()=>{

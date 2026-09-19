@@ -922,3 +922,23 @@ deal outcomes, revenue and commissions share the same campaign and property iden
 This allocation does not authorize provider connections or production deployment. Provider/account
 ownership, privacy basis, field mappings, sandbox credentials and measurable CRM Test acceptance
 criteria remain separate gates.
+
+### RR-015: Governed Bulk Customer and Purchased Lead Intake
+
+**Status:** Implemented and tested in DEV208 source on 2026-09-19; CRM Test deployment pending explicit approval
+
+**Detailed scope:** `RR_015_GOVERNED_BULK_CUSTOMER_AND_PURCHASED_LEAD_INTAKE.md`
+
+Purchased prospect data requires two separate bulk-import modules. Customer Import creates or links
+basic Customer Master identities only and creates no Lead. Lead Import operates against an existing,
+unambiguous Customer and creates an unassigned queued Lead; optional budget, area, property and other
+preferences use the same structured, versioned requirement model as website intake.
+
+The deployed single-record Current CRM import does not satisfy this requirement because it requires
+an existing active Customer ID and has no governed workbook preview, Customer matching/creation,
+batch register or row reconciliation. Both new modules require duplicate controls, provenance,
+idempotency, least-privilege authorization, audit lineage and authenticated CRM Test acceptance
+before any Production consideration. DEV208 supplies separate controlled workbooks, a non-mutating
+preview, hash-bound confirmation, explicit importer authorization, private evidence storage,
+idempotent row processing, unassigned Lead routing and downloadable reconciliation. It does not
+authorize CRM Test or Production deployment.

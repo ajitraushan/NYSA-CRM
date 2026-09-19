@@ -3,7 +3,7 @@ import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { addBusinessMinutes, qualificationFollowUpPlan, validateBudget, normalizeDelimitedValues } from '../crm-domain.js';
-import { hasInternalCrmIdentity, isManager, isCrmReadOnly, canReadLead, canOperateLead, canAssignLead, leadScopeSql } from '../crm-policy.js';
+import { hasInternalCrmIdentity, isManager, isCrmReadOnly, canReadLead, canOperateLead, canAssignLead, leadScopeSql, opportunityScopeSql } from '../crm-policy.js';
 import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.js';
 import { decodeAndValidateFile } from '../private-files.js';
 import { parseAreaWorkbook,validateAreaImportRows } from '../area-import.js';
@@ -20,7 +20,7 @@ function internalOnly(req,res,next){
 }
 const text=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const REQUIREMENT_PROPERTY_TYPES=['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'];
-const operationalAdmin=req=>req.broker.role==='admin'||req.broker.jobRole==='admin_assistant';
+const operationalAdmin=req=>req.broker.role==='admin';
 const calendar=p=>({workDays:p.workDays,startMinute:p.workStartMinute,endMinute:p.workEndMinute,utcOffsetMinutes:p.utcOffsetMinutes});
 async function activePolicy(client){return one("SELECT * FROM sla_policies WHERE status='active'",[],client);}
 async function refreshLeadNextAction(leadId,client){
@@ -37,12 +37,12 @@ async function scopedLead(req,client){
 }
 
 r.get('/admin/sla-policies',async(req,res)=>{
-  if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   res.json({policies:await many('SELECT * FROM sla_policies ORDER BY created_at DESC')});
 });
 
 r.post('/admin/sla-policies',async(req,res)=>{
-  if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   const b=req.body||{},days=Array.isArray(b.workDays)?b.workDays.map(Number):[1,2,3,4,5];
   if(!text(b.name)||!days.length||days.some(x=>!Number.isInteger(x)||x<0||x>6)) return res.status(400).json({error:'name and valid workDays are required'});
   const start=Number(b.workStartMinute??540),end=Number(b.workEndMinute??1080),accept=Number(b.acceptanceMinutes??30),contact=Number(b.firstContactMinutes??240),hot=Number(b.qualificationHotElapsedMinutes??15),warm=Number(b.qualificationWarmBusinessMinutes??240),coldDays=Number(b.qualificationColdBusinessDays??1),coldCadence=Number(b.qualificationColdNurtureBusinessDays??5);
@@ -55,7 +55,7 @@ r.post('/admin/sla-policies',async(req,res)=>{
 });
 
 r.post('/admin/sla-policies/:id/activate',async(req,res)=>{
-  if(req.broker.role!=='admin') return res.status(403).json({error:'Administrator access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   const row=await transaction(async client=>{
     const policy=await one('SELECT * FROM sla_policies WHERE id=$1 FOR UPDATE',[req.params.id],client);
     if(!policy) return null;
@@ -67,16 +67,16 @@ r.post('/admin/sla-policies/:id/activate',async(req,res)=>{
 });
 
 r.get('/admin/routing-rules',async(req,res)=>{
-  if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   res.json({rules:await many(`SELECT r.*,t.name AS team_name,a.business_label AS area_label FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id LEFT JOIN areas a ON a.id=r.area_id ORDER BY priority,name`)});
 });
 
-r.get('/admin/areas',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Administrator or Admin Assistant access required'});res.json({areas:await many('SELECT * FROM areas ORDER BY active DESC,display_order,business_label')});});
+r.get('/admin/areas',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});res.json({areas:await many('SELECT * FROM areas ORDER BY active DESC,display_order,business_label')});});
 r.get('/crm/areas',async(req,res)=>res.json({areas:await many('SELECT id,stable_code,business_label,emirate,display_order FROM areas WHERE active=1 ORDER BY display_order,business_label')}));
-r.post('/admin/areas',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Administrator or Admin Assistant access required'});const b=req.body||{},code=text(b.stableCode),label=text(b.businessLabel),emirate=text(b.emirate),order=Number(b.displayOrder??100);if(!code||!/^[a-z][a-z0-9_]*$/.test(code)||!label||!emirate||!Number.isInteger(order)||order<0)return res.status(400).json({error:'Stable code (lowercase snake_case), business label, emirate and a valid display order are required'});try{const row=await transaction(async client=>{const id=uuid(),area=await one('INSERT INTO areas(id,stable_code,business_label,emirate,display_order,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[id,code,label,emirate,order,req.broker.id],client);await ensureMarketAreaProjection(area,req.broker.id,client);await audit('Area',id,'created',req.broker.id,{stableCode:code,businessLabel:label,emirate,marketIntelligenceSource:true},client);return area;});res.status(201).json(row);}catch(error){if(error.code==='23505')return res.status(409).json({error:'This active area code or business label already exists'});if(error.statusCode)return res.status(error.statusCode).json({error:error.message});throw error;}});
-r.post('/admin/areas/import/preview',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Administrator or Admin Assistant access required'});const file=decodeAndValidateFile({base64:req.body?.base64,mediaType:req.body?.mediaType,fileName:req.body?.fileName,maxBytes:2097152,allowedTypes:['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']});if(file.error)return res.status(400).json({error:file.error});try{const sourceRows=await parseAreaWorkbook(file.buffer),existingAreas=await many('SELECT stable_code,business_label,emirate,active FROM areas'),rows=validateAreaImportRows(sourceRows,{existingAreas}),readyCount=rows.filter(row=>!row.errors.length&&!row.skipped).length,skippedCount=rows.filter(row=>row.skipped).length;res.json({fileName:file.fileName,fileHash:file.fileHash,rowCount:rows.length,readyCount,skippedCount,valid:rows.every(row=>!row.errors.length),rows});}catch(error){res.status(400).json({error:`Workbook could not be reviewed: ${error.message}`});}});
-r.post('/admin/areas/import/commit',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Administrator or Admin Assistant access required'});const reason=text(req.body?.reason),sourceRows=Array.isArray(req.body?.rows)?req.body.rows:[];if(!reason)return res.status(400).json({error:'An import reason is required'});if(!sourceRows.length||sourceRows.length>500)return res.status(400).json({error:'Provide between 1 and 500 reviewed area rows'});try{const result=await transaction(async client=>{const existingAreas=await many('SELECT stable_code,business_label,emirate,active FROM areas FOR SHARE',[],client),rows=validateAreaImportRows(sourceRows,{existingAreas}),invalid=rows.filter(row=>row.errors.length);if(invalid.length){const error=new Error('The reviewed import is no longer valid; preview it again');error.statusCode=409;error.rows=rows;throw error;}const ready=rows.filter(row=>!row.skipped),created=[];for(const row of ready){const id=uuid(),area=await one('INSERT INTO areas(id,stable_code,business_label,emirate,display_order,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[id,row.stableCode,row.businessLabel,row.emirate,row.displayOrder,req.broker.id],client);await ensureMarketAreaProjection(area,req.broker.id,client);await audit('Area',id,'bulk_imported',req.broker.id,{reason,rowNumber:row.rowNumber,marketIntelligenceSource:true},client);created.push(area);}return {created,skippedCount:rows.length-ready.length};});res.status(201).json({importedCount:result.created.length,skippedCount:result.skippedCount,areas:result.created});}catch(error){if(error.statusCode)return res.status(error.statusCode).json({error:error.message,rows:error.rows});if(error.code==='23505')return res.status(409).json({error:'An area changed after preview. Review the workbook again before importing.'});throw error;}});
-r.patch('/admin/areas/:id',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Administrator or Admin Assistant access required'});const existing=await one('SELECT * FROM areas WHERE id=$1',[req.params.id]);if(!existing)return res.status(404).json({error:'Area not found'});const b=req.body||{},reason=text(b.reason);if(typeof b.active==='boolean'){if(!reason)return res.status(400).json({error:'Reason is required to retire or reactivate an area'});if(!b.active&&await one('SELECT id FROM routing_rules WHERE area_id=$1 AND active=1 LIMIT 1',[existing.id]))return res.status(409).json({error:'Retire or change active routing rules that use this area first'});const row=await one(`UPDATE areas SET active=$1,retired_by=$2,retirement_reason=$3,retired_at=CASE WHEN $1=0 THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$4 RETURNING *`,[b.active?1:0,b.active?null:req.broker.id,b.active?null:reason,existing.id]);await audit('Area',row.id,b.active?'reactivated':'retired',req.broker.id,{reason});return res.json(row);}if(!reason)return res.status(400).json({error:'Reason is required to edit an area'});const label=text(b.businessLabel),emirate=text(b.emirate),order=Number(b.displayOrder);if(!label||!emirate||!Number.isInteger(order)||order<0)return res.status(400).json({error:'Business label, emirate and display order are required'});const row=await one('UPDATE areas SET business_label=$1,emirate=$2,display_order=$3,updated_at=NOW() WHERE id=$4 RETURNING *',[label,emirate,order,existing.id]);await audit('Area',row.id,'edited',req.broker.id,{reason,before:{businessLabel:existing.businessLabel,emirate:existing.emirate,displayOrder:existing.displayOrder}});res.json(row);});
+r.post('/admin/areas',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});const b=req.body||{},code=text(b.stableCode),label=text(b.businessLabel),emirate=text(b.emirate),order=Number(b.displayOrder??100);if(!code||!/^[a-z][a-z0-9_]*$/.test(code)||!label||!emirate||!Number.isInteger(order)||order<0)return res.status(400).json({error:'Stable code (lowercase snake_case), business label, emirate and a valid display order are required'});try{const row=await transaction(async client=>{const id=uuid(),area=await one('INSERT INTO areas(id,stable_code,business_label,emirate,display_order,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[id,code,label,emirate,order,req.broker.id],client);await ensureMarketAreaProjection(area,req.broker.id,client);await audit('Area',id,'created',req.broker.id,{stableCode:code,businessLabel:label,emirate,marketIntelligenceSource:true},client);return area;});res.status(201).json(row);}catch(error){if(error.code==='23505')return res.status(409).json({error:'This active area code or business label already exists'});if(error.statusCode)return res.status(error.statusCode).json({error:error.message});throw error;}});
+r.post('/admin/areas/import/preview',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});const file=decodeAndValidateFile({base64:req.body?.base64,mediaType:req.body?.mediaType,fileName:req.body?.fileName,maxBytes:2097152,allowedTypes:['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']});if(file.error)return res.status(400).json({error:file.error});try{const sourceRows=await parseAreaWorkbook(file.buffer),existingAreas=await many('SELECT stable_code,business_label,emirate,active FROM areas'),rows=validateAreaImportRows(sourceRows,{existingAreas}),readyCount=rows.filter(row=>!row.errors.length&&!row.skipped).length,skippedCount=rows.filter(row=>row.skipped).length;res.json({fileName:file.fileName,fileHash:file.fileHash,rowCount:rows.length,readyCount,skippedCount,valid:rows.every(row=>!row.errors.length),rows});}catch(error){res.status(400).json({error:`Workbook could not be reviewed: ${error.message}`});}});
+r.post('/admin/areas/import/commit',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});const reason=text(req.body?.reason),sourceRows=Array.isArray(req.body?.rows)?req.body.rows:[];if(!reason)return res.status(400).json({error:'An import reason is required'});if(!sourceRows.length||sourceRows.length>500)return res.status(400).json({error:'Provide between 1 and 500 reviewed area rows'});try{const result=await transaction(async client=>{const existingAreas=await many('SELECT stable_code,business_label,emirate,active FROM areas FOR SHARE',[],client),rows=validateAreaImportRows(sourceRows,{existingAreas}),invalid=rows.filter(row=>row.errors.length);if(invalid.length){const error=new Error('The reviewed import is no longer valid; preview it again');error.statusCode=409;error.rows=rows;throw error;}const ready=rows.filter(row=>!row.skipped),created=[];for(const row of ready){const id=uuid(),area=await one('INSERT INTO areas(id,stable_code,business_label,emirate,display_order,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[id,row.stableCode,row.businessLabel,row.emirate,row.displayOrder,req.broker.id],client);await ensureMarketAreaProjection(area,req.broker.id,client);await audit('Area',id,'bulk_imported',req.broker.id,{reason,rowNumber:row.rowNumber,marketIntelligenceSource:true},client);created.push(area);}return {created,skippedCount:rows.length-ready.length};});res.status(201).json({importedCount:result.created.length,skippedCount:result.skippedCount,areas:result.created});}catch(error){if(error.statusCode)return res.status(error.statusCode).json({error:error.message,rows:error.rows});if(error.code==='23505')return res.status(409).json({error:'An area changed after preview. Review the workbook again before importing.'});throw error;}});
+r.patch('/admin/areas/:id',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});const existing=await one('SELECT * FROM areas WHERE id=$1',[req.params.id]);if(!existing)return res.status(404).json({error:'Area not found'});const b=req.body||{},reason=text(b.reason);if(typeof b.active==='boolean'){if(!reason)return res.status(400).json({error:'Reason is required to retire or reactivate an area'});if(!b.active&&await one('SELECT id FROM routing_rules WHERE area_id=$1 AND active=1 LIMIT 1',[existing.id]))return res.status(409).json({error:'Retire or change active routing rules that use this area first'});const row=await one(`UPDATE areas SET active=$1,retired_by=$2,retirement_reason=$3,retired_at=CASE WHEN $1=0 THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$4 RETURNING *`,[b.active?1:0,b.active?null:req.broker.id,b.active?null:reason,existing.id]);await audit('Area',row.id,b.active?'reactivated':'retired',req.broker.id,{reason});return res.json(row);}if(!reason)return res.status(400).json({error:'Reason is required to edit an area'});const label=text(b.businessLabel),emirate=text(b.emirate),order=Number(b.displayOrder);if(!label||!emirate||!Number.isInteger(order)||order<0)return res.status(400).json({error:'Business label, emirate and display order are required'});const row=await one('UPDATE areas SET business_label=$1,emirate=$2,display_order=$3,updated_at=NOW() WHERE id=$4 RETURNING *',[label,emirate,order,existing.id]);await audit('Area',row.id,'edited',req.broker.id,{reason,before:{businessLabel:existing.businessLabel,emirate:existing.emirate,displayOrder:existing.displayOrder}});res.json(row);});
 
 async function validateRoutingRuleInput(body,excludeId=null){
   const b=body||{},name=text(b.name),source=text(b.source),businessType=text(b.businessType),teamId=b.teamId||null,areaId=b.areaId||null,priority=Number(b.priority);
@@ -94,7 +94,7 @@ async function validateRoutingRuleInput(body,excludeId=null){
 }
 
 r.post('/admin/routing-rules',async(req,res)=>{
-  if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   const b=req.body||{},checked=await validateRoutingRuleInput(b);if(checked.error)return res.status(400).json({error:checked.error});
   if(b.agentId||b.assignmentMethod&&b.assignmentMethod!=='team_queue')return res.status(400).json({error:'Routing rules may select only a team queue; broker assignment occurs afterward'});
   const v=checked.value;
@@ -104,7 +104,7 @@ r.post('/admin/routing-rules',async(req,res)=>{
 });
 
 r.patch('/admin/routing-rules/:id',async(req,res)=>{
-  if(!operationalAdmin(req)) return res.status(403).json({error:'Administrator or Admin Assistant access required'});
+  if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
   const b=req.body||{},existing=await one('SELECT * FROM routing_rules WHERE id=$1',[req.params.id]);if(!existing)return res.status(404).json({error:'Routing rule not found'});
   if(typeof b.active==='boolean'){
     const reason=text(b.reason);if(!reason)return res.status(400).json({error:`Reason is required to ${b.active?'reactivate':'retire'} a routing rule`});
@@ -117,7 +117,7 @@ r.patch('/admin/routing-rules/:id',async(req,res)=>{
   await audit('RoutingRule',row.id,'edited',req.broker.id,{reason,before:{name:existing.name,priority:existing.priority,source:existing.source,businessType:existing.businessType,areaId:existing.areaId,teamId:existing.teamId},after:v});res.json(row);
 });
 
-r.post('/admin/routing-rules/dubai-defaults',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});const expected=[['Dubai Rental Team','Rental',10],['Dubai Off-plan Team','Off-plan',20],['Dubai Secondary Sales Team','Sale',30]],teams=await many('SELECT id,name FROM teams WHERE active=1 AND name=ANY($1::text[])',[expected.map(x=>x[0])]);const missing=expected.filter(x=>!teams.some(t=>t.name===x[0])).map(x=>x[0]);if(missing.length)return res.status(409).json({error:`Create these active teams first: ${missing.join(', ')}`});await transaction(async client=>{for(const [name,type,priority] of expected){const team=teams.find(t=>t.name===name);await execute(`INSERT INTO routing_rules(id,name,priority,business_type,team_id,assignment_method,created_by) SELECT $1,$2,$3,$4,$5,'team_queue',$6 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND business_type=$4 AND team_id=$5 AND area_id IS NULL)`,[uuid(),`${name} default`,priority,type,team.id,req.broker.id],client);}await execute(`INSERT INTO routing_rules(id,name,priority,team_id,assignment_method,created_by) SELECT $1,'Company Unassigned fallback',9999,NULL,'team_queue',$2 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND source IS NULL AND business_type IS NULL AND area_id IS NULL AND team_id IS NULL)`,[uuid(),req.broker.id],client);await audit('RoutingRule',uuid(),'dubai_defaults_configured',req.broker.id,{teams:expected.map(x=>x[0])},client);});res.json({ok:true});});
+r.post('/admin/routing-rules/dubai-defaults',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access required'});const expected=[['Dubai Rental Team','Rental',10],['Dubai Off-plan Team','Off-plan',20],['Dubai Secondary Sales Team','Sale',30]],teams=await many('SELECT id,name FROM teams WHERE active=1 AND name=ANY($1::text[])',[expected.map(x=>x[0])]);const missing=expected.filter(x=>!teams.some(t=>t.name===x[0])).map(x=>x[0]);if(missing.length)return res.status(409).json({error:`Create these active teams first: ${missing.join(', ')}`});await transaction(async client=>{for(const [name,type,priority] of expected){const team=teams.find(t=>t.name===name);await execute(`INSERT INTO routing_rules(id,name,priority,business_type,team_id,assignment_method,created_by) SELECT $1,$2,$3,$4,$5,'team_queue',$6 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND business_type=$4 AND team_id=$5 AND area_id IS NULL)`,[uuid(),`${name} default`,priority,type,team.id,req.broker.id],client);}await execute(`INSERT INTO routing_rules(id,name,priority,team_id,assignment_method,created_by) SELECT $1,'Company Unassigned fallback',9999,NULL,'team_queue',$2 WHERE NOT EXISTS(SELECT 1 FROM routing_rules WHERE active=1 AND source IS NULL AND business_type IS NULL AND area_id IS NULL AND team_id IS NULL)`,[uuid(),req.broker.id],client);await audit('RoutingRule',uuid(),'dubai_defaults_configured',req.broker.id,{teams:expected.map(x=>x[0])},client);});res.json({ok:true});});
 
 async function recycleBreachedAssignments(actorId){return transaction(async client=>{
   const breached=await many(`SELECT l.* FROM leads l
@@ -148,7 +148,7 @@ const eligibleSalesAgentTeamSql=(agent,team,area='NULL')=>`EXISTS(SELECT 1 FROM 
 r.get('/crm/assignment-queue',async(req,res)=>{
   await recycleBreachedAssignments(req.broker.id);
   const params=[],conditions=["l.stage NOT IN ('Won','Lost')","l.assigned_to IS NULL","l.assignment_status IN ('unassigned','reassignment_due')","NOT EXISTS(SELECT 1 FROM lead_assignments active_assignment WHERE active_assignment.lead_id=l.id AND active_assignment.superseded_at IS NULL AND active_assignment.operating_sla_ended_at IS NOT NULL)","NOT EXISTS(SELECT 1 FROM opportunities active_o WHERE active_o.lead_id=l.id AND active_o.stage NOT IN ('Closed Won','Closed Lost'))"];
-  if(req.broker.role!=='admin'&&req.broker.jobRole!=='director'){
+  if(req.broker.jobRole!=='director'){
     if(req.broker.jobRole==='manager'){
       const teams=req.broker.managedTeamIds||[];
       params.push(teams);conditions.push(`(l.assigned_team_id=ANY($${params.length}::uuid[]) OR (l.assigned_team_id IS NULL AND l.source='Website' AND EXISTS(
@@ -175,7 +175,7 @@ async function assignQueuedLead(req,res,selfClaim=false){
     const eligible=await one(`SELECT b.id FROM brokers b WHERE b.id=$1 AND ${eligibleSalesAgentTeamSql('b.id','$2','$3')}`,[agentId,teamId,lead.primaryRoutingAreaId],client);
     if(!eligible)return {code:400,error:'Responsible agent must be an eligible active Sales Agent in the selected team'};
     const managed=req.broker.managedTeamIds||[];
-    if(!selfClaim&&req.broker.role!=='admin'&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Only an Administrator, the responsible team lead or Director can assign this lead'};
+    if(!selfClaim&&req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(teamId)))return {code:403,error:'Only the responsible Team Manager or Director can assign this lead'};
     const policy=await activePolicy(client),now=new Date(),due=policy?addBusinessMinutes(now,policy.acceptanceMinutes,calendar(policy)):new Date(now.getTime()+30*60000),firstDue=policy?addBusinessMinutes(now,policy.firstContactMinutes,calendar(policy)):new Date(now.getTime()+120*60000);
     const current=await one('SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
     if(current)await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE id=$1",[current.id],client);
@@ -198,7 +198,7 @@ r.get('/crm/leads/:id/assignments',async(req,res)=>{
 });
 
 r.post('/crm/imports/leads',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required for imports'});
+  if(req.broker.jobRole!=='director')return res.status(403).json({error:'Director access required for Lead imports'});
   const b=req.body||{},externalId=text(b.externalId),externalSystem=text(b.externalSystem);
   if(!externalId||!externalSystem||!b.contactId||!text(b.title)||!text(b.businessType))return res.status(400).json({error:'externalSystem, externalId, contactId, title and businessType are required'});
   if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'Imported leads begin Unassessed; use the approved qualification questions to calculate a result'});
@@ -230,8 +230,8 @@ async function respondToAssignment(req,res,status){
     if(lead.assignedTo!==req.broker.id)return {code:403,error:'Only the offered agent can respond'};
     const assignment=await one("SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL AND status='offered' FOR UPDATE",[lead.id],client);
     if(!assignment)return {code:409,error:'No pending assignment offer'};
-    if(!assignment.acceptanceDueAt)return {code:409,error:'Assignment offer has no acceptance deadline; ask a Manager or Administrator to renew it'};
-    if(new Date(assignment.acceptanceDueAt)<=new Date())return {code:409,error:`Assignment offer expired at ${new Date(assignment.acceptanceDueAt).toISOString()}; ask a Manager or Administrator to renew it`};
+    if(!assignment.acceptanceDueAt)return {code:409,error:'Assignment offer has no acceptance deadline; ask a Manager or Director to renew it'};
+    if(new Date(assignment.acceptanceDueAt)<=new Date())return {code:409,error:`Assignment offer expired at ${new Date(assignment.acceptanceDueAt).toISOString()}; ask a Manager or Director to renew it`};
     const reason=text(req.body?.reason);
     if(status==='rejected'&&!reason)return {code:400,error:'Rejection reason is required'};
     await execute('UPDATE lead_assignments SET status=$1,responded_at=NOW(),response_reason=$2 WHERE id=$3',[status,reason,assignment.id],client);
@@ -402,13 +402,12 @@ r.get('/crm/tasks',async(req,res)=>{
     LEFT JOIN marketing_material_versions mmv ON mmv.id=t.marketing_material_version_id
     LEFT JOIN marketing_materials mm ON mm.id=mmv.material_id
     LEFT JOIN qualification_follow_up_task_links ql ON ql.task_id=t.id
-    WHERE ((t.task_type='leave_approval' AND t.assignee_id=${governedAssignee}) OR
-      (t.task_type IN('marketing_material_review','marketing_material_follow_up') AND t.assignee_id=${governedAssignee}) OR
-      (t.task_type NOT IN('leave_approval','marketing_material_review','marketing_material_follow_up') AND (${scope.clause}))) AND (${bucket}) ORDER BY t.due_at`,params);
+    WHERE ((t.task_type='leave_approval' AND t.assignee_id=${governedAssignee})
+      OR t.assignee_id=${governedAssignee} OR (${scope.clause})) AND (${bucket}) ORDER BY t.due_at`,params);
   let assignmentTasks=[];
-  if(req.query.mine==='1'&&(req.broker.role==='admin'||['manager','director'].includes(req.broker.jobRole))&&req.query.bucket!=='completed'){
+  if(req.query.mine==='1'&&['manager','director'].includes(req.broker.jobRole)&&req.query.bucket!=='completed'){
     const assignmentParams=[],assignmentWhere=["l.stage NOT IN ('Won','Lost')","l.assigned_to IS NULL","l.assignment_status IN ('unassigned','reassignment_due')","a.superseded_at IS NULL","a.operating_sla_ended_at IS NULL","a.status='queued'","NOT EXISTS(SELECT 1 FROM opportunities active_o WHERE active_o.lead_id=l.id AND active_o.stage NOT IN ('Closed Won','Closed Lost'))"];
-    if(req.broker.role!=='admin'&&req.broker.jobRole!=='director'){
+    if(req.broker.jobRole!=='director'){
       assignmentParams.push(req.broker.managedTeamIds||[]);
       assignmentWhere.push(`(l.assigned_team_id=ANY($${assignmentParams.length}::uuid[]) OR (l.assigned_team_id IS NULL AND l.source='Website' AND EXISTS(
         SELECT 1 FROM website_intake_events approved_event WHERE approved_event.lead_id=l.id AND approved_event.status='accepted' AND approved_event.resolution='approve_email_only')))`);
@@ -424,7 +423,27 @@ r.get('/crm/tasks',async(req,res)=>{
       priority:new Date(row.dueAt)<new Date()?'urgent':'high',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager',assignmentStatus:row.assignmentStatus
     }));
   }
-  res.json({tasks:[...tasks,...assignmentTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
+  let opportunityTasks=[];
+  if(req.query.mine==='1'&&req.broker.jobRole!=='accountant'&&req.query.bucket!=='completed'){
+    const opportunityParams=[],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams);
+    const opportunityRows=await many(`SELECT o.id,o.opportunity_reference,o.stage,o.priority,o.next_action_code,o.next_action,
+      o.next_action_notes,o.next_action_due_at,o.lead_id,o.contact_id,o.title AS opportunity_title,
+      c.full_name AS contact_name,l.title AS lead_title,owner.name AS owner_name
+      FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=o.contact_id JOIN brokers owner ON owner.id=o.owner_id
+      WHERE ${opportunityScope.clause} AND o.stage NOT IN ('Closed Won','Closed Lost')
+      AND NOT EXISTS(SELECT 1 FROM tasks existing WHERE existing.assignee_id=$${opportunityParams.length+1}
+        AND existing.lead_id=o.lead_id AND existing.status IN ('open','in_progress')
+        AND LOWER(TRIM(existing.subject))=LOWER(TRIM(o.next_action)))
+      ORDER BY o.next_action_due_at,o.id`,[...opportunityParams,req.broker.id]);
+    const now=Date.now(),today=new Date();today.setHours(0,0,0,0);const tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
+    opportunityTasks=opportunityRows.filter(row=>{const due=new Date(row.nextActionDueAt).getTime();if(req.query.bucket==='overdue')return due<now;if(req.query.bucket==='today')return due>=today&&due<tomorrow;if(req.query.bucket==='upcoming')return due>=tomorrow;return true;}).map(row=>({
+      id:`opportunity-${row.id}`,taskType:'opportunity_action',opportunityId:row.id,opportunityReference:row.opportunityReference,
+      opportunityStage:row.stage,leadId:row.leadId,contactId:row.contactId,leadTitle:row.leadTitle,contactName:row.contactName,
+      subject:row.nextAction,details:row.nextActionNotes||`Continue the current ${row.stage} stage for this Opportunity.`,priority:row.priority,
+      status:'open',dueAt:row.nextActionDueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||row.ownerName
+    }));
+  }
+  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
 });
 
 r.post('/crm/leads/:id/tasks',async(req,res)=>{
@@ -432,7 +451,7 @@ r.post('/crm/leads/:id/tasks',async(req,res)=>{
   if(!canOperateLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your operational scope'});
   const b=req.body||{};if(!text(b.subject)||!b.dueAt)return res.status(400).json({error:'subject and dueAt are required'});
   if(Number.isNaN(new Date(b.dueAt).valueOf())||!['low','normal','high','urgent'].includes(b.priority||'normal'))return res.status(400).json({error:'Valid dueAt and priority are required'});
-  if(b.assigneeId&&!canAssignLead(req.broker,lead))return res.status(403).json({error:'Only a team lead or administrator can select another task owner'});const assignee=b.assigneeId||lead.assignedTo||req.broker.id;if(!(await one("SELECT id FROM brokers WHERE id=$1 AND status='active'",[assignee])))return res.status(400).json({error:'Active assignee not found'});
+  if(b.assigneeId&&!canAssignLead(req.broker,lead))return res.status(403).json({error:'Only the responsible Manager or Director can select another task owner'});const assignee=b.assigneeId||lead.assignedTo||req.broker.id;if(!(await one("SELECT id FROM brokers WHERE id=$1 AND status='active'",[assignee])))return res.status(400).json({error:'Active assignee not found'});
   const id=uuid(),row=await one(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,due_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [id,lead.id,lead.contactId,text(b.subject),text(b.details),assignee,b.priority||'normal',b.dueAt,req.broker.id]);
   await execute('UPDATE leads SET next_follow_up_at=$1,updated_at=NOW() WHERE id=$2 AND (next_follow_up_at IS NULL OR next_follow_up_at>$1)',[b.dueAt,lead.id]);
@@ -449,7 +468,7 @@ r.patch('/crm/tasks/:id',async(req,res)=>{
     await audit('Task',task.id,'status_changed',req.broker.id,{from:task.status,to:requested,context:task.taskType});return res.json(row);
   }
   const lead={assignedTo:task.assignedTo,assignedTeamId:task.assignedTeamId,createdBy:task.leadCreatedBy};
-  if(task.assigneeId!==req.broker.id&&req.broker.role!=='admin')return res.status(403).json({error:'Task is outside your permitted scope'});
+  if(task.assigneeId!==req.broker.id)return res.status(403).json({error:'Task is outside your permitted scope'});
   const b=req.body||{},status=b.status||task.status;if(!['open','in_progress','completed','cancelled'].includes(status))return res.status(400).json({error:'Invalid task status'});
   if(task.taskType==='proposal_correction'&&!['open','in_progress'].includes(status))return res.status(409).json({error:'A proposal correction completes automatically when the corrected immutable version is generated'});
   if(b.dueAt&&Number.isNaN(new Date(b.dueAt).valueOf()))return res.status(400).json({error:'Invalid dueAt'});

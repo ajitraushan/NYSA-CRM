@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { execute, one } from './db.js';
+import { accountantRequestAllowed } from './accountant-access.js';
+import { governedAccessProfile, governedRoleRequestDecision } from './role-access.js';
 
 const DEFAULT_SESSION_HOURS = 24 * 7;
 
@@ -51,6 +53,9 @@ export async function requireAuth(req, res, next) {
     WHERE s.token = $1 AND s.expires_at > NOW()`, [sessionHash(decodeURIComponent(presented))]);
   if (!row) return res.status(401).json({ error: 'Invalid or expired session' });
   if (row.status !== 'active') return res.status(403).json({ error: row.status==='suspended'?'Access is suspended':'Access is not active' });
+  if (!accountantRequestAllowed(row, req.method, req.path)) return res.status(403).json({ error: 'Accountant access is limited to Dashboard, read-only Opportunities, My Leave, Receivables and Commission Payments' });
+  const governedAccess=governedRoleRequestDecision(row,req.method,req.path);
+  if (!governedAccess.allowed) return res.status(403).json({ error: governedAccess.message });
   req.broker = row;
   req.token = decodeURIComponent(presented);
   next();
@@ -79,5 +84,6 @@ export function notViewer(req, res, next) {
 
 export function publicBroker(b) {
   const { passwordHash, ...rest } = b;
-  return rest;
+  const profile=governedAccessProfile(b);
+  return profile?{...rest,accessPolicy:{label:profile.label,capabilities:[...profile.capabilities],workspaceTabs:[...profile.workspaceTabs],dashboard:profile.dashboard}}:rest;
 }

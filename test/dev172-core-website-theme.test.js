@@ -5,20 +5,20 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const read=(name)=>readFileSync(new URL(name,root),'utf8');
 
-test('dev.172 applies the NYSA website design tokens to the shared CORE shell',()=>{
+test('dev.172 shared CORE shell is preserved under the superseding DEV202 dark tokens',()=>{
   const html=read('public/index.html');
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'2.1.0-dev.174');
+  assert.equal(pkg.version,'2.1.0-dev.208');
   for(const marker of [
-    'CORE-WEBSITE-THEME-DEV172',
-    '--workspace:#faf8f3',
-    '--charcoal:#0a2233',
-    '--green:#315f55',
+    'CORE-GLOBAL-DARK-THEME-DEV202',
+    '--workspace:#171d26',
+    '--charcoal:#111824',
+    '--green:#d0aa64',
     '--gold:#d0aa64',
     'font-family:Inter,ui-sans-serif',
     '"Iowan Old Style","Palatino Linotype",Baskerville,Georgia,serif',
     'max-width:1920px',
-    'background:var(--green);border-color:#193f39;color:#fff'
+    '#app.shell-layout .btn-primary'
   ]) assert.match(html,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
 

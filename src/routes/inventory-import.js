@@ -10,8 +10,8 @@ import { processEventWithClient } from './listing-intake.js';
 const r=Router(),SOURCE_CODE=/^[a-z][a-z0-9_]{1,63}$/;
 r.use(requireAuth);
 
-const canImport=broker=>broker.role==='admin'||['listing_agent','manager','admin_assistant'].includes(broker.jobRole);
-const allowed=(req,res)=>canImport(req.broker)?true:(res.status(403).json({error:'Inventory import requires a Listing Executive, Manager, Admin Assistant or Administrator'}),false);
+const canImport=broker=>['listing_agent','manager'].includes(broker.jobRole);
+const allowed=(req,res)=>canImport(req.broker)?true:(res.status(403).json({error:'Inventory import requires a Listing Executive or Manager'}),false);
 const cleanSource=value=>String(value||'inventory_excel').trim().toLowerCase();
 const payloadHash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const reviewToken=(rows,fileHash,sourceCode,sessionToken)=>crypto.createHmac('sha256',sessionToken).update(JSON.stringify({fileHash,sourceCode,
@@ -92,7 +92,7 @@ r.post('/inventory-import/commit',async(req,res)=>{
   }catch(error){
     if(error.statusCode)return res.status(error.statusCode).json({error:error.message,rows:error.rows});
     if(error.code==='23505')return res.status(409).json({error:'Inventory changed after preview. Review the workbook again before importing.'});
-    if(['23502','23503','23514'].includes(error.code))return res.status(409).json({error:'CORE could not create the reviewed Draft Inventory because a governed Inventory requirement was not satisfied. Zero records were imported; ask the CORE administrator to review the server error using this import time.'});
+    if(['23502','23503','23514'].includes(error.code))return res.status(409).json({error:'CORE could not create the reviewed Draft Inventory because a governed Inventory requirement was not satisfied. Zero records were imported; ask Admin to review the server error using this import time.'});
     throw error;
   }
 });

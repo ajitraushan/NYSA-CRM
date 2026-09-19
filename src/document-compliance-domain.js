@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 
-export const DOCUMENT_COMPLIANCE_RESOLVER_VERSION='r6-document-compliance-v1';
+export const DOCUMENT_COMPLIANCE_RESOLVER_VERSION='r6-document-compliance-v2-transaction-documents';
 export const TRANSACTION_FAMILIES=Object.freeze({sale:'sale',off_plan:'sale',commercial_sale:'sale',rental:'lease',commercial_rental:'lease'});
-export const PARTY_ROLES=Object.freeze(['buyer','seller','landlord','tenant']);
-export const PARTY_KINDS=Object.freeze(['individual','organization']);
+export const PARTY_ROLES=Object.freeze(['transaction','buyer','seller','landlord','tenant']);
+export const PARTY_KINDS=Object.freeze(['transaction','individual','organization']);
 export const GATE_CODES=Object.freeze(['before_pending_approval','before_approval','before_close_won']);
 export const REMINDER_REASONS=Object.freeze(['missing','returned','rejected','expiring','expired']);
 export const DEFAULT_REMINDER_OFFSETS=Object.freeze([0,7,14,30]);
@@ -28,8 +28,9 @@ export function validateRequirementDraft(input={}){
   if(value.label.length<3)errors.push('Document label is required');
   if(value.businessReason.length<10)errors.push('A meaningful business reason is required');
   if(!['sale','lease'].includes(value.transactionFamily))errors.push('Select Sale or Lease');
-  if(!PARTY_ROLES.includes(value.partyRole))errors.push('Select Buyer, Seller, Landlord or Tenant');
-  if(!PARTY_KINDS.includes(value.partyKind))errors.push('Select Individual or Organization');
+  if(!PARTY_ROLES.includes(value.partyRole))errors.push('Select Transaction, Buyer, Seller, Landlord or Tenant');
+  if(!PARTY_KINDS.includes(value.partyKind))errors.push('Select Transaction, Individual or Organization');
+  if((value.partyRole==='transaction')!==(value.partyKind==='transaction'))errors.push('Transaction documents must use the Transaction scope');
   if(!GATE_CODES.includes(value.gateCode))errors.push('Select a supported Deal transition gate');
   if(!['required','advisory'].includes(value.requirementLevel))errors.push('Select Required or Advisory');
   if(!['generic_document','official_document'].includes(authority))errors.push('Select a supported evidence authority');
@@ -45,6 +46,10 @@ export function resolveComplianceMatrix({deal,parties=[],requirements=[]}){
   const family=transactionFamily(deal?.dealType),activeParties=parties.filter(x=>!x.effectiveTo&&PARTY_ROLES.includes(x.partyRole)),unsupportedParties=activeParties.filter(x=>x.transactionCounterpartyId).map(x=>({dealPartyId:x.id,partyRole:x.partyRole,state:'governed_party_required'}));
   if(!family)return{valid:false,error:'Unsupported Deal type',transactionFamily:null,instances:[],unsupportedParties};
   const governed=activeParties.filter(x=>x.contactId||x.companyId),instances=[];
+  for(const rule of requirements.filter(x=>x.status==='active'&&x.transactionFamily===family&&x.partyRole==='transaction'&&x.partyKind==='transaction')){
+    const instance={dealId:deal.id,dealChecklistId:deal.checklistId,dealPartyId:null,requirementId:rule.requirementId,requirementVersionId:rule.id,partyRole:'transaction',partyKind:'transaction',gateCode:rule.gateCode,requirementLevel:rule.requirementLevel,evidenceAuthority:rule.evidenceAuthority,label:rule.label,responsibleAgentId:deal.ownerId};
+    instance.instanceFingerprint=complianceFingerprint(instance);instances.push(instance);
+  }
   for(const party of governed){
     const kind=party.contactId?'individual':'organization';
     for(const rule of requirements.filter(x=>x.status==='active'&&x.transactionFamily===family&&x.partyRole===party.partyRole&&x.partyKind===kind)){
@@ -72,7 +77,7 @@ export function validateComplianceReview(input={}){
   const errors=[],value={decision:clean(input.decision),reason:clean(input.reason),reviewConfirmation:input.reviewConfirmation===true};
   if(!['accepted','returned','rejected'].includes(value.decision))errors.push('Select Accept, Return or Reject');
   if(value.decision!=='accepted'&&value.reason.length<10)errors.push('A meaningful return or rejection reason is required');
-  if(!value.reviewConfirmation)errors.push('Confirm the exact evidence and party/case links were reviewed');
+  if(!value.reviewConfirmation)errors.push('Confirm the uploaded document was reviewed against this transaction');
   return{valid:errors.length===0,errors,value,requestFingerprint:errors.length?null:complianceFingerprint(value)};
 }
 

@@ -377,7 +377,7 @@ r.post('/intake/website',async(req,res)=>{
 });
 
 function supportOnly(req,res,next){
-  if(!hasInternalCrmIdentity(req.broker)||!isManager(req.broker))return res.status(403).json({error:'Manager or administrator access required'});
+  if(!hasInternalCrmIdentity(req.broker)||!isManager(req.broker))return res.status(403).json({error:'Manager access required'});
   next();
 }
 const reviewText=(value,limit=4000)=>typeof value==='string'&&value.trim()?value.trim().slice(0,limit):null;

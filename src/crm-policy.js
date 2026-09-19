@@ -1,15 +1,21 @@
-export const CRM_JOB_ROLES = ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant'];
+import {isGovernedNonBusinessRole,JOB_ROLE} from './role-access.js';
+
+export const CRM_JOB_ROLES = Object.values(JOB_ROLE);
 
 export function hasInternalCrmIdentity(broker) {
-  return Boolean(broker && ['admin','internal_broker'].includes(broker.role) && CRM_JOB_ROLES.includes(broker.jobRole));
+  return Boolean(broker && broker.role === 'internal_broker' &&
+    broker.jobRole !== JOB_ROLE.ADMINISTRATOR && broker.jobRole !== 'admin_assistant' &&
+    CRM_JOB_ROLES.includes(broker.jobRole));
 }
 
+const hasBusinessIdentity=broker=>hasInternalCrmIdentity(broker)&&!isGovernedNonBusinessRole(broker);
+
 export function isCompanyReader(broker) {
-  return Boolean(broker && (broker.role === 'admin' || broker.jobRole === 'director'));
+  return Boolean(broker && broker.jobRole === 'director');
 }
 
 export function isManager(broker) {
-  return Boolean(broker && (broker.role === 'admin' || broker.jobRole === 'manager'));
+  return Boolean(broker && broker.jobRole === 'manager');
 }
 
 export function isProposalApprover(broker) {
@@ -28,13 +34,12 @@ export function isCrmReadOnly(broker) {
 }
 
 export function canReadLead(broker, lead) {
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return false;
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return false;
   return true;
 }
 
 export function canWriteLead(broker, lead) {
   if (!hasInternalCrmIdentity(broker) || isCrmReadOnly(broker)) return false;
-  if (broker.role === 'admin') return true;
   if (lead.assignedTo === broker.id) return true;
   const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
   return broker.jobRole === 'manager' && managedTeams.includes(lead.assignedTeamId);
@@ -45,12 +50,11 @@ export function canWriteLead(broker, lead) {
 // governed review, approval, assignment and reassignment workflows.
 export function canOperateLead(broker, lead) {
   if (!hasInternalCrmIdentity(broker) || isCrmReadOnly(broker)) return false;
-  if (broker.role === 'admin') return true;
   return Boolean(lead?.assignedTo && String(lead.assignedTo) === String(broker.id));
 }
 
 export function canReadOpportunity(broker, opportunity) {
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return false;
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return false;
   if (isCompanyReader(broker)) return true;
   if (broker.jobRole === 'listing_agent') return Boolean(opportunity?.participantIds?.includes(broker.id));
   if (opportunity?.ownerId === broker.id || opportunity?.createdBy === broker.id) return true;
@@ -65,17 +69,27 @@ export function canWriteOpportunity(broker, opportunity) {
 export function canApproveDeal(broker,opportunity,deal) {
   if (!hasInternalCrmIdentity(broker)) return false;
   if (broker.jobRole === 'director') return true;
-  if (broker.jobRole !== 'manager' || ['commercial_sale','commercial_rental'].includes(deal?.dealType)) return false;
+  if (broker.jobRole !== 'manager') return false;
   const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
   return managedTeams.includes(opportunity?.assignedTeamId);
 }
 
+// The standard historical commercial-review item is an operational management review.
+// Preserve its frozen template identity; record the actual authorized reviewer in the audit trail.
+export function canCompleteDealChecklistItem(broker,opportunity,deal,item) {
+  if (!hasInternalCrmIdentity(broker)) return false;
+  if (!canWriteOpportunity(broker,opportunity) && broker.jobRole!=='director') return false;
+  if (item.responsibleRole==='director' && item.itemCode==='DIRECTOR_REVIEW' &&
+      ['commercial_sale','commercial_rental'].includes(deal?.dealType) && broker.jobRole==='manager')
+    return canApproveDeal(broker,opportunity,deal);
+  return item.responsibleRole==='sales_agent'?['sales_agent','manager'].includes(broker.jobRole):item.responsibleRole===broker.jobRole;
+}
+
 export function canCreateOpportunity(broker, lead) {
-  return Boolean(canOperateLead(broker,lead) && ['admin','sales_agent','manager'].includes(broker.jobRole));
+  return Boolean(canOperateLead(broker,lead) && ['sales_agent','manager'].includes(broker.jobRole));
 }
 
 export function canAssignLead(broker, lead) {
-  if (broker?.role==='admin'&&broker?.jobRole==='admin'&&hasInternalCrmIdentity(broker))return true;
   if (broker?.jobRole==='director'&&hasInternalCrmIdentity(broker))return true;
   if (!canWriteLead(broker, lead)) return false;
   const managedTeams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
@@ -88,7 +102,7 @@ function bind(params, value) {
 }
 
 export function leadScopeSql(alias, broker, params = []) {
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return { clause:'1=0', params };
   return { clause:'1=1', params };
 }
 
@@ -108,7 +122,7 @@ export function agentWorkLeadScopeSql(alias,broker,params=[]){
 
 export function opportunityScopeSql(alias, broker, params = []) {
   if (isCompanyReader(broker)) return {clause:'1=1',params};
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return {clause:'1=0',params};
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return {clause:'1=0',params};
   const id=bind(params,broker.id);
   if (broker.jobRole === 'listing_agent') return {clause:`EXISTS (SELECT 1 FROM opportunity_participants op WHERE op.opportunity_id=${alias}.id AND op.broker_id=${id} AND op.active)`,params};
   if (broker.jobRole === 'manager') return {clause:`(${alias}.owner_id=${id} OR ${alias}.created_by=${id} OR EXISTS (
@@ -127,7 +141,7 @@ export function proposalApprovalScopeSql(alias, broker, params = []) {
 
 export function teamScopeSql(alias,broker,params=[]){
   if(isCompanyReader(broker))return {clause:'1=1',params};
-  if(!hasInternalCrmIdentity(broker)||broker.jobRole==='accountant')return {clause:'1=0',params};
+  if(!hasBusinessIdentity(broker)||broker.jobRole===JOB_ROLE.ACCOUNTANT)return {clause:'1=0',params};
   if(broker.jobRole==='manager'){
     const id=bind(params,broker.id);
     return {clause:`EXISTS (SELECT 1 FROM team_memberships tm WHERE tm.team_id=${alias}.id AND tm.broker_id=${id} AND tm.membership_role='manager' AND tm.ends_at IS NULL)`,params};
@@ -137,13 +151,13 @@ export function teamScopeSql(alias,broker,params=[]){
 }
 
 export function contactScopeSql(alias, broker, params = []) {
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return { clause:'1=0', params };
   return { clause:'1=1', params };
 }
 
 export function companyScopeSql(alias, broker, params = []) {
   if (isCompanyReader(broker)) return { clause:'1=1', params };
-  if (!hasInternalCrmIdentity(broker) || broker.jobRole === 'accountant') return { clause:'1=0', params };
+  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return { clause:'1=0', params };
   const id = bind(params, broker.id);
   if (broker.jobRole === 'manager') {
     return { clause:`(${alias}.owner_id=${id} OR EXISTS (

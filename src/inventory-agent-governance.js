@@ -7,7 +7,7 @@ export const inventoryAgentEligibilitySql=alias=>`(${alias}.job_role IN ('listin
 ))`;
 
 export function inventoryAgentScopeSql(broker,alias,params){
-  if(broker.role==='admin'||['admin_assistant','listing_agent'].includes(broker.jobRole))return'TRUE';
+  if(broker.jobRole==='listing_agent')return'TRUE';
   params.push(broker.id);const ref=`$${params.length}`;
   if(broker.jobRole==='manager')return`(${alias}.team_id IN (SELECT t.id FROM teams t WHERE t.manager_id=${ref}) OR EXISTS (
     SELECT 1 FROM team_memberships tm WHERE tm.team_id=${alias}.team_id AND tm.broker_id=${ref} AND tm.membership_role='manager' AND tm.ends_at IS NULL

@@ -6,8 +6,8 @@ import { normalizeDelimitedValues,parseBusinessAmount } from '../crm-domain.js';
 
 const r=Router(),clean=(value,max=1000)=>String(value||'').trim().slice(0,max);
 r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'Campaign governance is restricted to NYSA staff'}));
-const canMaintain=broker=>broker?.role==='admin'||isCompanyReader(broker);
-function requireMaintainer(req,res){if(canMaintain(req.broker))return true;res.status(403).json({error:'Administrator or Director campaign authority is required'});return false;}
+const canMaintain=broker=>isCompanyReader(broker);
+function requireMaintainer(req,res){if(canMaintain(req.broker))return true;res.status(403).json({error:'Director campaign authority is required'});return false;}
 
 r.get('/crm/campaigns',async(req,res)=>{
   const campaigns=await many(`SELECT c.*,owner.name AS owner_name,creator.name AS created_by_name,
@@ -22,14 +22,14 @@ r.get('/crm/campaigns',async(req,res)=>{
     ORDER BY CASE c.status WHEN 'active' THEN 0 WHEN 'draft' THEN 1 WHEN 'paused' THEN 2 ELSE 3 END,c.starts_on DESC NULLS LAST,c.name`);
   const mappings=await many(`SELECT m.*,c.campaign_code,c.name AS campaign_name,b.name AS created_by_name FROM campaign_external_mappings m
     JOIN marketing_campaigns c ON c.id=m.campaign_id JOIN brokers b ON b.id=m.created_by ORDER BY m.status,m.source_code,m.external_campaign_code`);
-  const owners=canMaintain(req.broker)?await many("SELECT id,name,job_role FROM brokers WHERE status='active' AND role IN ('admin','internal_broker') ORDER BY name"):[];
+  const owners=canMaintain(req.broker)?await many("SELECT id,name,job_role FROM brokers WHERE status='active' AND role='internal_broker' ORDER BY name"):[];
   res.json({campaigns,mappings,owners,canMaintain:canMaintain(req.broker)});
 });
 
 r.post('/crm/campaigns',async(req,res)=>{
   if(!requireMaintainer(req,res))return;const b=req.body||{},campaignCode=clean(b.campaignCode,40).toUpperCase(),name=clean(b.name,160),objective=clean(b.objective),ownerId=clean(b.ownerId,40);
   if(!/^[A-Z0-9][A-Z0-9_-]{2,39}$/.test(campaignCode)||!name||!objective||!ownerId)return res.status(400).json({error:'Stable campaign code, name, owner and objective are required'});
-  const owner=await one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role IN ('admin','internal_broker')",[ownerId]);if(!owner)return res.status(400).json({error:'Campaign owner must be an active NYSA user'});
+  const owner=await one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role='internal_broker'",[ownerId]);if(!owner)return res.status(400).json({error:'Campaign owner must be an active operational user'});
   const budget=b.plannedBudget===''||b.plannedBudget===null||b.plannedBudget===undefined?null:parseBusinessAmount(b.plannedBudget);if(budget!==null&&(!Number.isFinite(budget)||budget<0))return res.status(400).json({error:'Planned budget must be a valid non-negative amount'});
   const row=await one(`INSERT INTO marketing_campaigns(id,campaign_code,name,owner_id,objective,audience,channels,applicable_property_references,
     starts_on,ends_on,planned_budget,operational_targets,created_by,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$13) RETURNING *`,

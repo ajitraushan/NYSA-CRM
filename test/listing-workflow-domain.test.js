@@ -13,7 +13,7 @@ test('listing workflow allows only governed state transitions',()=>{
 test('listing workflow enforces ownership reviewer authority and reasons',()=>{
   assert.match(validateListingWorkflowAction({current:'draft',action:'submit'}),/Only the Listing Executive/);
   assert.equal(validateListingWorkflowAction({current:'draft',action:'submit',isOwner:true}),null);
-  assert.match(validateListingWorkflowAction({current:'in_review',action:'approve'}),/Manager or Administrator/);
+  assert.match(validateListingWorkflowAction({current:'in_review',action:'approve'}),/responsible Manager/);
   assert.match(validateListingWorkflowAction({current:'in_review',action:'request_changes',canReview:true}),/reason is required/);
   assert.equal(validateListingWorkflowAction({current:'in_review',action:'request_changes',canReview:true,reason:'Correct the price evidence'}),null);
 });

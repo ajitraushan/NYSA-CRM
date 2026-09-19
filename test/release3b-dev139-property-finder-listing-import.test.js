@@ -106,10 +106,10 @@ test('listing discovery requires listings:read before token exchange and uses on
   assert.equal(result.creditsSpent, 0);
 });
 
-test('dev.139 HTTP and UI boundary is confirmed, full-admin, duplicate-safe and Draft-only', () => {
+test('dev.139 HTTP and UI boundary is confirmed, Director-only, duplicate-safe and Draft-only', () => {
   const route = read('src/routes/property-finder-sandbox.js'), intake = read('src/routes/listing-intake.js'), env = read('.env.example'), ui = read('public/app.js');
   for (const marker of ['createPropertyFinderListingImportClient', 'PROPERTY_FINDER_LISTING_DISCOVERY_CONFIRMATION', 'PROPERTY_FINDER_LISTING_IMPORT_CONFIRMATION', 'PROPERTY_FINDER_IMPORT_REVIEW_SECRET', 'propertyFinderListingImportPreview', 'validateListingIntakePayload', 'processEventWithClient', "source_provider='property_finder'", 'ON CONFLICT(provider_code,event_id) DO NOTHING', 'importBoundary.networkReady', 'importBoundary.listingReadScopeConfigured', 'automaticVerificationPerformed: false', 'automaticActivationPerformed: false']) assert.ok(route.includes(marker), marker);
-  assert.match(route, /req\.broker\.role === 'admin'.*req\.broker\.jobRole === 'admin'/);
+  assert.match(route, /req\.broker\.jobRole === 'director'/);
   assert.doesNotMatch(route, /client\.(create|update|delete|publish|unpublish)/);
   assert.match(intake, /'blocked','draft'/);
   assert.match(env, /PROPERTY_FINDER_ALLOW_READS=0/);
@@ -119,6 +119,6 @@ test('dev.139 HTTP and UI boundary is confirmed, full-admin, duplicate-safe and 
   for (const marker of ['Import existing Property Finder sandbox listings', 'Discover PF sandbox listings', 'Review Draft import', 'Visible sandbox test tag', 'Governed CORE Area', 'Create reviewed Internal Inventory Draft', 'PF media, owner/contact information, approval, verification and availability will not be imported', 'IMPORT_PROPERTY_FINDER_SANDBOX_LISTING_AS_DRAFT']) assert.ok(ui.includes(marker), marker);
   const importUiStart = ui.indexOf('Import existing Property Finder sandbox listings'), importUi = ui.slice(importUiStart, ui.indexOf('</section>', importUiStart));
   assert.doesNotMatch(importUi, /publish|unpublish|creditsSpent/i);
-  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.174');
-  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.174');
+  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.208');
+  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.208');
 });

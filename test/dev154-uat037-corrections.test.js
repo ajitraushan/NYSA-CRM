@@ -26,7 +26,7 @@ test('G-02 and K-03 acceptance completes Negotiation before the separate atomic 
   assert.match(opportunities,/Property is already reserved under/);
   assert.match(opportunities,/Accepted Offer Inventory cannot be detached/);
   assert.match(offerUi,/countered:\['accepted'/);
-  assert.match(offerUi,/Customer acceptance is already recorded in Negotiation/);
+  assert.match(offerUi,/Customer acceptance is already recorded against the exact Offer revision/);
   assert.match(offerUi,/Create seven-day reservation/);
 });
 

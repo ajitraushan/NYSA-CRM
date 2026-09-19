@@ -58,12 +58,11 @@ async function replaceBulkUnits(listingId,units,client){
   }
 }
 
-const isReviewer=broker=>broker.role==='admin'||broker.jobRole==='manager';
-const canCreateListing=broker=>broker.role==='admin'||['listing_agent','admin_assistant','manager'].includes(broker.jobRole);
+const isReviewer=broker=>broker.jobRole==='manager';
+const canCreateListing=broker=>['listing_agent','manager'].includes(broker.jobRole);
 const ownsListing=(broker,listing)=>listing.postedBy===broker.id;
 async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
 async function canReview(broker,listing,client){
-  if(broker.role==='admin')return true;
   if(broker.jobRole!=='manager')return false;
   if((broker.managedTeamIds||[]).includes(String(listing.postedByTeamId||'')))return true;
   return Boolean(await one(`SELECT 1 AS allowed FROM brokers owner JOIN teams t ON t.id=owner.team_id
@@ -82,7 +81,7 @@ async function refreshReadiness(id,client){const listing=await one(`SELECT l.*,n
   FROM listings l WHERE l.id=$1`,[id],client);if(!listing)return null;const readiness=derivePublicationReadiness(listing,listing.approvedMediaCount);const portalStatus=listing.portalStatus==='published'?'published':readiness.status;const updated=await one('UPDATE listings SET portal_status=$1 WHERE id=$2 RETURNING *',[portalStatus,id],client);return{...updated,effectiveStatus:listing.effectiveStatus,approvedMediaCount:listing.approvedMediaCount,bulkUnitCount:listing.bulkUnitCount,incompleteBulkUnitCount:0};}
 
 function canEdit(broker, listing) {
-  return broker.role === 'admin' || broker.jobRole==='admin_assistant' || listing.postedBy === broker.id;
+  return listing.postedBy === broker.id;
 }
 
 async function developerExternalListingAuthority(listingId,client){
@@ -100,6 +99,7 @@ async function developerExternalListingAuthority(listingId,client){
 }
 
 function validateListingFields(body) {
+  if(body.parkingSpaces!==undefined&&body.parkingSpaces!==null&&body.parkingSpaces!==''&&(!Number.isInteger(Number(body.parkingSpaces))||Number(body.parkingSpaces)<0))return 'parkingSpaces must be a non-negative whole number';
   if(body.transactionTypes!==undefined&&(!Array.isArray(body.transactionTypes)||!body.transactionTypes.length||new Set(body.transactionTypes).size!==body.transactionTypes.length||body.transactionTypes.some(value=>!TRANSACTION_TYPES.includes(value))))return 'Select one or more valid Inventory transaction types';
   if (body.currency !== undefined && !/^[A-Z]{3}$/.test(String(body.currency))) return 'currency must be a 3-letter ISO code';
   for (const field of ['sizeSqft', 'referencePrice', 'downPaymentPercent', 'onHandoverPercent', 'postHandoverYears']) {
@@ -130,9 +130,8 @@ r.get('/listings', async (req, res) => {
       else where.push(`(l.workflow_status='approved' OR l.posted_by=$${params.length})`);
     }
   }
-  if(body.parkingSpaces!==undefined&&body.parkingSpaces!==null&&body.parkingSpaces!==''&&(!Number.isInteger(Number(body.parkingSpaces))||Number(body.parkingSpaces)<0))return 'parkingSpaces must be a non-negative whole number';
   else if(req.broker.jobRole==='manager'){params.push(req.broker.managedTeamIds||[]);where.push(`(l.workflow_status='approved' OR b.team_id=ANY($${params.length}::uuid[]))`);}
-  else if(req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')where.push("l.workflow_status='approved'");
+  else if(req.broker.jobRole!=='listing_agent')where.push("l.workflow_status='approved'");
   const add = (clause, value) => { params.push(value); where.push(clause.replace('?', `$${params.length}`)); };
   if (q.area) add('l.area ILIKE ?', `%${q.area}%`);
   if (q.areaId) add('l.area_id = ?', q.areaId);
@@ -180,7 +179,7 @@ r.get('/listings', async (req, res) => {
 r.get('/inventory-agents',async(req,res)=>{
   const params=[],scope=inventoryAgentScopeSql(req.broker,'b',params),inventoryAgents=await many(`SELECT b.id,b.name,b.email,b.phone,b.job_title,b.job_role
     FROM brokers b
-    WHERE b.status='active' AND b.role IN ('admin','internal_broker')
+    WHERE b.status='active' AND b.role='internal_broker'
       AND ${inventoryAgentEligibilitySql('b')} AND ${scope}
     ORDER BY b.name,b.id`,params);
   res.json({inventoryAgents});
@@ -204,7 +203,7 @@ r.get('/inventory-owner-customers',async(req,res)=>{
 });
 
 r.get('/listings-workspace',async(req,res)=>{
-  if(req.broker.jobRole!=='listing_agent'&&req.broker.role!=='admin'&&req.broker.jobRole!=='admin_assistant')return res.status(403).json({error:'Listing Executive workspace is outside your role'});
+  if(!['listing_agent','manager'].includes(req.broker.jobRole))return res.status(403).json({error:'Inventory workspace is outside your operational role'});
   const params=[],scope=req.broker.jobRole==='listing_agent'?(params.push(req.broker.id),'l.posted_by=$1'):'TRUE';
   const rows=await many(`SELECT l.*,nysa_inventory_effective_status(l.id) AS effective_status,b.name AS posted_by_name,b.team_id AS posted_by_team_id,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
@@ -249,11 +248,10 @@ r.get('/listings-approval-queue',async(req,res)=>{
 });
 
 r.get('/inventory-verification-queue',async(req,res)=>{
-  if(!isReviewer(req.broker))return res.status(403).json({error:'Inventory verification queue requires Manager or Administrator access'});
+  if(!isReviewer(req.broker))return res.status(403).json({error:'Inventory verification queue requires Manager access'});
   const params=[],where=["vr.status='pending'","l.deleted_at IS NULL"];
-  if(req.broker.role!=='admin'){
-    params.push(req.broker.id);
-    where.push(`(t.manager_id=$${params.length} OR EXISTS(
+  params.push(req.broker.id);
+  where.push(`(t.manager_id=$${params.length} OR EXISTS(
       SELECT 1 FROM team_memberships tm
       WHERE tm.team_id=t.id AND tm.broker_id=$${params.length}
         AND tm.membership_role='manager' AND tm.ends_at IS NULL
@@ -262,7 +260,6 @@ r.get('/inventory-verification-queue',async(req,res)=>{
       WHERE ur.team_id=t.id AND ur.broker_id=$${params.length}
         AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL
     ))`);
-  }
   const requests=await many(`SELECT vr.*,l.inventory_reference,l.project,l.area,l.verification_status,
       submitter.name AS submitted_by_name,maintainer.name AS inventory_owner_name,t.name AS team_name
     FROM inventory_verification_requests vr
@@ -281,7 +278,7 @@ r.post('/listings/:id/verification-requests',async(req,res)=>{
       FROM listings l JOIN brokers b ON b.id=l.posted_by
       WHERE l.id=$1 AND l.deleted_at IS NULL FOR UPDATE`,[req.params.id],client);
     if(!listing)return {code:404,error:'Inventory not found'};
-    if(!canEdit(req.broker,listing))return {code:403,error:'Only the Listing Executive who created this Inventory or an authorized Administrator can submit it for verification'};
+    if(!canEdit(req.broker,listing))return {code:403,error:'Only the Listing Executive who created this Inventory can submit it for verification'};
     if(await one("SELECT id FROM inventory_verification_requests WHERE listing_id=$1 AND status='pending'",[listing.id],client))return {code:409,error:'A verification request is already pending'};
     if(!await one(`SELECT id FROM inventory_counterparties WHERE listing_id=$1
       AND party_role IN ('seller','landlord','lessor','developer','authorized_representative') LIMIT 1`,[listing.id],client))
@@ -336,7 +333,7 @@ r.post('/inventory-verification-requests/:id/decision',async(req,res)=>{
 });
 
 r.get('/external-publications',async(req,res)=>{
-  const params=[],scope=req.broker.role==='admin'?'TRUE':req.broker.jobRole==='manager'?(params.push(req.broker.id),`(t.manager_id=$1 OR EXISTS (
+  const params=[],scope=req.broker.jobRole==='manager'?(params.push(req.broker.id),`(t.manager_id=$1 OR EXISTS (
     SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL
   ))`):(params.push(req.broker.id),`(l.posted_by=$1 OR l.originating_agent_id=$1)`);
   const [inventoryRows,publications,mappingVersions,fieldMappings,permitEvidenceVersions,propertyFinderPreflightMedia]=await Promise.all([
@@ -499,7 +496,7 @@ r.post('/external-publications/:id/preparations',async(req,res)=>{
 });
 
 r.post('/external-publication-mappings',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator authority is required to create connector mappings'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin authority is required to create connector mappings'});
   const value=validatePortalMappingVersion(req.body);if(value.error)return res.status(400).json({error:value.error});
   const created=await one(`INSERT INTO external_portal_mapping_versions(
     id,portal_code,version_code,specification_reference,notes,created_by
@@ -510,7 +507,7 @@ r.post('/external-publication-mappings',async(req,res)=>{
 });
 
 r.post('/external-publication-mappings/:id/fields',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator authority is required to maintain connector mappings'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin authority is required to maintain connector mappings'});
   const value=validatePortalFieldMapping(req.body);if(value.error)return res.status(400).json({error:value.error});
   const version=await one('SELECT * FROM external_portal_mapping_versions WHERE id=$1',[req.params.id]);
   if(!version)return res.status(404).json({error:'Connector mapping version not found'});
@@ -525,7 +522,7 @@ r.post('/external-publication-mappings/:id/fields',async(req,res)=>{
 });
 
 r.patch('/external-publication-mappings/:id/status',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator authority is required to govern connector mappings'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin authority is required to govern connector mappings'});
   const target=String(req.body?.status||'').trim(),evidence=String(req.body?.lifecycleEvidence||'').trim();
   if(!evidence)return res.status(400).json({error:'Lifecycle evidence is required'});
   const result=await transaction(async client=>{
@@ -565,7 +562,7 @@ r.patch('/external-publications/:id/status',async(req,res)=>{
     if(!publication)return{code:404,error:'External publication not found'};
     const listing={postedBy:publication.postedBy,postedByTeamId:publication.postedByTeamId};
     const reviewer=await canReview(req.broker,listing,client);
-    if(['approved','rejected'].includes(status)&&!reviewer)return{code:403,error:'Manager or Administrator approval is required'};
+    if(['approved','rejected'].includes(status)&&!reviewer)return{code:403,error:'Manager approval is required'};
     if(!reviewer&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing))return{code:403,error:'This publication is outside your editable scope'};
     const allowed={draft:['submitted','withdrawn'],submitted:['approved','rejected','withdrawn'],approved:['published','withdrawn'],
       published:['paused','withdrawn'],paused:['published','withdrawn'],rejected:['submitted'],withdrawn:[]};
@@ -741,7 +738,7 @@ r.patch('/listings/:id/responsible-agent',async(req,res)=>{
 r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
   const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
-  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its seller or lessor parties'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner can maintain its seller or lessor parties'});
   const b=req.body||{},validationError=validateInventoryPartyInput(b);
   if(validationError)return res.status(400).json({error:validationError});
   const id=uuid(),row=await one(`INSERT INTO inventory_counterparties
@@ -756,7 +753,7 @@ r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
 r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
   const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
-  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner or Administrator can maintain its agreements'});
+  if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner can maintain its agreements'});
   const b=req.body||{},types=['listing_mandate','leasing_mandate','seller_representation','landlord_representation','co_broker','commission_sharing','ownership_authority','marketing_publication','viewing_access','developer_authorization','amendment','renewal'],
     representations=['exclusive','non_exclusive','referral','co_broker','not_applicable'];
   if(!types.includes(b.agreementType)||!representations.includes(b.representationType))return res.status(400).json({error:'Select a valid agreement and representation type'});
@@ -773,7 +770,7 @@ r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
 });
 
 r.post('/listings', requirePostRights, async (req, res) => {
-  if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive, Manager or Administrator'});
+  if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive or Manager'});
   const b = {...(req.body || {})};
   for (const field of ['inventoryHeadline','project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
   if(!Array.isArray(b.transactionTypes)||!b.transactionTypes.length)return res.status(400).json({error:'Select at least one Inventory transaction type'});
@@ -794,7 +791,7 @@ r.post('/listings', requirePostRights, async (req, res) => {
   for(const field of ['originatingAgentId','contact'])
     if(!String(b[field]||'').trim())return res.status(400).json({error:`${field} is required`});
   const eligibleAgents=await many(`SELECT b.id FROM brokers b WHERE b.id=ANY($1::uuid[]) AND b.status='active'
-    AND b.role IN ('admin','internal_broker') AND ${inventoryAgentEligibilitySql('b')}`,
+    AND b.role='internal_broker' AND ${inventoryAgentEligibilitySql('b')}`,
     [[b.originatingAgentId,b.responsibleAgentId]]);
   if(new Set(eligibleAgents.map(x=>x.id)).size!==new Set([b.originatingAgentId,b.responsibleAgentId]).size)
     return res.status(400).json({error:'Select active eligible NYSA originating and responsible Inventory agents'});
@@ -977,7 +974,7 @@ r.post('/listings/:id/reopen-requests/:requestId/decision',async(req,res)=>{
   const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by
     WHERE l.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
-  if(!(await canReview(req.broker,listing)))return res.status(403).json({error:'Only an authorized Manager or Administrator can decide this reopening request'});
+  if(!(await canReview(req.broker,listing)))return res.status(403).json({error:'Only an authorized Manager can decide this reopening request'});
   const decision=String(req.body?.decision||''),reason=String(req.body?.reason||'').trim();
   if(!['approved','rejected'].includes(decision))return res.status(400).json({error:'Decision must be approved or rejected'});
   if(reason.length<10)return res.status(400).json({error:'Provide a decision reason of at least 10 characters'});
@@ -1022,7 +1019,7 @@ r.patch('/listings/:id/status', async (req, res) => {
 });
 
 r.delete('/listings/:id', async (req, res) => {
-  if (req.broker.role !== 'admin') return res.status(403).json({ error: 'Only admins can archive listings' });
+  if (!['manager','director'].includes(req.broker.jobRole)) return res.status(403).json({ error: 'Only a Manager or Director can archive Inventory' });
   const listing = await one('SELECT * FROM listings WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   await execute('UPDATE listings SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1', [listing.id]);

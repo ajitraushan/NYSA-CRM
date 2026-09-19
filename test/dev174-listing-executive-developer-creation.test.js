@@ -8,7 +8,7 @@ test('Listing Executive can reach Companies and Developers from an allowed works
   const ui=read('public/app.js');
   assert.match(ui,/id="customer-companies">Companies and Developers/);
   assert.match(ui,/\$\('#customer-companies'\)\?\.addEventListener\('click',openCompanies\)/);
-  assert.match(ui,/\['manager','director','admin_assistant','listing_agent'\]/);
+  assert.match(ui,/\['manager','director','listing_agent'\]/);
 });
 
 test('Company and initial Developer role are created in one transaction',()=>{
@@ -28,7 +28,7 @@ test('Listing Executive submits a governed Developer for independent activation'
   assert.match(route,/requiresIndependentVerification:status==='pending_verification'/);
   assert.match(route,/version\.createdBy===req\.broker\.id/);
   assert.match(ui,/Submit governed Developer for verification/);
-  assert.match(ui,/different Administrator must verify it before it becomes selectable in Inventory/);
+  assert.match(ui,/different Manager or Director must verify it before it becomes selectable in Inventory/);
 });
 
 test('Listing Executive governance access remains limited to owned Companies',()=>{

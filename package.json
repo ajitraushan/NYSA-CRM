@@ -1,12 +1,13 @@
 {
   "name": "nysa-crm",
-  "version": "2.1.0-dev.174",
+  "version": "2.1.0-dev.208",
   "description": "NYSA CORE consolidated CRM Test candidate - Releases 3 to 6",
   "type": "module",
   "main": "app.cjs",
   "scripts": {
     "start": "node app.cjs",
     "test": "node --test --test-isolation=none \"test/**/*.test.js\"",
+    "release:verify-source": "node tools/verify-release-source-control.mjs",
     "test:integration:reassignment": "node --test --test-isolation=none test/dev154-coordinated-reassignment.integration.test.js",
     "test:integration:inventory-eligibility": "node --test --test-isolation=none test/dev156-inventory-eligibility-real-db.integration.test.js",
     "test:fixture:full": "node --env-file=.env --test --test-isolation=process",

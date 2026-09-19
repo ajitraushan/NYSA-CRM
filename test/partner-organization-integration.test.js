@@ -80,9 +80,9 @@ test('database rules preserve one active/open version while dev.158 permits auth
   assert.match(sql,/WHERE status='active'/);assert.match(sql,/WHERE status IN \('duplicate_review','pending_verification'\)/);assert.match(correction,/verified_by%created_by/);
 });
 
-test('governance routes allow Manager Director or Administrator creation and retain controlled reviews',()=>{
+test('governance routes allow operational Manager or Director authority and retain controlled reviews',()=>{
   const route=read('src/routes/partner-organizations.js');
-  for(const marker of ["isGovernanceAuthority","Listing Executive, Manager, Director or Administrator authority is required","draft creator cannot decide","FOR UPDATE","verification_auto_activated","version_superseded"])assert.match(route,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
+  for(const marker of ["isGovernanceAuthority","Listing Executive, Manager or Director authority is required","draft creator cannot decide","FOR UPDATE","verification_auto_activated","version_superseded"])assert.match(route,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
 });
 
 test('activation maps classification to an existing Company business role',()=>{

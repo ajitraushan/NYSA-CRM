@@ -34,6 +34,7 @@ import documentComplianceRoutes from './routes/document-compliance.js';
 import marketingMaterialComplianceRoutes from './routes/marketing-material-compliance.js';
 import emailCalendlyRoutes from './routes/email-calendly.js';
 import classificationCatalogueRoutes from './routes/classification-catalogue.js';
+import purchasedDataImportRoutes from './routes/purchased-data-import.js';
 import { migrate, closeDatabase } from './db.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
 
@@ -73,6 +74,7 @@ app.mount('/api', documentComplianceRoutes);
 app.mount('/api', marketingMaterialComplianceRoutes);
 app.mount('/api', emailCalendlyRoutes);
 app.mount('/api', classificationCatalogueRoutes);
+app.mount('/api', purchasedDataImportRoutes);
 app.static(path.join(__dirname, '..', 'public'));
 
 const PORT = process.env.PORT || 3000;
