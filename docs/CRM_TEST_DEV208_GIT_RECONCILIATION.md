@@ -2,6 +2,9 @@
 
 Date: 20 September 2026 (Asia/Dubai)
 
+Governed DEV208 source recovery commit: `654be10ccac61be7c4bda638ce4be5eccebbb0f9`
+Recovery branch: `codex/crm-dev208-reconciled`
+
 ## Incident
 
 CRM Test DEV208 was packaged and deployed from a checksum-controlled DEV207-R2 package baseline,
