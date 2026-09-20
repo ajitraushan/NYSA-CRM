@@ -1,0 +1,17 @@
+name: release-provenance
+on:
+  pull_request:
+  push:
+    branches: ['codex/**']
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm}
+      - run: npm ci
+      - run: node --test --test-isolation=none test/release-origin-builder.test.js
+        env: {NYSA_RUN_RELEASE_GIT_INTEGRATION: '1'}
+      - run: npm test

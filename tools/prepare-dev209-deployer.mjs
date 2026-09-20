@@ -5,6 +5,9 @@ const root=path.resolve('.');
 const source=path.join(root,'release-artifacts/release-3/consolidated/deploy-crm-test-consolidated-dev208-r1.sh');
 const target=path.join(root,'release-artifacts/release-3/consolidated/deploy-crm-test-consolidated-dev209-r1.sh');
 const manifest=JSON.parse(await fs.readFile(path.join(root,'release-artifacts/release-3/consolidated/nysa-core-consolidated-crm-test-dev209-r1.manifest.json'),'utf8'));
+if(manifest.schema!=='nysa.release-provenance.v1'||!manifest.repositoryUrl||!manifest.commit||!manifest.tree||manifest.testReceipt?.failed!==0){
+  throw new Error('DEV209 deployer generation refused: rebuild through the canonical origin-only release command first');
+}
 let text=await fs.readFile(source,'utf8');
 text=text.replaceAll('dev.208','dev.209').replaceAll('dev208-r1','dev209-r1').replaceAll('dev208','dev209')
   .replace('readonly PREVIOUS_VERSION=2.1.0-dev.207','readonly PREVIOUS_VERSION=2.1.0-dev.208')

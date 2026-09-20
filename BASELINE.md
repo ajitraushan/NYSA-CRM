@@ -37,3 +37,8 @@ commit and immutable baseline package; and the exact candidate must pass the req
 
 Never use `current` or `latest` as the only baseline identifier. Production data, schema,
 configuration and deployment continue to require explicit approval for that exact change.
+
+Effective 2026-09-20, future packages must use the canonical origin-only release command documented
+in `AGENTS.md` and `CRM_CHANGE_POLICY.md`. Historical packages remain evidence of prior deployments,
+not templates for new builds. Repository branch protection should require the release-provenance CI
+check; activating that required check is a separate GitHub repository-settings action.

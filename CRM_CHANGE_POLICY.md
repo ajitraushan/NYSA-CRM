@@ -15,6 +15,22 @@
 7. Change production only after explicit approval for that exact version and
    operation. Back up immediately before deployment and run regression checks.
 
+## Enforced release provenance
+
+Every deployment archive must be generated only by
+`npm run release:package -- --commit <full-origin-SHA>`. The builder verifies
+that the exact commit is advertised by the configured GitHub origin, creates a
+detached temporary checkout, runs the test suite there, packages tracked runtime
+files from that checkout only, records the repository URL, commit, tree,
+advertised ref, package and manifest hashes, test receipt, version and migration
+state, and then removes the checkout. The caller's working tree is never a
+package source; modified and untracked files cannot enter the archive.
+
+Legacy release builders are archival and prohibited for new releases. A package
+without `nysa.release-provenance.v1`, a green test receipt, a matching package
+and manifest checksum, and a commit still advertised by the governed GitHub
+origin must be rejected before deployment.
+
 ## Data governance
 
 Apply least privilege and data minimization. Do not copy production personal data

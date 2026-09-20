@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node app.cjs",
     "test": "node --test --test-isolation=none \"test/**/*.test.js\"",
-    "release:verify-source": "node tools/verify-release-source-control.mjs",
+    "release:package": "node tools/build-release-from-origin.mjs",
+    "release:verify-package": "node tools/verify-release-provenance.mjs",
     "test:integration:reassignment": "node --test --test-isolation=none test/dev154-coordinated-reassignment.integration.test.js",
     "test:integration:inventory-eligibility": "node --test --test-isolation=none test/dev156-inventory-eligibility-real-db.integration.test.js",
     "test:fixture:full": "node --env-file=.env --test --test-isolation=process",

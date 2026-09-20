@@ -18,3 +18,18 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
   decisions or integration contracts.
 - Report migrations, tests, security/privacy impact, backup/rollback and the
   production state at completion.
+
+## Mandatory release packaging
+
+- The only authorized packaging command is
+  `npm run release:package -- --commit <full-40-character-origin-SHA>`.
+- The SHA must already be advertised by the configured GitHub `origin` through
+  a branch or tag. An unpushed commit is not releasable.
+- Packaging from the current working directory is prohibited, even when it is
+  clean. The canonical builder creates and removes a detached temporary
+  checkout and reads governed package content only from that checkout.
+- Historical `tools/build-isolated-dev*.mjs` scripts are archival and must not
+  be used for a new package. Current legacy builders fail through the deprecated
+  source-control gate.
+- Before deployment, run `npm run release:verify-package -- <zip> <manifest>
+  <manifest-sha256-file>`. Missing or mismatched provenance fails closed.
