@@ -22,7 +22,7 @@ test('dev.204 no-teal rule remains under the dev.210 warm charcoal and gold pale
     'background:#0d1114',
     'background:radial-gradient(circle at 88% 0,rgba(212,171,96,.07),transparent 34%),#0c1014',
     '#app.shell-layout table th{background:#242724;color:#e6c17b}',
-    '#app.shell-layout .btn{border-color:#49453d;background:#24292c'
+    '#app.shell-layout .btn{border-color:#49453d;border-radius:6px;background:#24292c'
   ]) assert.ok(html.includes(marker),`missing superseding no-teal palette marker: ${marker}`);
 });
 

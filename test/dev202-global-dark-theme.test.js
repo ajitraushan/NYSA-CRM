@@ -19,7 +19,7 @@ test('dev.202 dark NYSA shell remains present after the dev.210 palette refineme
 
 test('dev.202 overrides legacy light dashboard and state surfaces inside the authenticated shell',()=>{
   const html=read('public/index.html');
-  const overrideStart=html.indexOf('/* DEV210: one login-anchored warm charcoal workspace');
+  const overrideStart=html.indexOf('/* DEV210 login-anchored warm charcoal refinement');
   assert.ok(overrideStart>0,'missing final authenticated-shell override');
   const override=html.slice(overrideStart);
   for(const marker of [

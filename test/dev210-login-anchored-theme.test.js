@@ -24,12 +24,20 @@ test('dev.210 aligns the authenticated shell to the login visual language',()=>{
     '#app.shell-layout table th{background:#242724;color:#e6c17b}',
     '#app.shell-layout input,#app.shell-layout select,#app.shell-layout textarea{background:#101416'
   ]) assert.ok(html.includes(marker),`missing login-anchored theme marker: ${marker}`);
+  assert.ok(html.includes('body:has(#app.shell-layout){'), 'detached operational workspaces must inherit the authenticated palette');
 });
 
-test('dev.210 keeps the operational shell readable and excludes the login photograph',()=>{
+test('dev.210 keeps the login anchor unchanged and excludes its photograph from operational screens',()=>{
   const html=read('public/index.html');
-  const shell=html.slice(html.indexOf('/* DEV210: one login-anchored'));
+  const shell=html.slice(html.indexOf('/* DEV210 login-anchored'));
   assert.ok(!shell.includes('dubai-skyline-auth'), 'operational shell must not use the login photograph');
+  for(const unchangedLoginMarker of [
+    '--workspace:#171d26',
+    '--radius:2px',
+    '.btn{border:1px solid var(--border);background:var(--surface-raised);color:var(--text);padding:8px 16px;border-radius:2px',
+    '.auth-card{position:relative;width:100%;padding:clamp(24px,3vw,36px);border:1px solid transparent;border-radius:22px',
+    '.auth-submit{width:100%;min-height:50px;margin-top:4px;border:1px solid #e0b660'
+  ]) assert.ok(html.includes(unchangedLoginMarker),`login anchor changed: ${unchangedLoginMarker}`);
   assert.match(html,/@media print\{body\{background:#fff\}/);
   assert.match(html,/\.proposal-preview\{display:block!important;background:#fff;color:#111\}/);
 });
