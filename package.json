@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node app.cjs",
     "test": "node --test --test-isolation=none \"test/**/*.test.js\"",
+    "test:release": "node tools/run-release-tests.mjs",
     "release:package": "node tools/build-release-from-origin.mjs",
     "release:verify-package": "node tools/verify-release-provenance.mjs",
     "test:integration:reassignment": "node --test --test-isolation=none test/dev154-coordinated-reassignment.integration.test.js",

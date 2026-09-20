@@ -14,6 +14,12 @@ that exact SHA, creates a temporary detached Git worktree, runs `npm test` in
 that worktree, packages only tracked runtime files read from it, writes package
 and manifest checksum sidecars, and removes the worktree.
 
+The release receipt uses the committed release test selection. Tests that read
+ignored historical ZIP/deployer fixtures under `release-artifacts/` are excluded
+because those fixtures are not GitHub source; the receipt records counts and
+SHA-256 hashes for both the included and excluded file lists. Functional,
+authorization, migration-source and runtime-contract tests remain included.
+
 Local modified files and local untracked files are deliberately irrelevant to
 the archive. A local-only commit is rejected because it is absent from the
 origin branch/tag advertisement.
