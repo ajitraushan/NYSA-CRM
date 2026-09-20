@@ -16,7 +16,7 @@ export async function collectRuntimeFiles(checkout){
 export async function withDetachedCheckout({repo,commit,run}){
   assertFullCommit(commit);const parent=path.join(repo,'tmp');await fs.mkdir(parent,{recursive:true});const checkout=await fs.mkdtemp(path.join(parent,'origin-release-'));
   try{
-    await fs.rm(checkout,{recursive:true,force:true});git(repo,['worktree','add','--detach',checkout,commit]);
+    await fs.rm(checkout,{recursive:true,force:true});git(repo,['-c','core.autocrlf=false','worktree','add','--detach',checkout,commit]);
     if(git(checkout,['rev-parse','HEAD'])!==commit)throw new Error('Detached checkout commit mismatch');
     if(git(checkout,['status','--porcelain=v1','--untracked-files=all']))throw new Error('Detached checkout is not clean');
     return await run(checkout);

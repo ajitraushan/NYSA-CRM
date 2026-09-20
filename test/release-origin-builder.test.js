@@ -16,7 +16,7 @@ test('detached commit packaging excludes modified and untracked caller files',{s
     git(repo,['add','.']);git(repo,['commit','-m','baseline']);const commit=git(repo,['rev-parse','HEAD']);
     await fs.writeFile(path.join(repo,'public/app.js'),'modified-working-copy\n');await fs.writeFile(path.join(repo,'public/untracked.js'),'must-not-leak\n');
     const files=await withDetachedCheckout({repo,commit,run:collectRuntimeFiles});
-    assert.equal(Buffer.from(files['public/app.js']).toString().trim(),'committed');assert.equal(files['public/untracked.js'],undefined);
+    assert.equal(Buffer.from(files['public/app.js']).toString(),'committed\n');assert.equal(files['public/untracked.js'],undefined);
   }finally{await fs.rm(repo,{recursive:true,force:true});}
 });
 
