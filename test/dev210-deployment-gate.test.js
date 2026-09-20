@@ -20,6 +20,7 @@ test('DEV210 deployment is locked to CRM Test and protects production roots', ()
 });
 
 test('DEV210 deployment requires the approved origin provenance and checksums', () => {
+  assert.match(script, /REPOSITORY_URL=https:\/\/github\.com\/ajitraushan\/NYSA-CRM\.git/);
   assert.match(script, /EXPECTED_COMMIT.*\{40\}/);
   assert.match(script, /APPROVED_SHA256.*\{64\}/);
   assert.match(script, /manifest identity or test receipt mismatch/);
