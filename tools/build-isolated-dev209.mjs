@@ -42,7 +42,7 @@ for(const [name,bytes] of Object.entries(source)){
   await fs.mkdir(path.dirname(destination),{recursive:true});
   await fs.writeFile(destination,bytes);
 }
-for(const directory of ['test','tools','scripts','schema-proposals']){
+for(const directory of ['test','tools','scripts','schema-proposals','docs']){
   try{await fs.cp(path.join(root,directory),path.join(isolated,directory),{recursive:true});}
   catch(error){if(error.code!=='ENOENT')throw error;}
 }
