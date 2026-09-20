@@ -8,6 +8,7 @@ import {canReadLead,canReadOpportunity,isCompanyReader} from '../src/crm-policy.
 const admin={id:'admin',role:'admin',jobRole:'admin'};
 const retiredAssistant={id:'assistant',role:'internal_broker',jobRole:'admin_assistant'};
 const director={id:'director',role:'internal_broker',jobRole:'director'};
+const salesAgent={id:'agent',role:'internal_broker',jobRole:'sales_agent'};
 
 test('Admin combines configuration and leave administration without business-record access',()=>{
   assert.equal(governedRoleRequestAllowed(admin,'GET','/admin/brokers'),true);
@@ -22,6 +23,7 @@ test('Admin combines configuration and leave administration without business-rec
   assert.equal(governedRoleRequestAllowed(admin,'GET','/admin/leave-register'),true);
   assert.equal(governedRoleRequestAllowed(admin,'POST','/admin/leave-policy-versions'),true);
   assert.equal(governedRoleRequestAllowed(admin,'GET','/crm/tasks'),true);
+  assert.equal(governedRoleRequestAllowed(admin,'GET','/crm/purchased-data-import/batches'),true);
   assert.equal(canReadLead(admin,{assignedTo:admin.id}),false);
   assert.equal(canReadOpportunity(admin,{ownerId:admin.id}),false);
   assert.equal(isCompanyReader(admin),false);
@@ -46,11 +48,16 @@ test('role access, route access and leave routing are resolved from central Admi
   assert.equal(LEAVE_WORKFLOW_POLICY.approverJobRole,JOB_ROLE.ADMINISTRATOR);
   assert.equal(LEAVE_WORKFLOW_POLICY.approverLabel,'Admin');
   assert.equal(ROLE_ACCESS_POLICY.admin.label,'Admin');
-  assert.deepEqual(ROLE_ACCESS_POLICY.admin.workspaceTabs,['admin','myLeave','leaveAdministration']);
+  assert.deepEqual(ROLE_ACCESS_POLICY.admin.workspaceTabs,['admin','purchasedDataImport','myLeave','leaveAdministration']);
+  assert.equal(hasCapability(admin,CAPABILITY.PURCHASED_DATA_IMPORT),true);
+  assert.equal(hasCapability(salesAgent,CAPABILITY.PURCHASED_DATA_IMPORT),true);
+  assert.equal(hasCapability(salesAgent,CAPABILITY.INVENTORY_CREATE),true);
+  assert.equal(hasCapability(director,CAPABILITY.PURCHASED_DATA_IMPORT),false);
   assert.ok(GOVERNED_API_POLICY.every(rule=>rule.capability&&rule.methods.length&&rule.pattern instanceof RegExp));
   const auth=fs.readFileSync(new URL('../src/auth.js',import.meta.url),'utf8');
   assert.match(auth,/governedAccessProfile\(b\)/);
-  assert.match(auth,/accessPolicy:\{label:profile\.label,capabilities:/);
+  assert.match(auth,/capabilities=\[\.\.\.capabilitiesFor\(b\)\]/);
+  assert.match(auth,/accessPolicy:\{label:profile\.label,capabilities,/);
 });
 
 test('UI sends Admin directly to one Administration workspace with no Assistant role',()=>{

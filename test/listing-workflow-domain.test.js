@@ -51,7 +51,8 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(routes,/\/listings-workspace/);
   assert.match(routes,/Inventory approval was consolidated into mandatory Inventory verification/);
   assert.match(routes,/b\.team_id=ANY/);
-  assert.match(routes,/Manual listing drafts may be created by a Listing Executive/);
+  assert.match(routes,/hasCapability\(broker,CAPABILITY\.INVENTORY_CREATE\)/);
+  assert.match(routes,/centrally governed Inventory creation capability/);
   assert.match(routes,/q\.workspaceScope==='approved'/);
   assert.match(routes,/AS cover_media_id/);
   assert.match(routes,/m\.is_cover=TRUE/);

@@ -373,6 +373,20 @@ input::placeholder,textarea::placeholder{color:#9a9488!important;opacity:1;font-
     #app.shell-layout .diary-state-upcoming,#app.shell-layout .diary-state-due_later{color:var(--blue)}
     #app.shell-layout .diary-state-cancelled{background:var(--panel2)}
     #app.shell-layout .proposal-correction-row td,#app.shell-layout .proposal-correction-notice{background:var(--panel2)}
+    /* Full-screen stage workspaces are mounted under body, outside #app. Keep
+       semantic status surfaces on the same dark palette everywhere. */
+    body .dialog-error,body .offer-evidence-error,body .deal-gate,
+    body .viewing-status-no_show,body .viewing-status-cancelled,
+    body .diary-state-overdue,body .diary-delivery-error,body .diary-conflict-label{background:var(--red-soft);color:var(--text)}
+    body .duplicate-review-warning,body .inventory-step-blocker,body .viewing-feedback-evidence,
+    body .viewing-status-scheduled,body .diary-delivery-not_sent,body .diary-state-due_now,
+    body .proposal-correction-row td,body .proposal-correction-notice{background:var(--amber-soft);color:var(--text)}
+    body .opportunity-stage-guidance[data-status="completed"],body .viewing-feedback-evidence.complete,
+    body .offer-evidence-note,body .viewing-status-completed,body .deal-gate.complete,
+    body .deal-checklist-item.completed,body .diary-state-completed,
+    body .diary-delivery-synced{background:var(--green-soft);color:var(--text)}
+    body .opportunity-reminder-guidance,body .viewing-status-banner,
+    body .diary-state-upcoming,body .diary-state-due_later,body .diary-external-note{background:var(--blue-soft);color:var(--text)}
     #app.shell-layout .proposal-property-index{background:rgba(26,33,43,.94)}
     #app.shell-layout .customer-priority-card-compact.attention-due-today{background:linear-gradient(90deg,var(--amber-soft),var(--surface) 42%)}
     #app.shell-layout .agent-dashboard-website-theme .eyebrow{color:var(--gold-dim)}

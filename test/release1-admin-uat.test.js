@@ -95,8 +95,8 @@ test('proposal creation consumes administrator-defined prompts and snapshots the
 
 test('Admin combines configuration and governed leave administration',()=>{
   const roleAccess=read('src/role-access.js'),crm=read('src/routes/crm.js');
-  assert.match(roleAccess,/workspaceTabs:frozen\(\['admin','myLeave','leaveAdministration'\]\)/);
-  assert.match(roleAccess,/Admin access is limited to configuration and leave administration/);
+  assert.match(roleAccess,/workspaceTabs:frozen\(\['admin','purchasedDataImport','myLeave','leaveAdministration'\]\)/);
+  assert.match(roleAccess,/Admin access is limited to configuration, purchased-data intake and leave administration/);
   assert.match(roleAccess,/approverAccountRole:'admin'/);
   assert.match(crm,/Admin team-configuration access required/);
   assert.doesNotMatch(crm,/Only administrators and Admin Assistants can (?:create|edit) teams/);

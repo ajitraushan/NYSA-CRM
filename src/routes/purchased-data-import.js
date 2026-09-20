@@ -6,16 +6,16 @@ import {decodeAndValidateFile,removePrivate,savePrivate} from '../private-files.
 import {parsePurchasedWorkbook,PURCHASED_DATA_IMPORT_VERSION,validatePurchasedRows} from '../purchased-data-import.js';
 import {resolvePrimaryRoutingArea,selectRoutingRule} from '../routing-service.js';
 import {calculateDeadlines} from './lead-operations.js';
+import {CAPABILITY,hasCapability} from '../role-access.js';
 
 const r=Router(),clean=value=>String(value??'').trim(),SOURCE=/^[a-z][a-z0-9_]{1,63}$/,XLSX='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 r.use(requireAuth);
 const hash=value=>crypto.createHash('sha256').update(typeof value==='string'?value:JSON.stringify(value)).digest('hex');
 const token=(payload,session)=>crypto.createHmac('sha256',session).update(JSON.stringify(payload)).digest('hex');
 const equal=(a,b)=>{const x=Buffer.from(String(a||'')),y=Buffer.from(String(b||''));return x.length===y.length&&x.length>0&&crypto.timingSafeEqual(x,y);};
-const admin=broker=>broker.role==='admin';
 const normalizeMeta=value=>({contractVersion:clean(value.contractVersion),moduleType:clean(value.moduleType),sourceSystemCode:clean(value.sourceSystemCode).toLowerCase(),supplierName:clean(value.supplierName),acquisitionBatchReference:clean(value.acquisitionBatchReference),acquisitionDate:clean(value.acquisitionDate),campaignReference:clean(value.campaignReference)||null,processingBasis:clean(value.processingBasis)});
 const metadataError=value=>value.contractVersion!==PURCHASED_DATA_IMPORT_VERSION?'Workbook contract version is not supported':!SOURCE.test(value.sourceSystemCode)?'Source-system code must use lowercase snake_case':!value.supplierName||!value.acquisitionBatchReference||!/^\d{4}-\d{2}-\d{2}$/.test(value.acquisitionDate)||!value.processingBasis?'Supplier, acquisition batch, acquisition date and processing basis are required':null;
-async function authority(broker,confirm=false,client){const row=await one('SELECT * FROM purchased_data_import_authorizations WHERE broker_id=$1 AND active=1',[broker.id],client);return Boolean(row&&(confirm?row.mayConfirm:row.mayPreview));}
+const authority=broker=>hasCapability(broker,CAPABILITY.PURCHASED_DATA_IMPORT);
 async function identities(client){return many(`SELECT c.id,c.customer_reference,c.full_name,c.email,c.phone,c.lifecycle_status,b.source_system_code,b.acquisition_batch_reference,r.external_row_reference
   FROM contacts c LEFT JOIN purchased_data_import_rows r ON r.contact_id=c.id AND r.outcome IN('created','linked')
   LEFT JOIN purchased_data_import_batches b ON b.id=r.batch_id WHERE c.lifecycle_status IN('active','restricted')`,[],client);}
@@ -24,32 +24,19 @@ const validationOptions=(moduleType,meta,prior,contacts)=>({moduleType,sourceSys
 const previewPayload=(moduleType,meta,fileHash,rows)=>({moduleType,meta,fileHash,rows:rows.map(row=>({rowNumber:row.rowNumber,externalRowReference:row.externalRowReference,normalized:row.normalized,matchedContactId:row.matchedContact?.id||null,action:row.action,errors:row.errors}))});
 const decode=req=>decodeAndValidateFile({base64:req.body?.base64,mediaType:req.body?.mediaType,fileName:req.body?.fileName,maxBytes:5242880,allowedTypes:[XLSX]});
 
-r.get('/admin/purchased-data-import/authorizations',async(req,res)=>{
-  if(!admin(req.broker))return res.status(403).json({error:'Admin configuration access required'});
-  res.json({authorizations:await many(`SELECT a.*,b.name,b.email,b.job_role FROM purchased_data_import_authorizations a JOIN brokers b ON b.id=a.broker_id ORDER BY b.name`),eligible:await many("SELECT id,name,email,job_role FROM brokers WHERE status='active' AND role='internal_broker' AND job_role IN('manager','director') ORDER BY job_role,name")});
-});
-r.post('/admin/purchased-data-import/authorizations',async(req,res)=>{
-  if(!admin(req.broker))return res.status(403).json({error:'Admin configuration access required'});
-  const brokerId=clean(req.body?.brokerId),reason=clean(req.body?.reason);if(!brokerId||reason.length<10)return res.status(400).json({error:'Operational importer and a meaningful reason are required'});
-  if(!(await one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role='internal_broker' AND job_role IN('manager','director')",[brokerId])))return res.status(409).json({error:'Select an active Manager or Managing Director'});
-  const row=await one(`INSERT INTO purchased_data_import_authorizations(broker_id,may_preview,may_confirm,active,reason,configured_by) VALUES($1,$2,$3,$4,$5,$6)
-    ON CONFLICT(broker_id) DO UPDATE SET may_preview=EXCLUDED.may_preview,may_confirm=EXCLUDED.may_confirm,active=EXCLUDED.active,reason=EXCLUDED.reason,configured_by=EXCLUDED.configured_by,configured_at=NOW() RETURNING *`,[brokerId,req.body?.mayPreview?1:0,req.body?.mayConfirm?1:0,req.body?.active===false?0:1,reason,req.broker.id]);
-  await audit('PurchasedDataImport',brokerId,'authority_configured',req.broker.id,{mayPreview:Boolean(row.mayPreview),mayConfirm:Boolean(row.mayConfirm),active:Boolean(row.active),reason});res.json({authorization:row});
-});
-
 r.get('/crm/purchased-data-import/batches',async(req,res)=>{
-  if(!(await authority(req.broker)))return res.status(403).json({error:'Purchased-data import access is not configured'});
+  if(!authority(req.broker))return res.status(403).json({error:'Purchased-data import is limited to Sales Agent and Admin roles'});
   res.json({batches:await many(`SELECT b.id,b.batch_reference,b.module_type,b.source_system_code,b.supplier_name,b.acquisition_batch_reference,b.acquisition_date,b.campaign_reference,b.status,b.row_count,b.created_count,b.linked_count,b.skipped_count,b.review_count,b.invalid_count,b.failed_count,b.created_at,b.completed_at,u.name AS uploaded_by_name,c.name AS confirmed_by_name FROM purchased_data_import_batches b JOIN brokers u ON u.id=b.uploaded_by LEFT JOIN brokers c ON c.id=b.confirmed_by ORDER BY b.created_at DESC LIMIT 100`)});
 });
 r.get('/crm/purchased-data-import/batches/:id/reconciliation.csv',async(req,res)=>{
-  if(!(await authority(req.broker)))return res.status(403).json({error:'Purchased-data import access is not configured'});
+  if(!authority(req.broker))return res.status(403).json({error:'Purchased-data import is limited to Sales Agent and Admin roles'});
   const batch=await one('SELECT * FROM purchased_data_import_batches WHERE id=$1',[req.params.id]);if(!batch)return res.status(404).json({error:'Import batch not found'});
   const rows=await many(`SELECT r.row_number,r.external_row_reference,r.outcome,r.reason,c.customer_reference,l.lead_reference FROM purchased_data_import_rows r LEFT JOIN contacts c ON c.id=r.contact_id LEFT JOIN leads l ON l.id=r.lead_id WHERE r.batch_id=$1 ORDER BY r.row_number`,[batch.id]),quote=value=>`"${String(value??'').replaceAll('"','""')}"`,csv=['row_number,external_row_reference,outcome,customer_reference,lead_reference,reason',...rows.map(row=>[row.rowNumber,row.externalRowReference,row.outcome,row.customerReference,row.leadReference,row.reason].map(quote).join(','))].join('\r\n');
   res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="${batch.batchReference}-reconciliation.csv"`);res.end(csv);
 });
 
 r.post('/crm/purchased-data-import/:moduleType/preview',async(req,res)=>{
-  if(!(await authority(req.broker)))return res.status(403).json({error:'Purchased-data import preview authority is not configured'});
+  if(!authority(req.broker))return res.status(403).json({error:'Purchased-data import is limited to Sales Agent and Admin roles'});
   const moduleType=req.params.moduleType;if(!['customer_only','lead'].includes(moduleType))return res.status(404).json({error:'Import module not found'});
   const file=decode(req);if(file.error)return res.status(400).json({error:file.error});
   try{
@@ -60,7 +47,7 @@ r.post('/crm/purchased-data-import/:moduleType/preview',async(req,res)=>{
 });
 
 r.post('/crm/purchased-data-import/:moduleType/commit',async(req,res)=>{
-  if(!(await authority(req.broker,true)))return res.status(403).json({error:'Purchased-data import confirmation authority is not configured'});
+  if(!authority(req.broker))return res.status(403).json({error:'Purchased-data import is limited to Sales Agent and Admin roles'});
   const moduleType=req.params.moduleType;if(!['customer_only','lead'].includes(moduleType))return res.status(404).json({error:'Import module not found'});
   const file=decode(req);if(file.error)return res.status(400).json({error:file.error});
   let parsed,meta,validated,payload,previewHash;

@@ -9,7 +9,7 @@ const app=readFileSync(new URL('public/app.js',root),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('package.json',root),'utf8'));
 
 test('dev.171 typography remains while the superseding global dark palette covers Agent dashboards',()=>{
-  assert.equal(pkg.version,'2.1.0-dev.208');
+  assert.equal(pkg.version,'2.1.0-dev.209');
   assert.match(dashboard,/agent-dashboard-website-theme/);
   for(const marker of [
     'CORE-GLOBAL-DARK-THEME-DEV202','--panel:#1d2530','--panel2:#222a35','--text:#f3efe7','--muted:#b2b7bf',

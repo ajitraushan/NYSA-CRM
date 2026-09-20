@@ -95,6 +95,6 @@ test('dev.138 HTTP boundary is Director-only, exact-confirmation, tagged-test-on
   const outwardHarness = read('scripts/property-finder-outward-pre-uat.js'), pkg = JSON.parse(read('package.json'));
   for (const marker of ['credential-free-outward-pre-uat', 'externalNetworkCalls: 0', 'propertyFinderWrites: 0', 'publicationPerformed: false', 'creditsSpent: 0', "flag: 'wx'"]) assert.ok(outwardHarness.includes(marker), marker);
   assert.equal(pkg.scripts['uat:property-finder:outward:pre'], 'node scripts/property-finder-outward-pre-uat.js');
-  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.208');
-  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.208');
+  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.209');
+  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.209');
 });

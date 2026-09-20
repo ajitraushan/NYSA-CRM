@@ -10,6 +10,7 @@ import { inventoryAgentEligibilitySql,inventoryAgentScopeSql } from '../inventor
 import { inspectInventoryDuplicate,inventoryDuplicateError,normalizeInventoryIdentity } from '../inventory-duplicate-gate.js';
 import { PARTNER_ORGANIZATION_POLICY_VERSION,partnerClassificationForRelationship,validateInventoryOrganizationLinkEvent } from '../partner-organization-domain.js';
 import { companyScopeSql } from '../crm-policy.js';
+import {CAPABILITY,hasCapability} from '../role-access.js';
 import { PORTAL_FIELD_CATALOGUE,PROPERTY_FINDER_CONTENT_LIMITS,PROPERTY_FINDER_PROPERTY_TYPES,inventoryPortalSnapshot,normalizePortalPreparation,portalPayloadHash,portalReadiness,
   normalizePortalPermitEvidence,validatePortalFieldMapping,validatePortalMappingVersion } from '../portal-publication-domain.js';
 import { decodeAndValidateFile,savePrivate,removePrivate,readPrivate } from '../private-files.js';
@@ -59,7 +60,7 @@ async function replaceBulkUnits(listingId,units,client){
 }
 
 const isReviewer=broker=>broker.jobRole==='manager';
-const canCreateListing=broker=>['listing_agent','manager'].includes(broker.jobRole);
+const canCreateListing=broker=>hasCapability(broker,CAPABILITY.INVENTORY_CREATE);
 const ownsListing=(broker,listing)=>listing.postedBy===broker.id;
 async function listingApprovalPolicy(){return (await one('SELECT manager_approval_required FROM listing_approval_policy LIMIT 1'))||{managerApprovalRequired:true};}
 async function canReview(broker,listing,client){
@@ -122,7 +123,7 @@ r.get('/listings', async (req, res) => {
   const q = req.query;
   const where = ['l.deleted_at IS NULL'];
   const params = [];
-  if(req.broker.jobRole==='listing_agent'){
+  if(['listing_agent','sales_agent'].includes(req.broker.jobRole)){
     if(q.workspaceScope==='approved')where.push("l.workflow_status='approved'");
     else{
       params.push(req.broker.id);
@@ -131,7 +132,7 @@ r.get('/listings', async (req, res) => {
     }
   }
   else if(req.broker.jobRole==='manager'){params.push(req.broker.managedTeamIds||[]);where.push(`(l.workflow_status='approved' OR b.team_id=ANY($${params.length}::uuid[]))`);}
-  else if(req.broker.jobRole!=='listing_agent')where.push("l.workflow_status='approved'");
+  else if(!['listing_agent','sales_agent'].includes(req.broker.jobRole))where.push("l.workflow_status='approved'");
   const add = (clause, value) => { params.push(value); where.push(clause.replace('?', `$${params.length}`)); };
   if (q.area) add('l.area ILIKE ?', `%${q.area}%`);
   if (q.areaId) add('l.area_id = ?', q.areaId);
@@ -770,7 +771,7 @@ r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
 });
 
 r.post('/listings', requirePostRights, async (req, res) => {
-  if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual listing drafts may be created by a Listing Executive or Manager'});
+  if(!canCreateListing(req.broker))return res.status(403).json({error:'Manual Inventory drafts require the centrally governed Inventory creation capability'});
   const b = {...(req.body || {})};
   for (const field of ['inventoryHeadline','project','areaId','propertyType']) if (b[field] === undefined || b[field] === null || b[field] === '') return res.status(400).json({ error: `${field} is required` });
   if(!Array.isArray(b.transactionTypes)||!b.transactionTypes.length)return res.status(400).json({error:'Select at least one Inventory transaction type'});

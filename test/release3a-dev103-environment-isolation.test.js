@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('R3A dev.103 deploys cumulatively from the still-deployed CRM Test dev.101 state',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.208');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.209');
   const deployment=read('release-artifacts/release-3/r3a/deploy-crm-test-r3a-dev103-complete.sh');
   for(const marker of ['EXPECTED_VERSION=2.1.0-dev.103','PREVIOUS_VERSION=2.1.0-dev.101','EXPECTED_PACKAGE=nysa-core-r3a-environment-isolation-dev103.zip','LATEST_MIGRATION=070_release3a_email_only_intake_gate.sql','Production and R2 clone snapshots: unchanged'])assert.match(deployment,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

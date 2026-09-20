@@ -443,7 +443,28 @@ r.get('/crm/tasks',async(req,res)=>{
       status:'open',dueAt:row.nextActionDueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||row.ownerName
     }));
   }
-  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
+  let dealApprovalTasks=[];
+  if(req.query.mine==='1'&&['manager','director'].includes(req.broker.jobRole)&&req.query.bucket!=='completed'){
+    const dealParams=[],dealScope=opportunityScopeSql('o',req.broker,dealParams);
+    const rows=await many(`SELECT d.id AS deal_id,d.deal_reference,d.updated_at AS due_at,
+      o.id AS opportunity_id,o.opportunity_reference,o.lead_id,o.contact_id,o.title AS opportunity_title,
+      l.title AS lead_title,c.full_name AS contact_name
+      FROM deals d JOIN opportunities o ON o.id=d.opportunity_id JOIN leads l ON l.id=o.lead_id
+      JOIN contacts c ON c.id=o.contact_id
+      WHERE ${dealScope.clause} AND d.status IN ('draft','completion_in_progress')
+      AND NOT EXISTS(SELECT 1 FROM deal_checklist_items i JOIN deal_checklists dc ON dc.id=i.deal_checklist_id
+        WHERE dc.deal_id=d.id AND i.required AND i.status<>'completed')
+      ORDER BY d.updated_at,d.id`,dealParams);
+    const now=Date.now(),today=new Date();today.setHours(0,0,0,0);const tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
+    dealApprovalTasks=rows.filter(row=>{const due=new Date(row.dueAt).getTime();if(req.query.bucket==='overdue')return due<now;if(req.query.bucket==='today')return due>=today&&due<tomorrow;if(req.query.bucket==='upcoming')return due>=tomorrow;return true;}).map(row=>({
+      id:`deal-approval-${row.dealId}`,taskType:'deal_closure_approval',dealId:row.dealId,dealReference:row.dealReference,
+      opportunityId:row.opportunityId,opportunityReference:row.opportunityReference,leadId:row.leadId,contactId:row.contactId,
+      leadTitle:row.leadTitle,contactName:row.contactName,subject:'Review Deal closure approval',
+      details:`${row.dealReference} is ready for the governed Manager/Director closure decision.`,priority:'high',status:'open',
+      dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'
+    }));
+  }
+  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
 });
 
 r.post('/crm/leads/:id/tasks',async(req,res)=>{

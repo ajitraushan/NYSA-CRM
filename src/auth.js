@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { execute, one } from './db.js';
 import { accountantRequestAllowed } from './accountant-access.js';
-import { governedAccessProfile, governedRoleRequestDecision } from './role-access.js';
+import { capabilitiesFor, governedAccessProfile, governedRoleRequestDecision } from './role-access.js';
 
 const DEFAULT_SESSION_HOURS = 24 * 7;
 
@@ -85,5 +85,6 @@ export function notViewer(req, res, next) {
 export function publicBroker(b) {
   const { passwordHash, ...rest } = b;
   const profile=governedAccessProfile(b);
-  return profile?{...rest,accessPolicy:{label:profile.label,capabilities:[...profile.capabilities],workspaceTabs:[...profile.workspaceTabs],dashboard:profile.dashboard}}:rest;
+  const capabilities=[...capabilitiesFor(b)];
+  return profile?{...rest,capabilities,accessPolicy:{label:profile.label,capabilities,workspaceTabs:[...profile.workspaceTabs],dashboard:profile.dashboard}}:{...rest,capabilities};
 }

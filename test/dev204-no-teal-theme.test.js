@@ -7,7 +7,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 
 test('dev.204 applies the approved charcoal, neutral navy, warm grey and gold palette',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.208');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.209');
   for(const marker of [
     'DEV204 no-teal charcoal-navy refinement',
     '--workspace:#171d26',
