@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const read=name=>readFileSync(new URL(name,root),'utf8');
 
-test('dev.203 dark shell remains present under the dev.210 login-anchored refinement',()=>{
+test('dev.210 aligns the authenticated shell to the login visual language',()=>{
   const html=read('public/index.html');
   assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.210');
   for(const marker of [
@@ -13,21 +13,23 @@ test('dev.203 dark shell remains present under the dev.210 login-anchored refine
     '--workspace:#0c1014',
     '--surface:#15191b',
     '--surface-muted:#1b2023',
+    '--surface-raised:#24292c',
     '--ink:#f7f4ed',
     '--ink-muted:#bdb9b0',
     '--line:#3e3b35',
+    '--gold:#d4ab60',
     'background:#0d1114',
     'background:radial-gradient(circle at 88% 0,rgba(212,171,96,.07),transparent 34%),#0c1014',
-    '#app.shell-layout .agent-dashboard-website-theme',
+    'background:linear-gradient(110deg,#080b0f,#11171c 62%,#211c14)',
     '#app.shell-layout table th{background:#242724;color:#e6c17b}',
     '#app.shell-layout input,#app.shell-layout select,#app.shell-layout textarea{background:#101416'
-  ]) assert.ok(html.includes(marker),`missing inherited dark-shell marker: ${marker}`);
+  ]) assert.ok(html.includes(marker),`missing login-anchored theme marker: ${marker}`);
 });
 
-test('dev.203 keeps gold primary actions and white print under the login-anchored refinement',()=>{
+test('dev.210 keeps the operational shell readable and excludes the login photograph',()=>{
   const html=read('public/index.html');
-  assert.ok(html.includes('--green:#d4ab60'));
-  assert.ok(html.includes('.btn-primary{border-color:#d4ab60;background:#d4ab60;color:#151006}'));
+  const shell=html.slice(html.indexOf('/* DEV210: one login-anchored'));
+  assert.ok(!shell.includes('dubai-skyline-auth'), 'operational shell must not use the login photograph');
   assert.match(html,/@media print\{body\{background:#fff\}/);
   assert.match(html,/\.proposal-preview\{display:block!important;background:#fff;color:#111\}/);
 });

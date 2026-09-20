@@ -24,7 +24,7 @@ test('CRM-186 presents scalable dark register with an in-page receivable workspa
   assert.match(ui,/id="ar-overview"/);
   assert.match(ui,/class="ar-workspace"/);
   assert.match(css,/\.receivables-dark\{/);
-  assert.match(css,/background:radial-gradient\(circle at 88% 0,rgba\(92,108,132,\.18\),transparent 34%\),#171d26/);
+  assert.match(css,/background:radial-gradient\(circle at 88% 0,rgba\(212,171,96,\.07\),transparent 34%\),#0c1014/);
   assert.match(css,/\.ar-workspace\{/);
   assert.doesNotMatch(css,/\.ar-drawer\{position:fixed/);
   assert.match(ui,/pipeline-table-wrap/);
