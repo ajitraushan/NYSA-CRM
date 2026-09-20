@@ -939,6 +939,6 @@ an existing active Customer ID and has no governed workbook preview, Customer ma
 batch register or row reconciliation. Both new modules require duplicate controls, provenance,
 idempotency, least-privilege authorization, audit lineage and authenticated CRM Test acceptance
 before any Production consideration. DEV208 supplies separate controlled workbooks, a non-mutating
-preview, hash-bound confirmation, explicit importer authorization, private evidence storage,
+preview, hash-bound confirmation, fixed Sales Agent/Admin importer capability, private evidence storage,
 idempotent row processing, unassigned Lead routing and downloadable reconciliation. It does not
 authorize CRM Test or Production deployment.

@@ -179,15 +179,15 @@ Preference fields are optional. Their absence must not prevent creation of an ot
 
 ## Roles and permissions
 
-- **Admin:** maintains template definitions, controlled values and integration/source configuration;
-  Admin does not review, assign or operate Leads.
-- **Managing Director or specifically authorized operational importer:** uploads, previews and confirms
-  purchased-data batches. Authorization must be capability-based and configurable, not hard-coded to
-  a display label.
+- **Admin:** may upload, preview and confirm purchased-data batches and maintains related controlled
+  configuration. Admin does not receive Lead assignment merely by importing.
+- **Sales Agent:** may upload, preview and confirm purchased-data batches. Import never assigns the
+  resulting Lead to the uploader or changes Customer ownership.
+- **Manager and Managing Director:** have no purchased-data import permission. Their downstream
+  duplicate-review, routing or assignment authority remains separate from import.
 - **Manager:** resolves team-scoped duplicate/identity exceptions where permitted and assigns routed
   Leads for the responsible team.
-- **Sales Agent:** receives and qualifies assigned Leads; cannot bulk-import a file into their own
-  ownership.
+- Imported Leads remain unassigned until the normal governed assignment workflow completes.
 - **Accountant and other read-only roles:** have no import permission.
 
 Separation of duties must prevent the same upload action from bypassing duplicate review, routing,

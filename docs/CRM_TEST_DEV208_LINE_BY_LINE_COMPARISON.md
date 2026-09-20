@@ -23,7 +23,7 @@ as a human CRM Test UAT item. Nothing in this document authorizes deployment.
 | Duplicate/ambiguous identity protection | Exact match links; conflicts block; no silent overwrite | Unit and DB integration | Exercise one conflict row |
 | Idempotency | Source system, batch, type and external row uniquely identify processing | DB integration | Re-submit committed synthetic source row |
 | Privacy and provenance | Private raw evidence, hashes, supplier/date/basis and minimized audit | Source and integration checks | Inspect register/reconciliation without exposing raw file |
-| Configurable authorization | Admin selects an eligible Manager/MD; no seeded operator | Authenticated 403 then 200 | Authorize importer, test, then revoke if required |
+| Importer role boundary | Sales Agent and Admin only; Manager and Managing Director denied | Authenticated fixed role matrix | Test both allowed roles and both denied leadership roles |
 | No automatic routing ownership | Lead remains company-sourced and unassigned with queued history | DB integration | Assign through normal Manager/MD process |
 
 ## Remaining human evidence, not missing implementation

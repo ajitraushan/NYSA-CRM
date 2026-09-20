@@ -46,8 +46,8 @@ Two deliberately separate modules are provided:
 
 Controls include:
 
-- Admin configuration of one explicitly authorized Manager or Managing Director importer;
-- no automatic permission derived from a role label and no automatic role reassignment;
+- fixed central capability allowing Sales Agent and Admin importers only;
+- Manager, Managing Director, Accountant and all other roles are denied import access;
 - separate versioned Excel templates with instructions, batch metadata and controlled headers;
 - name plus at least one usable channel, exact-match and ambiguity checks;
 - non-mutating preview and SHA-256/HMAC-bound confirmation of the unchanged workbook;
@@ -60,8 +60,9 @@ Controls include:
 ## Database and migration
 
 Migration `127_governed_purchased_data_intake.sql` adds Customer references, the controlled
-`Purchased data` Lead source, import batch/row registers, explicit importer authorizations and audit
-support. It does not seed an importer, change an existing user role or alter historical migrations.
+`Purchased data` Lead source, import batch/row registers, a historical authorization table and audit
+support. Active DEV209 code does not consult that table: import permission comes only from the central
+Sales Agent/Admin capability. The immutable historical migration is not rewritten.
 
 The migration was applied to the dedicated local PostgreSQL fixture: 127 migrations present and
 migration 127 latest. A local fixture backup helper could not create its optional backup because of a
@@ -74,8 +75,8 @@ create its own server backup before migration.
 - Focused DEV208 and access regression: passed.
 - Real local PostgreSQL migration/import integration: passed.
 - Authenticated runtime checks: Admin document configuration 200; Admin document operation 403;
-  Admin marketing configuration 200; Sales Agent leave 200; Manager tasks 200; purchased import 403
-  before explicit authorization and 200 after authorization.
+  Admin marketing configuration 200; Sales Agent leave 200; Manager tasks 200; purchased import 200
+  for Sales Agent/Admin and 403 for Manager/Managing Director.
 - Modified JavaScript syntax checks: passed.
 - Both Excel templates were inspected after generation and contain safe replace-before-use samples.
 
