@@ -66,7 +66,7 @@ const manifest={
   package:stem+'.zip',packageSha256:sha(zip),bytes:zip.length,target:'CRM Test only',
   expectedRoot:'/home/nysareal/nysa-core-dashboard-dd6262a-stage',expectedDatabase:'nysareal_nysa_r2_rehearsal',
   liveBaselineVersion:'2.1.0-dev.208',sourceBaselineVersion:'2.1.0-dev.208',sourceBaselinePackage:baselineName,
-  sourceBaselinePackageSha256:sha(baselineBytes),baselineMigration:'126_executing_agent_tier_and_social_uplift.sql',
+  sourceBaselinePackageSha256:sha(baselineBytes),baselineMigration:'127_governed_purchased_data_intake.sql',
   newMigrations:[],latestMigration:'127_governed_purchased_data_intake.sql',
   migrationCount:127,migrationNeutral:true,
   requirements:['Populated Sales Agent leave runtime','Sales Agent Inventory creation','Sales Agent and Admin purchased-data import','Manager closure approvals in My Tasks','Dark detached Opportunity stages','Remove Completed Open page wording'],
