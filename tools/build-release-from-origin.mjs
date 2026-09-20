@@ -18,11 +18,12 @@ const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 await withDetachedCheckout({repo:root,commit,run:async checkout=>{
   const files=await collectRuntimeFiles(checkout),pkg=JSON.parse(files['package.json']),migrations=Object.keys(files).filter(x=>/^src\/migrations\/\d{3}_.+\.sql$/.test(x)).sort();
   const startedAt=new Date().toISOString();let testOutput='';
-  try{testOutput=execFileSync(process.platform==='win32'?'npm.cmd':'npm',['test'],{cwd:checkout,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024});}
-  catch(error){throw new Error(`Release tests failed for isolated commit ${commit}:\n${String(error.stdout||'').slice(-8000)}\n${String(error.stderr||'').slice(-4000)}`);}
+  const testCommand='node --test --test-isolation=none "test/**/*.test.js"';
+  try{testOutput=execFileSync(process.execPath,['--test','--test-isolation=none','test/**/*.test.js'],{cwd:checkout,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024});}
+  catch(error){throw new Error(`Release tests failed for isolated commit ${commit}: ${error.message}\n${String(error.stdout||'').slice(-8000)}\n${String(error.stderr||'').slice(-4000)}`);}
   const summary={tests:Number(testOutput.match(/ℹ tests (\d+)/)?.[1]||0),passed:Number(testOutput.match(/ℹ pass (\d+)/)?.[1]||0),failed:Number(testOutput.match(/ℹ fail (\d+)/)?.[1]||0),skipped:Number(testOutput.match(/ℹ skipped (\d+)/)?.[1]||0)};
   if(!summary.tests||summary.failed)throw new Error('Isolated test receipt is missing or not green');
-  const testReceipt={command:'npm test',startedAt,completedAt:new Date().toISOString(),...summary,outputSha256:sha(Buffer.from(testOutput))};
+  const testReceipt={command:testCommand,startedAt,completedAt:new Date().toISOString(),...summary,outputSha256:sha(Buffer.from(testOutput))};
   const provenance={schema:'nysa.release-provenance.v1',repositoryUrl:remoteUrl,remote,commit,tree,advertisedRefs:advertised.map(x=>x.ref),sourceRef:advertised[0].ref,version:pkg.version,migrationCount:migrations.length,latestMigration:migrations.at(-1)?.split('/').at(-1)||null,testReceipt};
   files['RELEASE_PROVENANCE.json']=Buffer.from(JSON.stringify(provenance,null,2)+'\n');
   const runtimeManifest=Object.keys(files).sort().map(name=>`${sha(files[name])}  ${name}`).join('\n')+'\n';files['RUNTIME_MANIFEST.sha256']=Buffer.from(runtimeManifest);
