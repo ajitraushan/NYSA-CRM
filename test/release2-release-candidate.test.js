@@ -24,7 +24,7 @@ test('R2.5 workspace makes approval, closure and reconciliation explicit',()=>{
   const dealUi=read('public/deal-ui.js'),app=read('public/app.js');
   for(const marker of ['Approve Deal for closure','Close Deal as Won',
     'Checklist review confirms the evidence','confirmAuthoritativeClosure','Deal closed as Won',
-    'Transaction will not complete','Close Deal as Lost and release inventory'])
+    'Cancel this Deal','Submit cancellation for Manager approval','Approve cancellation and release Inventory'])
     assert.match(dealUi,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['R2.5 reconciliation','Release 2 reconciliation','Cross-module exceptions',
     'Original source and campaign outcomes','The Deal, Opportunity, reservation and inventory are authoritatively closed.'])

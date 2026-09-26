@@ -8,7 +8,7 @@ const read=(name)=>readFileSync(new URL(name,root),'utf8');
 test('dev.172 shared CORE shell is preserved under the superseding DEV210 login-anchored tokens',()=>{
   const html=read('public/index.html');
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'2.1.0-dev.210');
+  assert.equal(pkg.version,'2.1.0-dev.211');
   for(const marker of [
     'CORE-GLOBAL-DARK-THEME-DEV202',
     '--workspace:#0c1014',

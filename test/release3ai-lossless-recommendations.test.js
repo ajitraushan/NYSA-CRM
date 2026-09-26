@@ -14,5 +14,5 @@ test('R3AI-66 retains a structured readable run and safely declares website omis
   assert.match(route,/not_emitted_by_website/);assert.match(route,/unavailableFields/);assert.match(ui,/No recommendation options were emitted by the website/);
   for(const marker of ['displayedLocation','displayedSummary','scoreLabel','matchedFactors','reasons','gaps','cautions','tradeOffs','notEmittedByWebsite'])assert.match(route,new RegExp(marker));
   assert.match(migration,/fact_group IN \('identity','enquiry','requirement','profile','attribution','consent','advisory','recommendation'\)/);assert.doesNotMatch(migration,/schema_migrations/);
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.210');assert.match(plugin,/VERSION = '1.9.4'/);
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.211');assert.match(plugin,/VERSION = '1.9.4'/);
 });

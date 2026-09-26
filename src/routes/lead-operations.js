@@ -464,7 +464,26 @@ r.get('/crm/tasks',async(req,res)=>{
       dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'
     }));
   }
-  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
+  let customerChangeTasks=[],dealCancellationTasks=[];
+  if(req.query.mine==='1'&&['manager','director'].includes(req.broker.jobRole)&&req.query.bucket!=='completed'){
+    const changes=await many(`SELECT r.id,r.contact_id,r.change_reason,r.requested_at AS due_at,c.customer_reference,c.full_name,requester.name AS requested_by_name
+      FROM customer_change_requests r JOIN contacts c ON c.id=r.contact_id JOIN brokers requester ON requester.id=r.requested_by
+      WHERE r.status='pending' ORDER BY r.requested_at,r.id`);
+    customerChangeTasks=changes.map(row=>({id:`customer-change-${row.id}`,taskType:'customer_change_approval',customerChangeRequestId:row.id,
+      contactId:row.contactId,contactName:row.fullName,subject:'Review Customer change',details:`${row.customerReference} · requested by ${row.requestedByName} · ${row.changeReason}`,
+      priority:'high',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'}));
+    const cancellationParams=[],cancellationScope=opportunityScopeSql('o',req.broker,cancellationParams);
+    const cancellations=await many(`SELECT r.id AS cancellation_request_id,r.requested_at AS due_at,r.reason,d.id AS deal_id,d.deal_reference,
+      o.id AS opportunity_id,o.opportunity_reference,o.lead_id,o.contact_id,o.stage AS opportunity_stage,l.title AS lead_title,c.full_name AS contact_name
+      FROM deal_cancellation_requests r JOIN deals d ON d.id=r.deal_id JOIN opportunities o ON o.id=d.opportunity_id
+      JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=o.contact_id WHERE r.status='pending' AND ${cancellationScope.clause}
+      ORDER BY r.requested_at,r.id`,cancellationParams);
+    dealCancellationTasks=cancellations.map(row=>({id:`deal-cancellation-${row.cancellationRequestId}`,taskType:'deal_cancellation_approval',dealId:row.dealId,
+      dealReference:row.dealReference,opportunityId:row.opportunityId,opportunityReference:row.opportunityReference,opportunityStage:row.opportunityStage,
+      leadId:row.leadId,contactId:row.contactId,leadTitle:row.leadTitle,contactName:row.contactName,subject:'Review Deal cancellation',details:row.reason,
+      priority:'urgent',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'}));
+  }
+  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks,...customerChangeTasks,...dealCancellationTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
 });
 
 r.post('/crm/leads/:id/tasks',async(req,res)=>{

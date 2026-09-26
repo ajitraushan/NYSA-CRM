@@ -7,12 +7,11 @@ const source=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8')
 const customer={id:'customer-1',customerReference:'NYSA-CUS-2026-000001',fullName:'Synthetic Customer',email:'buyer@example.test',phone:'+971501112222'};
 const options=(moduleType,extra={})=>({moduleType,sourceSystemCode:'synthetic_supplier',acquisitionBatchReference:'SYN-001',existingSourceRows:[],identityMatches:[],...extra});
 
-test('approved RR-015 workbooks satisfy the parser contract',async()=>{
+test('approved RR-015 workbooks are safe templates and reject unchanged placeholders',async()=>{
   const customerWorkbook=fs.readFileSync(new URL('../public/templates/purchased-customer-import-template.xlsx',import.meta.url));
   const leadWorkbook=fs.readFileSync(new URL('../public/templates/purchased-lead-import-template.xlsx',import.meta.url));
-  const customerParsed=await parsePurchasedWorkbook(customerWorkbook,'customer_only'),leadParsed=await parsePurchasedWorkbook(leadWorkbook,'lead');
-  assert.equal(customerParsed.metadata.contractVersion,'purchased-data-v1');assert.equal(customerParsed.rows.length,1);
-  assert.equal(leadParsed.metadata.contractVersion,'purchased-data-v1');assert.equal(leadParsed.rows.length,1);
+  await assert.rejects(()=>parsePurchasedWorkbook(customerWorkbook,'customer_only'),/Replace every template placeholder/);
+  await assert.rejects(()=>parsePurchasedWorkbook(leadWorkbook,'lead'),/Replace every template placeholder/);
 });
 
 test('customer-only import accepts email-only and phone-only identities without creating lead semantics',()=>{
@@ -45,6 +44,23 @@ test('customer exact match links without overwriting and committed provenance is
 test('lead import resolves exactly one Customer and does not invent preferences',()=>{
   const row=validatePurchasedRows([{rowNumber:2,externalRowReference:'L-1',customerReference:customer.customerReference,leadTitle:'Synthetic enquiry',businessType:'Sale'}],options('lead',{identityMatches:[customer]}))[0];
   assert.equal(row.action,'create');assert.equal(row.matchedContact.id,customer.id);assert.deepEqual(row.normalized.preferredAreas,[]);assert.equal(row.normalized.budgetMin,null);
+});
+
+test('lead import creates a minimal Customer only when exact reference and email do not resolve',()=>{
+  const unmatched=validatePurchasedRows([{rowNumber:2,externalRowReference:'L-NEW',fullName:'New Synthetic Customer',email:'new@example.test',leadTitle:'New enquiry',businessType:'Sale'}],options('lead'))[0];
+  assert.equal(unmatched.action,'create');assert.equal(unmatched.matchedContact,null);assert.equal(unmatched.normalized.fullName,'New Synthetic Customer');
+  const byNameOnly=validatePurchasedRows([{rowNumber:2,externalRowReference:'L-NAME',fullName:customer.fullName,phone:'+971500000099',leadTitle:'Name must not match',businessType:'Sale'}],options('lead',{identityMatches:[customer]}))[0];
+  assert.equal(byNameOnly.matchedContact,null);assert.equal(byNameOnly.action,'create');
+});
+
+test('phone-only and repeated workbook phone matches require explicit confirmation',()=>{
+  const existingPhone=validatePurchasedRows([{rowNumber:2,externalRowReference:'L-PHONE',fullName:'Phone enquiry',phone:customer.phone,leadTitle:'Phone enquiry',businessType:'Sale'}],options('lead',{identityMatches:[customer]}))[0];
+  assert.equal(existingPhone.action,'phone_confirmation');assert.equal(existingPhone.matchBasis,'phone');
+  const repeated=validatePurchasedRows([
+    {rowNumber:2,externalRowReference:'L-A',fullName:'First',phone:'+971500001111',leadTitle:'First',businessType:'Sale'},
+    {rowNumber:3,externalRowReference:'L-B',fullName:'Second',phone:'+971500001111',leadTitle:'Second',businessType:'Sale'}
+  ],options('lead'));
+  assert.ok(repeated.every(row=>row.action==='phone_confirmation'&&row.matchBasis==='workbook_phone_duplicate'));
 });
 
 test('enriched lead import requires explicit purpose and timing',()=>{
@@ -82,7 +98,7 @@ test('explicitly assigned Manager tasks bypass unrelated Lead-scope filtering',(
 test('RR-015 has separate templates, private storage, unchanged-preview binding and reconciliation',()=>{
   const route=source('src/routes/purchased-data-import.js'),migration=source('src/migrations/127_governed_purchased_data_intake.sql'),ui=source('public/purchased-data-import-ui.js');
   for(const file of ['public/templates/purchased-customer-import-template.xlsx','public/templates/purchased-lead-import-template.xlsx'])assert.ok(fs.statSync(new URL(`../${file}`,import.meta.url)).size>1000,file);
-  assert.match(route,/savePrivate\(file\.buffer,'\.xlsx'\)/);assert.match(route,/previewHash=hash\(payload\)/);assert.match(route,/reconciliation\.csv/);assert.match(migration,/storage_key TEXT NOT NULL/);assert.match(ui,/Customer Import never creates Leads/);assert.match(ui,/Lead Import never creates Customers/);
+  assert.match(route,/savePrivate\(file\.buffer,'\.xlsx'\)/);assert.match(route,/previewHash=hash\(payload\)/);assert.match(route,/reconciliation\.csv/);assert.match(migration,/storage_key TEXT NOT NULL/);assert.match(ui,/Customer-only upload creates Customer records/);assert.match(ui,/creates the minimum Customer and Lead together/);
 });
 
 test('Inventory reference is explicitly labelled in generated Offer and Proposal documents',()=>{

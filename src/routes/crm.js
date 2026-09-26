@@ -283,8 +283,8 @@ r.get('/crm/customers/:id',async(req,res)=>{
     LEFT JOIN LATERAL (SELECT o.* FROM opportunities o WHERE o.lead_id=l.id ORDER BY CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.updated_at DESC LIMIT 1) opportunity ON TRUE
     LEFT JOIN LATERAL (SELECT a.created_at,a.activity_type,a.subject FROM activities a WHERE a.lead_id=l.id ORDER BY a.created_at DESC LIMIT 1) activity ON TRUE
     WHERE l.contact_id=$1 ORDER BY l.created_at DESC`,[customer.id]);
-  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(customer.ownerId===req.broker.id||customer.createdBy===req.broker.id),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
-  const [roles,channels,consent,documents,intakeEvidence]=await Promise.all([
+  const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
+  const [roles,channels,consent,documents,intakeEvidence,changeRequests]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
     one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
@@ -293,11 +293,14 @@ r.get('/crm/customers/:id',async(req,res)=>{
       e.event_id,e.source_page,e.source_form,e.campaign_code,e.campaign_mapping_status
       FROM customer_evidence_facts f JOIN website_intake_events e ON e.id=f.intake_event_id
       WHERE f.contact_id=$1 AND f.review_status='active'
-      ORDER BY f.captured_at DESC,f.fact_group,f.fact_code`,[customer.id])
+      ORDER BY f.captured_at DESC,f.fact_group,f.fact_code`,[customer.id]),
+    many(`SELECT r.*,requester.name AS requested_by_name,decider.name AS decided_by_name FROM customer_change_requests r
+      JOIN brokers requester ON requester.id=r.requested_by LEFT JOIN brokers decider ON decider.id=r.decided_by
+      WHERE r.contact_id=$1 ORDER BY r.requested_at DESC LIMIT 25`,[customer.id])
   ]);
   const effectiveConsent=Boolean(consent?.effectiveConsent),restricted=Boolean(customer.doNotContact),profile=buildCustomer360Profile({customer,pursuits:leads,effectiveConsent,restricted});
   const enrichmentConfig=contactEnrichmentConfiguration();
-  res.json({customer,roles,channels,leads,pursuits:leads,profile,documents,intakeEvidence,canMaintain,canReviewKyc,canRefreshContactCredibility,
+  res.json({customer,roles,channels,leads,pursuits:leads,profile,documents,intakeEvidence,changeRequests,canMaintain,canReviewKyc,canRefreshContactCredibility,
     contactCredibilityConfig:{apolloConfigured:enrichmentConfig.apolloConfigured,advisoryOnly:true},effectiveConsent,restricted});
 });
 
@@ -459,10 +462,10 @@ r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
 r.patch('/crm/contacts/:id', async (req, res) => {
   const contact = await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL', [req.params.id]);
   if (!contact) return res.status(404).json({ error: 'Contact not found' });
-  if (!canWriteCrm(req.broker) || contact.ownerId !== req.broker.id)
-    return res.status(403).json({ error: 'Only the contact owner can edit it' });
+  if (!canWriteCrm(req.broker)) return res.status(403).json({ error: 'This role has read-only Customer access' });
   const map = { fullName:'full_name',email:'email',phone:'phone',contactType:'contact_type',companyName:'company_name',companyId:'company_id',
     preferredChannel:'preferred_channel',nationality:'nationality',language:'language',notes:'notes',ownerId:'owner_id',publicProfileUrl:'public_profile_url',postalAddress:'postal_address' };
+  const changeReason=clean(req.body.changeReason);if(changeReason.length<5)return res.status(400).json({error:'A meaningful reason for the Customer change is required'});
   const enumError = invalidEnum(req.body.contactType, CUSTOMER_ROLE_INPUT_TYPES, 'contactType') ||
     (clean(req.body.preferredChannel)?invalidEnum(req.body.preferredChannel, CHANNELS, 'preferredChannel'):null);
   if (enumError) return res.status(400).json({ error: enumError });
@@ -480,30 +483,35 @@ r.patch('/crm/contacts/:id', async (req, res) => {
       [contact.id,identity.email,identity.phone]);
     if(duplicates.length&&!req.body.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates});
   }
-  const sets=[], params=[], changes={};
+  const proposed={},current={},changes={};
   for (const [field,column] of Object.entries(map)) if (req.body[field] !== undefined) {
     const value = field === 'email' ? clean(req.body[field])?.toLowerCase()||null : clean(req.body[field]);
-    params.push(value); sets.push(`${column}=$${params.length}`); changes[field]={ from:contact[field], to:value };
+    if(String(contact[field]??'')===String(value??''))continue;current[field]=contact[field]??null;proposed[field]=value;changes[field]={from:contact[field]??null,to:value,column};
   }
-  if(patchedIdentity){params.push(patchedIdentity.emailStatus);sets.push(`email_status=$${params.length}`);params.push(patchedIdentity.phoneStatus);sets.push(`phone_status=$${params.length}`);}
-  if (!sets.length) return res.json(contact);
-  params.push(contact.id);
-  const updated = await transaction(async client=>{
-    const row=await one(`UPDATE contacts SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params,client);
-    if(patchedIdentity){
-      for(const [kind,value,raw,status,whatsapp] of [
-        ['Email',patchedIdentity.email,req.body.email,patchedIdentity.emailStatus,0],
-        ['Phone',patchedIdentity.phone,req.body.phone,patchedIdentity.phoneStatus,req.body.whatsappEnabled||req.body.preferredChannel==='WhatsApp'?1:0]]){
-        if(value){const existing=await one(`SELECT id FROM contact_channels WHERE contact_id=$1 AND channel_kind=$2 ORDER BY is_primary DESC,created_at LIMIT 1`,[contact.id,kind],client);
-          if(existing)await execute(`UPDATE contact_channels SET raw_value=$1,normalized_value=$2,verification_status=$3,whatsapp_enabled=$4,updated_at=NOW() WHERE id=$5`,[String(raw??value).trim(),value,status,whatsapp,existing.id],client);
-          else await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
-            VALUES ($1,$2,$3,'Primary',$4,$5,$6,1,$7,$8)`,[uuid(),contact.id,kind,String(raw??value).trim(),value,whatsapp,status,req.broker.id],client);
-        }else await execute(`DELETE FROM contact_channels WHERE contact_id=$1 AND channel_kind=$2 AND is_primary=1`,[contact.id,kind],client);
-      }
-    }
-    await audit('Contact',contact.id,'edited',req.broker.id,changes,client);return row;
+  if(patchedIdentity){current.emailStatus=contact.emailStatus;current.phoneStatus=contact.phoneStatus;proposed.emailStatus=patchedIdentity.emailStatus;proposed.phoneStatus=patchedIdentity.phoneStatus;}
+  if (!Object.keys(changes).length) return res.json({unchanged:true,customer:contact});
+  const request = await transaction(async client=>{
+    const pending=await one("SELECT id FROM customer_change_requests WHERE contact_id=$1 AND status='pending' FOR UPDATE",[contact.id],client);if(pending)return{code:409,error:'A Customer change is already awaiting Manager decision'};
+    const id=uuid(),row=await one(`INSERT INTO customer_change_requests(id,contact_id,current_values,proposed_values,change_reason,requested_by)
+      VALUES($1,$2,$3::jsonb,$4::jsonb,$5,$6) RETURNING *`,[id,contact.id,JSON.stringify(current),JSON.stringify(proposed),changeReason,req.broker.id],client);
+    await audit('CustomerChangeRequest',id,'submitted',req.broker.id,{contactId:contact.id,changes,changeReason},client);return row;
   });
-  res.json(updated);
+  if(request.error)return res.status(request.code).json({error:request.error});res.status(202).json({changeRequest:request,message:'Customer change submitted for Manager approval'});
+});
+
+r.post('/crm/customer-change-requests/:id/decision',async(req,res)=>{
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager access is required to decide Customer changes'});
+  const decision=clean(req.body?.decision),reason=clean(req.body?.reason);if(!['approved','rejected'].includes(decision)||reason.length<5)return res.status(400).json({error:'Approve/reject and a meaningful decision reason are required'});
+  const result=await transaction(async client=>{const request=await one("SELECT * FROM customer_change_requests WHERE id=$1 FOR UPDATE",[req.params.id],client);if(!request)return{code:404,error:'Customer change request not found'};if(request.status!=='pending')return{code:409,error:'This Customer change request is no longer pending'};
+    const contact=await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL FOR UPDATE',[request.contactId],client);if(!contact)return{code:404,error:'Customer no longer exists'};
+    if(decision==='approved'){
+      const allowed={fullName:'full_name',email:'email',phone:'phone',contactType:'contact_type',companyName:'company_name',companyId:'company_id',preferredChannel:'preferred_channel',nationality:'nationality',language:'language',notes:'notes',ownerId:'owner_id',publicProfileUrl:'public_profile_url',postalAddress:'postal_address',emailStatus:'email_status',phoneStatus:'phone_status'},sets=[],params=[];
+      for(const [field,column] of Object.entries(allowed))if(Object.hasOwn(request.proposedValues,field)){params.push(request.proposedValues[field]);sets.push(`${column}=$${params.length}`);}
+      if(sets.length){params.push(contact.id);await execute(`UPDATE contacts SET ${sets.join(',')},updated_at=NOW() WHERE id=$${params.length}`,params,client);}
+      for(const [kind,field,statusField] of [['Email','email','emailStatus'],['Phone','phone','phoneStatus']])if(Object.hasOwn(request.proposedValues,field)){const value=request.proposedValues[field],existing=await one(`SELECT id FROM contact_channels WHERE contact_id=$1 AND channel_kind=$2 ORDER BY is_primary DESC,created_at LIMIT 1`,[contact.id,kind],client);if(value&&existing)await execute(`UPDATE contact_channels SET raw_value=$1,normalized_value=$1,verification_status=$2,updated_at=NOW() WHERE id=$3`,[value,request.proposedValues[statusField]||'unverified',existing.id],client);else if(value)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by) VALUES($1,$2,$3,'Primary',$4,$4,1,$5,$6)`,[uuid(),contact.id,kind,value,request.proposedValues[statusField]||'unverified',request.requestedBy],client);else if(existing)await execute('DELETE FROM contact_channels WHERE id=$1',[existing.id],client);}
+    }
+    const updated=await one(`UPDATE customer_change_requests SET status=$1,decided_by=$2,decided_at=NOW(),decision_reason=$3,applied_at=CASE WHEN $1='approved' THEN NOW() END,version=version+1 WHERE id=$4 RETURNING *`,[decision,req.broker.id,reason,request.id],client);await audit('CustomerChangeRequest',request.id,decision,req.broker.id,{contactId:request.contactId,reason,proposedValues:request.proposedValues},client);return updated;});
+  if(result.error)return res.status(result.code).json({error:result.error});res.json({changeRequest:result});
 });
 
 r.patch('/crm/contacts/:id/kyc',async(req,res)=>{

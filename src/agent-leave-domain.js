@@ -32,7 +32,8 @@ export function validateLeavePolicy(input={}){
 }
 
 export function validateLeaveApplication({startDate,endDate,startPortion='full',endPortion='full',reason,availableUnits,allowNegativeBalance=false,employmentStartDate,employmentEndDate}){
-  const calculation=calculateLeaveUnits({startDate,endDate,startPortion,endPortion});const errors=[];if(String(reason||'').trim().length<5)errors.push('A leave reason is required');if(startDate<employmentStartDate||employmentEndDate&&endDate>employmentEndDate)errors.push('Leave dates must fall within active employment');if(!allowNegativeBalance&&calculation.units>Number(availableUnits||0))errors.push('Available leave balance is insufficient');return{valid:!errors.length,errors,...calculation};
+  const calculation=calculateLeaveUnits({startDate,endDate,startPortion,endPortion}),start=dayKey(date(startDate)),end=dayKey(date(endDate)),employmentStart=dayKey(date(employmentStartDate)),employmentEnd=employmentEndDate?dayKey(date(employmentEndDate)):null,errors=[];
+  if(String(reason||'').trim().length<5)errors.push('A leave reason is required');if(start<employmentStart||employmentEnd&&end>employmentEnd)errors.push('Leave dates must fall within active employment');if(!allowNegativeBalance&&calculation.units>Number(availableUnits||0))errors.push('Available leave balance is insufficient');return{valid:!errors.length,errors,...calculation};
 }
 
 export function mayMaintainLeave(broker){return hasCapability(broker,CAPABILITY.LEAVE_ADMINISTER);}

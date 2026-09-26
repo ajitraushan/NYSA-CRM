@@ -72,8 +72,8 @@ test('active Deal protects accepted Offer and reservation and exposes governed r
   assert.match(opportunities,/active Deal[\s\S]{0,180}cannot be withdrawn independently/i);
   assert.match(opportunities,/governed Deal close-lost or future replacement action/i);
   assert.match(dealUi,/Current accepted Offer and reservation are locked/);
-  assert.match(dealUi,/Release or expiry must be recorded through the Booking/);
-  assert.match(dealUi,/Close Deal as Lost and release inventory/);
+  assert.match(dealUi,/Release or expiry must be recorded through Booking, or through an approved Deal cancellation/);
+  assert.match(dealUi,/Submit cancellation for Manager approval/);
 });
 
 test('Opportunity lookup accepts a copied displayed identity and connected Lead is bound before optional modules',()=>{

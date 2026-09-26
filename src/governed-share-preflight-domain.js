@@ -47,7 +47,7 @@ export async function prepareGovernedSharePreflight(input={}){
   if(!shortlist?.evidenceHash||!Array.isArray(shortlist.properties)||!shortlist.properties.length)return{error:'A broker-prepared property selection for customer review is required'};
   if(!Array.isArray(liveInventory))return{error:'Live Inventory evidence is required'};
   if(!actorRef||!subjectRef||!scopeRef)return{error:'Opaque actor, customer and Opportunity references are required'};
-  if(!policy||policy.outcome!=='allowed')return{error:'Communication policy does not permit this share',reasonCodes:policy?.reasonCodes||['policyMissing']};
+  if(!policy||!['allowed','preparation_only'].includes(policy.outcome))return{error:'Communication policy does not permit this share',reasonCodes:policy?.reasonCodes||['policyMissing']};
   if(clean(policy.actorRef)!==actorRef||clean(policy.subjectRef)!==subjectRef||clean(policy.scopeRef)!==scopeRef)return{error:'Communication policy scope does not match this share'};
   if(policy.channel!=='whatsapp'||policy.purpose!=='transactional_share')return{error:'Communication policy channel or purpose does not match this share'};
   const validUntil=new Date(policy.validUntil);

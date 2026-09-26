@@ -98,20 +98,12 @@ r.post('/crm/opportunities/:id/governed-property-shares',async(req,res)=>{
       WHERE contact_id=$1 AND channel_kind='Phone' AND whatsapp_enabled=1 ORDER BY is_primary DESC,created_at DESC LIMIT 1`,[opportunity.contactId],client),agreement=await one(`SELECT id,status,consent_scope,permitted_channels,effective_at,expires_at FROM marketing_agreements
       WHERE contact_id=$1 AND status='executed' ORDER BY effective_at DESC LIMIT 1`,[opportunity.contactId],client),evaluatedAt=new Date(),contact={id:opportunity.contactId,
       lifecycleStatus:opportunity.lifecycleStatus,doNotContact:opportunity.doNotContact,archivedAt:opportunity.archivedAt},policyResult=deriveTransactionalSharePolicy({actorAuthorized:true,channel,agreement,contact,opportunity,actorRef:req.broker.id,evaluatedAt});
-    if(policyResult.error)return{error:[409,'policy_denied',policyResult.error]};const policy=policyResult.value;
-    if(policy.outcome!=='allowed'){const deniedPolicyId=uuid();await execute(`INSERT INTO communication_policy_decisions(id,contact_id,opportunity_id,contact_channel_id,actor_id,channel,purpose,
-      policy_version,outcome,reason_codes,actor_authorized,channel_eligible,consent_permits,restriction_clear,subject_eligible,consent_evidence_reference,
-      evaluated_at,valid_until,evidence_hash) VALUES($1,$2,$3,$4,$5,'whatsapp','transactional_share',$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-      [deniedPolicyId,opportunity.contactId,opportunity.id,channel?.id||null,req.broker.id,RELEASE3C_POLICY_VERSION,policy.outcome,JSON.stringify(policy.reasonCodes),
-        policy.checks.actorAuthorized?1:0,policy.checks.channelEligible?1:0,policy.checks.consentPermits?1:0,policy.checks.restrictionClear?1:0,
-        policy.checks.subjectEligible?1:0,policy.consentEvidenceReference,policy.evaluatedAt,policy.validUntil,policy.evidenceHash],client);
-      await audit('CommunicationPolicyDecision',deniedPolicyId,'denied',req.broker.id,{opportunityId:opportunity.id,reasonCodes:policy.reasonCodes,evidenceHash:policy.evidenceHash},client);
-      return{error:[409,'policy_denied',`Communication policy denied: ${policy.reasonCodes.join(', ')}`]};}
+    if(policyResult.error)return{error:[409,'policy_denied',policyResult.error]};const deliveryPolicy=policyResult.value,policyId=uuid(),policy=deliveryPolicy.outcome==='allowed'?{...deliveryPolicy,id:policyId}:{...deliveryPolicy,id:policyId,outcome:'preparation_only',evidenceHash:release3cEvidenceHash({...deliveryPolicy,outcome:'preparation_only'})};
     const ordered=v.selections.map(selection=>rows.find(item=>item.propertyMatchId===selection.propertyMatchId));
     for(const row of ordered)row.floorPlans=await many(`SELECT id::text AS asset_reference,title AS label,'approved'::text AS approval_status,'cleared'::text AS rights_status FROM property_media WHERE listing_id=$1
       AND media_kind='floor_plan' AND approval_status='approved' AND usage_rights_confirmed=TRUE
       AND (rights_expires_at IS NULL OR rights_expires_at>NOW()) ORDER BY display_order,created_at`,[row.listingId],client);
-    const policyId=uuid(),liveInventory=ordered.map(row=>({...row,marketEvidence:null})),matchingRun={id:ordered[0].runId,requirementSnapshot:ordered[0].requirementSnapshot,candidates:ordered.map(row=>({id:row.candidateId,
+    const liveInventory=ordered.map(row=>({...row,marketEvidence:null})),matchingRun={id:ordered[0].runId,requirementSnapshot:ordered[0].requirementSnapshot,candidates:ordered.map(row=>({id:row.candidateId,
       listingId:row.listingId,eligibilityStatus:row.eligibilityStatus,score:row.score,fitLabel:row.fitLabel,listingSnapshot:row.listingSnapshot,criteria:row.criteria,evidence:row.evidence}))},
       decisions=ordered.map(row=>({candidateId:row.candidateId,listingId:row.listingId,decision:row.decision})),shortlistResult=await prepareCustomerShortlist({
         matchingRun,selectedCandidateIds:ordered.map(row=>row.candidateId),decisions,liveInventory,checkedAt:policy.evaluatedAt,title:v.title,preparedBy:req.broker.id,brokerReviewConfirmed:true});
@@ -121,7 +113,7 @@ r.post('/crm/opportunities/:id/governed-property-shares',async(req,res)=>{
     await execute(`INSERT INTO communication_policy_decisions(id,contact_id,opportunity_id,contact_channel_id,actor_id,channel,purpose,
       policy_version,outcome,reason_codes,actor_authorized,channel_eligible,consent_permits,restriction_clear,subject_eligible,consent_evidence_reference,
       evaluated_at,valid_until,evidence_hash) VALUES($1,$2,$3,$4,$5,'whatsapp','transactional_share',$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
-      [policyId,opportunity.contactId,opportunity.id,channel.id,req.broker.id,RELEASE3C_POLICY_VERSION,policy.outcome,JSON.stringify(policy.reasonCodes),
+      [policyId,opportunity.contactId,opportunity.id,policy.outcome==='allowed'?channel?.id||null:null,req.broker.id,RELEASE3C_POLICY_VERSION,policy.outcome,JSON.stringify(policy.reasonCodes),
         policy.checks.actorAuthorized?1:0,policy.checks.channelEligible?1:0,policy.checks.consentPermits?1:0,policy.checks.restrictionClear?1:0,
         policy.checks.subjectEligible?1:0,policy.consentEvidenceReference,policy.evaluatedAt,policy.validUntil,policy.evidenceHash],client);
     await execute(`INSERT INTO opportunity_property_shares(id,opportunity_id,channel,status,created_by,governed_contract_version,preflight_version,matching_run_id,
@@ -139,7 +131,7 @@ r.post('/crm/opportunities/:id/governed-property-shares',async(req,res)=>{
     await execute(`INSERT INTO opportunity_property_share_events(id,share_id,event_type,source,occurred_at,actor_id,evidence_hash,evidence)
       VALUES($1,$2,'prepared','crm_local',$3,$4,$5,$6::jsonb)`,[uuid(),shareId,preflight.checkedAt,req.broker.id,release3cEvidenceHash(eventEvidence),JSON.stringify(eventEvidence)],client);
     await audit('OpportunityPropertyShare',shareId,'governed_prepared',req.broker.id,{opportunityId:opportunity.id,requestFingerprint,shortlistEvidenceHash:shortlist.evidenceHash,
-      preflightEvidenceHash:preflight.evidenceHash,itemCount:ordered.length,automaticSend:false,connectorEnabled:false},client);
+      preflightEvidenceHash:preflight.evidenceHash,itemCount:ordered.length,automaticSend:false,connectorEnabled:false,deliveryEligible:deliveryPolicy.outcome==='allowed',deliveryWarnings:deliveryPolicy.reasonCodes},client);
     return{share:await loadGovernedShare(shareId,opportunity.id,client),idempotentReplay:false};
   });if(result.error)return sendError(res,result);res.status(result.idempotentReplay?200:201).json(result);
   }catch(error){if(error.code==='23505')return res.status(409).json({code:'evidence_collision',error:'Concurrent governed evidence already exists; reload the Opportunity'});throw error;}

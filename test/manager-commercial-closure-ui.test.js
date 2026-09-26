@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../public/deal-ui.js',import.meta.url),'utf8');
-function render(dealType,status,jobRole='manager',writable=true){
+function render(dealType,status,jobRole='manager',writable=true,cancellationRequestStatus=null){
   const context=vm.createContext({window:{},ME:{jobRole},esc:v=>String(v??''),fmtPrice:String,fmtDate:String});
   vm.runInContext(source,context);
-  return context.dealWorkspaceHTML({writable,deals:[{id:'synthetic',dealType,status,parties:[],
+  return context.dealWorkspaceHTML({writable,deals:[{id:'synthetic',dealType,status,cancellationRequestStatus,cancellationRequestId:cancellationRequestStatus?'request-1':null,cancellationReasonCode:'other',cancellationReason:'Synthetic cancellation reason',cancellationEvidenceReference:'SYN-EVIDENCE',parties:[],
     closureGates:['terms','reservation','parties','checklist'].map(code=>({code,complete:true,label:code})),
     checklistItems:[{id:'review',itemCode:'DIRECTOR_REVIEW',responsibleRole:'director',label:'Director-designated commercial review',required:true,evidenceRequired:true,status:'pending'}]}]});
 }
@@ -18,9 +18,10 @@ for(const type of ['commercial_sale','commercial_rental'])test(`${type}: Manager
   assert.doesNotMatch(draft,/A Director must approve/);
   const approved=render(type,'approved');
   assert.match(approved,/deal-close-won-form/);
-  assert.match(approved,/deal-close-lost-form/);
-  for(const [role,writable] of [['sales_agent',true],['accountant',false],['manager',false]]){
-    assert.doesNotMatch(render(type,'approved',role,writable),/id="deal-close-(?:won|lost)-form"/);
-    assert.doesNotMatch(render(type,'draft',role,writable),/id="deal-approval-form"/);
-  }
+  assert.doesNotMatch(approved,/deal-close-lost-form/);
+  assert.match(render(type,'approved','manager',true,'pending'),/deal-close-lost-form/);
+  assert.match(render(type,'approved','manager',true,'pending'),/Approve cancellation and release Inventory/);
+  const agent=render(type,'approved','sales_agent',true);assert.doesNotMatch(agent,/deal-close-won-form/);assert.match(agent,/deal-close-lost-form/);
+  for(const [role,writable] of [['accountant',false],['manager',false]])assert.doesNotMatch(render(type,'approved',role,writable),/id="deal-close-(?:won|lost)-form"/);
+  for(const [role,writable] of [['sales_agent',true],['accountant',false],['manager',false]])assert.doesNotMatch(render(type,'draft',role,writable),/id="deal-approval-form"/);
 });
