@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {CAPABILITY,GOVERNED_API_POLICY,JOB_ROLE,LEAVE_WORKFLOW_POLICY,ROLE_ACCESS_POLICY,governedRoleRequestAllowed,hasCapability,principalForCapability} from '../src/role-access.js';
 import {mayDecideLeave,mayMaintainLeave} from '../src/agent-leave-domain.js';
-import {canReadLead,canReadOpportunity,isCompanyReader} from '../src/crm-policy.js';
+import {canReadLead,canReadOpportunity,hasInternalCrmIdentity,hasNysaStaffIdentity,isCompanyReader} from '../src/crm-policy.js';
 
 const admin={id:'admin',role:'admin',jobRole:'admin'};
 const retiredAssistant={id:'assistant',role:'internal_broker',jobRole:'admin_assistant'};
@@ -83,10 +83,39 @@ test('UI sends Admin directly to one Administration workspace with no Assistant 
 
 test('Admin configuration references do not restore business-record access',()=>{
   const crm=fs.readFileSync(new URL('../src/routes/crm.js',import.meta.url),'utf8');
+  const operations=fs.readFileSync(new URL('../src/routes/lead-operations.js',import.meta.url),'utf8');
+  assert.equal(hasNysaStaffIdentity(admin),true);
+  assert.equal(hasInternalCrmIdentity(admin),false);
+  assert.match(crm,/if \(!hasNysaStaffIdentity\(req\.broker\)\)/);
+  assert.doesNotMatch(crm,/if \(!hasInternalCrmIdentity\(req\.broker\)\)/);
+  assert.match(operations,/r\.use\(requireAuth, staffOnly\)/);
+  assert.match(operations,/if\(!hasNysaStaffIdentity\(req\.broker\)\)/);
+  assert.doesNotMatch(operations,/if\(!hasInternalCrmIdentity\(req\.broker\)\)/);
   assert.match(crm,/hasCapability\(req\.broker,CAPABILITY\.STAFF_CONFIGURATION_REFERENCE_READ\)/);
   assert.match(crm,/hasCapability\(req\.broker,CAPABILITY\.TEAM_CONFIGURATION\)/);
   assert.match(crm,/Admin team-configuration access required/);
   assert.doesNotMatch(crm,/Only administrators and Admin Assistants can (?:create|edit) teams/);
   for(const path of ['/crm/customers','/crm/leads','/crm/opportunities','/listings','/finance/receivables','/commission-payments'])
     assert.equal(governedRoleRequestAllowed(admin,'GET',path),false,path);
+});
+
+test('Admin maintenance allow-list composes with the CRM staff boundary without opening business processes',()=>{
+  const allowed=[
+    ['GET','/crm/staff'],['GET','/crm/teams'],['POST','/crm/teams'],
+    ['PATCH','/crm/teams/11111111-1111-1111-1111-111111111111'],
+    ['GET','/crm/controlled-values/document_type'],['GET','/crm/organization'],
+    ['GET','/crm/tasks'],['PATCH','/crm/tasks/11111111-1111-1111-1111-111111111111']
+  ];
+  for(const [method,path] of allowed){
+    assert.equal(governedRoleRequestAllowed(admin,method,path),true,`${method} ${path} central capability`);
+    assert.equal(hasNysaStaffIdentity(admin),true,`${method} ${path} CRM staff boundary`);
+  }
+  const denied=[
+    ['GET','/crm/customers'],['POST','/crm/contacts'],['GET','/crm/leads'],
+    ['POST','/crm/leads'],['GET','/crm/opportunities'],['POST','/crm/opportunities'],
+    ['GET','/crm/companies'],['POST','/crm/companies'],['GET','/listings'],
+    ['POST','/listings'],['GET','/finance/receivables'],['POST','/commission-payments']
+  ];
+  for(const [method,path] of denied)
+    assert.equal(governedRoleRequestAllowed(admin,method,path),false,`${method} ${path} must fail before routing`);
 });

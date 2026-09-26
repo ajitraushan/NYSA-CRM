@@ -5,7 +5,7 @@ import { SOURCES, STAGES, TEMPERATURES, CUSTOMER_ROLE_INPUT_TYPES, CHANNELS, ACT
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
   validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues,
   activityStageTransition } from '../crm-domain.js';
-import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
+import { hasNysaStaffIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canOperateLead, canWriteOpportunity, canAssignLead, leadScopeSql, opportunityScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { calculateDeadlines } from './lead-operations.js';
 import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.js';
@@ -19,8 +19,11 @@ const EXTERNAL_COMPANY_ROLES=['developer','agency','referral_partner','service_p
 r.use(requireAuth, requireCrmAccess);
 
 function requireCrmAccess(req, res, next) {
-  if (!hasInternalCrmIdentity(req.broker))
-    return res.status(403).json({ error: 'CRM customer data is restricted to NYSA staff' });
+  // requireAuth has already applied the Admin endpoint capability allow-list.
+  // This router-level check establishes staff identity only; it must not
+  // reinterpret a configuration-only Admin as an external/non-staff user.
+  if (!hasNysaStaffIdentity(req.broker))
+    return res.status(403).json({ error: 'CORE access requires an active NYSA staff account' });
   next();
 }
 

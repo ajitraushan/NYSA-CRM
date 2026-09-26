@@ -2,10 +2,20 @@ import {isGovernedNonBusinessRole,JOB_ROLE} from './role-access.js';
 
 export const CRM_JOB_ROLES = Object.values(JOB_ROLE);
 
+// Staff identity and operational CRM authority are deliberately separate.
+// Admin is an active NYSA staff identity, but its governed profile permits only
+// the maintenance, leave and personal-task endpoints listed in role-access.js.
+// The central requireAuth capability gate applies that endpoint allow-list
+// before a request reaches the CRM router.
+export function hasNysaStaffIdentity(broker) {
+  if (!broker || !CRM_JOB_ROLES.includes(broker.jobRole) || broker.jobRole === 'admin_assistant') return false;
+  if (broker.role === 'admin') return broker.jobRole === JOB_ROLE.ADMINISTRATOR;
+  return broker.role === 'internal_broker' && broker.jobRole !== JOB_ROLE.ADMINISTRATOR;
+}
+
 export function hasInternalCrmIdentity(broker) {
-  return Boolean(broker && broker.role === 'internal_broker' &&
-    broker.jobRole !== JOB_ROLE.ADMINISTRATOR && broker.jobRole !== 'admin_assistant' &&
-    CRM_JOB_ROLES.includes(broker.jobRole));
+  return Boolean(hasNysaStaffIdentity(broker) && broker.role === 'internal_broker' &&
+    broker.jobRole !== JOB_ROLE.ADMINISTRATOR);
 }
 
 const hasBusinessIdentity=broker=>hasInternalCrmIdentity(broker)&&!isGovernedNonBusinessRole(broker);

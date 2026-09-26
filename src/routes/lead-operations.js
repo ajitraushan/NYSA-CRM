@@ -3,7 +3,7 @@ import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { addBusinessMinutes, qualificationFollowUpPlan, validateBudget, normalizeDelimitedValues } from '../crm-domain.js';
-import { hasInternalCrmIdentity, isManager, isCrmReadOnly, canReadLead, canOperateLead, canAssignLead, leadScopeSql, opportunityScopeSql } from '../crm-policy.js';
+import { hasNysaStaffIdentity, isManager, isCrmReadOnly, canReadLead, canOperateLead, canAssignLead, leadScopeSql, opportunityScopeSql } from '../crm-policy.js';
 import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.js';
 import { decodeAndValidateFile } from '../private-files.js';
 import { parseAreaWorkbook,validateAreaImportRows } from '../area-import.js';
@@ -12,10 +12,13 @@ import { loadActiveClassificationCatalogue,validateClassificationSelection,legac
 import { ensureMarketAreaProjection } from '../market-area-projection.js';
 
 const r = Router();
-r.use(requireAuth, internalOnly);
+r.use(requireAuth, staffOnly);
 
-function internalOnly(req,res,next){
-  if(!hasInternalCrmIdentity(req.broker)) return res.status(403).json({error:'CRM customer data is restricted to NYSA staff'});
+function staffOnly(req,res,next){
+  // The central Admin capability policy has already rejected every Lead and
+  // assignment operation. This boundary admits Admin only to its explicitly
+  // allowed personal Task endpoints.
+  if(!hasNysaStaffIdentity(req.broker)) return res.status(403).json({error:'CORE access requires an active NYSA staff account'});
   next();
 }
 const text=v=>typeof v==='string'&&v.trim()?v.trim():null;

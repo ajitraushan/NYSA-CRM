@@ -1,13 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {hasInternalCrmIdentity,hasNysaStaffIdentity} from '../src/crm-policy.js';
 
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
-test('Admin is not an internal CRM identity and business policy fails closed',()=>{
+test('Admin is NYSA staff but is not an operational CRM identity',()=>{
+  const admin={role:'admin',jobRole:'admin'};
+  assert.equal(hasNysaStaffIdentity(admin),true);
+  assert.equal(hasInternalCrmIdentity(admin),false);
+  assert.equal(hasNysaStaffIdentity({role:'internal_broker',jobRole:'sales_agent'}),true);
+  assert.equal(hasNysaStaffIdentity({role:'internal_broker',jobRole:'admin_assistant'}),false);
+  assert.equal(hasNysaStaffIdentity({role:'partner',jobRole:'sales_agent'}),false);
   const policy=read('src/crm-policy.js');
-  assert.match(policy,/broker\.role === 'internal_broker'/);
-  assert.match(policy,/broker\.jobRole !== JOB_ROLE\.ADMINISTRATOR/);
+  assert.match(policy,/export function hasNysaStaffIdentity/);
+  assert.match(policy,/broker\.role === 'admin'/);
   assert.doesNotMatch(policy,/\['admin','internal_broker'\]\.includes\(broker\.role\)/);
 });
 
