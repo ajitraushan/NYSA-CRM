@@ -46,4 +46,6 @@ test('DEV211 deployment backs up and validates the full remediation contract', (
   assert.match(script, /customer_change_requests/);
   assert.match(script, /deal_cancellation_requests/);
   assert.match(script, /inventory_assignment_id/);
+  assert.match(script, /column_name='excluded_count'/);
+  assert.doesNotMatch(script, /excluded_row_count/);
 });
