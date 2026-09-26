@@ -7,7 +7,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 
 test('dev.210 aligns the authenticated shell to the login visual language',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.212');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.213');
   for(const marker of [
     'DEV210 login-anchored warm charcoal refinement',
     '--workspace:#0c1014',

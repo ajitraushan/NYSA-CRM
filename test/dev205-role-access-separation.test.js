@@ -71,6 +71,7 @@ test('UI sends Admin directly to one Administration workspace with no Assistant 
   assert.match(app,/if\(!ME\.accessPolicy\)try\{/);
   assert.match(app,/initialTab==='admin'\?renderAdmin\(\):renderDashboard\(\)/);
   assert.match(app,/admin-maintenance-select/);
+  assert.doesNotMatch(app,/\['integration_failures','Integration failures'\]/);
   assert.doesNotMatch(app,/workspace\.innerHTML='<aside class="admin-maintenance-nav"/);
   assert.doesNotMatch(app,/ME\.role==='admin'\?`<button data-tab="dashboard"/);
   const route=fs.readFileSync(new URL('../src/routes/agent-leave.js',import.meta.url),'utf8');
@@ -101,6 +102,17 @@ test('Admin configuration references do not restore business-record access',()=>
 
 test('Admin maintenance allow-list composes with the CRM staff boundary without opening business processes',()=>{
   const allowed=[
+    ['GET','/admin/organization-settings'],['POST','/admin/organization-settings'],
+    ['GET','/admin/value-sets'],['POST','/admin/value-sets'],
+    ['GET','/admin/sla-policies'],['GET','/admin/areas'],
+    ['GET','/admin/listing-mappings'],['GET','/admin/routing-rules'],
+    ['GET','/admin/qualification-models'],['GET','/admin/regulatory-assumptions'],
+    ['GET','/admin/proposal-templates'],['GET','/admin/market-communities'],
+    ['GET','/admin/commission-payout-policies'],['GET','/admin/document-compliance/requirements'],
+    ['GET','/admin/official-document-definitions'],['GET','/admin/document-templates'],
+    ['GET','/admin/dashboard-targets'],['GET','/admin/property-media-approval-policy'],
+    ['GET','/admin/listing-approval-policy'],['GET','/admin/users'],
+    ['PUT','/admin/users/11111111-1111-1111-1111-111111111111/business-areas'],
     ['GET','/crm/staff'],['GET','/crm/teams'],['POST','/crm/teams'],
     ['PATCH','/crm/teams/11111111-1111-1111-1111-111111111111'],
     ['GET','/crm/controlled-values/document_type'],['GET','/crm/organization'],
@@ -118,4 +130,48 @@ test('Admin maintenance allow-list composes with the CRM staff boundary without 
   ];
   for(const [method,path] of denied)
     assert.equal(governedRoleRequestAllowed(admin,method,path),false,`${method} ${path} must fail before routing`);
+});
+
+test('every mixed Administration router recognizes Admin as NYSA staff after central capability authorization',()=>{
+  const mixedRouters=[
+    'src/routes/governance.js','src/routes/dashboards.js','src/routes/dld-market-intelligence.js',
+    'src/routes/document-compliance.js','src/routes/files-proposals.js','src/routes/qualification-finance.js'
+  ];
+  for(const file of mixedRouters){
+    const source=fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
+    assert.match(source,/hasNysaStaffIdentity\(req\.broker\)/,`${file} must accept central-authorized Admin maintenance requests`);
+    assert.doesNotMatch(source,/hasInternalCrmIdentity\(req\.broker\)/,`${file} must not reclassify Admin as external staff`);
+  }
+});
+
+test('every Administration selector label maps to its own panel instead of a render position',()=>{
+  const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  assert.doesNotMatch(app,/definitions\[index\]/);
+  assert.match(app,/definitions\.get\(heading\)/);
+  const expected=[
+    ['NYSA company profile and document defaults','organization','Company profile'],
+    ['Controlled values','controlled_values','Controlled values'],
+    ['Business hours and SLA policies','sla','Business hours & SLA'],
+    ['Area maintenance','areas','Area maintenance'],
+    ['Provider listing mappings','listing_mappings','Provider listing mappings'],
+    ['Lead routing rules and assignment queues','routing','Lead routing & queues'],
+    ['Lead Qualification Versions','qualification','Lead qualification'],
+    ['Regulatory and transaction fee rules','fees','Regulatory & fee rules'],
+    ['NYSA Proposal Template Designer','proposals','Proposal designer'],
+    ['DLD market data and Area mapping','market_intelligence','Market intelligence'],
+    ['Commission and payout policy','commission_policy','Commission & payout policy'],
+    ['Required transaction documents','document_compliance','Customer & transaction documents'],
+    ['Official document requirements','official_documents','Official document requirements'],
+    ['Controlled document templates','documents','Controlled document templates'],
+    ['Dashboard targets and exception alerts','targets','Dashboard targets'],
+    ['CRM teams','teams','CRM teams'],
+    ['Property media approval policy','media_policy','Property media policy'],
+    ['Listing approval policy','listing_policy','Listing approval policy'],
+    ['User Management','users','User management'],
+    ['User records','user_records','User records'],
+    ['Audit and Operations log','operations','Operations & audit'],
+    ['About NYSA CORE','about','About']
+  ];
+  for(const [heading,key,label] of expected)
+    assert.ok(app.includes(`['${heading}',['${key}','${label}']]`),`${label} mapping`);
 });

@@ -9,7 +9,7 @@ test('migration freezes exact role kind gate and evidence authority',()=>{const 
 
 test('migration reuses existing tasks and protects immutable evidence',()=>{const sql=read('src/migrations/090_release6_customer_transaction_document_compliance.sql');assert.match(sql,/document_compliance_follow_up/);assert.match(sql,/document_compliance_task_links_immutable/);assert.match(sql,/document_compliance_reviews_immutable/);assert.match(sql,/REFERENCES tasks\(id\)/);});
 
-test('server mounts authenticated document compliance routes',()=>{const server=read('src/server.js'),routes=read('src/routes/document-compliance.js');assert.match(server,/documentComplianceRoutes/);assert.match(routes,/r\.use\(requireAuth/);assert.match(routes,/hasInternalCrmIdentity/);});
+test('server mounts authenticated document compliance routes behind the central capability policy',()=>{const server=read('src/server.js'),routes=read('src/routes/document-compliance.js');assert.match(server,/documentComplianceRoutes/);assert.match(routes,/r\.use\(requireAuth/);assert.match(routes,/hasNysaStaffIdentity/);assert.doesNotMatch(routes,/hasInternalCrmIdentity/);});
 
 test('Admin is direct while Admin Assistant remains draft only',()=>{const routes=read('src/routes/document-compliance.js');assert.match(routes,/fullAdmin\(req\.broker\).*activation required/);assert.match(routes,/configReader\(req\.broker\)/);assert.match(routes,/adminDirect/);});
 

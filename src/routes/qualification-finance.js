@@ -2,11 +2,11 @@ import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { calculateQualification,applyQualificationOverride,validateQualificationFactors,calculateMortgage,calculateInvestmentReturns,qualificationFollowUpPlan } from '../crm-domain.js';
-import { hasInternalCrmIdentity,isManager,isCrmReadOnly,canReadLead,canWriteLead,canOperateLead } from '../crm-policy.js';
+import { hasNysaStaffIdentity,isManager,isCrmReadOnly,canReadLead,canWriteLead,canOperateLead } from '../crm-policy.js';
 import { validateFeeItems,calculateFeeItems } from '../admin-governance.js';
 import { classificationDimension,loadActiveClassificationCatalogue } from '../classification-catalogue.js';
 
-const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
+const r=Router();r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const admin=(req,res)=>req.broker.role==='admin'||(res.status(403).json({error:'Admin access required'}),false);
 const maintainer=admin;

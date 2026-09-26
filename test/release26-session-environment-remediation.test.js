@@ -49,7 +49,7 @@ test('UI-LOGIN-REDESIGN-19 preserves the login contract through the dev.108 cumu
   const packageJson=JSON.parse(read('package.json'));
   const skyline=fs.statSync(new URL('../public/brand/dubai-skyline-auth-golden-hour-palms.png',import.meta.url));
   const montserrat=fs.statSync(new URL('../public/fonts/Montserrat-Variable.woff2',import.meta.url));
-  assert.equal(packageJson.version,'2.1.0-dev.212');
+  assert.equal(packageJson.version,'2.1.0-dev.213');
   for(const asset of ['offer-ui.js','deal-ui.js','app.js','dashboard-ui.js'])assert.match(page,new RegExp(`'${asset.replace('.','\\.')}'`));
   assert.ok(skyline.size>1_000_000,'golden-hour palm skyline asset is unexpectedly small');
   assert.ok(montserrat.size>30_000,'bundled Montserrat font is unexpectedly small');

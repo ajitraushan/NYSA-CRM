@@ -53,13 +53,12 @@ test('R3A-INTAKE-EVIDENCE-58 promotes complete attribution and presents it in bu
   assert.match(ui,/NYSA Investment Property Shortlist/);
 });
 
-test('R3A-INTEGRATION-FAILURES-55 separates recoverable intake from immutable audit history',()=>{
+test('R3A-INTEGRATION-FAILURES-55 keeps recovery outside Admin while preserving immutable audit history',()=>{
   const ui=read('public/app.js');
-  for(const marker of ['Integration Failures','integration_failures','What happened','What to do','Technical reference','No website integration failures'])assert.match(ui,new RegExp(marker));
-  assert.match(ui,/\['failed','email_review','identity_review','duplicate_review'\]/);
-  assert.match(ui,/x\.campaignMappingStatus==='unmapped'/);
+  assert.doesNotMatch(ui,/\['integration_failures','Integration failures'\]/);
   assert.match(ui,/Website intake history/);
-  assert.doesNotMatch(ui,/id="audit-table">Loading…<\/div><div id="intake-table"/);
+  const importUi=read('public/purchased-data-import-ui.js');
+  assert.match(importUi,/purchasedDataImportAdminHTML=\(\)=>''/);
 });
 
 test('R3A-LEAKAGE-44 accepted intake uses normal Lead clocks while blocked evidence uses manager recovery',()=>{

@@ -2,7 +2,7 @@ import path from 'node:path';
 import {Router} from '../lib/http-kit.js';
 import {requireAuth} from '../auth.js';
 import {one,many,execute,transaction,uuid,audit} from '../db.js';
-import {hasInternalCrmIdentity,canReadOpportunity,canWriteOpportunity} from '../crm-policy.js';
+import {hasNysaStaffIdentity,canReadOpportunity,canWriteOpportunity} from '../crm-policy.js';
 import {decodeAndValidateFile,savePrivate,removePrivate} from '../private-files.js';
 import {
   DOCUMENT_COMPLIANCE_RESOLVER_VERSION,complianceFingerprint,complianceTaskPlan,deriveComplianceState,
@@ -11,7 +11,7 @@ import {
 } from '../document-compliance-domain.js';
 
 const r=Router(),clean=value=>String(value??'').trim(),fullAdmin=broker=>broker.role==='admin',configReader=broker=>fullAdmin(broker),reviewer=broker=>['manager','director'].includes(broker.jobRole);
-r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'Document compliance is restricted to NYSA staff'}));
+r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.broker)?next():res.status(403).json({error:'Document compliance is restricted to NYSA staff'}));
 const lock=(key,client)=>execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[key],client);
 
 async function dealContext(req,id,write=false,client){

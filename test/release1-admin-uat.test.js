@@ -127,11 +127,11 @@ test('manager to director reporting is explicit governed maintenance',()=>{
   assert.match(migration,/HAVING COUNT\(\*\)=1/);assert.match(migration,/brokers_reports_to_not_self_ck/);
 });
 
-test('administration navigation separates actionable integration failures from immutable audit history',()=>{
+test('administration keeps website intake history but excludes operational failure decisions',()=>{
   const ui=read('public/app.js');
   assert.match(ui,/Audit and Operations/);
   assert.match(ui,/WebsiteIntake/);
-  assert.match(ui,/\['integration_failures','Integration failures'\]/);
+  assert.doesNotMatch(ui,/\['integration_failures','Integration failures'\]/);
   assert.match(ui,/Website intake history/);
 });
 

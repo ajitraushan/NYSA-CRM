@@ -1,12 +1,12 @@
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,isCompanyReader,isProposalApprover,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
+import { hasNysaStaffIdentity,isManager,isCompanyReader,isProposalApprover,agentWorkLeadScopeSql,opportunityScopeSql,proposalApprovalScopeSql } from '../crm-policy.js';
 import { dashboardTypeFor,buildRoleDashboardPresentation,buildAgentLifecycle,AGENT_LIFECYCLE_STAGES } from '../dashboard-domain.js';
 import { DASHBOARD_METRICS } from '../admin-governance.js';
 import {pipelineJoin,pipelineStageSql} from '../dashboard-pipeline.js';
 
-const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM dashboards are restricted to NYSA staff'}));
+const r=Router();r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.broker)?next():res.status(403).json({error:'CRM dashboards are restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 function filters(req,alias='l',dateColumn=`${alias}.created_at`){
   const params=[],scope=agentWorkLeadScopeSql(alias,req.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};

@@ -7,7 +7,7 @@ const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 test('R3A dev.102 is superseded by the isolation-corrected dev.103 release',()=>{
   const packageJson=JSON.parse(read('package.json'));
   const deployment=read('release-artifacts/release-3/r3a/deploy-crm-test-r3a-dev102-complete.sh');
-  assert.equal(packageJson.version,'2.1.0-dev.212');
+  assert.equal(packageJson.version,'2.1.0-dev.213');
   for(const marker of ['EXPECTED_VERSION=2.1.0-dev.102','PREVIOUS_VERSION=2.1.0-dev.101','EXPECTED_PACKAGE=nysa-core-r3a-integration-remediation-dev102.zip','LATEST_MIGRATION=070_release3a_email_only_intake_gate.sql','Deployment already confirmed','Production and R2 clone snapshots: unchanged'])assert.match(deployment,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
 

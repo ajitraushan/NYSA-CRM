@@ -17,8 +17,12 @@ test('queued Lead assignment gives PostgreSQL an explicit UUID type for optional
 
 test('Administration navigation keeps Listing policy separate and User records under User maintenance',()=>{
   const app=read('public/app.js');
-  assert.match(app,/\['listing_policy','Listing approval policy'\],\['users','User management'\],\['user_records','User records'\],\['integration_failures','Integration failures'\],\['operations','Operations & audit'\]/);
+  assert.match(app,/\['Listing approval policy',\['listing_policy','Listing approval policy'\]\]/);
+  assert.match(app,/\['User Management',\['users','User management'\]\]/);
+  assert.match(app,/\['User records',\['user_records','User records'\]\]/);
+  assert.match(app,/\['About NYSA CORE',\['about','About'\]\]/);
   assert.doesNotMatch(app,/\['users','User records'\]/);
+  assert.doesNotMatch(app,/definitions\[index\]/);
 });
 
 test('KYC review decision remains visible at the right edge of its horizontal table',()=>{

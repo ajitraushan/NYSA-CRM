@@ -2259,10 +2259,33 @@ function openCloseModal(l) {
 let adminActiveSection='actions';
 function setupAdminWorkspace(){
   const view=$('#view'),sections=Array.from(view.children).filter(x=>x.classList.contains('admin-section'));
-  const definitions=[['organization','Company profile'],['controlled_values','Controlled values'],['sla','Business hours & SLA'],['areas','Area maintenance'],['listing_mappings','Provider listing mappings'],['routing','Lead routing & queues'],['qualification','Lead qualification'],['fees','Regulatory & fee rules'],['proposals','Proposal designer'],['market_intelligence','Market intelligence'],['commission_policy','Commission & payout policy'],['document_compliance','Customer & transaction documents'],['official_documents','Official document requirements'],['documents','Controlled document templates'],['targets','Dashboard targets'],['teams','CRM teams'],['media_policy','Property media policy'],['listing_policy','Listing approval policy'],['users','User management'],['user_records','User records'],['integration_failures','Integration failures'],['operations','Operations & audit'],['about','About']];
+  const definitions=new Map([
+    ['NYSA company profile and document defaults',['organization','Company profile']],
+    ['Controlled values',['controlled_values','Controlled values']],
+    ['Business hours and SLA policies',['sla','Business hours & SLA']],
+    ['Area maintenance',['areas','Area maintenance']],
+    ['Provider listing mappings',['listing_mappings','Provider listing mappings']],
+    ['Lead routing rules and assignment queues',['routing','Lead routing & queues']],
+    ['Lead Qualification Versions',['qualification','Lead qualification']],
+    ['Regulatory and transaction fee rules',['fees','Regulatory & fee rules']],
+    ['NYSA Proposal Template Designer',['proposals','Proposal designer']],
+    ['DLD market data and Area mapping',['market_intelligence','Market intelligence']],
+    ['Commission and payout policy',['commission_policy','Commission & payout policy']],
+    ['Required transaction documents',['document_compliance','Customer & transaction documents']],
+    ['Official document requirements',['official_documents','Official document requirements']],
+    ['Controlled document templates',['documents','Controlled document templates']],
+    ['Dashboard targets and exception alerts',['targets','Dashboard targets']],
+    ['CRM teams',['teams','CRM teams']],
+    ['Property media approval policy',['media_policy','Property media policy']],
+    ['Listing approval policy',['listing_policy','Listing approval policy']],
+    ['User Management',['users','User management']],
+    ['User records',['user_records','User records']],
+    ['Audit and Operations log',['operations','Operations & audit']],
+    ['About NYSA CORE',['about','About']]
+  ]);
   const workspace=document.createElement('div');workspace.className='admin-workspace';workspace.innerHTML='<div class="admin-maintenance-picker"><label for="admin-maintenance-select">Maintenance area</label><select id="admin-maintenance-select" aria-label="Administration maintenance"></select></div><section class="admin-maintenance-content"></section>';
   const select=workspace.querySelector('select'),content=workspace.querySelector('.admin-maintenance-content'),groups=new Map();
-  sections.forEach((section,index)=>{const [key,label]=definitions[index]||[`section_${index}`,section.querySelector('h2')?.textContent||`Section ${index+1}`];section.dataset.adminSection=key;section.dataset.adminLabel=label;content.append(section);if(!groups.has(key))groups.set(key,label);});
+  sections.forEach((section,index)=>{const heading=section.querySelector(':scope > h2')?.textContent?.trim()||'';const [key,label]=definitions.get(heading)||[`section_${index}`,heading||`Section ${index+1}`];section.dataset.adminSection=key;section.dataset.adminLabel=label;content.append(section);if(!groups.has(key))groups.set(key,label);});
   for(const [key,label] of groups){const option=document.createElement('option');option.value=key;option.textContent=label;select.append(option);}
   const show=key=>{adminActiveSection=groups.has(key)?key:groups.keys().next().value;sections.forEach(x=>x.classList.toggle('admin-section-active',x.dataset.adminSection===adminActiveSection));select.value=adminActiveSection;};
   select.addEventListener('change',()=>show(select.value));
@@ -2324,10 +2347,6 @@ async function renderAdmin() {
   </div>
   <div class="admin-section"><h2>User records</h2><p class="tool-note">Maintain existing user contact details, roles, reporting lines and access status.</p><div id="broker-table">Loading…</div></div>
   <div class="admin-section">
-    <div class="panel-head"><div><div class="eyebrow">R3A-INTEGRATION-FAILURES-55 · RECOVERABLE INTAKE</div><h2>Integration Failures</h2><p>Website enquiries that need correction or a governed decision appear here in business language. Successful enquiries remain in Customer, Lead and Customer 360; immutable technical history remains under Operations &amp; audit.</p></div><button class="btn btn-sm" id="intake-refresh" type="button">Refresh</button></div>
-    <div id="intake-table">Loading integration failures…</div>
-  </div>
-  <div class="admin-section">
     <h2>Audit and Operations log</h2>
     <div class="admin-toolbar">
       <div><label>Entity type</label><select id="al-type" style="width:150px"><option value="">All</option>
@@ -2345,7 +2364,6 @@ async function renderAdmin() {
   $('#listing-policy-form')?.addEventListener('submit',saveListingApprovalPolicy);
   $('#al-refresh').addEventListener('click', loadAudit);
   $('#al-type').addEventListener('change',loadAudit);
-  $('#intake-refresh').addEventListener('click',loadIntakeEvents);
   $('#organization-form').addEventListener('submit',saveOrganization);
   $('#organization-reset').addEventListener('click',()=>resetOrganizationForm(true));
   $('#value-set-form').addEventListener('submit',createValueSet);
@@ -2358,7 +2376,7 @@ async function renderAdmin() {
   $('#area-cancel').addEventListener('click',clearAreaForm);
   $('#routing-defaults').addEventListener('click',configureDubaiRoutingDefaults);$('#routing-cancel').addEventListener('click',clearRoutingForm);$('#qualification-new').addEventListener('click',()=>{$('#qualification-model-form').classList.remove('hidden');$('#qualification-new').classList.add('hidden');$('#qualification-model-form').scrollIntoView({behavior:'smooth',block:'start'});});$('#qualification-cancel').addEventListener('click',closeQualificationForm);$('#add-qualification-factor').addEventListener('click',()=>addQualificationFactor());$('#add-fee-item').addEventListener('click',()=>addFeeItem());$('#assumption-new').addEventListener('click',()=>fillAssumptionForm());$('#assumption-clear').addEventListener('click',closeAssumptionForm);$('#proposal-new').addEventListener('click',()=>fillProposalTemplateForm());$('#proposal-cancel').addEventListener('click',closeProposalTemplateForm);$('#proposal-preview').addEventListener('click',previewProposalTemplate);$('#add-proposal-section').addEventListener('click',()=>addProposalSection());$('#add-proposal-timeline').addEventListener('click',()=>addProposalTimeline());$('#add-user-form').addEventListener('submit',addUser);
   [{code:'budget_readiness',label:'Budget readiness',question:'Is the customer budget confirmed and realistic?',description:'Consider the stated range and current market expectations.',weight:25},{code:'funding_readiness',label:'Funding readiness',question:'How ready is the customer funding or mortgage approval?',description:'Confirm cash availability or mortgage pre-approval progress.',weight:25},{code:'purchase_timeline',label:'Purchase timeline',question:'How soon does the customer intend to proceed?',description:'Use the customer-confirmed decision timeline.',weight:25},{code:'requirements_clarity',label:'Requirements clarity',question:'How clearly are location and property requirements confirmed?',description:'Consider area, property type and essential requirements.',weight:25}].forEach(f=>addQualificationFactor({...f,inputSource:'agent_confirmed',min:0,max:10,required:true,missingTreatment:'reject'}));addFeeItem({code:'dld_transfer_fee',label:'DLD transfer fee',calculationType:'percentage',calculationBasis:'purchase_price',ratePercent:4,transactionType:'purchase',payer:'contractual'});renderProposalPropertyFields();loadDashboardTargetSetup();
-  loadAdminMyTasks();loadOrganization();loadValueSets();loadSlaPolicies();loadAreas();loadListingMappings();loadRoutingRules();loadIntakeEvents();loadQualificationModels();loadAssumptionVersions();loadProposalTemplateDesigner();loadOfficialDocumentAdministration();window.bindMarketIntelligenceAdministration?.();window.bindCommissionPayoutAdministration?.();window.bindAgentLeaveAdministration?.();window.bindDocumentComplianceAdministration?.();window.bindPurchasedDataImportAdministration?.();loadDocumentTemplates();loadTeams();loadPropertyMediaApprovalPolicy();loadListingApprovalPolicy();loadInvites(); loadBrokers(); loadPasswordResetRequests(); loadAudit();
+  loadAdminMyTasks();loadOrganization();loadValueSets();loadSlaPolicies();loadAreas();loadListingMappings();loadRoutingRules();loadQualificationModels();loadAssumptionVersions();loadProposalTemplateDesigner();loadOfficialDocumentAdministration();window.bindMarketIntelligenceAdministration?.();window.bindCommissionPayoutAdministration?.();window.bindAgentLeaveAdministration?.();window.bindDocumentComplianceAdministration?.();window.bindPurchasedDataImportAdministration?.();loadDocumentTemplates();loadTeams();loadPropertyMediaApprovalPolicy();loadListingApprovalPolicy();loadInvites(); loadBrokers(); loadPasswordResetRequests(); loadAudit();
 }
 
 let listingMappingState={versions:[],entries:[],fields:[]};

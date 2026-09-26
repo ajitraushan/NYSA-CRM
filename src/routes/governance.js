@@ -2,7 +2,7 @@ import path from 'node:path';
 import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity, isCompanyReader, isManager, isCrmReadOnly, contactScopeSql, companyScopeSql } from '../crm-policy.js';
+import { hasNysaStaffIdentity, isCompanyReader, isManager, isCrmReadOnly, contactScopeSql, companyScopeSql } from '../crm-policy.js';
 import { normalizePhone, isValidEmail } from '../crm-domain.js';
 import { decodeAndValidateFile,savePrivate,readPrivate,removePrivate } from '../private-files.js';
 import { validateOrganizationProfile,publicOrganization } from '../organization-domain.js';
@@ -12,7 +12,7 @@ const r=Router();
 r.use(requireAuth,requireGovernanceAccess);
 
 function requireGovernanceAccess(req,res,next){
-  if(!hasInternalCrmIdentity(req.broker)) return res.status(403).json({error:'CRM governance is restricted to NYSA staff'});
+  if(!hasNysaStaffIdentity(req.broker)) return res.status(403).json({error:'CRM governance is restricted to NYSA staff'});
   next();
 }
 

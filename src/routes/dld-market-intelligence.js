@@ -2,7 +2,7 @@ import path from 'node:path';
 import {Router} from '../lib/http-kit.js';
 import {requireAuth} from '../auth.js';
 import {one,many,execute,transaction,uuid,audit} from '../db.js';
-import {hasInternalCrmIdentity} from '../crm-policy.js';
+import {hasNysaStaffIdentity} from '../crm-policy.js';
 import {savePrivate,removePrivate} from '../private-files.js';
 import {buildInventoryMarketIntelligence,INVENTORY_MARKET_INTELLIGENCE_POLICY_VERSION} from '../inventory-market-intelligence-domain.js';
 import {fingerprint,inspectDldCsv,listingMarketContextHash,normalizeIdentity,reviewFingerprint,selectGovernedMarketScope,validateMappingDraft} from '../market-intelligence-integration-domain.js';
@@ -10,7 +10,7 @@ import {fingerprint,inspectDldCsv,listingMarketContextHash,normalizeIdentity,rev
 const r=Router(),clean=value=>String(value??'').trim(),fullAdmin=broker=>broker.role==='admin',adminReader=fullAdmin;
 const snapshotReviewer=broker=>['manager','director'].includes(broker.jobRole);
 const lock=(key,client)=>execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[key],client);
-r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'Market intelligence is restricted to NYSA staff'}));
+r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.broker)?next():res.status(403).json({error:'Market intelligence is restricted to NYSA staff'}));
 
 async function listingContext(req,id,write=false,client){
   const listing=await one(`SELECT l.*,b.team_id AS posted_by_team_id FROM listings l JOIN brokers b ON b.id=l.posted_by WHERE l.id=$1 AND l.deleted_at IS NULL`,[id],client);if(!listing)return null;

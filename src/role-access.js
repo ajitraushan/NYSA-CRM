@@ -41,7 +41,7 @@ export const GOVERNED_API_POLICY=frozen([
   frozen({methods:frozen(['POST']),pattern:/^\/auth\/logout$/,capability:CAPABILITY.SESSION_SELF}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/marketing-material-compliance\/(?:configuration|material-types|material-type-versions\/[a-f0-9-]{36}\/activate|channel-rules(?:\/[a-f0-9-]{36}\/(?:activate|retire))?)$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['GET','POST','PATCH']),pattern:/^\/admin\/(?:leave-|agent-employment)/,capability:CAPABILITY.LEAVE_ADMINISTER}),
-  frozen({methods:frozen(['GET','POST','PATCH','DELETE']),pattern:/^\/admin(?:\/|$)/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
+  frozen({methods:frozen(['GET','POST','PUT','PATCH','DELETE']),pattern:/^\/admin(?:\/|$)/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['GET','POST','PATCH']),pattern:/^\/crm\/teams(?:\/[a-f0-9-]{36})?$/,capability:CAPABILITY.TEAM_CONFIGURATION}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/staff$/,capability:CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/(?:controlled-values\/.*|organization)$/,capability:CAPABILITY.CONFIGURATION_REFERENCE_READ}),

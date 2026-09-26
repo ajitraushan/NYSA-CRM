@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasInternalCrmIdentity,isManager,isProposalApprover,canApproveProposal,canReadLead,canOperateLead,canReadOpportunity,contactScopeSql } from '../crm-policy.js';
+import { hasNysaStaffIdentity,isManager,isProposalApprover,canApproveProposal,canReadLead,canOperateLead,canReadOpportunity,contactScopeSql } from '../crm-policy.js';
 import { decodeAndValidateFile,validatePropertyImage,PROPERTY_IMAGE_POLICY,savePrivate,readPrivate,removePrivate } from '../private-files.js';
 import { makeProposalPdf } from '../proposal-pdf.js';
 import { publicOrganization,formatOrganizationDate } from '../organization-domain.js';
@@ -15,7 +15,7 @@ import { inspectPropertyFinderImage } from '../property-finder-media-delivery.js
 import { normalizePropertyFinderDerivativeTransform,propertyFinderDerivativeFileName,PROPERTY_FINDER_DERIVATIVE_CONFIRMATION } from '../property-finder-media-derivative.js';
 import { calculateRoi } from '../crm-domain.js';
 
-const r=Router();r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
+const r=Router();r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.broker)?next():res.status(403).json({error:'CRM customer data is restricted to NYSA staff'}));
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const imageTypes=['image/jpeg','image/png','image/webp','application/pdf'];
 const propertyVideoTypes=['video/mpeg','video/quicktime'];
