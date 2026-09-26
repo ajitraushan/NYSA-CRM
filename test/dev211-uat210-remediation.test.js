@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {prepareGovernedSharePreflight} from '../src/governed-share-preflight-domain.js';
+import {validatePurchasedRowDecisions} from '../src/purchased-data-import.js';
 
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
@@ -24,8 +25,26 @@ test('DEF-PDI register is implemented as one governed Bulk Upload workflow',()=>
   assert.match(ui,/Valid rows are selected by default/);
   assert.match(ui,/Source file/);
   assert.match(ui,/Customer and Lead Bulk Upload/);
+  assert.match(ui,/Selected \$\{selected\} · Excluded \$\{excluded\} · Invalid/);
+  assert.match(ui,/Reason for phone decision \(required\)/);
+  assert.match(route,/phone_decision/);
+  assert.match(route,/phoneDecisions/);
   assert.match(access,/sales_agent:frozen\(\[CAPABILITY\.PURCHASED_DATA_IMPORT/);
   assert.match(access,/CAPABILITY\.PURCHASED_DATA_IMPORT/);
+});
+
+test('DEF-PDI row review requires reasons and returns auditable normalized decisions',()=>{
+  const ordinary={rowNumber:2,action:'create',errors:[]},phone={rowNumber:3,action:'phone_confirmation',errors:[],matchBasis:'phone'};
+  let result=validatePurchasedRowDecisions([ordinary,phone],[{rowNumber:2,include:false},{rowNumber:3,include:true,phoneAction:'link_existing'}]);
+  assert.equal(result.valid,false);assert.match(result.errors.join(' '),/exclusion reason/);assert.match(result.errors.join(' '),/duplicate-phone decision/);
+  result=validatePurchasedRowDecisions([ordinary,phone],[{rowNumber:2,include:false,exclusionReason:'Not part of this campaign'},{rowNumber:3,include:true,phoneAction:'link_existing',decisionReason:'Confirmed same Customer by the uploader'}]);
+  assert.equal(result.valid,true);assert.equal(result.selectedRows.length,1);assert.equal(result.byRowNumber.get(3).phoneAction,'link_existing');
+});
+
+test('DEF-PDI row review rejects missing, duplicate, unknown and invalid-row selections',()=>{
+  const rows=[{rowNumber:2,action:'invalid',errors:['Email or phone is required']},{rowNumber:3,action:'create',errors:[]}];
+  const result=validatePurchasedRowDecisions(rows,[{rowNumber:2,include:true},{rowNumber:2,include:false},{rowNumber:99,include:true}]);
+  assert.equal(result.valid,false);for(const marker of ['duplicate row decision','Unknown upload row decision','cannot be imported','review decision is required'])assert.match(result.errors.join(' '),new RegExp(marker));
 });
 
 test('DEF-CUS-001 stages every Customer edit for Manager decision and audit',()=>{

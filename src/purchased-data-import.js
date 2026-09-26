@@ -84,3 +84,26 @@ export function validatePurchasedRows(sourceRows,{moduleType,sourceSystemCode=''
     return{rowNumber:Number(source.rowNumber),externalRowReference,normalized,matchedContact:candidates.length===1?candidates[0]:null,matchBasis:phoneOnlyMatch?'phone':workbookPhoneDuplicate?'workbook_phone_duplicate':candidates.length===1?(clean(source.customerReference)?'customer_reference':'email'):null,action:identityReview?'review_required':errors.length?'invalid':phoneOnlyMatch||workbookPhoneDuplicate?'phone_confirmation':candidates.length===1?(moduleType==='customer_only'?'linked':'create'):'create',errors};
   });
 }
+
+export function validatePurchasedRowDecisions(rows,sourceDecisions=[]){
+  const errors=[],known=new Set(rows.map(row=>Number(row.rowNumber))),byRowNumber=new Map();
+  if(!Array.isArray(sourceDecisions))return{valid:false,errors:['Row decisions are required after preview'],byRowNumber,selectedRows:[]};
+  for(const source of sourceDecisions){
+    const rowNumber=Number(source?.rowNumber);
+    if(!Number.isInteger(rowNumber)||!known.has(rowNumber)){errors.push(`Unknown upload row decision: ${source?.rowNumber??'missing row'}`);continue;}
+    if(byRowNumber.has(rowNumber)){errors.push(`Row ${rowNumber}: duplicate row decision`);continue;}
+    byRowNumber.set(rowNumber,{rowNumber,include:Boolean(source.include),phoneAction:clean(source.phoneAction),exclusionReason:clean(source.exclusionReason),decisionReason:clean(source.decisionReason)});
+  }
+  for(const row of rows){
+    const decision=byRowNumber.get(Number(row.rowNumber));
+    if(!decision){errors.push(`Row ${row.rowNumber}: review decision is required`);continue;}
+    const systemExcluded=['invalid','review_required'].includes(row.action);
+    if(decision.include&&systemExcluded)errors.push(`Row ${row.rowNumber}: ${row.action.replaceAll('_',' ')} rows cannot be imported`);
+    if(!decision.include&&!systemExcluded&&decision.exclusionReason.length<5)errors.push(`Row ${row.rowNumber}: enter an exclusion reason of at least 5 characters`);
+    if(decision.include&&row.action==='phone_confirmation'){
+      if(!['link_existing','link_batch_phone','create_separate'].includes(decision.phoneAction))errors.push(`Row ${row.rowNumber}: choose how the duplicate phone should be handled`);
+      if(decision.decisionReason.length<5)errors.push(`Row ${row.rowNumber}: enter a reason for the duplicate-phone decision`);
+    }
+  }
+  return{valid:errors.length===0,errors,byRowNumber,selectedRows:rows.filter(row=>byRowNumber.get(Number(row.rowNumber))?.include)};
+}

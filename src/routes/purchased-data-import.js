@@ -3,7 +3,7 @@ import {Router} from '../lib/http-kit.js';
 import {requireAuth} from '../auth.js';
 import {audit,execute,many,one,transaction,uuid} from '../db.js';
 import {decodeAndValidateFile,removePrivate,savePrivate} from '../private-files.js';
-import {parsePurchasedWorkbook,PURCHASED_DATA_IMPORT_VERSION,validatePurchasedRows} from '../purchased-data-import.js';
+import {parsePurchasedWorkbook,PURCHASED_DATA_IMPORT_VERSION,validatePurchasedRowDecisions,validatePurchasedRows} from '../purchased-data-import.js';
 import {resolvePrimaryRoutingArea,selectRoutingRule} from '../routing-service.js';
 import {calculateDeadlines} from './lead-operations.js';
 import {CAPABILITY,hasCapability} from '../role-access.js';
@@ -31,7 +31,7 @@ r.get('/crm/purchased-data-import/batches',async(req,res)=>{
 r.get('/crm/purchased-data-import/batches/:id/reconciliation.csv',async(req,res)=>{
   if(!authority(req.broker))return res.status(403).json({error:'Purchased-data import is limited to Sales Agent and Admin roles'});
   const batch=await one('SELECT * FROM purchased_data_import_batches WHERE id=$1',[req.params.id]);if(!batch)return res.status(404).json({error:'Import batch not found'});
-  const rows=await many(`SELECT r.row_number,r.external_row_reference,r.outcome,r.reason,c.customer_reference,l.lead_reference FROM purchased_data_import_rows r LEFT JOIN contacts c ON c.id=r.contact_id LEFT JOIN leads l ON l.id=r.lead_id WHERE r.batch_id=$1 ORDER BY r.row_number`,[batch.id]),quote=value=>`"${String(value??'').replaceAll('"','""')}"`,csv=['row_number,external_row_reference,outcome,customer_reference,lead_reference,reason',...rows.map(row=>[row.rowNumber,row.externalRowReference,row.outcome,row.customerReference,row.leadReference,row.reason].map(quote).join(','))].join('\r\n');
+  const rows=await many(`SELECT r.row_number,r.external_row_reference,r.outcome,r.reason,r.normalized_payload->'decision'->>'phoneAction' AS phone_decision,c.customer_reference,l.lead_reference FROM purchased_data_import_rows r LEFT JOIN contacts c ON c.id=r.contact_id LEFT JOIN leads l ON l.id=r.lead_id WHERE r.batch_id=$1 ORDER BY r.row_number`,[batch.id]),quote=value=>`"${String(value??'').replaceAll('"','""')}"`,csv=['row_number,external_row_reference,outcome,customer_reference,lead_reference,phone_decision,reason',...rows.map(row=>[row.rowNumber,row.externalRowReference,row.outcome,row.customerReference,row.leadReference,row.phoneDecision,row.reason].map(quote).join(','))].join('\r\n');
   res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="${batch.batchReference}-reconciliation.csv"`);res.end(csv);
 });
 
@@ -55,23 +55,25 @@ r.post('/crm/purchased-data-import/:moduleType/commit',async(req,res)=>{
     parsed=await parsePurchasedWorkbook(file.buffer,moduleType);meta=normalizeMeta(parsed.metadata);const error=metadataError(meta);if(error)return res.status(400).json({error});
     validated=validatePurchasedRows(parsed.rows,validationOptions(moduleType,meta,await priorRows(meta),await identities()));payload=previewPayload(moduleType,meta,file.fileHash,validated);previewHash=hash(payload);
   }catch(error){return res.status(400).json({error:`Workbook could not be confirmed: ${error.message}`});}
-  const submittedDecisions=new Map((Array.isArray(req.body?.rowDecisions)?req.body.rowDecisions:[]).map(item=>[Number(item.rowNumber),{include:Boolean(item.include),phoneAction:clean(item.phoneAction),exclusionReason:clean(item.exclusionReason)}])),decisionFor=row=>submittedDecisions.get(row.rowNumber)||{include:!['invalid','review_required'].includes(row.action),phoneAction:'',exclusionReason:''};
-  const selected=validated.filter(row=>decisionFor(row).include);
+  const reviewed=validatePurchasedRowDecisions(validated,req.body?.rowDecisions),decisionFor=row=>reviewed.byRowNumber.get(Number(row.rowNumber));
+  if(!reviewed.valid)return res.status(400).json({error:reviewed.errors[0],errors:reviewed.errors});
+  const selected=reviewed.selectedRows;
   if(!selected.length)return res.status(400).json({error:'Select at least one valid row to import'});
-  if(selected.some(row=>['invalid','review_required'].includes(row.action))||selected.some(row=>row.action==='phone_confirmation'&&!['link_existing','link_batch_phone','create_separate'].includes(decisionFor(row).phoneAction))||!equal(previewHash,req.body?.previewHash)||!equal(req.body?.reviewToken,token({previewHash,moduleType,meta,fileHash:file.fileHash},req.token)))return res.status(409).json({error:'The selected rows, phone confirmations or workbook identity changed after preview; review the workbook again'});
+  if(!equal(previewHash,req.body?.previewHash)||!equal(req.body?.reviewToken,token({previewHash,moduleType,meta,fileHash:file.fileHash},req.token)))return res.status(409).json({error:'The selected rows, phone confirmations or workbook identity changed after preview; review the workbook again'});
   const existing=await one(`SELECT * FROM purchased_data_import_batches WHERE module_type=$1 AND source_system_code=$2 AND acquisition_batch_reference=$3 AND file_hash=$4 AND status='completed'`,[moduleType,meta.sourceSystemCode,meta.acquisitionBatchReference,file.fileHash]);
   if(existing)return res.json({batchId:existing.id,batchReference:existing.batchReference,replayed:true,outcomes:await many(`SELECT r.row_number,r.external_row_reference,r.outcome,c.customer_reference,l.lead_reference FROM purchased_data_import_rows r LEFT JOIN contacts c ON c.id=r.contact_id LEFT JOIN leads l ON l.id=r.lead_id WHERE r.batch_id=$1 ORDER BY r.row_number`,[existing.id])});
   const storageKey=await savePrivate(file.buffer,'.xlsx');
   try{
     const result=await transaction(async client=>{
       await execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`${moduleType}:${meta.sourceSystemCode}:${meta.acquisitionBatchReference}`],client);
-      const fresh=validatePurchasedRows(parsed.rows,validationOptions(moduleType,meta,await priorRows(meta,client),await identities(client))),freshSelected=fresh.filter(row=>decisionFor(row).include);if(freshSelected.some(row=>['invalid','review_required'].includes(row.action))||freshSelected.some(row=>row.action==='phone_confirmation'&&!['link_existing','link_batch_phone','create_separate'].includes(decisionFor(row).phoneAction)))return{code:409,error:'Identity or validation state changed after preview; review the workbook again'};
+      const fresh=validatePurchasedRows(parsed.rows,validationOptions(moduleType,meta,await priorRows(meta,client),await identities(client))),freshReview=validatePurchasedRowDecisions(fresh,req.body?.rowDecisions);if(!freshReview.valid)return{code:409,error:`Identity or validation state changed after preview: ${freshReview.errors[0]}`};
+      const freshDecisionFor=row=>freshReview.byRowNumber.get(Number(row.rowNumber));
       const batchId=uuid(),batchReference=`PDI-${new Date().getUTCFullYear()}-${batchId.slice(0,8).toUpperCase()}`;
       await execute(`INSERT INTO purchased_data_import_batches(id,batch_reference,module_type,source_system_code,supplier_name,acquisition_batch_reference,acquisition_date,campaign_reference,processing_basis,original_file_name,media_type,file_size_bytes,file_hash,preview_hash,storage_key,status,row_count,uploaded_by,confirmed_by,confirmed_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'processing',$16,$17,$17,NOW())`,[batchId,batchReference,moduleType,meta.sourceSystemCode,meta.supplierName,meta.acquisitionBatchReference,meta.acquisitionDate,meta.campaignReference,meta.processingBasis,file.fileName,XLSX,file.buffer.length,file.fileHash,previewHash,storageKey,fresh.length,req.broker.id],client);
       const outcomes=[],createdByPhone=new Map();
       for(const row of fresh){
-        const rowDecision=decisionFor(row);let contact=row.matchedContact,lead=null,outcome=row.action;
-        if(!rowDecision.include){const reason=rowDecision.exclusionReason||(['invalid','review_required'].includes(row.action)?row.errors.join('; '):'Excluded by importer after preview');await execute(`INSERT INTO purchased_data_import_rows(id,batch_id,row_number,external_row_reference,outcome,reason,normalized_payload) VALUES($1,$2,$3,$4,'excluded',$5,$6)`,[uuid(),batchId,row.rowNumber,row.externalRowReference,reason,{moduleType,sourceSystemCode:meta.sourceSystemCode,acquisitionBatchReference:meta.acquisitionBatchReference}],client);outcomes.push({rowNumber:row.rowNumber,externalRowReference:row.externalRowReference,outcome:'excluded',reason});continue;}
+        const rowDecision=freshDecisionFor(row);let contact=row.matchedContact,lead=null,outcome=row.action;
+        if(!rowDecision.include){const reason=rowDecision.exclusionReason||row.errors.join('; ');await execute(`INSERT INTO purchased_data_import_rows(id,batch_id,row_number,external_row_reference,outcome,reason,normalized_payload) VALUES($1,$2,$3,$4,'excluded',$5,$6)`,[uuid(),batchId,row.rowNumber,row.externalRowReference,reason,{moduleType,sourceSystemCode:meta.sourceSystemCode,acquisitionBatchReference:meta.acquisitionBatchReference,decision:{included:false,exclusionReason:reason,matchBasis:row.matchBasis||null}}],client);outcomes.push({rowNumber:row.rowNumber,externalRowReference:row.externalRowReference,outcome:'excluded',reason});continue;}
         if(row.action==='phone_confirmation'){
           if(rowDecision.phoneAction==='create_separate'){contact=null;outcome='create';}
           else if(rowDecision.phoneAction==='link_batch_phone'){
@@ -105,13 +107,14 @@ r.post('/crm/purchased-data-import/:moduleType/commit',async(req,res)=>{
             VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,'unknown',$9,$9,$10,$11,$12,$13,$14,$15,'purchased-data-v1')`,[uuid(),lead.id,clean(v.businessType),clean(v.purpose),clean(v.propertyType)?[clean(v.propertyType)]:[],v.preferredAreas,v.budgetMin,v.budgetMax,v.bedroomsMin,clean(v.timeline),clean(v.sourceNotes)||null,req.broker.id,clean(v.objective)||'not_confirmed',clean(v.businessType)==='Off-plan'?'off_plan':'not_confirmed',clean(v.businessType)==='Commercial'?'commercial':'not_confirmed'],client);
           outcome='created';
         }
-        const storedPayload={moduleType,sourceSystemCode:meta.sourceSystemCode,acquisitionBatchReference:meta.acquisitionBatchReference};
-        await execute(`INSERT INTO purchased_data_import_rows(id,batch_id,row_number,external_row_reference,outcome,contact_id,lead_id,normalized_payload) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[uuid(),batchId,row.rowNumber,row.externalRowReference,outcome,contact.id,lead?.id||null,storedPayload],client);
-        outcomes.push({rowNumber:row.rowNumber,externalRowReference:row.externalRowReference,outcome,customerReference:contact.customerReference,contactId:contact.id,leadReference:lead?.leadReference||null,leadId:lead?.id||null});
+        const decisionReason=row.action==='phone_confirmation'?rowDecision.decisionReason:null,storedPayload={moduleType,sourceSystemCode:meta.sourceSystemCode,acquisitionBatchReference:meta.acquisitionBatchReference,decision:{included:true,phoneAction:rowDecision.phoneAction||null,decisionReason,matchBasis:row.matchBasis||null}};
+        await execute(`INSERT INTO purchased_data_import_rows(id,batch_id,row_number,external_row_reference,outcome,reason,contact_id,lead_id,normalized_payload) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[uuid(),batchId,row.rowNumber,row.externalRowReference,outcome,decisionReason,contact.id,lead?.id||null,storedPayload],client);
+        outcomes.push({rowNumber:row.rowNumber,externalRowReference:row.externalRowReference,outcome,reason:decisionReason,phoneDecision:rowDecision.phoneAction||null,customerReference:contact.customerReference,contactId:contact.id,leadReference:lead?.leadReference||null,leadId:lead?.id||null});
       }
       const counts=Object.fromEntries(['created','linked','skipped','excluded'].map(status=>[status,outcomes.filter(item=>item.outcome===status).length]));
       await execute("UPDATE purchased_data_import_batches SET status='completed',created_count=$1,linked_count=$2,skipped_count=$3,excluded_count=$4,completed_at=NOW() WHERE id=$5",[counts.created,counts.linked,counts.skipped,counts.excluded,batchId],client);
-      await audit('PurchasedDataImport',batchId,'completed',req.broker.id,{batchReference,moduleType,rowCount:outcomes.length,...counts},client);return{batchId,batchReference,outcomes};
+      const phoneDecisions=outcomes.filter(item=>item.phoneDecision).map(item=>({rowNumber:item.rowNumber,action:item.phoneDecision,reason:item.reason}));
+      await audit('PurchasedDataImport',batchId,'completed',req.broker.id,{batchReference,moduleType,rowCount:outcomes.length,...counts,phoneDecisions},client);return{batchId,batchReference,outcomes};
     });
     if(result.error){await removePrivate(storageKey);return res.status(result.code||409).json({error:result.error});}res.status(201).json(result);
   }catch(error){await removePrivate(storageKey);throw error;}
