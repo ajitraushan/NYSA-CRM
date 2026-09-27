@@ -152,7 +152,7 @@ test('Agent dashboard provides Opportunity lifecycle counts, exact record drill-
   assert.doesNotMatch(ui,/if\(data\.dashboardType==='agent'\)return \[\s*agentLifecycle\(data\)/);
   assert.match(page,/\.agent-lifecycle-track\{/);
   assert.match(page,/\.agent-lifecycle-lost\{/);
-  assert.match(page,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','app\.js','dashboard-ui\.js'\]/);
+  assert.match(page,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','dashboard-ui\.js'.*'document-compliance-ui\.js'.*'app\.js'\]/);
 });
 
 test('Role dashboards move the maintained reporting structure into My Team without widening access',()=>{

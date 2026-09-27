@@ -14,12 +14,16 @@ export function validateCounterparty(body={}){
 }
 
 export function validateExternalProperty(body={}){
-  const projectOrBuilding=clean(body.projectOrBuilding),propertyAddress=clean(body.propertyAddress),source=clean(body.source),sourceEvidence=clean(body.sourceEvidence);
+  const projectOrBuilding=clean(body.projectOrBuilding),propertyAddress=clean(body.propertyAddress),source=clean(body.source),sourceEvidence=clean(body.sourceEvidence),
+    usageKind=body.usageKind||'external_cobroker',developerName=clean(body.developerName),communityOrArea=clean(body.communityOrArea);
   if(!projectOrBuilding||!propertyAddress)return {error:'External property identity and address are required'};
   if(!source||!sourceEvidence)return {error:'External property source and evidence are required'};
+  if(!['external_cobroker','developer_stock'].includes(usageKind))return {error:'Select external/co-broker property or off-plan developer stock'};
   const askingPrice=body.askingPrice===undefined||body.askingPrice===null||body.askingPrice===''?null:Number(body.askingPrice);
   if(askingPrice!==null&&(!Number.isFinite(askingPrice)||askingPrice<0))return {error:'Asking price must be a non-negative amount'};
-  return {value:{projectOrBuilding,propertyAddress,source,sourceEvidence,askingPrice,currency:clean(body.currency)||'AED',propertyType:clean(body.propertyType),permitReference:clean(body.permitReference),ownerCounterpartyId:body.ownerCounterpartyId||null,sellerAgentCounterpartyId:body.sellerAgentCounterpartyId||null,sellerAgencyCounterpartyId:body.sellerAgencyCounterpartyId||null}};
+  if(usageKind==='developer_stock'&&!['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal'].includes(clean(body.propertyType)))return {error:'Select a governed Inventory property type for developer stock'};
+  if(usageKind==='developer_stock'&&(!developerName||!communityOrArea||!clean(body.propertyType)||!askingPrice))return {error:'Developer, community/area, property type and current price are required for off-plan developer stock'};
+  return {value:{projectOrBuilding,propertyAddress,source,sourceEvidence,usageKind,developerName,communityOrArea,askingPrice,currency:(clean(body.currency)||'AED').toUpperCase(),propertyType:clean(body.propertyType),permitReference:clean(body.permitReference),ownerCounterpartyId:body.ownerCounterpartyId||null,sellerAgentCounterpartyId:body.sellerAgentCounterpartyId||null,sellerAgencyCounterpartyId:body.sellerAgencyCounterpartyId||null}};
 }
 
 export function validateRepresentation(body={}){

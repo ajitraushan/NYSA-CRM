@@ -65,7 +65,7 @@ test('historical terminal assignments close during migration and a detached reta
   assert.match(migration,/Historical terminal Deal formalized during dev\.153 migration/);
   assert.match(migration,/l\.status IN \('Sold','Rented','Closed'\)/);
   assert.match(opportunities,/current_link\.change_kind AS current_linkage_kind/);
-  assert.match(opportunities,/!deal\.bookingId&&deal\.currentLinkageKind!=='detached'/);
+  assert.match(opportunities,/!deal\.bookingId&&!\['detached','developer_stock_attached'\]\.includes\(deal\.currentLinkageKind\)/);
   assert.match(opportunities,/WHERE opportunity_id=\$2 AND state='active' RETURNING id,listing_id/);
 });
 

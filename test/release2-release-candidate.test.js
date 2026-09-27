@@ -15,7 +15,7 @@ test('R2.5 APIs separate approval from authoritative Closed Won and reconcile ou
   const routes=read('src/routes/opportunities.js');
   for(const marker of ["/crm/deals/:dealId/approval","/crm/deals/:dealId/close-won",
     "/crm/deals/:dealId/close-lost","inventory_status_before","status='cancelled'","stage='Closed Lost'",
-    'FOR UPDATE OF d,b,o',"status='completed'","stage='Closed Won'","'Rented':'Sold'",
+    'FOR UPDATE OF d,o',"status='completed'","stage='Closed Won'","'Rented':'Sold'",
     "'closed_from_deal'","/crm/release2/reconciliation",'sourceOutcomes','exceptionCount'])
     assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
@@ -27,6 +27,6 @@ test('R2.5 workspace makes approval, closure and reconciliation explicit',()=>{
     'Cancel this Deal','Submit cancellation for Manager approval','Approve cancellation and release Inventory'])
     assert.match(dealUi,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['R2.5 reconciliation','Release 2 reconciliation','Cross-module exceptions',
-    'Original source and campaign outcomes','The Deal, Opportunity, reservation and inventory are authoritatively closed.'])
+    'Original source and campaign outcomes','The Deal and Opportunity are authoritatively closed; the Inventory outcome is recorded.'])
     assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

@@ -33,7 +33,7 @@ test('UTM and format-valid email evidence do not claim customer input or mailbox
 });
 
 test('prior scoped UAT correction remains traceable after the combined follow-up candidate',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.213');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.214');
   assert.ok(fs.existsSync(new URL('../src/migrations/074_release3ai_governed_website_routing.sql',import.meta.url)));
   assert.match(read('release-artifacts/release-3/r3a/wordpress-staging/nysa-crm-test-intake-connector/nysa-crm-test-intake-connector.php'),/VERSION = '1.9.4'/);
   const deployment=read('release-artifacts/release-3/r3a/deploy-crm-test-r3ai-dev111-uat-corrections.sh');

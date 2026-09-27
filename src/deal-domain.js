@@ -76,7 +76,7 @@ export function dealClosureGates({deal,parties=[],items=[]}={}){
   const incomplete=items.filter(item=>item.required&& !['completed','waived'].includes(item.status));
   return[
     {code:'terms',label:'Exact accepted offer terms linked',complete:Boolean(deal.acceptedOfferRevisionId)},
-    {code:'reservation',label:'Governed reservation preserved',complete:['reserved','completed'].includes(deal.bookingStatus)},
+    {code:'reservation',label:deal.dealType==='off_plan'&&!deal.bookingId?'Developer stock recorded without internal reservation':'Governed reservation preserved',complete:deal.dealType==='off_plan'&&!deal.bookingId||['reserved','completed'].includes(deal.bookingStatus)},
     {code:'parties',label:missing.length?`Add mandatory parties: ${missing.join(', ')}`:'Mandatory parties recorded',complete:missing.length===0},
     {code:'checklist',label:incomplete.length?`Complete ${incomplete.length} required checklist item${incomplete.length===1?'':'s'}`:'Required checklist items complete',complete:incomplete.length===0},
     {code:'approval',label:'Manager/Director closure approval recorded',complete:Boolean(deal.approvedAt)},

@@ -43,11 +43,12 @@ r.post('/crm/external-properties',async(req,res)=>{
   const sequence=(await one("SELECT COUNT(*)::int+1 AS value FROM provisional_external_properties WHERE external_reference LIKE $1",[`${`NYSA-EXT-${period}`}-%`])).value;
   const id=uuid(),reference=`NYSA-EXT-${period}-${String(sequence).padStart(6,'0')}`;
   const row=await one(`INSERT INTO provisional_external_properties(id,external_reference,project_or_building,property_address,
-    asking_price,currency,property_type,permit_reference,source,source_evidence,owner_counterparty_id,
-    seller_agent_counterparty_id,seller_agency_counterparty_id,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-    [id,reference,v.projectOrBuilding,v.propertyAddress,v.askingPrice,v.currency,v.propertyType,v.permitReference,v.source,v.sourceEvidence,v.ownerCounterpartyId,v.sellerAgentCounterpartyId,v.sellerAgencyCounterpartyId,req.broker.id]);
-  await audit('ExternalProperty',id,'captured',req.broker.id,{reference,source:v.source,normalInventory:false,externalListing:false});
+    asking_price,currency,property_type,permit_reference,source,source_evidence,usage_kind,developer_name,community_or_area,
+    owner_counterparty_id,seller_agent_counterparty_id,seller_agency_counterparty_id,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [id,reference,v.projectOrBuilding,v.propertyAddress,v.askingPrice,v.currency,v.propertyType,v.permitReference,v.source,v.sourceEvidence,
+      v.usageKind,v.developerName,v.communityOrArea,v.ownerCounterpartyId,v.sellerAgentCounterpartyId,v.sellerAgencyCounterpartyId,req.broker.id]);
+  await audit('ExternalProperty',id,'captured',req.broker.id,{reference,source:v.source,usageKind:v.usageKind,normalInventory:false,externalListing:false});
   res.status(201).json(row);
 });
 

@@ -409,8 +409,12 @@ input::placeholder,textarea::placeholder{color:#9a9488!important;opacity:1;font-
     body .diary-delivery-synced{background:var(--green-soft);color:var(--text)}
     body .opportunity-reminder-guidance,body .viewing-status-banner,
     body .diary-state-upcoming,body .diary-state-due_later,body .diary-external-note{background:var(--blue-soft);color:var(--text)}
-    body .deal-gate.pending{background:var(--amber-soft);color:var(--text)}
-    body .deal-gate.info{background:var(--blue-soft);color:var(--text)}
+    body .deal-gate,body .deal-gate.pending,body .deal-gate.info,body .deal-gate.complete,
+    body .offer-reservation-note,body .offer-state-guidance{background:var(--panel2);color:var(--text)}
+    body .booking-create-form output,body #booking-create-form output{display:block;margin-top:7px;font-weight:700}
+    body .booking-create-form small,body #booking-create-form small{display:block;margin-top:6px;line-height:1.45}
+    body .opportunity-stage-page>footer{position:static;border-top:1px solid var(--border)}
+    body .opportunity-stage-refresh-mask{position:fixed;inset:0;z-index:220;display:grid;place-items:center;background:var(--paper);color:var(--text)}
     #app.shell-layout .proposal-property-index{background:rgba(16,20,22,.94)}
     #app.shell-layout .customer-priority-card-compact.attention-due-today{background:linear-gradient(90deg,var(--amber-soft),var(--surface) 42%)}
     #app.shell-layout .agent-dashboard-website-theme .eyebrow{color:var(--gold-dim)}

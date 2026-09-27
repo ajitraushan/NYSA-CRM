@@ -227,6 +227,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       LEFT JOIN teams old_team ON old_team.id=h.from_team_id LEFT JOIN teams new_team ON new_team.id=h.to_team_id
       JOIN brokers actor ON actor.id=h.changed_by WHERE h.opportunity_id=$1 ORDER BY h.changed_at`,[opportunity.id]),
     many(`SELECT pm.*,COALESCE(li.project,ep.project_or_building) AS project,
+      COALESCE(li.inventory_headline,li.project,ep.project_or_building) AS inventory_headline,
       COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
       COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency) AS currency,
       COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,ep.status AS external_status,
@@ -235,7 +236,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
       JOIN brokers creator ON creator.id=pm.created_by WHERE pm.opportunity_id=$1 ORDER BY
       CASE pm.shortlist_status WHEN 'shortlisted' THEN 0 WHEN 'considering' THEN 1 ELSE 2 END,pm.created_at`,[opportunity.id]),
-    many(`SELECT a.*,pm.shortlist_status,li.inventory_reference,li.project,li.area,li.property_type,li.price,li.currency,
+    many(`SELECT a.*,pm.shortlist_status,li.inventory_reference,COALESCE(li.inventory_headline,li.project) AS inventory_headline,li.project,li.area,li.property_type,li.price,li.currency,
       nysa_inventory_effective_status(li.id) AS inventory_effective_status,creator.name AS created_by_name,
       CASE WHEN a.state='active' AND EXISTS(SELECT 1 FROM bookings b WHERE b.listing_id=a.listing_id AND b.opportunity_id=a.opportunity_id AND b.status='reserved' AND b.expires_at>NOW()) THEN 'reserved_winner'
         WHEN a.state='active' AND a.expires_at<=NOW() THEN 'expired'
@@ -256,6 +257,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
         AND f.listing_id=a.listing_id ORDER BY f.created_at DESC LIMIT 1) latest_offer ON TRUE
       WHERE a.opportunity_id=$1 ORDER BY CASE WHEN a.state='active' AND a.expires_at>NOW() THEN 0 ELSE 1 END,a.created_at DESC`,[opportunity.id]),
     many(`SELECT v.*,COALESCE(li.project,ep.project_or_building) AS listing_project,
+      COALESCE(li.inventory_headline,li.project,ep.project_or_building) AS inventory_headline,
       COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,organizer.name AS organizer_name,
       customer.full_name AS customer_name,customer.email AS customer_email,customer.phone AS customer_phone,
       customer.postal_address AS customer_address,owner.name AS owner_name,owner.phone AS owner_phone,
@@ -273,6 +275,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
       WHERE v.opportunity_id=$1 ORDER BY v.starts_at DESC`,[opportunity.id])
   ]);
   const offers=await many(`SELECT f.*,COALESCE(li.project,ep.project_or_building) AS listing_project,
+    COALESCE(li.inventory_headline,li.project,ep.project_or_building) AS inventory_headline,
     COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
     CASE WHEN li.id IS NOT NULL THEN nysa_inventory_effective_status(li.id) ELSE ep.status END AS listing_status,owner.name AS owner_name,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
@@ -301,7 +304,9 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     for(const offer of offers){offer.revisions=revisions.filter(x=>x.offerId===offer.id);offer.events=events.filter(x=>x.offerId===offer.id);}
   }
   const bookings=await many(`SELECT b.*,f.offer_reference,f.offer_type,r.revision_number AS accepted_revision_number,
+    r.amount AS accepted_offer_amount,r.currency AS accepted_offer_currency,
     COALESCE(li.project,ep.project_or_building) AS listing_project,
+    COALESCE(li.inventory_headline,li.project,ep.project_or_building) AS inventory_headline,
     COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
     dv.file_name AS evidence_file_name,dv.file_hash AS evidence_file_hash,owner.name AS owner_name,
     COALESCE((SELECT json_agg(json_build_object('id',h.id,'fromStatus',h.from_status,'toStatus',h.to_status,
@@ -319,6 +324,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
   const deals=await many(`SELECT d.*,b.booking_reference,b.status AS booking_status,f.offer_reference,f.offer_type,r.revision_number AS accepted_revision_number,
     link.id AS authoritative_linkage_id,link.change_kind AS linkage_change_kind,link.created_at AS linkage_created_at,
     COALESCE(li.project,ep.project_or_building) AS listing_project,
+    COALESCE(li.inventory_headline,li.project,ep.project_or_building) AS inventory_headline,
     COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
     CASE WHEN li.id IS NOT NULL THEN nysa_inventory_effective_status(li.id) ELSE ep.status END AS listing_status,owner.name AS owner_name,
     approver.name AS approved_by_name,closer.name AS closed_by_name,cancel_request.id AS cancellation_request_id,
@@ -360,7 +366,42 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     LEFT JOIN brokers sender ON sender.id=s.sent_by
     LEFT JOIN opportunity_property_share_items i ON i.share_id=s.id
     WHERE s.opportunity_id=$1 GROUP BY s.id,creator.name,sender.name ORDER BY s.created_at DESC`,[opportunity.id]);
-  res.json({opportunity,stageHistory,assignmentHistory,matches,inventoryAssignments,viewings,offers,bookings,deals,propertyShares});
+  const developerStock=opportunity.transactionType==='Off-plan'?await many(`SELECT id,external_reference,project_or_building,
+    property_address,asking_price,currency,property_type,developer_name,community_or_area,status
+    FROM provisional_external_properties WHERE usage_kind='developer_stock'
+      AND status IN ('captured','verification_pending','approved_for_opportunity','under_offer') AND promoted_listing_id IS NULL
+    ORDER BY updated_at DESC,created_at DESC`):[];
+  res.json({opportunity,stageHistory,assignmentHistory,matches,inventoryAssignments,viewings,offers,bookings,deals,propertyShares,developerStock});
+});
+
+r.post('/crm/opportunities/:id/developer-stock',async(req,res)=>{
+  const externalPropertyId=clean(req.body?.externalPropertyId);
+  if(!externalPropertyId)return res.status(400).json({error:'Select current developer stock'});
+  const result=await transaction(async client=>{
+    const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return{code:error[0],error:error[1]};
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Opportunity is outside your writable scope'};
+    if(opportunity.transactionType!=='Off-plan')return{code:409,error:'Developer stock may be tagged only to an Off-plan Opportunity'};
+    if(['Deal','Closed Won','Closed Lost'].includes(opportunity.stage))return{code:409,error:'Developer stock cannot be changed after the Deal stage begins'};
+    const stock=await one(`SELECT * FROM provisional_external_properties WHERE id=$1 AND usage_kind='developer_stock'
+      AND status='approved_for_opportunity' AND promoted_listing_id IS NULL FOR UPDATE`,[externalPropertyId],client);
+    if(!stock)return{code:409,error:'Select verified developer stock that has not already closed'};
+    let match=await one('SELECT * FROM property_matches WHERE opportunity_id=$1 AND external_property_id=$2',[opportunity.id,stock.id],client);
+    if(!match){match=await one(`INSERT INTO property_matches(id,opportunity_id,requirement_id,external_property_id,match_source,
+      fit_status,rationale,exceptions,shortlist_status,shortlisted_at,created_by,updated_by)
+      VALUES($1,$2,$3,$4,'manual','strong_fit',$5,$6,'shortlisted',NOW(),$7,$7) RETURNING *`,
+      [uuid(),opportunity.id,opportunity.requirementId,stock.id,
+        'Current developer stock tagged directly to this Off-plan Opportunity',
+        'Availability remains with the Developer and must be reconfirmed at each commercial action',req.broker.id],client);}
+    await execute(`UPDATE opportunities SET property_source='developer_stock',external_property_id=$1,listing_id=NULL,
+      stage=CASE WHEN stage='Requirements' THEN 'Matching' ELSE stage END,next_action_code='prepare_or_review_offer',
+      next_action='Reconfirm developer availability and prepare the customer Offer',next_action_notes=$2,
+      version=version+1,updated_at=NOW() WHERE id=$3`,[stock.id,
+      'Developer availability is advisory and may change until the transaction closes.',opportunity.id],client);
+    await audit('ExternalProperty',stock.id,'developer_stock_tagged',req.broker.id,{opportunityId:opportunity.id,
+      opportunityReference:opportunity.opportunityReference,propertyMatchId:match.id,internalInventoryCreated:false},client);
+    return{match,stock};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
 });
 
 r.get('/crm/opportunities/:id/stage-drafts/:stageCode',async(req,res)=>{
@@ -778,6 +819,7 @@ r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>
 async function offerContext(req,offerId,client){
   const offer=await one(`SELECT f.*,o.lead_id,o.contact_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
     o.assigned_team_id,o.opportunity_reference,o.title AS opportunity_title,o.stage AS opportunity_stage,
+    o.transaction_type,o.property_source,ep.usage_kind AS external_usage_kind,
     COALESCE(c.full_name,buyer.display_name) AS customer_name,COALESCE(c.email,buyer.email) AS customer_email,
     COALESCE(c.phone,buyer.phone) AS customer_phone,COALESCE(li.project,ep.project_or_building) AS listing_project,
     COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
@@ -845,7 +887,7 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
       const match=await one(`SELECT pm.*,COALESCE(li.project,ep.project_or_building) AS project,
         COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
         COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency) AS currency,
-        li.deleted_at,li.workflow_status,ep.status AS external_status
+        li.deleted_at,li.workflow_status,ep.status AS external_status,ep.usage_kind AS external_usage_kind
         FROM property_matches pm LEFT JOIN listings li ON li.id=pm.listing_id
         LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
         WHERE pm.id=$1 AND pm.opportunity_id=$2 AND pm.shortlist_status<>'rejected' LIMIT 1`,
@@ -863,7 +905,8 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
         // A reassignment or Inventory replacement creates a new Offer ID at Revision 1 while
         // retaining the terminal predecessor even when the property changed.
       }
-      const completedViewing=await one(`SELECT id FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2
+      const developerStock=opportunity.transactionType==='Off-plan'&&opportunity.propertySource==='developer_stock'&&match.externalUsageKind==='developer_stock';
+      const completedViewing=developerStock?{id:null}:await one(`SELECT id FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2
         AND ($3::uuid IS NULL OR inventory_assignment_id=$3) AND status='completed' AND NULLIF(BTRIM(feedback),'') IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
         [opportunity.id,match.id,offerAssignment?.id||null],client);
       if(!completedViewing)return {code:409,error:'Complete the property viewing and record customer feedback before creating an offer for this property'};
@@ -901,7 +944,8 @@ r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
     const result=await transaction(async client=>{
       const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
       if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
-      if(!offer.viewingFeedbackRecorded)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
+      const developerStock=offer.transactionType==='Off-plan'&&offer.propertySource==='developer_stock'&&offer.externalUsageKind==='developer_stock';
+      if(!offer.viewingFeedbackRecorded&&!developerStock)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
       if(['accepted','rejected','expired','withdrawn'].includes(offer.status))return {code:409,error:'A terminal offer cannot receive another revision'};
       if(offer.listingId&&!await one(`SELECT id FROM inventory_assignments WHERE opportunity_id=$1 AND listing_id=$2
         AND state='active' AND starts_at<=NOW() AND expires_at>NOW()`,[offer.opportunityId,offer.listingId],client))return {code:409,error:'This Offer Inventory assignment expired or ended. Reassign the Inventory before creating another revision'};
@@ -945,7 +989,8 @@ r.post('/crm/offers/:offerId/send',async(req,res)=>{
   const result=await transaction(async client=>{
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
-    if(!offer.viewingFeedbackRecorded)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
+    const developerStock=offer.transactionType==='Off-plan'&&offer.propertySource==='developer_stock'&&offer.externalUsageKind==='developer_stock';
+    if(!offer.viewingFeedbackRecorded&&!developerStock)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
     if(offer.status!=='draft'||offer.version!==expectedVersion)return {code:409,error:'Only the current draft revision can be sent; reload before sending'};
     if(offer.listingId&&!await one(`SELECT id FROM inventory_assignments WHERE opportunity_id=$1 AND listing_id=$2
       AND state='active' AND starts_at<=NOW() AND expires_at>NOW()`,[offer.opportunityId,offer.listingId],client))return {code:409,error:'This Offer Inventory assignment expired or ended. Reassign the Inventory before sending the Offer'};
@@ -972,9 +1017,10 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
   const result=await transaction(async client=>{
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
-    if(!offer.viewingFeedbackRecorded&&req.body?.eventType!=='withdrawn')return {code:409,error:'Only withdrawal is available because this offer has no viewing feedback evidence recorded before creation'};
+    const developerStock=offer.transactionType==='Off-plan'&&offer.propertySource==='developer_stock'&&offer.externalUsageKind==='developer_stock';
+    if(!offer.viewingFeedbackRecorded&&!developerStock&&req.body?.eventType!=='withdrawn')return {code:409,error:'Only withdrawal is available because this offer has no viewing feedback evidence recorded before creation'};
     if(offer.version!==expectedVersion)return {code:409,error:'This offer changed after it was opened; reload before recording the negotiation event'};
-    if(offer.status==='accepted')return {code:409,error:'Accepted Offer outcomes must use the governed Manager reservation release, cancellation or expiry path'};
+    if(offer.status==='accepted')return {code:409,error:developerStock?'This accepted Off-plan Offer now governs its Deal; use the Deal cancellation or closure controls':'Accepted Offer outcomes must use the governed Manager reservation release, cancellation or expiry path'};
     const checked=validateOfferEvent(offer.status,req.body||{});if(checked.error)return {code:409,error:checked.error};
     const v=checked.value,revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
       nextStatus=v.eventType==='acknowledged'?'viewed':v.eventType,terminalAt={
@@ -1005,7 +1051,7 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
     await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [uuid(),offer.id,revision.id,revision.documentVersionId,v.eventType,v.direction,v.counterpartyRole,v.summary,v.reason,req.broker.id],client);
-    const recovered=['rejected','expired','withdrawn'].includes(v.eventType),nextAction=v.eventType==='accepted'?'Create the separate seven-day reservation from this accepted revision':
+    const recovered=['rejected','expired','withdrawn'].includes(v.eventType),nextAction=v.eventType==='accepted'?(developerStock?'Create the Off-plan Deal from this accepted revision':'Create the separate seven-day reservation from this accepted revision'):
       recovered?'Offer outcome recorded: renegotiate, create a new offer, return to Matching, or close as Lost':'Continue negotiation and record the next exact revision';
     if(recovered){
       const reservationRelease=await releaseOfferOwnedReservation(offer,`${v.eventType} offer: ${v.reason||v.summary}`,req.broker.id,client);
@@ -1015,7 +1061,7 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
       await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,'Offer','terminal_offer_recovery',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,`${v.eventType} offer retained immutably; recovery checkpoint opened`,req.broker.id],client);
     }else{
-      await execute("UPDATE opportunities SET stage=CASE WHEN $1='accepted' THEN 'Negotiation' ELSE stage END,next_action_code=$2,next_action=$3,next_action_notes=NULL,next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$4",[v.eventType,v.eventType==='accepted'?'create_reservation':'follow_up_offer_feedback',nextAction,offer.opportunityId],client);
+      await execute("UPDATE opportunities SET stage=CASE WHEN $1='accepted' THEN 'Negotiation' ELSE stage END,next_action_code=$2,next_action=$3,next_action_notes=NULL,next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$4",[v.eventType,v.eventType==='accepted'?(developerStock?'complete_deal':'create_reservation'):'follow_up_offer_feedback',nextAction,offer.opportunityId],client);
       if(v.eventType==='accepted'&&offer.opportunityStage!=='Negotiation')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,'Negotiation','offer_revision_accepted',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,
         `Customer/counterparty accepted exact Offer revision ${revision.revisionNumber}`,req.broker.id],client);
@@ -1306,6 +1352,73 @@ r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
   res.status(201).json(result);
 });
 
+r.post('/crm/offers/:offerId/off-plan-deal',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const offer=await one(`SELECT f.*,r.amount AS accepted_amount,r.currency AS accepted_currency,
+      o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,o.assigned_team_id,
+      o.stage AS opportunity_stage,o.transaction_type,o.property_source,o.contact_id,o.buyer_counterparty_id,
+      COALESCE(c.full_name,buyer.display_name) AS contact_name,ep.developer_name,ep.source,ep.source_evidence
+      FROM offers f JOIN opportunities o ON o.id=f.opportunity_id
+      JOIN offer_revisions r ON r.id=f.accepted_revision_id
+      JOIN provisional_external_properties ep ON ep.id=f.external_property_id
+      LEFT JOIN contacts c ON c.id=o.contact_id LEFT JOIN transaction_counterparties buyer ON buyer.id=o.buyer_counterparty_id
+      WHERE f.id=$1 FOR UPDATE OF f,o,ep`,[req.params.offerId],client);
+    if(!offer)return{code:404,error:'Accepted off-plan Offer not found'};
+    const opportunity=await opportunityWithParticipants(offer.opportunityId,client);
+    if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Offer is outside your writable scope'};
+    if(offer.status!=='accepted'||offer.transactionType!=='Off-plan'||offer.propertySource!=='developer_stock')
+      return{code:409,error:'This action requires an accepted Offer for verified off-plan developer stock'};
+    if(await one('SELECT id FROM deals WHERE opportunity_id=$1',[offer.opportunityId],client))return{code:409,error:'This Opportunity already has a Deal'};
+    const checked=validateDealCreate(req.body||{},{offerType:'off_plan',agreedValue:offer.acceptedAmount,currency:offer.acceptedCurrency});
+    if(checked.error)return{code:400,error:checked.error};
+    const template=await one("SELECT * FROM checklist_templates WHERE deal_type='off_plan' AND status='approved'",[],client);
+    if(!template)return{code:409,error:'No approved off-plan completion checklist exists'};
+    let developer=await one(`SELECT * FROM transaction_counterparties WHERE role='seller' AND LOWER(display_name)=LOWER($1)
+      AND source=$2 ORDER BY created_at DESC LIMIT 1`,[offer.developerName,offer.source],client);
+    if(!developer)developer=await one(`INSERT INTO transaction_counterparties(id,display_name,party_type,role,represented_party,
+      source,evidence_reference,created_by) VALUES($1,$2,'transaction_only','seller',$2,$3,$4,$5) RETURNING *`,
+      [uuid(),offer.developerName,offer.source,offer.sourceEvidence,req.broker.id],client);
+    await execute('UPDATE opportunities SET seller_counterparty_id=$1 WHERE id=$2',[developer.id,offer.opportunityId],client);
+    const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code;
+    const counter=await one(`INSERT INTO deal_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
+      DO UPDATE SET last_value=deal_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
+    const dealId=uuid(),dealReference=`NYSA-DL-${period}-${String(counter.lastValue).padStart(6,'0')}`,v=checked.value;
+    let deal=await one(`INSERT INTO deals(id,deal_reference,opportunity_id,deal_type,agreed_value,currency,target_completion_at,owner_id,created_by)
+      VALUES($1,$2,$3,'off_plan',$4,$5,$6,$7,$8) RETURNING *`,[dealId,dealReference,offer.opportunityId,v.agreedValue,v.currency,
+      v.targetCompletionAt,offer.opportunityOwnerId,req.broker.id],client);
+    const linkageId=uuid();
+    await execute(`INSERT INTO deal_inventory_linkages(id,deal_id,opportunity_id,external_property_id,offer_id,
+      accepted_offer_revision_id,change_kind,reason,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,'developer_stock_attached',$7,$8)`,[linkageId,dealId,offer.opportunityId,offer.externalPropertyId,
+      offer.id,offer.acceptedRevisionId,'Current Developer stock linked without internal Inventory reservation',req.broker.id],client);
+    deal=await one(`UPDATE deals SET current_inventory_linkage_id=$1,external_property_id=$2,offer_id=$3,
+      accepted_offer_revision_id=$4 WHERE id=$5 RETURNING *`,[linkageId,offer.externalPropertyId,offer.id,offer.acceptedRevisionId,dealId],client);
+    await execute(`INSERT INTO deal_parties(id,deal_id,contact_id,transaction_counterparty_id,party_role,side,representation,is_primary,source_evidence,created_by)
+      VALUES($1,$2,$3,$4,'buyer','buyer_side','direct',TRUE,$5,$6)`,[uuid(),dealId,offer.contactId,
+      offer.contactId?null:offer.buyerCounterpartyId,`Originating Off-plan Opportunity buyer: ${offer.contactName}`,req.broker.id],client);
+    await execute(`INSERT INTO deal_parties(id,deal_id,transaction_counterparty_id,party_role,side,representation,is_primary,source_evidence,created_by)
+      VALUES($1,$2,$3,'developer','seller_side','direct',TRUE,$4,$5)`,[uuid(),dealId,developer.id,
+      `Developer stock source: ${offer.source}; ${offer.sourceEvidence}`,req.broker.id],client);
+    const checklistId=uuid();
+    await execute('INSERT INTO deal_checklists(id,deal_id,template_id,template_version_no) VALUES($1,$2,$3,$4)',[checklistId,dealId,template.id,template.versionNo],client);
+    await execute(`INSERT INTO deal_checklist_items(id,deal_checklist_id,template_item_id,item_code,label,responsible_role,required,evidence_required,display_order)
+      SELECT gen_random_uuid(),$1,id,item_code,label,responsible_role,required,evidence_required,display_order
+      FROM checklist_template_items WHERE template_id=$2 ORDER BY display_order`,[checklistId,template.id],client);
+    await execute(`INSERT INTO deal_status_history(id,deal_id,to_status,reason,actor_id)
+      VALUES($1,$2,'draft','Off-plan Deal created from accepted Developer-stock Offer without internal reservation',$3)`,[uuid(),dealId,req.broker.id],client);
+    await execute(`UPDATE opportunities SET stage='Deal',next_action_code='complete_deal',
+      next_action='Complete mandatory Off-plan Deal parties and completion checklist',next_action_notes='Developer availability remains external until Closed Won',
+      next_action_due_at=$1,version=version+1,updated_at=NOW() WHERE id=$2`,[v.targetCompletionAt,offer.opportunityId],client);
+    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      VALUES($1,$2,$3,'Deal','off_plan_deal_created',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,
+      `Deal ${dealReference} created from accepted Developer-stock Offer without a reservation`,req.broker.id],client);
+    await audit('Deal',dealId,'off_plan_created_without_reservation',req.broker.id,{dealReference,offerId:offer.id,
+      acceptedOfferRevisionId:offer.acceptedRevisionId,externalPropertyId:offer.externalPropertyId,internalInventoryCreated:false},client);
+    return deal;
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+});
+
 r.post('/crm/deals/:dealId/parties',async(req,res)=>{
   const checked=validateDealParty(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   try{const result=await transaction(async client=>{
@@ -1367,8 +1480,8 @@ r.post('/crm/deals/:dealId/approval',async(req,res)=>{
   if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
   if(checked.error)return res.status(400).json({error:checked.error});
   const result=await transaction(async client=>{
-    const deal=await one(`SELECT d.*,b.status AS booking_status FROM deals d JOIN bookings b ON b.id=d.booking_id
-      WHERE d.id=$1 FOR UPDATE OF d,b`,[req.params.dealId],client);
+    const deal=await one(`SELECT d.*,b.status AS booking_status FROM deals d LEFT JOIN bookings b ON b.id=d.booking_id
+      WHERE d.id=$1 FOR UPDATE OF d`,[req.params.dealId],client);
     if(!deal)return{code:404,error:'Deal not found'};
     const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
     if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
@@ -1417,11 +1530,13 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
   if(checked.error)return res.status(400).json({error:checked.error});
   const result=await transaction(async client=>{
     const deal=await one(`SELECT d.*,b.status AS booking_status,b.version AS booking_version,
-      o.stage AS opportunity_stage,o.version AS opportunity_version,
+      o.stage AS opportunity_stage,o.version AS opportunity_version,o.property_source,
+      ep.usage_kind AS external_usage_kind,ep.project_or_building,ep.property_address,ep.asking_price,
+      ep.currency AS external_currency,ep.property_type AS external_property_type,ep.developer_name,ep.community_or_area,
       CASE WHEN li.id IS NOT NULL THEN nysa_inventory_effective_status(li.id) ELSE ep.status END AS listing_status
-      FROM deals d JOIN bookings b ON b.id=d.booking_id JOIN opportunities o ON o.id=d.opportunity_id
+      FROM deals d LEFT JOIN bookings b ON b.id=d.booking_id JOIN opportunities o ON o.id=d.opportunity_id
       LEFT JOIN listings li ON li.id=d.listing_id LEFT JOIN provisional_external_properties ep ON ep.id=d.external_property_id
-      WHERE d.id=$1 FOR UPDATE OF d,b,o`,[req.params.dealId],client);
+      WHERE d.id=$1 FOR UPDATE OF d,o`,[req.params.dealId],client);
     if(!deal)return{code:404,error:'Deal not found'};
     const opportunity=await opportunityWithParticipants(deal.opportunityId,client);
     if(!opportunity||!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Deal is outside your permitted scope'};
@@ -1432,18 +1547,22 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
     if(!documentCompliance.canProceed)return{code:409,error:`Required document compliance is incomplete: ${documentCompliance.blocking.map(x=>`${x.label} (${x.state.replaceAll('_',' ')})`).join('; ')}`};
     // Transaction completion is independent of commission collection. Finance receipts,
     // reconciliation and payout remain separate; closure must not fabricate those records.
-    if(deal.bookingStatus!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)||deal.opportunityStage!=='Deal')
-      return{code:409,error:`Closure records are not aligned: Booking ${deal.bookingStatus}, property ${deal.listingStatus}, Opportunity ${deal.opportunityStage}`};
+    const developerStock=deal.dealType==='off_plan'&&!deal.bookingId&&deal.propertySource==='developer_stock'&&deal.externalUsageKind==='developer_stock';
+    if((!developerStock&&(deal.bookingStatus!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)))||
+      developerStock&&!['under_offer','approved_for_opportunity'].includes(deal.listingStatus)||deal.opportunityStage!=='Deal')
+      return{code:409,error:`Closure records are not aligned: ${developerStock?'Developer stock':'Booking'} ${developerStock?deal.listingStatus:deal.bookingStatus}, Opportunity ${deal.opportunityStage}`};
     const v=checked.value,inventoryOutcome=['rental','commercial_rental'].includes(deal.dealType)?'Rented':'Sold';
     const updated=await one(`UPDATE deals SET status='closed_won',actual_completion_at=$1,closed_by=$2,closed_at=NOW(),
       closed_reason=$3,closure_evidence_reference=$4,version=version+1,updated_at=NOW()
       WHERE id=$5 AND version=$6 RETURNING *`,
       [v.actualCompletionAt,req.broker.id,v.completionNote,v.evidenceReference,deal.id,expectedVersion],client);
     if(!updated)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
-    await execute(`UPDATE bookings SET status='completed',completed_at=NOW(),version=version+1,updated_at=NOW()
-      WHERE id=$1 AND status='reserved'`,[deal.bookingId],client);
-    await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
-      VALUES($1,$2,'reserved','completed',$3,$4)`,[uuid(),deal.bookingId,`Completed through ${deal.dealReference}`,req.broker.id],client);
+    if(deal.bookingId){
+      await execute(`UPDATE bookings SET status='completed',completed_at=NOW(),version=version+1,updated_at=NOW()
+        WHERE id=$1 AND status='reserved'`,[deal.bookingId],client);
+      await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+        VALUES($1,$2,'reserved','completed',$3,$4)`,[uuid(),deal.bookingId,`Completed through ${deal.dealReference}`,req.broker.id],client);
+    }
     if(deal.listingId)await execute(`UPDATE listings SET status=$1,closed_reason=$1,closed_at=NOW(),updated_at=NOW()
       WHERE id=$2 AND status NOT IN ('Closed','Sold','Rented')`,[inventoryOutcome,deal.listingId],client);
     if(deal.listingId){const closedAssignments=await many(`UPDATE inventory_assignments SET state='closed',ended_at=NOW(),
@@ -1451,7 +1570,21 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
       for(const assignment of closedAssignments)await execute(`INSERT INTO inventory_assignment_events(id,assignment_id,event_type,reason,actor_id,event_data)
         VALUES($1,$2,'closed',$3,$4,$5::jsonb)`,[uuid(),assignment.id,`Inventory ${inventoryOutcome} through Deal ${deal.dealReference}`,req.broker.id,
         JSON.stringify({dealId:deal.id,outcome:inventoryOutcome})],client);}
-    else await execute(`UPDATE provisional_external_properties SET status='closed',updated_at=NOW()
+    else if(developerStock){
+      const soldListing=await one(`INSERT INTO listings(id,project,developer,area,property_type,price,currency,status,closed_reason,closed_at,
+        exclusivity_tier,posted_by,responsible_agent_id,originating_agent_id,notes,availability_confirmed_at,verification_status,portal_status,handover_status,workflow_status,
+        source_kind,inventory_headline,transaction_types)
+        VALUES($1,$2,$3,$4,$5,$6,$7,'Sold','Sold',NOW(),'Off-market',$8,$9,$10,$11,NOW(),'not_required','not_ready','to_be_confirmed',
+          'approved','manual',$12,ARRAY['Off-plan']::text[]) RETURNING *`,[uuid(),deal.projectOrBuilding,deal.developerName,
+        deal.communityOrArea,deal.externalPropertyType,deal.agreedValue,deal.currency,req.broker.id,
+        deal.ownerId,deal.ownerId,
+        `Created automatically from Closed Won Off-plan Deal ${deal.dealReference}; source Developer stock was never maintained as available NYSA Inventory.`,
+        deal.propertyAddress||deal.projectOrBuilding],client);
+      await execute(`UPDATE provisional_external_properties SET status='closed',promoted_listing_id=$1,updated_at=NOW()
+        WHERE id=$2 AND usage_kind='developer_stock'`,[soldListing.id,deal.externalPropertyId],client);
+      await audit('Listing',soldListing.id,'sold_inventory_created_from_off_plan_close',req.broker.id,{dealId:deal.id,
+        dealReference:deal.dealReference,externalPropertyId:deal.externalPropertyId,status:'Sold',wasAvailableInventory:false},client);
+    }else await execute(`UPDATE provisional_external_properties SET status='closed',updated_at=NOW()
       WHERE id=$1 AND status='reserved'`,[deal.externalPropertyId],client);
     await execute(`UPDATE opportunities SET stage='Closed Won',next_action_code='closed_won',next_action='Deal completed and authoritatively closed won',next_action_notes=NULL,
       next_action_due_at=$1,closed_at=NOW(),version=version+1,updated_at=NOW()
@@ -1467,9 +1600,10 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
       evidenceReference:v.evidenceReference,inventoryOutcome},client);
     await audit('OpportunityStage',stageHistoryId,'changed',req.broker.id,{opportunityId:deal.opportunityId,from:'Deal',to:'Closed Won',
       reasonCode:'deal_completed',dealId:deal.id},client);
-    await audit('BookingStatus',deal.bookingId,'completed',req.broker.id,{dealId:deal.id,from:'reserved',to:'completed'},client);
+    if(deal.bookingId)await audit('BookingStatus',deal.bookingId,'completed',req.broker.id,{dealId:deal.id,from:'reserved',to:'completed'},client);
     if(deal.listingId)await audit('Listing',deal.listingId,'closed_from_deal',req.broker.id,{dealId:deal.id,from:'Reserved',to:inventoryOutcome,closedReason:inventoryOutcome},client);
-    else await audit('ExternalProperty',deal.externalPropertyId,'closed_from_deal',req.broker.id,{dealId:deal.id,from:'reserved',to:'closed'},client);
+    else await audit('ExternalProperty',deal.externalPropertyId,developerStock?'closed_and_promoted_to_sold_inventory':'closed_from_deal',req.broker.id,
+      {dealId:deal.id,from:developerStock?'under_offer':'reserved',to:'closed',soldInventoryCreated:developerStock});
     return updated;
   });
   if(result.error)return res.status(result.code).json({error:result.error});
@@ -1504,7 +1638,7 @@ r.post('/crm/deals/:dealId/close-lost',async(req,res)=>{
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
     const lockedBooking=deal.bookingId?await one('SELECT * FROM bookings WHERE id=$1 FOR UPDATE',[deal.bookingId],client):null;
     if(deal.opportunityStage!=='Deal'||(deal.bookingId&&(!lockedBooking||lockedBooking.status!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)))||
-      (!deal.bookingId&&deal.currentLinkageKind!=='detached'))
+      (!deal.bookingId&&!['detached','developer_stock_attached'].includes(deal.currentLinkageKind)))
       return{code:409,error:`Closure records are not aligned: Booking ${lockedBooking?.status||'detached'}, property ${deal.listingStatus||'detached'}, Opportunity ${deal.opportunityStage}`};
     const cancellationRequest=req.body?.cancellationRequestId?await one("SELECT * FROM deal_cancellation_requests WHERE id=$1 AND deal_id=$2 AND status='pending' FOR UPDATE",[req.body.cancellationRequestId,deal.id],client):null;
     if(req.body?.cancellationRequestId&&!cancellationRequest)return{code:409,error:'The Deal cancellation request is no longer pending'};
@@ -1526,9 +1660,10 @@ r.post('/crm/deals/:dealId/close-lost',async(req,res)=>{
       WHERE opportunity_id=$2 AND state='active' RETURNING id,listing_id`,[v.reason,deal.opportunityId],client);
     for(const assignment of closedAssignments)await execute(`INSERT INTO inventory_assignment_events(id,assignment_id,event_type,reason,actor_id,event_data)
       VALUES($1,$2,'closed',$3,$4,$5::jsonb)`,[uuid(),assignment.id,v.reason,req.broker.id,JSON.stringify({dealId:deal.id,outcome:'closed_lost'})],client);
-    const restoredStatus=deal.listingId?(await one('SELECT nysa_inventory_effective_status($1) AS status',[deal.listingId],client)).status:deal.inventoryStatusBefore;
+    const restoredStatus=deal.listingId?(await one('SELECT nysa_inventory_effective_status($1) AS status',[deal.listingId],client)).status:
+      deal.currentLinkageKind==='developer_stock_attached'?'approved_for_opportunity':deal.inventoryStatusBefore;
     if(deal.externalPropertyId)await execute(`UPDATE provisional_external_properties SET status=$1,updated_at=NOW()
-      WHERE id=$2 AND status='reserved'`,[restoredStatus,deal.externalPropertyId],client);
+      WHERE id=$2 AND status IN ('reserved','under_offer')`,[restoredStatus,deal.externalPropertyId],client);
     await execute(`UPDATE opportunities SET stage='Closed Lost',lost_reason_code=$1,lost_reason=$2,
       next_action_code='closed_lost',next_action='Transaction closed lost',next_action_notes=$2,next_action_due_at=NOW(),closed_at=NOW(),version=version+1,updated_at=NOW()
       WHERE id=$3 AND stage='Deal'`,[v.reasonCode==='customer_withdrew'?'customer_withdrew':'other',v.reason,deal.opportunityId],client);
