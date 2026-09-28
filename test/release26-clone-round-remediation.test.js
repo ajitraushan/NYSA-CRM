@@ -37,8 +37,8 @@ test('assignment workflow explains authority, role scope and provides a queue ac
   const app=read('public/app.js'),html=read('public/index.html');
   assert.match(app,/id="lead-open-assignment-queue">Open assignment queue/);
   assert.match(app,/Eligible reassignment claims/);
-  assert.match(app,/Managed-team pending assignment/);
-  assert.match(app,/Only SLA-recycled leads you are eligible to claim appear here/);
+  assert.match(app,/Team assignment queue/);
+  assert.match(app,/Only SLA-recycled Leads that you may claim are shown/);
   assert.match(app,/Manager authority is maintained separately/);
   assert.match(app,/Team membership and the Primary reporting selection do not grant authority to assign Leads/);
   assert.match(app,/Administration → CRM teams/);

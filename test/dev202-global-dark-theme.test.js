@@ -8,7 +8,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 test('dev.202 dark NYSA shell remains present after the dev.210 palette refinement',()=>{
   const html=read('public/index.html');
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'2.1.0-dev.214');
+  assert.equal(pkg.version,'2.1.0-dev.215');
   for(const marker of [
     'CORE-GLOBAL-DARK-THEME-DEV202',
     '--paper:var(--workspace)',

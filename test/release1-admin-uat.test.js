@@ -68,10 +68,10 @@ test('assignment queue supports scoped visibility atomic claim and repeat-cycle 
   assert.doesNotMatch(ui,/Assign broker/);
   assert.doesNotMatch(ui,/Named agent \(optional\)/);
   assert.doesNotMatch(crm,/\/crm\/leads\/:id\/claim/);
-  assert.match(ui,/Choose the destination team first/);
-  assert.match(ui,/Destination team/);
-  assert.match(ui,/Responsible Sales Agent/);
-  assert.match(ui,/No active Sales Agent membership is maintained for this team/);
+  assert.match(ui,/Routing rules have already selected the default team/);
+  assert.match(ui,/Routed team/);
+  assert.match(ui,/Sales Agent/);
+  assert.match(ui,/No active Sales Agent belongs to every selected routed team/);
   assert.match(ui,/s\.teamIds\.includes\(teamId\)/);
   assert.match(crm,/AS team_ids/);
   assert.match(styles,/\.assignment-queue-card/);

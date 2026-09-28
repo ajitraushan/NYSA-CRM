@@ -9,7 +9,7 @@ const app=readFileSync(new URL('public/app.js',root),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('package.json',root),'utf8'));
 
 test('dev.171 typography remains while the superseding login-anchored palette covers Agent dashboards',()=>{
-  assert.equal(pkg.version,'2.1.0-dev.214');
+  assert.equal(pkg.version,'2.1.0-dev.215');
   assert.match(dashboard,/agent-dashboard-website-theme/);
   for(const marker of [
     'CORE-GLOBAL-DARK-THEME-DEV202','--panel:#15191b','--panel2:#1b2023','--text:#f7f4ed','--muted:#bdb9b0',

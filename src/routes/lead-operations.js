@@ -163,8 +163,17 @@ r.get('/crm/assignment-queue',async(req,res)=>{
       conditions.push(eligibleSalesAgentTeamSql(`$${params.length}`,'l.assigned_team_id','l.primary_routing_area_id'));
     }
   }
-  const leads=await many(`SELECT l.*,c.full_name AS contact_name,t.name AS team_name,EXTRACT(EPOCH FROM (NOW()-COALESCE(l.last_queue_entered_at,l.received_at)))::int AS queue_wait_seconds,CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS sla_deadline FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id WHERE ${conditions.join(' AND ')} ORDER BY COALESCE(l.last_queue_entered_at,l.received_at) DESC,l.id DESC`,params);
-  res.json({leads:leads.map(lead=>({...lead,canSelfClaim:req.broker.jobRole==='sales_agent'&&lead.assignmentStatus==='reassignment_due'}))});
+  const leads=await many(`SELECT l.*,c.full_name AS contact_name,t.name AS team_name,COALESCE(p.warning_minutes,30)::int AS warning_minutes,EXTRACT(EPOCH FROM (NOW()-COALESCE(l.last_queue_entered_at,l.received_at)))::int AS queue_wait_seconds,CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS sla_deadline FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN sla_policies p ON p.id=l.sla_policy_id WHERE ${conditions.join(' AND ')} ORDER BY COALESCE(l.last_queue_entered_at,l.received_at) DESC,l.id DESC`,params);
+  let staff=[];
+  if(['manager','director'].includes(req.broker.jobRole)){
+    const staffParams=[],staffScope=[];
+    if(req.broker.jobRole==='manager'){staffParams.push(req.broker.managedTeamIds||[]);staffScope.push(`AND (b.team_id=ANY($${staffParams.length}::uuid[]) OR EXISTS(SELECT 1 FROM team_memberships scope_tm WHERE scope_tm.broker_id=b.id AND scope_tm.team_id=ANY($${staffParams.length}::uuid[]) AND scope_tm.ends_at IS NULL) OR EXISTS(SELECT 1 FROM user_role_assignments scope_ur WHERE scope_ur.broker_id=b.id AND scope_ur.team_id=ANY($${staffParams.length}::uuid[]) AND scope_ur.job_role='sales_agent' AND scope_ur.status='active' AND scope_ur.ends_at IS NULL))`);}
+    staff=await many(`SELECT b.id,b.name,b.job_role,
+      (SELECT COUNT(*)::int FROM leads workload WHERE workload.assigned_to=b.id AND workload.stage NOT IN ('Won','Lost')) AS open_lead_count,
+      COALESCE(ARRAY(SELECT eligible_team.team_id::text FROM (SELECT b.team_id WHERE b.team_id IS NOT NULL UNION SELECT tm.team_id FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.ends_at IS NULL UNION SELECT ur.team_id FROM user_role_assignments ur WHERE ur.broker_id=b.id AND ur.job_role='sales_agent' AND ur.status='active' AND ur.ends_at IS NULL) eligible_team ORDER BY eligible_team.team_id),ARRAY[]::text[]) AS team_ids
+      FROM brokers b WHERE b.status='active' AND b.role='internal_broker' AND b.job_role='sales_agent' ${staffScope.join(' ')} ORDER BY b.name`,staffParams);
+  }
+  res.json({leads:leads.map(lead=>({...lead,canSelfClaim:req.broker.jobRole==='sales_agent'&&lead.assignmentStatus==='reassignment_due'})),staff});
 });
 
 async function assignQueuedLead(req,res,selfClaim=false){
@@ -173,8 +182,9 @@ async function assignQueuedLead(req,res,selfClaim=false){
     if(!lead)return {code:404,error:'Lead not found'};
     if(lead.assignedTo||!['unassigned','reassignment_due'].includes(lead.assignmentStatus))return {code:409,error:'Lead is no longer available in the assignment queue'};
     if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
-    const agentId=selfClaim?req.broker.id:req.body?.agentId,teamId=req.body?.teamId||lead.assignedTeamId;
+    const agentId=selfClaim?req.broker.id:req.body?.agentId,teamId=req.body?.teamId||lead.assignedTeamId,originalTeamId=lead.assignedTeamId||null,teamChangeReason=text(req.body?.teamChangeReason);
     if(!agentId||!teamId)return {code:400,error:'An eligible team and agent are required'};
+    if(originalTeamId&&originalTeamId!==teamId&&!teamChangeReason)return {code:400,error:'A reason is required to change the routed team'};
     const eligible=await one(`SELECT b.id FROM brokers b WHERE b.id=$1 AND ${eligibleSalesAgentTeamSql('b.id','$2','$3')}`,[agentId,teamId,lead.primaryRoutingAreaId],client);
     if(!eligible)return {code:400,error:'Responsible agent must be an eligible active Sales Agent in the selected team'};
     const managed=req.broker.managedTeamIds||[];
@@ -185,7 +195,7 @@ async function assignQueuedLead(req,res,selfClaim=false){
     const sequence=Number((await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client)).n),assignmentId=uuid();
     await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,$3,$4,$5,'offered',$6,$7)`,[assignmentId,lead.id,sequence,teamId,agentId,due,req.broker.id],client);
     await execute("UPDATE leads SET assigned_team_id=$1,assigned_to=$2,assignment_status='assigned',acceptance_due_at=$3,assignment_due_at=$3,first_contact_due_at=$4,accepted_at=NULL,first_contact_at=NULL,updated_at=NOW() WHERE id=$5",[teamId,agentId,due,firstDue,lead.id],client);
-    await audit('LeadAssignment',assignmentId,selfClaim?'self_claimed':'assigned_from_queue',req.broker.id,{leadId:lead.id,teamId,agentId,cycle:lead.queueCycleNo,acceptanceDueAt:due,firstContactDueAt:firstDue},client);
+    await audit('LeadAssignment',assignmentId,selfClaim?'self_claimed':'assigned_from_queue',req.broker.id,{leadId:lead.id,originalTeamId,teamId,teamChanged:Boolean(originalTeamId&&originalTeamId!==teamId),teamChangeReason:teamChangeReason||null,agentId,cycle:lead.queueCycleNo,acceptanceDueAt:due,firstContactDueAt:firstDue},client);
     return {assignmentId,leadId:lead.id,agentId,teamId,acceptanceDueAt:due,firstContactDueAt:firstDue};
   });
   if(result.error)return res.status(result.code).json({error:result.error});
@@ -193,6 +203,41 @@ async function assignQueuedLead(req,res,selfClaim=false){
 }
 r.post('/crm/assignment-queue/:id/claim',(req,res)=>assignQueuedLead(req,res,true));
 r.post('/crm/assignment-queue/:id/assign',(req,res)=>assignQueuedLead(req,res,false));
+
+r.post('/crm/assignment-queue/bulk-assign',async(req,res)=>{
+  const leadIds=[...new Set((Array.isArray(req.body?.leadIds)?req.body.leadIds:[]).map(text).filter(Boolean))],agentId=text(req.body?.agentId),requestedTeamId=text(req.body?.teamId),teamChangeReason=text(req.body?.teamChangeReason);
+  if(!leadIds.length||leadIds.length>100)return res.status(400).json({error:'Select between 1 and 100 leads'});
+  if(!agentId)return res.status(400).json({error:'Select an eligible Sales Agent'});
+  const result=await transaction(async client=>{
+    const managed=req.broker.managedTeamIds||[];
+    const leads=await many('SELECT * FROM leads WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE',[leadIds],client);
+    if(leads.length!==leadIds.length)return{code:404,error:'One or more selected leads are no longer available'};
+    for(const lead of leads){
+      if(lead.assignedTo||!['unassigned','reassignment_due'].includes(lead.assignmentStatus))return{code:409,error:'One or more selected leads are no longer available in the assignment queue'};
+      const effectiveTeamId=requestedTeamId||lead.assignedTeamId;
+      if(!effectiveTeamId)return{code:400,error:'Choose a destination team for Leads without a routed queue'};
+      const teamChanged=Boolean(lead.assignedTeamId&&lead.assignedTeamId!==effectiveTeamId);
+      if(teamChanged&&!teamChangeReason)return{code:400,error:'A reason is required to change the routed team'};
+      if(req.broker.jobRole!=='director'&&!(req.broker.jobRole==='manager'&&managed.includes(effectiveTeamId)))return{code:403,error:'Only the responsible Team Manager or Director can assign these leads'};
+      const eligible=await one(`SELECT b.id FROM brokers b WHERE b.id=$1 AND ${eligibleSalesAgentTeamSql('b.id','$2','$3')}`,[agentId,effectiveTeamId,lead.primaryRoutingAreaId],client);
+      if(!eligible)return{code:400,error:'The selected Sales Agent is not eligible for every selected lead in this business queue'};
+    }
+    const policy=await activePolicy(client),now=new Date(),due=policy?addBusinessMinutes(now,policy.acceptanceMinutes,calendar(policy)):new Date(now.getTime()+30*60000),firstDue=policy?addBusinessMinutes(now,policy.firstContactMinutes,calendar(policy)):new Date(now.getTime()+120*60000),assignments=[];
+    for(const lead of leads){
+      const originalTeamId=lead.assignedTeamId||null,teamId=requestedTeamId||originalTeamId;
+      const current=await one('SELECT * FROM lead_assignments WHERE lead_id=$1 AND superseded_at IS NULL FOR UPDATE',[lead.id],client);
+      if(current)await execute("UPDATE lead_assignments SET status='reassigned',superseded_at=NOW() WHERE id=$1",[current.id],client);
+      const sequence=Number((await one('SELECT COALESCE(MAX(sequence_no),0)+1 AS n FROM lead_assignments WHERE lead_id=$1',[lead.id],client)).n),assignmentId=uuid();
+      await execute(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,$3,$4,$5,'offered',$6,$7)`,[assignmentId,lead.id,sequence,teamId,agentId,due,req.broker.id],client);
+      await execute("UPDATE leads SET assigned_team_id=$1,assigned_to=$2,assignment_status='assigned',acceptance_due_at=$3,assignment_due_at=$3,first_contact_due_at=$4,accepted_at=NULL,first_contact_at=NULL,updated_at=NOW() WHERE id=$5",[teamId,agentId,due,firstDue,lead.id],client);
+      await audit('LeadAssignment',assignmentId,'bulk_assigned_from_queue',req.broker.id,{leadId:lead.id,originalTeamId,teamId,teamChanged:Boolean(originalTeamId&&originalTeamId!==teamId),teamChangeReason:originalTeamId&&originalTeamId!==teamId?teamChangeReason:null,agentId,cycle:lead.queueCycleNo,acceptanceDueAt:due,firstContactDueAt:firstDue,batchSize:leads.length},client);
+      assignments.push({assignmentId,leadId:lead.id});
+    }
+    return{assignments,assignedCount:assignments.length,agentId,teamId:requestedTeamId||null,acceptanceDueAt:due,firstContactDueAt:firstDue};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.json(result);
+});
 
 r.get('/crm/leads/:id/assignments',async(req,res)=>{
   const {lead,error}=await scopedLead(req);if(error)return res.status(error[0]).json({error:error[1]});
