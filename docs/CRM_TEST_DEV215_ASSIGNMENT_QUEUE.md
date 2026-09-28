@@ -29,3 +29,5 @@ Baseline deployment rollback: `/home/nysareal/crm-backups/consolidated-crm-test-
 ## Database and rollback
 
 No migration is required. Rollback is application-package rollback to DEV214. Assignment events committed by users after deployment remain business records and are not deleted by an application rollback.
+
+`scripts/deploy-crm-test-dev215.sh` is locked to CRM Test and accepts only the exact DEV214 baseline or an idempotent DEV215 rerun. It verifies the origin-package checksums, manifest and embedded provenance; requires migration 129 to remain unchanged; checks disabled integrations; creates verified application and database backups before mutation; validates the live health/readiness response and runtime checksums; and confirms that Production and the R2 clone were not changed.

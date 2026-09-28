@@ -49,3 +49,17 @@ test('DEV215 requires explicit confirmation and a reason for a team exception',(
   assert.match(routes,/originalTeamId&&originalTeamId!==teamId&&!teamChangeReason/);
   assert.match(routes,/teamChanged&&!teamChangeReason/);
 });
+
+test('DEV215 deployment is CRM-Test-only, provenance checked and migration neutral',()=>{
+  const deploy=read('scripts/deploy-crm-test-dev215.sh');
+  assert.match(deploy,/APP_ROOT=\/home\/nysareal\/nysa-core-dashboard-dd6262a-stage/);
+  assert.match(deploy,/EXPECTED_VERSION=2\.1\.0-dev\.215/);
+  assert.match(deploy,/PREVIOUS_VERSION=2\.1\.0-dev\.214/);
+  assert.match(deploy,/PREVIOUS_MIGRATION=129_dev214_offplan_developer_stock\.sql/);
+  assert.match(deploy,/LATEST_MIGRATION=129_dev214_offplan_developer_stock\.sql/);
+  assert.match(deploy,/EXPECTED_MIGRATION_COUNT=129/);
+  assert.match(deploy,/RELEASE_PROVENANCE\.json/);
+  assert.match(deploy,/RUNTIME_MANIFEST\.sha256/);
+  assert.match(deploy,/pg_dump/);
+  assert.match(deploy,/Production and R2 clone snapshots: unchanged/);
+});
