@@ -161,6 +161,7 @@ r.get('/crm/assignment-queue',async(req,res)=>{
       params.push(req.broker.id);
       conditions.push("l.assignment_status='reassignment_due'");
       conditions.push(eligibleSalesAgentTeamSql(`$${params.length}`,'l.assigned_team_id','l.primary_routing_area_id'));
+      conditions.push(`(SELECT prior.agent_id FROM lead_assignments prior WHERE prior.lead_id=l.id AND prior.agent_id IS NOT NULL ORDER BY prior.sequence_no DESC LIMIT 1) IS DISTINCT FROM $${params.length}::uuid`);
     }
   }
   const leads=await many(`SELECT l.*,c.full_name AS contact_name,t.name AS team_name,COALESCE(p.warning_minutes,30)::int AS warning_minutes,EXTRACT(EPOCH FROM (NOW()-COALESCE(l.last_queue_entered_at,l.received_at)))::int AS queue_wait_seconds,CASE WHEN l.accepted_at IS NULL THEN l.acceptance_due_at ELSE l.first_contact_due_at END AS sla_deadline FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN sla_policies p ON p.id=l.sla_policy_id WHERE ${conditions.join(' AND ')} ORDER BY COALESCE(l.last_queue_entered_at,l.received_at) DESC,l.id DESC`,params);
@@ -182,6 +183,7 @@ async function assignQueuedLead(req,res,selfClaim=false){
     if(!lead)return {code:404,error:'Lead not found'};
     if(lead.assignedTo||!['unassigned','reassignment_due'].includes(lead.assignmentStatus))return {code:409,error:'Lead is no longer available in the assignment queue'};
     if(selfClaim&&lead.assignmentStatus!=='reassignment_due')return {code:403,error:'New leads must be assigned by a team lead or Director; self-claim is available only after SLA recycling'};
+    if(selfClaim){const prior=await one('SELECT agent_id,status FROM lead_assignments WHERE lead_id=$1 AND agent_id IS NOT NULL ORDER BY sequence_no DESC LIMIT 1',[lead.id],client);if(prior?.agentId===req.broker.id&&prior.status==='timed_out')return{code:409,error:'This Lead expired from your assignment and must be reassigned by a Manager or Director to another eligible Sales Agent'};}
     const agentId=selfClaim?req.broker.id:req.body?.agentId,teamId=req.body?.teamId||lead.assignedTeamId,originalTeamId=lead.assignedTeamId||null,teamChangeReason=text(req.body?.teamChangeReason);
     if(!agentId||!teamId)return {code:400,error:'An eligible team and agent are required'};
     if(originalTeamId&&originalTeamId!==teamId&&!teamChangeReason)return {code:400,error:'A reason is required to change the routed team'};

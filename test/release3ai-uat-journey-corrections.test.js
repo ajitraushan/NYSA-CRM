@@ -35,7 +35,7 @@ test('manager integration review exposes decision-ready submitted evidence witho
 });
 
 test('combined final UAT fixes advance only the CRM Test and staging connector candidates',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.215');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.216');
   const plugin=read('release-artifacts/release-3/r3a/wordpress-staging/nysa-crm-test-intake-connector/nysa-crm-test-intake-connector.php');
   assert.match(plugin,/Version: 1\.9\.4/);assert.match(plugin,/VERSION = '1\.9\.4'/);assert.match(plugin,/nysa-wordpress-bridge-1\.9\.4/);
   const deploy=read('release-artifacts/release-3/r3a/deploy-crm-test-r3ai-dev112-final-uat-fixes.sh');
