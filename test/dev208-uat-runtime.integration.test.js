@@ -49,14 +49,14 @@ test('Sales Agent populated leave and Manager task endpoints return governed sta
   const tasks=await requestAs('manager','/api/crm/tasks?bucket=open&mine=1');assert.equal(tasks.status,200,JSON.stringify(tasks.payload));assert.ok(Array.isArray(tasks.payload.tasks));
 });
 
-test('Sales Agent can create and submit leave and the policy Admin receives one approval task',gate,async()=>{
+test('Sales Agent can create and submit leave and the maintained Line Manager receives one approval task',gate,async()=>{
   const start=new Date();start.setUTCDate(start.getUTCDate()+1);while([0,6].includes(start.getUTCDay()))start.setUTCDate(start.getUTCDate()+1);
   const end=new Date(start);end.setUTCDate(end.getUTCDate()+2);
   const iso=value=>value.toISOString().slice(0,10),idempotencyKey=crypto.randomUUID();
   const draft=await requestAs('agent','/api/crm/my-leave-applications',{method:'POST',body:{leaveTypeVersionId:ids.leave.typeVersion,startDate:iso(start),endDate:iso(end),startPortion:'full',endPortion:'full',reason:'Synthetic leave submission regression',idempotencyKey:crypto.randomUUID()}});assert.equal(draft.status,201,JSON.stringify(draft.payload));
   const body={leaveTypeVersionId:ids.leave.typeVersion,startDate:iso(start),endDate:iso(end),startPortion:'full',endPortion:'full',reason:'Synthetic leave submission regression',idempotencyKey};
   const submitted=await requestAs('agent','/api/crm/my-leave-applications/submit',{method:'POST',body});
-  assert.equal(submitted.status,201,JSON.stringify(submitted.payload));assert.equal(submitted.payload.application.id,draft.payload.application.id,'Atomic submission must recover the matching Draft left by the prior UI');assert.equal(submitted.payload.application.status,'submitted');assert.equal(submitted.payload.task.taskType,'leave_approval');assert.equal(submitted.payload.task.assigneeId,ids.admin);
+  assert.equal(submitted.status,201,JSON.stringify(submitted.payload));assert.equal(submitted.payload.application.id,draft.payload.application.id,'Atomic submission must recover the matching Draft left by the prior UI');assert.equal(submitted.payload.application.status,'submitted');assert.equal(submitted.payload.application.approverId,ids.manager);assert.equal(submitted.payload.application.routingReason,'leave_to_line_manager');assert.equal(submitted.payload.task.taskType,'leave_approval');assert.equal(submitted.payload.task.assigneeId,ids.manager);
   ids.leave.submitted=true;
   const replay=await requestAs('agent','/api/crm/my-leave-applications/submit',{method:'POST',body});
   assert.equal(replay.status,200,JSON.stringify(replay.payload));assert.equal(replay.payload.task.id,submitted.payload.task.id);

@@ -4,11 +4,12 @@ import fs from 'node:fs';
 
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
-test('leave submission is atomic, retry-safe and does not order brokers by a missing column',()=>{
+test('leave submission is atomic, retry-safe and routes to the maintained Line Manager',()=>{
   const route=read('src/routes/agent-leave.js'),ui=read('public/agent-leave-ui.js');
   assert.match(route,/post\('\/crm\/my-leave-applications\/submit'/);
   assert.match(route,/reason=\$7 AND COALESCE\(evidence_reference,''\)=\$8 AND status='draft' ORDER BY created_at DESC LIMIT 1 FOR UPDATE/);
-  assert.match(route,/ORDER BY name,id LIMIT 1/);
+  assert.match(route,/activeLineManager\(employment,app\.applicantId,client\)/);
+  assert.match(route,/employment\.reportingManagerId/);
   assert.doesNotMatch(route,/FROM brokers[^;]+ORDER BY created_at LIMIT 1/);
   assert.match(ui,/api\('\/crm\/my-leave-applications\/submit'/);
   assert.match(ui,/form\.dataset\.idempotencyKey/);

@@ -29,7 +29,7 @@ test('Negotiation exposes priced counteroffer revision and represented-party acc
   const ui=read('public/offer-ui.js');
   assert.match(ui,/Step 1 · Record the counteroffer amount and terms/);
   assert.match(ui,/A counteroffer note does not change the agreed price/);
-  assert.match(ui,/Save priced counteroffer as new revision/);
+  assert.match(ui,/Save revised terms as a new immutable revision/);
   assert.match(ui,/NYSA \/ represented party accepted this priced counteroffer/);
   assert.match(ui,/acceptingInbound\?'internal':'inbound'/);
   assert.doesNotMatch(ui,/offer-revision-form flow-offer-only/);

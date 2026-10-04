@@ -18,7 +18,7 @@ export const ROLE_ACCESS_POLICY=frozen({
   admin:frozen({label:'Admin',accountRole:'admin',jobRole:JOB_ROLE.ADMINISTRATOR,capabilities:frozen([
     CAPABILITY.SESSION_SELF,CAPABILITY.SYSTEM_CONFIGURATION,CAPABILITY.CONFIGURATION_REFERENCE_READ,
     CAPABILITY.TEAM_CONFIGURATION,CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ,CAPABILITY.LEAVE_SELF,
-    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.LEAVE_DECIDE,CAPABILITY.PERSONAL_TASKS,
+    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,
     CAPABILITY.PURCHASED_DATA_IMPORT
   ]),workspaceTabs:frozen(['admin','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, purchased-data intake and leave administration'})
 });
@@ -28,8 +28,8 @@ export const ROLE_ACCESS_POLICY=frozen({
 export const OPERATIONAL_ROLE_CAPABILITIES=frozen({
   sales_agent:frozen([CAPABILITY.PURCHASED_DATA_IMPORT,CAPABILITY.INVENTORY_CREATE]),
   listing_agent:frozen([CAPABILITY.INVENTORY_CREATE]),
-  manager:frozen([CAPABILITY.INVENTORY_CREATE]),
-  director:frozen([]), accountant:frozen([])
+  manager:frozen([CAPABILITY.INVENTORY_CREATE,CAPABILITY.LEAVE_DECIDE]),
+  director:frozen([CAPABILITY.LEAVE_DECIDE]), accountant:frozen([])
 });
 
 const RETIRED_ADMIN_ASSISTANT_PROFILE=frozen({label:'Role retired',accountRole:null,jobRole:'admin_assistant',capabilities:frozen([CAPABILITY.SESSION_SELF]),workspaceTabs:frozen([]),dashboard:'retired',deniedMessage:'This legacy role is retired; Admin must assign the Admin role'});
@@ -52,7 +52,7 @@ export const GOVERNED_API_POLICY=frozen([
   frozen({methods:frozen(['PATCH']),pattern:/^\/crm\/tasks\/[a-f0-9-]{36}$/,capability:CAPABILITY.PERSONAL_TASKS})
 ]);
 
-export const LEAVE_WORKFLOW_POLICY=frozen({decisionCapability:CAPABILITY.LEAVE_DECIDE,approverAccountRole:'admin',approverJobRole:JOB_ROLE.ADMINISTRATOR,routingReason:'leave_to_admin',approverLabel:'Admin'});
+export const LEAVE_WORKFLOW_POLICY=frozen({decisionCapability:CAPABILITY.LEAVE_DECIDE,approverJobRoles:frozen([JOB_ROLE.MANAGER,JOB_ROLE.DIRECTOR]),routingReason:'leave_to_line_manager',approverLabel:'Line Manager'});
 
 export function governedAccessProfile(actor){
   if(actor?.role==='admin')return ROLE_ACCESS_POLICY.admin;

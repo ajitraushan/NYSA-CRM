@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {CAPABILITY,GOVERNED_API_POLICY,JOB_ROLE,LEAVE_WORKFLOW_POLICY,ROLE_ACCESS_POLICY,governedRoleRequestAllowed,hasCapability,principalForCapability} from '../src/role-access.js';
+import {CAPABILITY,GOVERNED_API_POLICY,JOB_ROLE,LEAVE_WORKFLOW_POLICY,ROLE_ACCESS_POLICY,governedRoleRequestAllowed,hasCapability} from '../src/role-access.js';
 import {mayDecideLeave,mayMaintainLeave} from '../src/agent-leave-domain.js';
 import {canReadLead,canReadOpportunity,hasInternalCrmIdentity,hasNysaStaffIdentity,isCompanyReader} from '../src/crm-policy.js';
 
@@ -36,17 +36,18 @@ test('the former Admin Assistant assignment is retired and cannot retain access'
   assert.equal(governedRoleRequestAllowed(retiredAssistant,'GET','/admin/brokers'),false);
   assert.equal(mayMaintainLeave(retiredAssistant),false);
   assert.equal(mayMaintainLeave(admin),true);
-  assert.equal(mayDecideLeave({broker:admin,application:{applicantId:'agent'}}),true);
-  assert.equal(mayDecideLeave({broker:admin,application:{applicantId:admin.id}}),false);
-  assert.equal(mayDecideLeave({broker:director,application:{applicantId:'agent'}}),false);
+  assert.equal(mayDecideLeave({broker:admin,application:{applicantId:'agent',approverId:admin.id}}),false);
+  assert.equal(mayDecideLeave({broker:director,application:{applicantId:'agent',approverId:director.id}}),true);
+  assert.equal(mayDecideLeave({broker:director,application:{applicantId:'agent',approverId:'other-manager'}}),false);
 });
 
-test('role access, route access and leave routing are resolved from central Admin policy',()=>{
+test('role access separates Admin maintenance from Line Manager leave decisions',()=>{
   assert.equal(hasCapability(admin,CAPABILITY.LEAVE_ADMINISTER),true);
-  assert.deepEqual(principalForCapability(CAPABILITY.LEAVE_DECIDE),{accountRole:'admin',jobRole:JOB_ROLE.ADMINISTRATOR});
-  assert.equal(LEAVE_WORKFLOW_POLICY.approverAccountRole,'admin');
-  assert.equal(LEAVE_WORKFLOW_POLICY.approverJobRole,JOB_ROLE.ADMINISTRATOR);
-  assert.equal(LEAVE_WORKFLOW_POLICY.approverLabel,'Admin');
+  assert.equal(hasCapability(admin,CAPABILITY.LEAVE_DECIDE),false);
+  assert.equal(hasCapability(director,CAPABILITY.LEAVE_DECIDE),true);
+  assert.deepEqual(LEAVE_WORKFLOW_POLICY.approverJobRoles,[JOB_ROLE.MANAGER,JOB_ROLE.DIRECTOR]);
+  assert.equal(LEAVE_WORKFLOW_POLICY.routingReason,'leave_to_line_manager');
+  assert.equal(LEAVE_WORKFLOW_POLICY.approverLabel,'Line Manager');
   assert.equal(ROLE_ACCESS_POLICY.admin.label,'Admin');
   assert.deepEqual(ROLE_ACCESS_POLICY.admin.workspaceTabs,['admin','purchasedDataImport','myLeave','leaveAdministration']);
   assert.equal(hasCapability(admin,CAPABILITY.PURCHASED_DATA_IMPORT),true);
@@ -65,8 +66,8 @@ test('UI sends Admin directly to one Administration workspace with no Assistant 
   assert.doesNotMatch(app,/Administrator dashboard|System administration|Open Administration/);
   assert.doesNotMatch(app,/Assistant workspace|admin_assistant:'Assistant'/);
   assert.match(app,/Leave Administration/);
-  assert.match(app,/Review and decide/);
-  assert.match(app,/Admin records the governed decision/);
+  assert.doesNotMatch(app,/data-admin-leave-review/);
+  assert.match(app,/Assigned Line Managers decide submitted leave from My Tasks/);
   assert.match(app,/accessPolicy\?\.workspaceTabs/);
   assert.match(app,/if\(!ME\.accessPolicy\)try\{/);
   assert.match(app,/initialTab==='admin'\?renderAdmin\(\):renderDashboard\(\)/);
@@ -78,8 +79,8 @@ test('UI sends Admin directly to one Administration workspace with no Assistant 
   assert.doesNotMatch(route,/job_role='admin_assistant'/);
   assert.doesNotMatch(route,/Full Administrator access required/);
   assert.match(route,/Admin leave-administration access required/);
-  assert.match(route,/principalForCapability\(LEAVE_WORKFLOW_POLICY\.decisionCapability\)/);
-  assert.match(route,/WHERE role=\$2 AND job_role=\$3/);
+  assert.match(route,/activeLineManager\(employment,app\.applicantId,client\)/);
+  assert.match(route,/employment\.reportingManagerId/);
 });
 
 test('Admin configuration references do not restore business-record access',()=>{

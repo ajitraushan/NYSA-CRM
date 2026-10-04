@@ -281,6 +281,8 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
     reservation.opportunity_reference AS active_booking_opportunity_reference,
     reservation.expires_at AS active_booking_expires_at,
+    EXISTS(SELECT 1 FROM bookings offer_booking WHERE offer_booking.offer_id=f.id) AS has_booking_history,
+    EXISTS(SELECT 1 FROM deals offer_deal WHERE offer_deal.offer_id=f.id) AS has_deal,
     evidence.id AS viewing_feedback_id,evidence.feedback AS viewing_feedback,evidence.updated_at AS viewing_feedback_at
     FROM offers f LEFT JOIN listings li ON li.id=f.listing_id
     LEFT JOIN provisional_external_properties ep ON ep.id=f.external_property_id JOIN brokers owner ON owner.id=f.owner_id
@@ -944,9 +946,14 @@ r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
     const result=await transaction(async client=>{
       const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
       if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
+      const lockedOffer=await one('SELECT * FROM offers WHERE id=$1 FOR UPDATE',[offer.id],client);
+      offer.status=lockedOffer.status;offer.version=lockedOffer.version;offer.currentRevisionId=lockedOffer.currentRevisionId;offer.acceptedRevisionId=lockedOffer.acceptedRevisionId;
       const developerStock=offer.transactionType==='Off-plan'&&offer.propertySource==='developer_stock'&&offer.externalUsageKind==='developer_stock';
       if(!offer.viewingFeedbackRecorded&&!developerStock)return {code:409,error:'This offer has no completed viewing feedback evidence recorded before it was created. Withdraw it and create a governed replacement after feedback'};
-      if(['accepted','rejected','expired','withdrawn'].includes(offer.status))return {code:409,error:'A terminal offer cannot receive another revision'};
+      if(['rejected','expired','withdrawn'].includes(offer.status))return {code:409,error:'A terminal offer cannot receive another revision'};
+      const revisingAccepted=offer.status==='accepted',acceptedRevisionId=offer.acceptedRevisionId;
+      if(revisingAccepted&&await one('SELECT id FROM bookings WHERE offer_id=$1 LIMIT 1',[offer.id],client))return {code:409,error:'This accepted Offer already has Booking history and cannot be revised. Use the Booking or Deal controls so the recorded transaction lineage remains exact'};
+      if(revisingAccepted&&await one('SELECT id FROM deals WHERE offer_id=$1 LIMIT 1',[offer.id],client))return {code:409,error:'This accepted Offer already governs a Deal and cannot be revised. Use the Deal correction or closure controls'};
       if(offer.listingId&&!await one(`SELECT id FROM inventory_assignments WHERE opportunity_id=$1 AND listing_id=$2
         AND state='active' AND starts_at<=NOW() AND expires_at>NOW()`,[offer.opportunityId,offer.listingId],client))return {code:409,error:'This Offer Inventory assignment expired or ended. Reassign the Inventory before creating another revision'};
       if(Number(req.body?.expectedVersion)!==offer.version)return {code:409,error:'This offer changed after it was opened; reload before revising it'};
@@ -961,14 +968,22 @@ r.post('/crm/offers/:offerId/revisions',async(req,res)=>{
           {fullName:offer.customerName,email:offer.customerEmail,phone:offer.customerPhone},
         revision=await createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input:checked.value,revisionNumber,supersedesRevisionId:prior.id});storageKey=revision.storageKey;
       const status=offerStatusAfterRevision(checked.value.direction),updated=await one(`UPDATE offers SET current_revision_id=$1,status=$2,
-        version=version+1,updated_at=NOW() WHERE id=$3 AND version=$4 RETURNING *`,[revision.id,status,offer.id,offer.version],client);
+        accepted_revision_id=CASE WHEN $3 THEN NULL ELSE accepted_revision_id END,
+        accepted_at=CASE WHEN $3 THEN NULL ELSE accepted_at END,
+        version=version+1,updated_at=NOW() WHERE id=$4 AND version=$5 RETURNING *`,[revision.id,status,revisingAccepted,offer.id,offer.version],client);
       await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [uuid(),offer.id,revision.id,revision.documentVersionId,'material_correction',checked.value.direction,checked.value.proposerRole,
           `Immutable Revision ${revisionNumber} created`,checked.value.materialCorrectionReason,req.broker.id],client);
       if(checked.value.direction==='inbound')await execute(`UPDATE opportunities SET stage='Negotiation',next_action_code='follow_up_offer_feedback',next_action='Review counteroffer and record response',next_action_notes=NULL,
         next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$1`,[offer.opportunityId],client);
-      await audit('OfferRevision',revision.id,'created',req.broker.id,{offerId:offer.id,revisionNumber,direction:revision.direction,documentVersionId:revision.documentVersionId,fileHash:revision.fileHash,reason:revision.materialCorrectionReason},client);
+      else if(revisingAccepted)await execute(`UPDATE opportunities SET stage='Offer',next_action_code='prepare_or_review_offer',next_action='Review and send the revised Offer',next_action_notes=NULL,
+        next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$1`,[offer.opportunityId],client);
+      if(revisingAccepted&&checked.value.direction==='outbound'&&offer.opportunityStage!=='Offer')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Offer','accepted_offer_revised',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,
+        `Accepted Offer ${offer.offerReference} revised before Booking; fresh acceptance is required`,req.broker.id],client);
+      await audit('OfferRevision',revision.id,'created',req.broker.id,{offerId:offer.id,revisionNumber,direction:revision.direction,documentVersionId:revision.documentVersionId,fileHash:revision.fileHash,reason:revision.materialCorrectionReason,
+        previousAcceptedRevisionId:revisingAccepted?acceptedRevisionId:null,freshAcceptanceRequired:revisingAccepted},client);
       return {...updated,revision};
     });
     if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
@@ -1090,7 +1105,6 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const acceptedRevisionId=lockedOffer.acceptedRevisionId;
       const acceptedRevision=await one('SELECT id,deposit_amount,currency,validity_expires_at,document_version_id FROM offer_revisions WHERE id=$1 AND offer_id=$2',[acceptedRevisionId,offer.id],client);
       if(!acceptedRevision||new Date(acceptedRevision.validityExpiresAt)<=new Date())return {code:409,error:'The exact Offer revision has expired and cannot be accepted'};
-      if(!acceptedRevision||acceptedRevision.depositAmount===null||Number(acceptedRevision.depositAmount)<=0)return {code:409,error:'The exact accepted offer revision has no positive deposit. Record the corrected commercial terms through a new governed Offer before reserving Inventory.'};
       const listing=offer.listingId?await requireLiveInventory(offer.listingId,offer.opportunityId,client):
         await one(`SELECT id,external_reference AS inventory_reference,project_or_building AS project,status,
           'approved_for_opportunity'::text AS inventory_status_before FROM provisional_external_properties
@@ -1121,7 +1135,7 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const booking=await one(`INSERT INTO bookings(id,booking_reference,opportunity_id,listing_id,external_property_id,offer_id,accepted_offer_revision_id,status,
         booking_amount,currency,refundable_state,reservation_starts_at,expires_at,evidence_document_version_id,inventory_status_before,owner_id,created_by)
         VALUES($1,$2,$3,$4,$5,$6,$7,'reserved',$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-        [bookingId,bookingReference,offer.opportunityId,offer.listingId,offer.externalPropertyId,offer.id,acceptedRevision.id,Number(acceptedRevision.depositAmount),
+        [bookingId,bookingReference,offer.opportunityId,offer.listingId,offer.externalPropertyId,offer.id,acceptedRevision.id,acceptedRevision.depositAmount===null?null:Number(acceptedRevision.depositAmount),
           acceptedRevision.currency,checked.value.refundableState,checked.value.reservationStartsAt,checked.value.expiresAt,documentVersionId,
           offer.listingId?effectiveBefore:listing.status,offer.opportunityOwnerId,req.broker.id],client);
       await execute(`INSERT INTO booking_status_history(id,booking_id,to_status,reason,actor_id)

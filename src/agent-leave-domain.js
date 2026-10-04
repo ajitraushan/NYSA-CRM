@@ -37,4 +37,4 @@ export function validateLeaveApplication({startDate,endDate,startPortion='full',
 }
 
 export function mayMaintainLeave(broker){return hasCapability(broker,CAPABILITY.LEAVE_ADMINISTER);}
-export function mayDecideLeave({broker,application}){return Boolean(broker&&application&&hasCapability(broker,CAPABILITY.LEAVE_DECIDE)&&String(broker.id)!==String(application.applicantId));}
+export function mayDecideLeave({broker,application}){return Boolean(broker&&application&&hasCapability(broker,CAPABILITY.LEAVE_DECIDE)&&String(broker.id)===String(application.approverId)&&String(broker.id)!==String(application.applicantId));}
