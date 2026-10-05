@@ -37,7 +37,7 @@ The supplied HTML/PDF/XLSX files are visual and content authorities. CRM values 
 - Draft values remain editable only before issuance. Issuance freezes the exact data snapshot, template version, PDF hash, actor and timestamp.
 - User Maintenance has optional BRN. When BRN is present, BRN issue date is mandatory.
 - Assigned-agent details are used only when the assigned agent has a maintained BRN and BRN issue date. Otherwise the maintained Default Document Agent is used.
-- Company Profile maintains the Default Document Agent. CRM TEST must select Sunita Sinha only after Admin maintains her approved BRN and BRN issue date; neither value is invented or inferred by migration.
+- Company Profile maintains the Default Document Agent. The user confirmed Sunita Sinha's approved BRN `58771` and BRN issue date `2026-01-09`; after migration 132, CRM TEST Admin must maintain those values in her unique User record and select that record as Default Document Agent. The runtime never resolves her by name or invents regulated identity evidence.
 
 ## Brand and rendering rules
 
@@ -58,3 +58,10 @@ The supplied HTML/PDF/XLSX files are visual and content authorities. CRM values 
 - Chromium render tests for every approved template, long proposals (five or more matches), long payout statements (twenty or more rows), overflow, page numbering, repeated headers and print colours.
 - Full regression suite and governed release test selection.
 - Package creation is prohibited until the exact tested commit, scope, migrations, test results, security/privacy impact and rollback plan are presented to the user.
+
+## Confirmed CRM TEST post-migration configuration
+
+1. In User Maintenance, open the unique Sunita Sinha record and maintain BRN `58771` with issue date `2026-01-09`.
+2. In Company Profile, maintain ORN `56017` from the approved templates and select that BRN-complete Sunita Sinha record as Default Document Agent.
+3. Reopen Company Profile and User Maintenance to verify the persisted values before issuing any approved document.
+4. Do not apply the configuration by name-matching SQL or to another environment without separate approval.
