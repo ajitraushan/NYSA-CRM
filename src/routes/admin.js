@@ -4,6 +4,7 @@ import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth, publicBroker,hashPassword } from '../auth.js';
 import { JOB_ROLES } from '../crm-domain.js';
 import { validateInvitationExpiry } from '../admin-governance.js';
+import { validateBrnDetails } from '../document-agent-domain.js';
 
 const r = Router();
 r.use(requireAuth,(req,res,next)=>req.broker.role==='admin'?next():res.status(403).json({error:'Admin access required'}));
@@ -220,7 +221,7 @@ r.put('/admin/users/:id/business-areas',async(req,res)=>{
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
   if (!broker) return res.status(404).json({ error:'Broker not found' });
-  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId,name,email,phone } = req.body || {};
+  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId,name,email,phone,brn,brnIssuedOn } = req.body || {};
   if (role !== undefined && !ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   if (jobRole !== undefined && jobRole !== null && !JOB_ROLES.includes(jobRole)) return res.status(400).json({ error:'Invalid jobRole' });
   if (status !== undefined && !['pending_activation','active','suspended','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
@@ -228,6 +229,8 @@ r.patch('/admin/brokers/:id', async (req, res) => {
   if(email!==undefined&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))return res.status(400).json({error:'Enter a valid user email'});
   if(phone!==undefined&&phone!==null&&String(phone).trim()&&!/^\+?[0-9][0-9 ()-]{6,24}$/.test(String(phone).trim()))return res.status(400).json({error:'Enter a valid representative phone number'});
   if(email!==undefined&&await one('SELECT id FROM brokers WHERE LOWER(email)=LOWER($1) AND id<>$2',[String(email).trim(),broker.id]))return res.status(409).json({error:'A user with this email already exists'});
+  const brnCheck=validateBrnDetails({brn:brn===undefined?broker.brn:brn,brnIssuedOn:brnIssuedOn===undefined?broker.brnIssuedOn:brnIssuedOn});
+  if(brnCheck.error)return res.status(400).json({error:brnCheck.error});
   if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Only Admin can alter privileged roles or access status' });
   if (teamId && !(await one('SELECT id FROM teams WHERE id=$1 AND active=1', [teamId]))) return res.status(400).json({ error:'Invalid teamId' });
   const nextJobRole=jobRole===undefined?broker.jobRole:jobRole||null,nextTeamId=teamId===undefined?broker.teamId:teamId||null;
@@ -242,6 +245,13 @@ r.patch('/admin/brokers/:id', async (req, res) => {
     for(const [field,value,column] of [['name',name,'name'],['email',email,'email'],['phone',phone,'phone']]){
       if(value===undefined)continue;const normalized=field==='email'?String(value).trim().toLowerCase():String(value||'').trim()||null;
       if((broker[field]||null)!==normalized){changes[field]={from:broker[field]||null,to:normalized};await execute(`UPDATE brokers SET ${column}=$1,updated_at=NOW() WHERE id=$2`,[normalized,broker.id],client);}
+    }
+    if(brn!==undefined||brnIssuedOn!==undefined){
+      const next=brnCheck.value;
+      if((broker.brn||null)!==next.brn||(broker.brnIssuedOn?String(broker.brnIssuedOn).slice(0,10):null)!==next.brnIssuedOn){
+        changes.brn={from:broker.brn||null,to:next.brn};changes.brnIssuedOn={from:broker.brnIssuedOn||null,to:next.brnIssuedOn};
+        await execute('UPDATE brokers SET brn=$1,brn_issued_on=$2,updated_at=NOW() WHERE id=$3',[next.brn,next.brnIssuedOn,broker.id],client);
+      }
     }
     if (role !== undefined && role !== broker.role) {
       changes.role = { from:broker.role, to:role };

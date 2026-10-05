@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {makeCommissionInvoicePdf} from '../src/commission-invoice-pdf.js';
+import {commissionInvoiceApprovedDocument} from '../src/commission-invoice-pdf.js';
 
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 const ui=read('public/receivables-ui.js'),css=read('public/index.html'),route=read('src/commission-receivables.js'),app=read('public/app.js');
@@ -41,9 +41,10 @@ test('Paper invoice is available with explicit payout linkage wording',()=>{
   assert.match(ui,/Preview \/ print invoice/);
   assert.match(ui,/How this links to payout/);
   assert.match(ui,/Creating an invoice does not create or approve an agent payout/);
-  const pdf=makeCommissionInvoicePdf({invoice:{invoiceReference:'NYSA-INV-2026-000001',invoiceDate:'2026-09-05',dueDate:'2026-09-18',payerName:'Test Payer',payerType:'developer',opportunityReference:'NYSA-OP-TEST',scheduleReference:'AR-TEST',instalmentNumber:1,commissionCents:300000,vatCents:15000,totalCents:315000,milestone:'First instalment',currency:'AED'},organization:{displayName:'NYSA Realty'},transaction:{agreedValue:100000,currency:'AED',scheduleCommissionCents:600000,project:'Test Project',unitReference:'A-1'}});
-  assert.equal(pdf.subarray(0,8).toString(),'%PDF-1.4');
-  assert.ok(pdf.length>1000);
+  const approved=commissionInvoiceApprovedDocument({invoice:{invoiceReference:'NYSA-INV-2026-000001',invoiceDate:'2026-09-05',dueDate:'2026-09-18',payerName:'Test Payer',payerType:'developer',opportunityReference:'NYSA-OP-TEST',scheduleReference:'AR-TEST',instalmentNumber:1,commissionCents:300000,vatCents:15000,totalCents:315000,milestone:'First instalment',currency:'AED'},organization:{displayName:'NYSA Realty'},transaction:{agreedValue:100000,currency:'AED',scheduleCommissionCents:600000,project:'Test Project',unitReference:'A-1'}});
+  assert.equal(approved.table.rows[0][4],'3,000.00');
+  assert.equal(approved.labelValues.find(x=>x.label==='VAT Amount').value,'150.00');
+  assert.equal(approved.labelValues.find(x=>x.label==='TOTAL AMOUNT DUE (AED)').value,'3,150.00');
 });
 
 test('Payment evidence fields use plain language and enforce either proof or reference',()=>{

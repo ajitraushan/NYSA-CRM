@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { validateProposalConfiguration } from '../src/admin-governance.js';
-import { makeProposalPdf } from '../src/proposal-pdf.js';
+import { proposalApprovedDocument } from '../src/proposal-pdf.js';
+import {buildApprovedDocumentHtml} from '../src/approved-document-renderer.js';
 
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const configuration={
@@ -43,14 +44,15 @@ test('migration adds and activates the approved Financial Illustration without w
   assert.doesNotMatch(migration,/UPDATE proposal_templates SET configuration/i);
 });
 
-test('Financial Illustration PDF shows calculations and excludes sales recommendation sections',()=>{
-  const pdf=makeProposalPdf({proposal:{title:'Customer financial illustration',proposalNumber:'NYSA-PR-FI-1',templateType:'Financial Illustration'},version:1,organization:{displayName:'NYSA Realty',defaultCurrency:'AED'},recipient:{fullName:'Customer'},requirement:{},properties:[{id:'listing-1',project:'Business Bay Home',inventoryReference:'NYSA-INV-1',area:'Business Bay',propertyType:'Apartment',bedrooms:'2',price:2500000,currency:'AED'}],financialScenario:{scenarioType:'mortgage',scenarioName:'Mortgage option',currency:'AED',inputSnapshot:{annualRatePercent:4.5,years:25},outputSnapshot:{propertyPrice:2500000,downPayment:500000,principal:2000000,monthlyPayment:11116,upfrontCash:600000,totalRegulatoryFees:100000,months:300,assumptionVersion:{name:'Dubai fees',version:1}},disclaimer:'Indicative saved calculation.'},narrative:{assumptions:'Subject to lender approval and current charges.'},disclaimer:'This is indicative only.',agent:{name:'Agent'},preparedAt:'30 Aug 2026'});
-  const text=pdf.toString('latin1');
-  assert.match(text,/YOUR PROPERTY FINANCIAL ILLUSTRATION/);
-  assert.match(text,/SAVED CALCULATION BASIS/);
-  assert.match(text,/EST\. MONTHLY PAYMENT/);
-  assert.match(text,/not lending approval, financial advice or a property recommendation/);
-  assert.doesNotMatch(text,/NEXT STEPS|WHY IT MATCHES|RECOMMENDED MATCHES/);
+test('Financial Illustration maps the exact saved calculations and excludes sales recommendation sections',()=>{
+  const approved=proposalApprovedDocument({proposal:{title:'Customer financial illustration',proposalNumber:'NYSA-PR-FI-1',templateType:'Financial Illustration'},version:1,organization:{displayName:'NYSA Realty',defaultCurrency:'AED'},recipient:{fullName:'Customer'},requirement:{},properties:[{id:'listing-1',project:'Business Bay Home',inventoryReference:'NYSA-INV-1',area:'Business Bay',propertyType:'Apartment',bedrooms:'2',price:2500000,currency:'AED'}],financialScenario:{scenarioType:'mortgage',scenarioName:'Mortgage option',currency:'AED',inputSnapshot:{annualRatePercent:4.5,years:25},outputSnapshot:{propertyPrice:2500000,downPayment:500000,principal:2000000,monthlyPayment:11116,upfrontCash:600000,totalRegulatoryFees:100000,months:300,assumptionVersion:{name:'Dubai fees',version:1}},disclaimer:'Indicative saved calculation.'},narrative:{assumptions:'Subject to lender approval and current charges.'},disclaimer:'This is indicative only.',agent:{name:'Agent'},preparedAt:'30 Aug 2026'}),html=buildApprovedDocumentHtml(approved.documentCode,approved.data);
+  assert.equal(approved.documentCode,'financial_illustration');
+  assert.equal(approved.data.labelValues.find(x=>x.label==='Est. monthly payment').value,'AED 11,116');
+  assert.equal(approved.data.labelValues.find(x=>x.label==='Upfront cash required').value,'AED 600,000');
+  assert.match(html,/YOUR PROPERTY FINANCIAL ILLUSTRATION/i);
+  assert.match(html,/Calculation Basis/i);
+  assert.match(html,/not lending approval, financial advice or a property recommendation/i);
+  assert.doesNotMatch(html,/NEXT STEPS|WHY IT MATCHES|RECOMMENDED MATCHES/i);
 });
 
 test('guided UI distinguishes Financial Illustration from investment recommendation content',()=>{

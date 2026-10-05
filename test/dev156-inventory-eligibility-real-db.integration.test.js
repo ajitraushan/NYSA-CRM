@@ -20,7 +20,7 @@ before(async()=>{
     opportunityBlocked:id(),opportunityStatus:id(),listingBlocked:id(),listingStatus:id(),matchBlocked:id(),matchStatusSource:id(),assignmentBlocked:id(),assignmentStatusSource:id(),
     completedViewing:id(),offer:id(),revision:id(),document:id(),documentVersion:id(),prefix};
   await execute(`INSERT INTO brokers(id,name,email,role,status,password_hash,job_role)
-    VALUES($1,$2,$3,'admin','active','integration-only','admin')`,[fixture.admin,`${prefix} admin`,`${prefix}@example.invalid`]);
+    VALUES($1,$2,$3,'internal_broker','active','integration-only','manager')`,[fixture.admin,`${prefix} manager`,`${prefix}@example.invalid`]);
   await execute('INSERT INTO teams(id,name,manager_id,active) VALUES($1,$2,$3,1)',[fixture.team,`${prefix} team`,fixture.admin]);
   await execute('UPDATE brokers SET team_id=$1 WHERE id=$2',[fixture.team,fixture.admin]);
   await execute(`INSERT INTO contacts(id,full_name,email,contact_type,owner_id,created_by) VALUES

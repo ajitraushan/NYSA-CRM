@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {makeCommissionInvoicePdf} from '../src/commission-invoice-pdf.js';
+import {commissionInvoiceApprovedDocument} from '../src/commission-invoice-pdf.js';
+import {buildApprovedDocumentHtml} from '../src/approved-document-renderer.js';
 
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 const route=read('src/commission-receivables.js'),pdfSource=read('src/commission-invoice-pdf.js'),pdfPrimitive=read('src/proposal-pdf.js'),organization=read('src/organization-domain.js'),admin=read('public/app.js'),crm=read('src/routes/crm.js'),migration=read('src/migrations/122_commission_invoice_legal_and_bank_details.sql');
@@ -13,23 +14,12 @@ const sample={
   transaction:{dealType:'off_plan',agreedValue:1450463.78,currency:'AED',scheduleCommissionCents:8702782,project:'Synthetic Island',unitReference:'BR-TL-A544',bookedDate:'2026-03-26'}
 };
 
-test('invoice PDF follows the supplied tax-invoice section and column structure without proposal content',()=>{
-  const pdf=makeCommissionInvoicePdf(sample),text=pdf.toString('latin1');
-  assert.equal(pdf.subarray(0,8).toString(),'%PDF-1.4');
-  for(const expected of ['TAX INVOICE','Invoice Number:','Company Name:','Trade Licence No.:','Company TRN:','Payer TRN:','NYSA Office Address:','Recipient Address:','Commission Details','Unit No.','Booked Date','Total','Eligible','Commission %','Bank A/C Details','IBAN Number:','Swift Code:'])assert.match(text,new RegExp(expected));
-  assert.ok(text.includes('VAT \\(5%\\)'), 'escaped VAT heading is present in the PDF content stream');
-  assert.doesNotMatch(text,/proposal|PRIVATE BUYER|financial illustration/i);
-  assert.match(text,/Authorised Signatory/);
-  assert.equal((text.match(/Synthetic Developer LLC/g)||[]).length,1,'payer appears only in Invoice To details');
-  assert.match(pdfSource,/d\.line\(16,96,579,96,C\.gold,1\.5\)[\s\S]*Invoice Number:/);
-  assert.match(pdfSource,/draw\.rect\(x,y,width,height,fill,BORDER,\.25\)/);
-  assert.match(pdfPrimitive,/canvas\(defaultInk=C\.ink,page=PAGE\)/);
-  assert.match(pdfSource,/const TEXT=\[\.2,\.2,\.2\]/);
-  assert.match(pdfSource,/const BORDER=\[\.902,\.882,\.847\]/);
-  assert.match(pdfSource,/const detailRow=20,addressRow=32/);
-  assert.match(pdfSource,/index\*20/);
-  assert.match(pdfSource,/306,width,44/);
-  assert.doesNotMatch(text,/duplicated in another invoicing system|discharging its VAT liability/i);
+test('invoice mapping follows the supplied tax-invoice structure and reconciles quantity, subtotal, VAT and total',()=>{
+  const approved=commissionInvoiceApprovedDocument(sample),html=buildApprovedDocumentHtml('tax_invoice',approved),row=approved.table.rows[0];
+  assert.deepEqual(row.slice(0,3),[1,'Agency commission · 1st Instalment',1]);assert.equal(row[3],'43,513.91');assert.equal(row[4],'43,513.91');
+  assert.equal(approved.labelValues.find(x=>x.label==='Subtotal (excl. VAT)').value,'43,513.91');assert.equal(approved.labelValues.find(x=>x.label==='VAT Rate').value,'5%');assert.equal(approved.labelValues.find(x=>x.label==='VAT Amount').value,'2,175.70');assert.equal(approved.labelValues.find(x=>x.label==='TOTAL AMOUNT DUE (AED)').value,'45,689.61');
+  for(const expected of ['TAX INVOICE','Invoice No.','Client Name','Property / Unit','Qty','Unit Price','Amount excl. VAT','Subtotal','VAT Rate','TOTAL AMOUNT DUE','PAYMENT DETAILS','IBAN','SWIFT','Authorised Signatory'])assert.match(html,new RegExp(expected,'i'));
+  assert.doesNotMatch(html,/PRIVATE BUYER|financial illustration/i);assert.match(pdfSource,/renderApprovedDocumentPdf\('tax_invoice'/);assert.match(pdfPrimitive,/canvas\(defaultInk=C\.ink,page=PAGE\)/);
 });
 
 test('invoice identity and bank data are governed through Administration',()=>{

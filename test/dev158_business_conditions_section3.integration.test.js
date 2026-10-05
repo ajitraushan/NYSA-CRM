@@ -55,6 +55,7 @@ before(async()=>{
      fixture.agent,`${prefix} agent`,`${prefix}-agent@example.invalid`]);
   await execute('INSERT INTO teams(id,name,manager_id,active) VALUES($1,$2,$3,1)',[fixture.team,`${prefix} team`,fixture.manager]);
   await execute('UPDATE brokers SET team_id=$1 WHERE id IN ($2,$3)',[fixture.team,fixture.manager,fixture.agent]);
+  await execute("UPDATE brokers SET brn=$1,brn_issued_on=DATE '2026-01-01' WHERE id=$2",[`${prefix}-BRN`,fixture.agent]);
   await execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[agentHash,fixture.agent]);
 
   const app=createApp();app.mount('/api',opportunityRoutes);
@@ -86,6 +87,7 @@ before(async()=>{
       [id(),`${prefix} organization`,fixture.manager,logoBuffer.length,logoStorageKey,crypto.createHash('sha256').update(logoBuffer).digest('hex'),
        'Test fixture: approved for integration testing']);
   }
+  await execute("UPDATE organization_settings SET default_document_agent_id=$1,orn=COALESCE(orn,'56017') WHERE status='active'",[fixture.agent]);
 
   // Independence factory: fresh Contact + Lead + Requirement + Opportunity +
   // Listing + PropertyMatch + ACTIVE Assignment + COMPLETED Viewing with
@@ -116,9 +118,9 @@ before(async()=>{
       [matchId,opportunityId,requirementId,listingId,'Fresh isolated fixture for one independent test',fixture.agent]);
     await execute(`INSERT INTO inventory_assignments(id,opportunity_id,listing_id,property_match_id,created_by)
       VALUES($1,$2,$3,$4,$5)`,[assignmentId,opportunityId,listingId,matchId,fixture.agent]);
-    await execute(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,organizer_id,starts_at,ends_at,timezone,location,status,outcome,feedback,calendar_uid,created_by,updated_by)
-      VALUES($1,$2,$3,$4,$5,NOW()-INTERVAL '2 days',NOW()-INTERVAL '2 days'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer confirmed strong interest after viewing',$6,$5,$5)`,
-      [id(),opportunityId,matchId,listingId,fixture.agent,`${testPrefix}-calendar-uid`]);
+    await execute(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,inventory_assignment_id,organizer_id,starts_at,ends_at,timezone,location,status,outcome,feedback,calendar_uid,created_by,updated_by)
+      VALUES($1,$2,$3,$4,$5,$6,NOW()-INTERVAL '2 days',NOW()-INTERVAL '2 days'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer confirmed strong interest after viewing',$7,$6,$6)`,
+      [id(),opportunityId,matchId,listingId,assignmentId,fixture.agent,`${testPrefix}-calendar-uid`]);
     return {opportunityId,listingId,matchId,assignmentId};
   };
 
@@ -150,7 +152,7 @@ test('3.1 offer creation is blocked while the Inventory assignment is expired',g
   const result=await requestAs.agent(`/api/crm/opportunities/${opportunityId}/offers`,{method:'POST',body:fixture.validOfferBody(matchId)});
   emit('3.1',{status:result.status,payload:result.payload});
   assert.equal(result.status,409);
-  assert.equal(result.payload.error,'Assign this Inventory to the Opportunity before creating an Offer');
+  assert.equal(result.payload.error,'This Inventory assignment ended or was delinked. Assign it again and complete a new viewing before creating an Offer');
 });
 
 test('3.5 renewing the assignment restores the ability to create an Offer',gate,async()=>{
@@ -161,6 +163,9 @@ test('3.5 renewing the assignment restores the ability to create an Offer',gate,
   const newAssignmentId=id();
   await database.execute(`INSERT INTO inventory_assignments(id,opportunity_id,listing_id,property_match_id,predecessor_assignment_id,created_by)
     VALUES($1,$2,$3,$4,$5,$6)`,[newAssignmentId,opportunityId,listingId,matchId,assignmentId,fixture.agent]);
+  await database.execute(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,inventory_assignment_id,organizer_id,starts_at,ends_at,timezone,location,status,outcome,feedback,calendar_uid,created_by,updated_by)
+    VALUES($1,$2,$3,$4,$5,$6,NOW()-INTERVAL '1 day',NOW()-INTERVAL '1 day'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer reconfirmed interest after the renewed assignment',$7,$6,$6)`,
+    [id(),opportunityId,matchId,listingId,newAssignmentId,fixture.agent,`${fixture.prefix}-${newAssignmentId}-viewing`]);
   const result=await requestAs.agent(`/api/crm/opportunities/${opportunityId}/offers`,{method:'POST',body:fixture.validOfferBody(matchId)});
   emit('3.5',{status:result.status,payload:{offerId:result.payload?.id,offerReference:result.payload?.offerReference}});
   assert.equal(result.status,201);

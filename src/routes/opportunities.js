@@ -7,7 +7,9 @@ import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportuni
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
 import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
-import { makeOfferPdf } from '../offer-pdf.js';
+import { makeOfferPdf,offerApprovedDocumentData } from '../offer-pdf.js';
+import {recordApprovedDocumentIssuance} from '../approved-document-issuance.js';
+import {selectDocumentAgent} from '../document-agent-domain.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
 import { validateBookingCreate,validateBookingTransition,validateBookingExtension } from '../booking-domain.js';
 import { REQUIRED_PARTIES,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
@@ -845,9 +847,12 @@ async function createOfferRevisionRecords({client,req,offer,opportunity,listing,
   if(!organization.logoStorageKey||!['image/jpeg','image/png'].includes(organization.logoMediaType)){
     throw Object.assign(new Error('The active NYSA organization profile must contain an approved JPEG or PNG logo before generating an offer letter'),{status:409});
   }
+  const assignedAgent=await one('SELECT * FROM brokers WHERE id=$1',[opportunity.ownerId],client),defaultAgent=organization.defaultDocumentAgentId?await one('SELECT * FROM brokers WHERE id=$1',[organization.defaultDocumentAgentId],client):null,documentAgent=selectDocumentAgent(assignedAgent,defaultAgent);
+  if(documentAgent.error)throw Object.assign(new Error(`${documentAgent.error}. Maintain the Agent BRN or select the Default Document Agent in Company Profile.`),{status:409});
   const logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:null,
     revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
-    pdf=makeOfferPdf({offer,revision,opportunity,customer,listing,agent:req.broker,organization,logo}),storageKey=await savePrivate(pdf,'.pdf'),
+    renderInput={offer,revision,opportunity,customer,listing,agent:documentAgent,organization,logo},approvedData=offerApprovedDocumentData(renderInput),
+    pdf=await makeOfferPdf(renderInput),storageKey=await savePrivate(pdf,'.pdf'),
     fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=`${offer.offerReference}-R${revisionNumber}.pdf`;
   try{
     await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
@@ -859,6 +864,8 @@ async function createOfferRevisionRecords({client,req,offer,opportunity,listing,
     await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by)
       VALUES($1,$2,'Opportunity',$3,$4),($5,$2,'Offer',$6,$4),($7,$2,'OfferRevision',$8,$4)`,
       [uuid(),documentId,opportunity.id,req.broker.id,uuid(),offer.id,uuid(),revisionId],client);
+    await recordApprovedDocumentIssuance({execute,uuid,client,documentCode:'offer_letter',data:approvedData,pdf,documentVersionId,
+      sourceEntityType:'Offer',sourceEntityId:offer.id,issuedBy:req.broker.id,idempotencyKey:`offer:${offer.id}:revision:${revisionNumber}`});
     if(opportunity.leadId)await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by)
       VALUES($1,$2,'Lead',$3,$4)`,[uuid(),documentId,opportunity.leadId,req.broker.id],client);
     const row=await one(`INSERT INTO offer_revisions(id,offer_id,revision_number,supersedes_revision_id,direction,proposer_role,

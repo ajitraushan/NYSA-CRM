@@ -22,7 +22,7 @@ before(async()=>{
   await execute('UPDATE brokers SET team_id=$1 WHERE id=$2',[fixture.team,fixture.broker]);
   await execute(`INSERT INTO companies(id,name,company_type,owner_id,created_by) VALUES($1,$2,'developer',$3,$3)`,[fixture.company,`${prefix} Developer PLC`,fixture.broker]);
   await execute(`INSERT INTO areas(id,stable_code,business_label,emirate,created_by) VALUES($1,$2,$3,'Dubai',$4)`,[fixture.area,`dev158_${Date.now()}`,`${prefix} Area`,fixture.broker]);
-  await execute('INSERT INTO market_communities(id,stable_code,area_id,created_by) VALUES($1,$2,$3,$4)',[fixture.community,`dev158_community_${Date.now()}`,fixture.area,fixture.broker]);
+  await execute('INSERT INTO market_communities(id,stable_code,area_id,managed_from_area,created_by) VALUES($1,$2,$3,1,$4)',[fixture.community,`dev158_community_${Date.now()}`,fixture.area,fixture.broker]);
   await execute(`INSERT INTO market_community_versions(id,community_id,area_id,version_number,business_label,normalized_label,status,created_by,approved_by,approved_at)
     VALUES($1,$2,$3,1,$4,$5,'active',$6,$6,NOW())`,[fixture.communityVersion,fixture.community,fixture.area,`${prefix} Community`,`${prefix} community`.toLowerCase(),fixture.broker]);
   await execute(`INSERT INTO listings(id,inventory_headline,project,area,property_type,size_sqft,price,currency,status,posted_by,responsible_agent_id,originating_agent_id,workflow_status,verification_status,transaction_types)

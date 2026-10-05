@@ -1,0 +1,193 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Letter of Offer – Nysa Realty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 0; }
+:root{ --navy:#14232C; --navy2:#1E3442; --gold:#8F6A30; --gold-l:#C9A86A; --ink:#14232C; --mut:#5B6770; --line:#B9C0C6; --soft:#F4F1EB; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ width:210mm; height:297mm; }
+body{ font-family:"Inter",sans-serif; color:var(--ink); font-size:8.4pt; line-height:1.3; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.page{ width:210mm; height:297mm; position:relative; display:flex; flex-direction:column; }
+
+/* Header */
+header{ padding:8mm 14mm 0; }
+.hrow{ display:flex; align-items:flex-end; justify-content:space-between; }
+.logo{ height:15mm; display:block; }
+.ttl{ text-align:right; }
+.ttl .kicker{ font-size:7pt; font-weight:700; letter-spacing:.28em; color:var(--gold); text-transform:uppercase; }
+.ttl h1{ font-family:"Inter Display","Inter",sans-serif; font-size:19pt; font-weight:800; letter-spacing:-.01em; line-height:1.05; margin-top:1.2mm; }
+.rule{ height:1.2mm; margin-top:4mm; background:linear-gradient(90deg,var(--navy) 0 72%, var(--gold) 72% 100%); border-radius:1mm; }
+.meta{ display:flex; gap:8mm; margin-top:3.5mm; align-items:flex-end; }
+.meta .f{ flex:0 0 52mm; }
+
+main{ padding:0 14mm; flex:1; display:flex; flex-direction:column; }
+
+/* Section heading */
+.sec{ display:flex; align-items:center; gap:2.5mm; margin:3.6mm 0 1.6mm; }
+.sec .n{ width:5.6mm; height:5.6mm; border-radius:50%; background:var(--navy); color:#fff; font-weight:800; font-size:8pt; display:flex; align-items:center; justify-content:center; }
+.sec h2{ font-size:9.6pt; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.sec .bar{ flex:1; height:.35mm; background:var(--line); }
+
+.cols{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+.card{ border:.3mm solid #D5DADE; border-radius:2mm; padding:2.6mm 3.2mm 3mm; }
+.card h3{ font-size:8.6pt; font-weight:800; display:flex; align-items:center; gap:2mm; margin-bottom:1.6mm; }
+.tag{ background:var(--gold); color:#fff; font-size:7pt; font-weight:800; padding:.5mm 1.8mm; border-radius:1mm; letter-spacing:.06em; }
+.card h3 small{ font-weight:600; color:var(--mut); font-size:7.4pt; }
+.sub{ font-size:6.8pt; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:.14em; margin:2.4mm 0 .4mm; }
+
+/* Fields */
+.f{ display:flex; align-items:flex-end; gap:2mm; min-height:5.6mm; }
+.f label{ font-weight:700; white-space:nowrap; font-size:8pt; }
+.f .ln{ flex:1; border-bottom:.3mm solid var(--line); min-height:4.2mm; font-weight:600; font-size:8.2pt; padding:0 .5mm .5mm; white-space:nowrap; overflow:hidden; }
+.f .ln.pre{ color:var(--navy); }
+.row2{ display:flex; gap:4mm; } .row2 > .f{ flex:1; }
+.u{ font-weight:700; font-size:8pt; padding-bottom:.5mm; }
+
+/* Declarations */
+.decl{ background:var(--soft); border-left:1mm solid var(--gold); border-radius:0 2mm 2mm 0; padding:2.4mm 3.2mm; font-size:7.6pt; line-height:1.42; text-align:justify; }
+.decl b{ display:block; font-size:8pt; margin-bottom:.8mm; text-align:left; }
+
+/* Checkboxes */
+.q{ display:flex; align-items:center; justify-content:space-between; min-height:5.6mm; font-weight:700; font-size:8pt; gap:2mm; }
+.opts{ display:flex; gap:3.5mm; font-weight:600; }
+.cb{ display:inline-flex; align-items:center; gap:1.2mm; white-space:nowrap; }
+.cb i{ width:3.4mm; height:3.4mm; border:.35mm solid var(--navy); border-radius:.7mm; display:inline-block; }
+.note{ font-size:7.6pt; color:var(--mut); font-weight:500; margin-bottom:.6mm; }
+
+/* Signatures */
+.sig{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; margin-top:3mm; }
+.sigbox{ border:.3mm solid #D5DADE; border-radius:2mm; padding:2.4mm 3.2mm; display:flex; flex-direction:column; }
+.sigbox .hd{ display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:8.4pt; }
+.sigbox .hd span{ font-size:6.8pt; color:var(--mut); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.sigarea{ height:16mm; border-bottom:.3mm solid var(--line); }
+.coop{ margin-top:2.4mm; font-size:7.8pt; font-weight:600; color:var(--mut); text-align:center; }
+.addendum{ margin-top:3.2mm; background:var(--navy); color:#fff; border-radius:1.6mm; padding:2.2mm 3.5mm; font-size:7.7pt; font-weight:600; display:flex; gap:2.5mm; align-items:center; }
+.addendum .ic{ flex:0 0 auto; background:var(--gold); color:#fff; font-weight:800; border-radius:1mm; padding:.4mm 1.6mm; font-size:6.8pt; letter-spacing:.1em; }
+
+/* Footer */
+footer{ margin-top:auto; }
+.fband{ background:var(--navy); color:#E9EDF0; padding:3.6mm 14mm 3.8mm; display:flex; justify-content:space-between; align-items:center; position:relative; }
+.fband:before{ content:""; position:absolute; left:0; right:0; top:0; height:.9mm; background:var(--gold); }
+.fband .brand{ font-weight:800; font-size:8.6pt; color:#fff; letter-spacing:.02em; }
+.fband .brand em{ font-style:normal; color:var(--gold-l); font-weight:600; font-size:7.6pt; letter-spacing:.14em; text-transform:uppercase; display:block; margin-top:.6mm; }
+.fband .info{ text-align:right; font-size:7.5pt; line-height:1.55; font-weight:500; }
+.fband .info b{ color:var(--gold-l); font-weight:700; }
+.dot{ color:var(--gold-l); padding:0 1.4mm; }
+</style></head>
+<body><div class="page"><style>
+.sec{ margin:3.4mm 0 1.4mm; }
+.sec h2{ font-size:9pt; }
+.f{ min-height:5.8mm; } .q{ min-height:5.8mm; }
+.g2{ display:grid; grid-template-columns:1fr 1fr; column-gap:7mm; }
+.g3{ display:grid; grid-template-columns:1fr 1fr 1fr; column-gap:5mm; }
+.toggle{ display:flex; gap:2.5mm; margin-top:3.2mm; }
+.toggle .t{ flex:1; border:.35mm solid var(--navy); border-radius:2mm; padding:2mm 3mm; display:flex; align-items:center; gap:2.4mm; font-weight:800; font-size:9pt; }
+.toggle .t small{ font-weight:500; color:var(--mut); font-size:7.4pt; margin-left:auto; }
+.toggle .cb i{ width:4mm; height:4mm; }
+.panel{ border:.3mm solid #D5DADE; border-radius:2mm; padding:2mm 3.2mm 2.6mm; }
+.panel h3{ font-size:8.4pt; font-weight:800; display:flex; align-items:center; gap:2mm; margin-bottom:1mm; }
+.big{ border:.35mm solid var(--gold); background:var(--soft); border-radius:2mm; padding:2.4mm 3.4mm; display:grid; grid-template-columns:1.1fr 1.6fr; gap:6mm; align-items:end; margin-bottom:2mm; }
+.big .f label{ font-size:8.6pt; font-weight:800; }
+.terms{ font-size:7.5pt; color:var(--mut); line-height:1.45; margin-top:2mm; }
+.terms b{ color:var(--navy); }
+.sig3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:4mm; margin-top:3mm; }
+.sigarea{ height:17mm; }
+.dec{ display:flex; gap:3mm; font-size:7.6pt; font-weight:700; margin:.8mm 0 1mm; }
+</style>
+<header>
+  <div class="hrow">
+    <svg class="logo" viewBox="18 0 1118 294" xmlns="http://www.w3.org/2000/svg"><path fill="#14232C" fill-rule="evenodd" d="M843 3L868 3L894 9L900 13L900 34L901 35L901 46L897 45L897 41L894 33L883 19L866 11L850 10Q835 13 827 23Q821 29 823 44Q826 58 837 65L876 87Q888 94 897 105Q904 113 908 126L909 143L903 162L890 177Q881 184 869 188L861 190L844 191L843 190L828 189L816 186L799 180L799 173L798 172L798 158L797 157L797 142L796 137Q801 135 799 141Q804 160 818 171Q827 177 840 180L845 181L860 181Q872 179 878 170Q885 160 885 144L882 132L874 120L831 98L812 85L802 67L800 58L800 46Q804 24 818 13L826 8L843 3Z"/><path fill="#14232C" fill-rule="evenodd" d="M367 5L413 5L417 10L520 140L520 21L515 13L503 9L504 5L552 5Q554 11 547 9Q538 11 534 18L533 21L533 58L532 59L532 168L531 169L531 187Q522 189 520 184L398 30L395 31L395 41L396 42L396 142L397 143L397 173L404 179L416 184L416 187L394 187L393 186L367 186L367 182L374 182Q381 181 385 176L385 23L380 14Q375 10 367 9L367 5Z"/><path fill="#14232C" fill-rule="evenodd" d="M611 5L648 5L648 9Q642 8 639 11Q636 14 637 22L683 94L720 31L724 23L724 17L720 11L710 10L711 6L759 6Q761 11 756 9Q743 12 736 22L687 105L687 149L688 150L688 174L694 180Q697 183 705 182L706 184L706 186L644 186L641 187L642 182L645 183L652 181L658 175L659 173L659 108L610 28L600 14Q595 8 584 10L585 6L610 6L611 5Z"/><path fill="#14232C" fill-rule="evenodd" d="M1013 5L1045 5L1045 7L1103 154L1107 167Q1110 174 1116 178Q1121 182 1128 182L1129 185L1128 186L1065 186Q1063 182 1069 183Q1075 181 1078 177Q1081 173 1079 166L1063 123L995 124L993 126L982 154L980 162L980 174L986 181L995 182L995 185L983 185L982 186L946 186Q944 180 952 182Q961 180 965 174L971 161L1020 26L1021 15L1019 11L1011 9L1013 5ZM 1026 34L998 115L1053 115L1059 114L1028 36Q1029 33 1026 34Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M185 57L209 58L226 63L243 72L275 98Q285 105 299 109L298 111L288 113L276 113L255 107L220 88L204 82L194 80L171 80L145 87L130 94Q111 105 96 120L95 118L112 97Q114 98 113 96L118 92L122 87Q134 75 151 67L166 61L185 57Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M340 125L340 131Q333 152 318 165L303 176L287 183L268 187L245 187L223 183L173 167L143 160L123 158L122 157L109 157L108 156L79 156L78 157L68 157L67 158L60 158L50 160L37 164L25 170L24 169Q32 160 43 155L74 142L102 136L137 134L138 135L163 136L164 137L171 137L183 140L188 140L250 155Q255 154 257 156L279 156L280 155L292 154L309 149Q327 141 339 127L340 125Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M107 184L125 184L126 185L140 186L155 190L186 202L206 207L218 208L219 209L247 209L262 206L274 202L283 197L283 199L277 207Q263 220 244 227L224 232L206 233L184 229Q158 221 137 210L107 201L96 199L86 199L85 198L63 198L61 199Q60 195 63 196L70 192L80 189L107 184Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M500 247L521 247Q527 249 531 254L533 260L533 266Q532 271 528 274L525 276L532 285L533 289Q527 290 524 288L518 277L508 277L508 288L507 289L500 289L500 247ZM 508 255L508 269L516 269L517 270L523 268L525 264L524 259Q519 253 508 255Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M596 247L625 247L625 248L625 255L604 255L604 263L622 263L622 271L604 271L604 281L626 281Q627 281 626 288L625 289L596 289L596 247Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M700 247L708 247L709 249L726 288Q724 290 719 289L714 279L696 279L694 281Q693 286 690 289Q684 290 683 288L700 247ZM 705 257L698 271L699 272L710 272L705 257Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M786 247Q792 245 794 249L794 281L814 281L814 289L786 289L786 247Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M866 247L899 247L899 248L899 255L887 255L887 288L886 289L879 289L879 256L879 255L866 255L866 247Z"/><path fill="#8F6A30" fill-rule="evenodd" d="M954 247L962 247L963 249L963 251L973 265L975 264L985 247L992 247L992 249L977 274L977 288L976 289L969 289L969 275L954 251L954 247Z"/></svg>
+    <div class="ttl">
+      <div class="kicker">Sale &nbsp;·&nbsp; Rent</div>
+      <h1>Letter of Offer</h1>
+    </div>
+  </div>
+  <div class="rule"></div>
+  <div class="meta">
+    <div class="f" style="flex:1"><label>Date</label><div class="ln"></div></div>
+    <div class="f" style="flex:1"><label>Offer Ref. No.</label><div class="ln"></div></div>
+    <div class="f" style="flex:1.2"><label>Offer valid until</label><div class="ln"></div></div>
+  </div>
+</header>
+<main>
+  <div class="toggle">
+    <div class="t"><span class="cb"><i></i></span>Offer to Purchase <small>Sale</small></div>
+    <div class="t"><span class="cb"><i></i></span>Offer to Lease <small>Rent</small></div>
+  </div>
+
+  <div class="sec"><div class="n">1</div><h2>Property</h2><div class="bar"></div></div>
+  <div class="g2">
+    <div class="f"><label>Building / Project</label><div class="ln"></div></div>
+    <div class="f"><label>Unit No.</label><div class="ln"></div></div>
+    <div class="f"><label>Community</label><div class="ln"></div></div>
+    <div class="f"><label>Property Type</label><div class="ln"></div></div>
+  </div>
+  <div class="g3">
+    <div class="f"><label>Bedrooms</label><div class="ln"></div></div>
+    <div class="f"><label>Size (sq ft)</label><div class="ln"></div></div>
+    <div class="f"><label>Listing Ref.</label><div class="ln"></div></div>
+  </div>
+
+  <div class="sec"><div class="n">2</div><h2>Parties</h2><div class="bar"></div></div>
+  <div class="g2" style="column-gap:5mm">
+    <div class="panel">
+      <h3><span class="tag">FROM</span>Buyer / Tenant</h3>
+      <div class="f"><label>Full Name</label><div class="ln"></div></div>
+      <div class="f"><label>Nationality</label><div class="ln"></div></div>
+      <div class="f"><label>Passport / EID No.</label><div class="ln"></div></div>
+      <div class="f"><label>Mobile</label><div class="ln"></div></div>
+      <div class="f"><label>Email</label><div class="ln"></div></div>
+    </div>
+    <div class="panel">
+      <h3><span class="tag">TO</span>Seller / Landlord</h3>
+      <div class="f"><label>Full Name</label><div class="ln"></div></div>
+      <div class="f"><label>Represented by</label><div class="ln pre">NYSA Realty LLC</div></div>
+      <div class="f"><label>Agent</label><div class="ln pre">Sunita Sinha</div></div>
+      <div class="f"><label>BRN</label><div class="ln pre">58771</div></div>
+      <div class="f"><label>Agent Email</label><div class="ln pre">sunita@nysarealty.com</div></div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="n">3</div><h2>Offer</h2><div class="bar"></div></div>
+  <div class="big">
+    <div class="f"><label>Offer Amount (AED)</label><div class="ln"></div></div>
+    <div class="f"><label>In words</label><div class="ln"></div></div>
+  </div>
+  <div class="g2" style="column-gap:5mm">
+    <div class="panel">
+      <h3><span class="tag">SALE</span>Purchase Terms</h3>
+      <div class="q">Payment<span class="opts"><span class="cb"><i></i>Cash</span><span class="cb"><i></i>Mortgage</span></span></div>
+      <div class="q">Mortgage pre-approval obtained?<span class="opts"><span class="cb"><i></i>Yes</span><span class="cb"><i></i>No</span></span></div>
+      <div class="f"><label>Deposit on MOU (AED)</label><div class="ln"></div></div>
+      <div class="f"><label>Proposed Transfer Date</label><div class="ln"></div></div>
+    </div>
+    <div class="panel">
+      <h3><span class="tag">RENT</span>Lease Terms</h3>
+      <div class="f"><label>Annual Rent (AED)</label><div class="ln"></div></div>
+      <div class="f"><label>No. of Cheques</label><div class="ln"></div></div>
+      <div class="f"><label>Security Deposit (AED)</label><div class="ln"></div></div>
+      <div class="row2"><div class="f"><label>Start Date</label><div class="ln"></div></div><div class="f"><label>Term</label><div class="ln"></div></div></div>
+    </div>
+  </div>
+  <div class="f" style="margin-top:1.2mm"><label>Special Conditions</label><div class="ln"></div></div>
+  <div class="f"><div class="ln"></div></div>
+
+  <div class="terms"><b>Terms.</b> This offer is made in good faith and is valid until the date stated above. It is subject to acceptance by the Seller / Landlord and becomes binding only upon signing of the MOU (Form F) for a sale, or the Tenancy Contract for a lease. Agency commission is payable as agreed with NYSA Realty LLC.</div>
+
+  <div class="sig3">
+    <div class="sigbox"><div class="hd">Buyer / Tenant <span>Signature</span></div><div class="sigarea"></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
+    <div class="sigbox"><div class="hd">Seller / Landlord <span>Response</span></div>
+      <div class="dec"><span class="cb"><i></i>Accepted</span><span class="cb"><i></i>Counter</span><span class="cb"><i></i>Declined</span></div>
+      <div class="sigarea" style="height:12mm"></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
+    <div class="sigbox"><div class="hd">NYSA Realty LLC <span>Agent</span></div><div class="sigarea"></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
+  </div>
+  <div class="f" style="margin-top:2mm"><label>Counter-offer (if any) — Amount (AED) &amp; terms</label><div class="ln"></div></div>
+  <div class="f"><div class="ln"></div></div>
+</main>
+<footer>
+  <div class="fband">
+    <div class="brand">NYSA REALTY LLC<em>Real Estate Without Noise</em></div>
+    <div class="info">2003-18, Citadel Towers, Marasi Drive, Business Bay, Dubai, UAE<br>
+      <b>ORN</b> 56017<span class="dot">•</span>admin@nysarealty.com<span class="dot">•</span>www.nysarealty.com</div>
+  </div>
+</footer></div></body></html>

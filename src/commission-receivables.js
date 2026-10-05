@@ -4,8 +4,10 @@ import {payoutFingerprint,calculateExpectedCommission} from './commission-payout
 import {badRequest,dateOnly,dubaiToday,moneyCents,scheduleInput,invoiceState} from './receivables-domain.js';
 import {postInvoicePayment,reverseInvoicePayment,lockOpportunityFinance} from './receivable-receipt-posting.js';
 import {readFile} from 'node:fs/promises';
-import {readPrivate} from './private-files.js';
-import {makeCommissionInvoicePdf} from './commission-invoice-pdf.js';
+import crypto from 'node:crypto';
+import {readPrivate,savePrivate,removePrivate} from './private-files.js';
+import {commissionInvoiceApprovedDocument,makeCommissionInvoicePdf} from './commission-invoice-pdf.js';
+import {recordApprovedDocumentIssuance} from './approved-document-issuance.js';
 
 const clean=value=>String(value??'').trim();
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value||'');
@@ -57,7 +59,28 @@ async function issueInvoice(item,actorId,client,action='invoice_recorded'){
   const identity=await nextInvoiceIdentity(client);
   await execute("UPDATE commission_receivable_invoices SET state='issued',invoice_date=$2,invoice_reference=$3,version=version+1 WHERE id=$1",[item.id,identity.invoiceDate,identity.invoiceReference],client);
   await audit('CommissionReceivable',item.id,action,actorId,identity,client);
-  return invoice(item.id,client);
+  const issued=await invoice(item.id,client);await persistInvoiceDocument(issued,actorId,client);return issued;
+}
+
+async function persistInvoiceDocument(item,actorId,client){
+  const existing=await one("SELECT i.document_version_id FROM approved_document_issuances i WHERE i.document_code='tax_invoice' AND i.source_entity_type='CommissionReceivable' AND i.source_entity_id=$1",[item.id],client);if(existing)return existing;
+  const transaction=await one(`SELECT d.id AS deal_id,d.deal_reference,d.deal_type,d.agreed_value,d.currency,d.listing_id,l.project,l.developer,l.unit_reference,l.inventory_reference,
+    b.created_at::date::text AS booked_date,(SELECT COALESCE(SUM(x.commission_cents),0) FROM commission_receivable_invoices x WHERE x.schedule_id=$2 AND x.state<>'cancelled') AS schedule_commission_cents
+    FROM deals d LEFT JOIN bookings b ON b.id=d.booking_id LEFT JOIN listings l ON l.id=d.listing_id WHERE d.opportunity_id=$1 AND d.status='closed_won'
+    ORDER BY d.closed_at DESC,d.id DESC LIMIT 1`,[item.opportunityId,item.scheduleId],client)||{scheduleCommissionCents:item.commissionCents,currency:'AED'};
+  if(transaction.dealType==='off_plan'&&item.payerType!=='developer')throw badRequest('This off-plan invoice must be raised to the maintained Developer',409);
+  const organization=await one("SELECT * FROM organization_settings WHERE status='active' ORDER BY version DESC LIMIT 1",[],client)||{displayName:'NYSA Realty'},required=[['legalName','legal company name'],['tradeLicenseNumber','trade licence number'],['vatRegistrationNumber','VAT registration number'],['registeredAddress','registered address'],['primaryPhone','contact number'],['bankAccountName','bank account name'],['bankName','bank name'],['bankAccountNumber','bank account number'],['bankIban','IBAN'],['bankSwiftCode','SWIFT code'],['bankCurrency','bank currency'],['bankBranch','bank branch']],missing=required.filter(([field])=>!clean(organization[field])).map(([,label])=>label);
+  if(missing.length)throw badRequest(`Complete and activate Organisation Settings before issuing this tax invoice. Missing: ${missing.join(', ')}`,409);
+  const payer=item.payerType==='customer'?await one('SELECT full_name AS name,postal_address AS address,NULL::text AS vat_registration_number,NULL::text AS trade_license_number FROM contacts WHERE id=$1',[item.payerContactId],client):await one('SELECT name,address,vat_registration_number,trade_license_number FROM companies WHERE id=$1',[item.payerCompanyId],client);
+  if(!payer)throw badRequest('The maintained invoice payer is no longer available',409);if(item.payerType==='developer'&&(!clean(payer.address)||!clean(payer.vatRegistrationNumber)))throw badRequest('Complete the Developer registered address and VAT registration number in Company invoice details before issuing',409);
+  const input={invoice:{...item,currency:transaction.currency||'AED'},organization,transaction,payer},data=commissionInvoiceApprovedDocument(input),pdf=await makeCommissionInvoicePdf(input),documentId=uuid(),documentVersionId=uuid(),fileName=`${item.invoiceReference}.pdf`,storageKey=await savePrivate(pdf,'.pdf'),fileHash=crypto.createHash('sha256').update(pdf).digest('hex');
+  try{
+    await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,listing_id) VALUES($1,$2,'tax_invoice',$3,'Outbound','restricted','active',$4,$4,$5,$6)`,[documentId,item.invoiceReference,`Tax Invoice · ${item.invoiceReference}`,actorId,item.payerContactId||null,transaction.listingId||null],client);
+    await execute(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by) VALUES($1,$2,1,$3,'application/pdf',$4,$5,$6,1,'generated','restricted','generated',$7,$7)`,[documentVersionId,documentId,fileName,pdf.length,storageKey,fileHash,actorId],client);
+    for(const[type,id]of[['Opportunity',item.opportunityId],['Deal',transaction.dealId],['Listing',transaction.listingId],['Contact',item.payerContactId]])if(id)await execute('INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES($1,$2,$3,$4,$5)',[uuid(),documentId,type,id,actorId],client);
+    await recordApprovedDocumentIssuance({execute,uuid,client,documentCode:'tax_invoice',data,pdf,documentVersionId,sourceEntityType:'CommissionReceivable',sourceEntityId:item.id,issuedBy:actorId,idempotencyKey:`tax-invoice:${item.id}:version:${item.version}`});
+    await audit('CommissionReceivable',item.id,'approved_invoice_document_issued',actorId,{invoiceReference:item.invoiceReference,documentVersionId,fileHash},client);return{documentVersionId};
+  }catch(error){await removePrivate(storageKey).catch(()=>{});throw error;}
 }
 
 export function registerCommissionReceivableRoutes(r){
@@ -171,12 +194,15 @@ export function registerCommissionReceivableRoutes(r){
     authority(req);
     const item=await invoice(req.params.id);
     if(item.state!=='issued'||!item.invoiceReference)throw badRequest('Generate this invoice before opening its paper invoice',409);
-    const transaction=await one(`SELECT d.deal_reference,d.deal_type,d.agreed_value,d.currency,l.project,l.developer,l.unit_reference,l.inventory_reference,
+    const persisted=await transaction(client=>persistInvoiceDocument(item,req.broker.id,client)),version=await one('SELECT * FROM document_versions WHERE id=$1',[persisted.documentVersionId]),stored=await readPrivate(version.storageKey);
+    await audit('CommissionReceivable',item.id,'invoice_document_viewed',req.broker.id,{invoiceReference:item.invoiceReference,documentVersionId:version.id,immutable:true});
+    res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`${req.query.download==='1'?'attachment':'inline'}; filename="${version.fileName.replace(/"/g,'')}"`);res.setHeader('Cache-Control','private, no-store');return res.end(stored);
+    const transactionContext=await one(`SELECT d.deal_reference,d.deal_type,d.agreed_value,d.currency,l.project,l.developer,l.unit_reference,l.inventory_reference,
       b.created_at::date::text AS booked_date,
       (SELECT COALESCE(SUM(x.commission_cents),0) FROM commission_receivable_invoices x WHERE x.schedule_id=$2 AND x.state<>'cancelled') AS schedule_commission_cents
       FROM deals d LEFT JOIN bookings b ON b.id=d.booking_id LEFT JOIN listings l ON l.id=d.listing_id WHERE d.opportunity_id=$1 AND d.status='closed_won'
       ORDER BY d.closed_at DESC,d.id DESC LIMIT 1`,[item.opportunityId,item.scheduleId])||{scheduleCommissionCents:item.commissionCents,currency:'AED'};
-    if(transaction.dealType==='off_plan'&&item.payerType!=='developer')throw badRequest('This off-plan invoice must be raised to the maintained Developer',409);
+    if(transactionContext.dealType==='off_plan'&&item.payerType!=='developer')throw badRequest('This off-plan invoice must be raised to the maintained Developer',409);
     const organization=await one("SELECT * FROM organization_settings WHERE status='active' ORDER BY version DESC LIMIT 1")||{displayName:'NYSA Realty'};
     const requiredOrganizationFields=[['legalName','legal company name'],['tradeLicenseNumber','trade licence number'],['vatRegistrationNumber','VAT registration number'],['registeredAddress','registered address'],['primaryPhone','contact number'],['bankAccountName','bank account name'],['bankName','bank name'],['bankAccountNumber','bank account number'],['bankIban','IBAN'],['bankSwiftCode','SWIFT code'],['bankCurrency','bank currency'],['bankBranch','bank branch']];
     const missingOrganization=requiredOrganizationFields.filter(([field])=>!clean(organization[field])).map(([,label])=>label);
@@ -187,7 +213,7 @@ export function registerCommissionReceivableRoutes(r){
     if(item.payerType==='developer'&&(!clean(payer.address)||!clean(payer.vatRegistrationNumber)))throw badRequest('Complete the Developer registered address and VAT registration number in Company invoice details before printing',409);
     let logo=null;
     try{logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:{buffer:await readFile(new URL('../public/brand/nysa/raster/nysa-horizontal-light@2x.png',import.meta.url)),mediaType:'image/png'};}catch{}
-    const pdf=makeCommissionInvoicePdf({invoice:{...item,currency:transaction.currency||'AED'},organization,transaction,payer,logo});
+    const pdf=await makeCommissionInvoicePdf({invoice:{...item,currency:transactionContext.currency||'AED'},organization,transaction:transactionContext,payer,logo});
     await audit('CommissionReceivable',item.id,'invoice_document_viewed',req.broker.id,{invoiceReference:item.invoiceReference});
     res.setHeader('Content-Type','application/pdf');
     res.setHeader('Content-Disposition',`inline; filename="${item.invoiceReference}.pdf"`);

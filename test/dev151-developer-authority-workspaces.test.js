@@ -24,7 +24,7 @@ test('UAT-033 stores Developer arrangements and property-specific NOCs separatel
 test('UAT-033 gates only external listing preparation and lifecycle',()=>{
   assert.match(listingRoutes,/async function developerExternalListingAuthority/);
   assert.match(listingRoutes,/An active Developer Brokerage Arrangement is required/);
-  assert.match(listingRoutes,/property-specific Developer Listing NOC is required/);
+  assert.match(listingRoutes,/current independently verified property Listing NOC is required/);
   assert.match(listingRoutes,/r\.post\('\/listings\/:id\/external-publications'/);
   assert.match(listingRoutes,/r\.post\('\/external-publications\/:id\/preparations'/);
   assert.match(listingRoutes,/r\.patch\('\/external-publications\/:id\/status'/);
@@ -35,6 +35,9 @@ test('UAT-033 gates only external listing preparation and lifecycle',()=>{
 test('UAT-033 administration UI exposes both exact evidence registers',()=>{
   assert.match(app,/Developer Brokerage Arrangement/);
   assert.match(app,/Property Listing NOC/);
+  assert.match(app,/APPROVED LISTING NOC \/ OWNER AUTHORIZATION/);
+  assert.match(app,/Save editable draft/);
+  assert.match(app,/Issue immutable Listing NOC/);
   assert.match(app,/id="developer-arrangement-form"/);
   assert.match(app,/id="property-listing-noc-form"/);
   assert.match(app,/name="file" type="file" accept="application\/pdf,\.pdf"/);

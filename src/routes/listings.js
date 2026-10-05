@@ -86,17 +86,19 @@ function canEdit(broker, listing) {
 }
 
 async function developerExternalListingAuthority(listingId,client){
+  const executedNoc=await one(`SELECT id,noc_reference,issued_at,expires_at FROM listing_noc_evidence_versions
+    WHERE listing_id=$1 AND status='active' AND issued_at<=CURRENT_DATE AND (expires_at IS NULL OR expires_at>=CURRENT_DATE)`,[listingId],client);
   const developer=await one(`SELECT p.id AS partner_version_id,p.company_id,p.legal_name
     FROM inventory_organization_link_events e JOIN partner_organization_versions p ON p.id=e.partner_version_id
     WHERE e.id=(SELECT id FROM inventory_organization_link_events WHERE listing_id=$1 AND relationship='developer' ORDER BY performed_at DESC,id DESC LIMIT 1)
       AND e.action<>'unlinked' AND p.classification='developer' AND p.status='active'`,[listingId],client);
-  if(!developer)return{required:false,ready:true};
+  if(!developer)return{required:true,ready:Boolean(executedNoc),executedNoc,error:executedNoc?null:'Upload the executed Listing NOC and obtain independent Manager/Director verification before external publication'};
   const arrangement=await one(`SELECT id,arrangement_reference,effective_from,effective_to FROM developer_brokerage_arrangement_versions
     WHERE partner_version_id=$1 AND status='active' AND effective_from<=CURRENT_DATE AND (effective_to IS NULL OR effective_to>=CURRENT_DATE)`,[developer.partnerVersionId],client);
   const noc=await one(`SELECT id,noc_reference,issued_at,expires_at FROM property_listing_noc_versions
     WHERE listing_id=$1 AND partner_version_id=$2 AND status='active' AND issued_at<=CURRENT_DATE AND (expires_at IS NULL OR expires_at>=CURRENT_DATE)`,[listingId,developer.partnerVersionId],client);
-  return{required:true,ready:Boolean(arrangement&&noc),developer,arrangement,noc,
-    error:!arrangement?'An active Developer Brokerage Arrangement is required before preparing this Developer Inventory for external listing':!noc?'A current property-specific Developer Listing NOC is required before preparing this Inventory for external listing':null};
+  return{required:true,ready:Boolean(arrangement&&(noc||executedNoc)),developer,arrangement,noc,executedNoc,
+    error:!arrangement?'An active Developer Brokerage Arrangement is required before preparing this Developer Inventory for external listing':!(noc||executedNoc)?'A current independently verified property Listing NOC is required before preparing this Inventory for external listing':null};
 }
 
 function validateListingFields(body) {

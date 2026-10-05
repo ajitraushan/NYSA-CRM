@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../src/offer-domain.js';
-import { makeOfferPdf } from '../src/offer-pdf.js';
+import { offerApprovedDocumentData } from '../src/offer-pdf.js';
+import {buildApprovedDocumentHtml} from '../src/approved-document-renderer.js';
 
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 const future=()=>new Date(Date.now()+86400000).toISOString();
@@ -27,8 +28,8 @@ test('offer state changes require governed sequence and adverse reasons',()=>{
   assert.equal(validateOfferEvent('viewed',{eventType:'accepted',summary:'Customer accepted exact terms'}).value.eventType,'accepted');
 });
 
-test('offer document is a valid deterministic PDF containing the exact revision',()=>{
-  const pdf=makeOfferPdf({
+test('offer document maps the exact revision into the approved template and renders a valid PDF',()=>{
+  const input={
     offer:{offerReference:'NYSA-OF-202607-000001',offerType:'purchase'},
     revision:{revisionNumber:2,createdAt:new Date(),amount:1250000,currency:'AED',depositAmount:125000,financingMethod:'Mortgage',paymentTerms:'10 percent deposit',conditions:'Subject to finance',validityExpiresAt:future(),direction:'outbound',proposerRole:'customer',materialCorrectionReason:'Payment timing corrected'},
     opportunity:{opportunityReference:'NYSA-OP-202607-000001',title:'Marina purchase'},
@@ -36,14 +37,14 @@ test('offer document is a valid deterministic PDF containing the exact revision'
     listing:{project:'Controlled Property',inventoryReference:'INV-001'},
     agent:{name:'Controlled Agent'},
     organization:{displayName:'NYSA Realty',registeredAddress:'Dubai, UAE',primaryEmail:'info@nysarealty.com'}
-  });
-  assert.equal(pdf.subarray(0,5).toString(),'%PDF-');
-  assert.ok(pdf.length>500);
-  assert.match(pdf.toString('latin1'),/Revision 2/);
-  assert.match(pdf.toString('latin1'),/NYSA Realty/);
-  assert.match(pdf.toString('latin1'),/PRIVATE OFFER TO PURCHASE/);
-  assert.match(pdf.toString('latin1'),/NYSA acts as the brokerage facilitator/);
-  assert.match(pdf.toString('latin1'),/not legally binding/);
+  };
+  const mapping=offerApprovedDocumentData(input),html=buildApprovedDocumentHtml('offer_letter',mapping);
+  assert.equal(mapping.lineValues.find(x=>x.label==='Offer Ref. No.').value,'NYSA-OF-202607-000001 · Revision 2');
+  assert.equal(mapping.lineValues.find(x=>x.label==='Listing Ref.').value,'INV-001');
+  assert.equal(mapping.lineValues.find(x=>x.label==='Deposit on MOU (AED)').value,'125,000');
+  assert.match(html,/Offer to Purchase/i);
+  assert.match(html,/NYSA Realty LLC/i);
+  assert.match(html,/becomes binding only upon signing/i);
 });
 
 test('R2.3A migration and API preserve immutable exact-document negotiation evidence',()=>{

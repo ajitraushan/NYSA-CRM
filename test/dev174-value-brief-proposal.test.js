@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { makeProposalPdf } from '../src/proposal-pdf.js';
+import { proposalApprovedDocument } from '../src/proposal-pdf.js';
 
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
@@ -25,12 +25,9 @@ test('proposal API governs Value Brief ownership, shortlisted Inventory and immu
 
 test('proposal PDF renders the selected Value Brief financial evidence and recommendation',()=>{
   const property={id:'listing-1',project:'Marina Home',inventoryReference:'NYSA-INV-1',area:'Dubai Marina',propertyType:'Apartment',bedrooms:'2',sizeSqft:1200,developer:'Developer',price:2500000,currency:'AED',handoverDate:'Ready',availabilityConfirmedAt:'2026-08-30'};
-  const pdf=makeProposalPdf({proposal:{title:'Value Brief proposal',proposalNumber:'NYSA-PR-1'},version:1,organization:{displayName:'NYSA Realty',defaultCurrency:'AED'},recipient:{fullName:'Customer'},requirement:{businessLine:'Sale',areas:['Dubai Marina'],propertyTypes:['Apartment']},properties:[property],valueBriefs:[{listingId:property.id,expectedAnnualRent:120000,estimatedAnnualCosts:12000,roiPercent:4.32,currency:'AED',strengths:'Established community and practical layout',recommendation:'Within budget and meets the recorded checklist'}],narrative:{indicativeTimeline:{stages:[]}},disclaimer:'Indicative information only.',agent:{name:'Agent'},preparedAt:'30 Aug 2026'});
-  const text=pdf.toString('latin1');
-  assert.match(text,/VALUE BRIEF FINANCIALS/);
-  assert.match(text,/Expected annual rent/);
-  assert.match(text,/Estimated net ROI/);
-  assert.match(text,/DEAL STRENGTHS/);
-  assert.match(text,/VALUE BRIEF RECOMMENDATION/);
-  assert.match(text,/Within budget and meets the recorded checklist/);
+  const approved=proposalApprovedDocument({proposal:{title:'Value Brief proposal',proposalNumber:'NYSA-PR-1'},version:1,organization:{displayName:'NYSA Realty',defaultCurrency:'AED'},recipient:{fullName:'Customer'},requirement:{businessLine:'Sale',areas:['Dubai Marina'],propertyTypes:['Apartment']},properties:[property],valueBriefs:[{listingId:property.id,expectedAnnualRent:120000,estimatedAnnualCosts:12000,roiPercent:4.32,currency:'AED',strengths:'Established community and practical layout',recommendation:'Within budget and meets the recorded checklist'}],narrative:{indicativeTimeline:{stages:[]}},disclaimer:'Indicative information only.',agent:{name:'Agent'},preparedAt:'30 Aug 2026'}),mapped=approved.data.properties[0];
+  assert.match(mapped.highlights,/Expected annual rent AED 120,000/);
+  assert.match(mapped.highlights,/Estimated net ROI 4\.32%/);
+  assert.match(mapped.highlights,/Established community and practical layout/);
+  assert.equal(mapped.suitability,'Within budget and meets the recorded checklist');
 });

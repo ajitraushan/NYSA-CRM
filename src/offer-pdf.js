@@ -1,11 +1,27 @@
 import { PdfDoc,canvas,header,footer,C } from './proposal-pdf.js';
+import {renderApprovedDocumentPdf} from './approved-document-renderer.js';
 
 const clean=value=>String(value??'').replace(/[\u2010-\u2015]/g,'-').replace(/[^\x20-\x7e]/g,' ').replace(/\s+/g,' ').trim();
 const money=(amount,currency='AED')=>`${currency} ${Number(amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 const date=value=>new Intl.DateTimeFormat('en-AE',{timeZone:'Asia/Dubai',dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
 const offerLabels={purchase:'OFFER TO PURCHASE',sale:'OFFER TO SELL',rent:'OFFER TO RENT',rental:'OFFER TO RENT',rent_out:'OFFER TO RENT OUT / LEASE',off_plan:'OFFER TO PURCHASE',commercial:'PROPERTY OFFER'};
 
-export function makeOfferPdf({offer,revision,opportunity,customer,listing,agent,organization={},logo=null}){
+export function offerApprovedDocumentData({offer,revision,opportunity,customer,listing,agent,organization={}}){
+  const purchase=!['rent','rental','rent_out'].includes(offer.offerType),formatMoney=value=>value===null||value===undefined?'':Number(value).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+  return{
+    lineValues:[
+      {label:'Date',value:date(revision.createdAt)},{label:'Offer Ref. No.',value:`${offer.offerReference} · Revision ${revision.revisionNumber}`},{label:'Offer valid until',value:date(revision.validityExpiresAt)},
+      {label:'Building / Project',value:listing.project},{label:'Unit No.',value:listing.unitReference},{label:'Community',value:listing.community||listing.area},{label:'Property Type',value:listing.propertyType},{label:'Bedrooms',value:listing.bedrooms},{label:'Size (sq ft)',value:listing.sizeSqft},{label:'Listing Ref.',value:listing.inventoryReference},
+      {label:'Full Name',value:customer.fullName,index:0},{label:'Nationality',value:customer.nationality},{label:'Passport / EID No.',value:customer.idDocumentLast4?`${customer.idDocumentType||'ID'} ending ${customer.idDocumentLast4}`:'Not recorded'},{label:'Mobile',value:customer.phone},{label:'Email',value:customer.email},
+      {label:'Full Name',value:listing.ownerName||opportunity.sellerCounterpartyName||'Seller / Landlord',index:1},{label:'Represented by',value:organization.displayName||organization.legalName||'NYSA Realty LLC'},{label:'Agent',value:agent.name},{label:'BRN',value:agent.brn},{label:'Agent Email',value:agent.email},
+      {label:'Offer Amount (AED)',value:formatMoney(revision.amount)},{label:'In words',value:revision.amountInWords||''},{label:'Deposit on MOU (AED)',value:formatMoney(revision.depositAmount)},{label:'Proposed Transfer Date',value:revision.proposedTransferDate?date(revision.proposedTransferDate):''},{label:'Annual Rent (AED)',value:purchase?'':formatMoney(revision.amount)},{label:'Security Deposit (AED)',value:purchase?'':formatMoney(revision.depositAmount)},{label:'Special Conditions',value:[revision.paymentTerms,revision.conditions].filter(Boolean).join(' · ')||'No additional conditions'}
+    ],checkboxes:[{label:purchase?'Offer to Purchase':'Offer to Lease'},{label:String(revision.financingMethod||'').toLowerCase().includes('mortgage')?'Mortgage':'Cash'}]
+  };
+}
+
+export async function makeOfferPdf(input){
+  return renderApprovedDocumentPdf('offer_letter',offerApprovedDocumentData(input));
+  /* Legacy renderer retained below only as a rollback reference until DEV218 is accepted. */
   const doc=new PdfDoc(),logoImage=logo?doc.image(logo.buffer,logo.mediaType):null,d=canvas(),images={};
   if(logoImage)images.Logo=logoImage;
   const title=offerLabels[offer.offerType]||'PROPERTY OFFER',property=[listing.project,listing.community||listing.area,listing.building,listing.unitReference].map(clean).filter(Boolean).join(' | '),facts=[listing.propertyType,listing.bedrooms?`${listing.bedrooms} bedroom`:null,listing.sizeSqft?`${Number(listing.sizeSqft).toLocaleString('en-US')} sq ft`:null,listing.handoverStatus?clean(listing.handoverStatus).replaceAll('_',' '):null].filter(Boolean).join(' | ');

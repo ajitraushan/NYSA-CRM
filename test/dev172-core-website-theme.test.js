@@ -5,18 +5,18 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const read=(name)=>readFileSync(new URL(name,root),'utf8');
 
-test('dev.172 shared CORE shell is preserved under the superseding DEV210 login-anchored tokens',()=>{
+test('dev.172 shared CORE shell is preserved under the approved DEV218 tokens',()=>{
   const html=read('public/index.html');
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'2.1.0-dev.217');
+  assert.equal(pkg.version,'2.1.0-dev.218');
   for(const marker of [
-    'CORE-GLOBAL-DARK-THEME-DEV202',
-    '--workspace:#0c1014',
-    '--charcoal:#080b0e',
-    '--green:#d4ab60',
-    '--gold:#d4ab60',
-    'font-family:Inter,ui-sans-serif',
-    '"Iowan Old Style","Palatino Linotype",Baskerville,Georgia,serif',
+    'DEV218 approved NYSA light workspace',
+    '--workspace:#f4f1eb',
+    '--charcoal:#14232c',
+    '--green:#276749',
+    '--gold:#8f6a30',
+    'font-family:Inter,Arial,sans-serif',
+    "font-family:'GFS Baskerville',Georgia,serif",
     'max-width:1920px',
     '#app.shell-layout .btn-primary'
   ]) assert.match(html,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));

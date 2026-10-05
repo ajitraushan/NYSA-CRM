@@ -6,6 +6,7 @@ import { hasNysaStaffIdentity, isCompanyReader, isManager, isCrmReadOnly, contac
 import { normalizePhone, isValidEmail } from '../crm-domain.js';
 import { decodeAndValidateFile,savePrivate,readPrivate,removePrivate } from '../private-files.js';
 import { validateOrganizationProfile,publicOrganization } from '../organization-domain.js';
+import { validateDefaultDocumentAgent } from '../document-agent-domain.js';
 import { stableCodeError } from '../admin-governance.js';
 
 const r=Router();
@@ -19,6 +20,12 @@ function requireGovernanceAccess(req,res,next){
 function clean(value){const v=typeof value==='string'?value.trim():value;return v===''?null:v;}
 function adminOnly(req,res){if(req.broker.role!=='admin'){res.status(403).json({error:'Admin access required'});return false;}return true;}
 const settingsOnly=adminOnly;
+
+async function checkedDefaultDocumentAgent(id,client){
+  if(!id)return {error:'Select the Default Document Agent before saving the Company Profile'};
+  const agent=await one('SELECT * FROM brokers WHERE id=$1',[id],client);
+  return validateDefaultDocumentAgent(agent);
+}
 
 r.get('/admin/property-media-approval-policy',async(req,res)=>{
   if(!adminOnly(req,res))return;
@@ -88,21 +95,21 @@ async function createOrganizationDraft(req,res){
     const current=await one('SELECT COALESCE(MAX(version),0)::int AS version FROM organization_settings',[],client);
     const active=await one("SELECT logo_file_name,logo_media_type,logo_file_size_bytes,logo_storage_key,logo_file_hash FROM organization_settings WHERE status='active'",[],client);
     const row=await one(`INSERT INTO organization_settings
-      (id,version,legal_name,display_name,trade_license_number,registration_authority,registered_address,primary_phone,primary_email,
+      (id,version,legal_name,display_name,trade_license_number,orn,registration_authority,registered_address,primary_phone,primary_email,
        website_url,default_currency,timezone,locale,brand_version,proposal_footer,default_disclaimer,vat_registration_number,
-       bank_account_name,bank_name,bank_account_number,bank_iban,bank_swift_code,bank_currency,bank_branch,status,created_by,
+       bank_account_name,bank_name,bank_account_number,bank_iban,bank_swift_code,bank_currency,bank_branch,default_document_agent_id,status,created_by,
        logo_file_name,logo_media_type,logo_file_size_bytes,logo_storage_key,logo_file_hash)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,'draft',$25,$26,$27,$28,$29,$30) RETURNING *`,
-      [id,current.version+1,b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,'draft',$27,$28,$29,$30,$31,$32) RETURNING *`,
+      [id,current.version+1,b.legalName,b.displayName,b.tradeLicenseNumber,b.orn,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,
        b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,
-       b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,req.broker.id,active?.logoFileName||null,
+       b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,req.broker.id,active?.logoFileName||null,
        active?.logoMediaType||null,active?.logoFileSizeBytes||null,active?.logoStorageKey||null,active?.logoFileHash||null],client);
     await audit('OrganizationSettings',id,'draft_created',req.broker.id,{version:row.version},client);return row;
   });
   res.status(201).json(publicOrganization(organization));
 }
 
-r.get('/admin/organization-settings',async(req,res)=>{if(!adminOnly(req,res))return;res.json({versions:(await many('SELECT * FROM organization_settings ORDER BY version DESC')).map(publicOrganization)});});
+r.get('/admin/organization-settings',async(req,res)=>{if(!adminOnly(req,res))return;const [versions,documentAgents]=await Promise.all([many('SELECT * FROM organization_settings ORDER BY version DESC'),many("SELECT id,name,email,brn,brn_issued_on FROM brokers WHERE role='internal_broker' AND status='active' AND brn IS NOT NULL AND brn_issued_on IS NOT NULL ORDER BY name")]);res.json({versions:versions.map(publicOrganization),documentAgents});});
 r.post('/admin/organization-settings',async(req,res)=>{if(!adminOnly(req,res))return;return createOrganizationDraft(req,res);});
 r.post('/crm/organization/versions',async(req,res)=>{if(!adminOnly(req,res))return;if(req.body?.status&&req.body.status!=='draft')return res.status(409).json({error:'Organization versions must be created as drafts, approved, then activated'});return createOrganizationDraft(req,res);});
 
@@ -110,9 +117,9 @@ r.patch('/admin/organization-settings/:id',async(req,res)=>{
   if(!adminOnly(req,res))return;const current=await one('SELECT * FROM organization_settings WHERE id=$1',[req.params.id]);if(!current)return res.status(404).json({error:'Organization version not found'});if(current.status!=='draft')return res.status(409).json({error:'Only a draft organization version can be edited'});
   const checked=validateOrganizationProfile(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});const b=checked.profile;
   const row=await one(`UPDATE organization_settings SET legal_name=$1,display_name=$2,trade_license_number=$3,registration_authority=$4,registered_address=$5,
-    primary_phone=$6,primary_email=$7,website_url=$8,default_currency=$9,timezone=$10,locale=$11,brand_version=$12,proposal_footer=$13,
-    default_disclaimer=$14,vat_registration_number=$15,bank_account_name=$16,bank_name=$17,bank_account_number=$18,bank_iban=$19,
-    bank_swift_code=$20,bank_currency=$21,bank_branch=$22,updated_at=NOW() WHERE id=$23 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,current.id]);
+    orn=$6,primary_phone=$7,primary_email=$8,website_url=$9,default_currency=$10,timezone=$11,locale=$12,brand_version=$13,proposal_footer=$14,
+    default_disclaimer=$15,vat_registration_number=$16,bank_account_name=$17,bank_name=$18,bank_account_number=$19,bank_iban=$20,
+    bank_swift_code=$21,bank_currency=$22,bank_branch=$23,default_document_agent_id=$24,updated_at=NOW() WHERE id=$25 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.orn,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,current.id]);
   await audit('OrganizationSettings',row.id,'draft_edited',req.broker.id,{version:row.version});res.json(publicOrganization(row));
 });
 
@@ -123,7 +130,7 @@ r.post('/admin/organization-settings/:id/logo',async(req,res)=>{
 });
 r.get('/admin/organization-settings/:id/logo',async(req,res)=>{if(!adminOnly(req,res))return;const row=await one('SELECT * FROM organization_settings WHERE id=$1',[req.params.id]);if(!row?.logoStorageKey)return res.status(404).json({error:'Logo not found'});const data=await readPrivate(row.logoStorageKey);res.setHeader('Content-Type',row.logoMediaType);res.setHeader('Content-Disposition',`inline; filename="${row.logoFileName.replace(/"/g,'')}"`);res.end(data);});
 r.post('/admin/organization-settings/:id/approve',async(req,res)=>{if(!adminOnly(req,res))return;const reason=clean(req.body?.reason);if(!reason)return res.status(400).json({error:'Approval reason is required'});const row=await one("UPDATE organization_settings SET status='approved',approved_by=$1,approved_at=NOW(),approval_reason=$2,updated_at=NOW() WHERE id=$3 AND status='draft' RETURNING *",[req.broker.id,reason,req.params.id]);if(!row)return res.status(409).json({error:'Only a draft organization version can be approved'});await audit('OrganizationSettings',row.id,'approved',req.broker.id,{version:row.version,reason});res.json(publicOrganization(row));});
-r.post('/admin/organization-settings/:id/activate',async(req,res)=>{if(!adminOnly(req,res))return;const row=await transaction(async client=>{const target=await one('SELECT * FROM organization_settings WHERE id=$1 FOR UPDATE',[req.params.id],client);if(!target||target.status!=='approved')return null;await execute("UPDATE organization_settings SET status='retired',effective_to=NOW(),updated_at=NOW() WHERE status='active'",[],client);const active=await one("UPDATE organization_settings SET status='active',effective_from=NOW(),effective_to=NULL,updated_at=NOW() WHERE id=$1 RETURNING *",[target.id],client);await audit('OrganizationSettings',active.id,'activated',req.broker.id,{version:active.version},client);return active;});if(!row)return res.status(409).json({error:'Only an approved organization version can be activated'});res.json(publicOrganization(row));});
+r.post('/admin/organization-settings/:id/activate',async(req,res)=>{if(!adminOnly(req,res))return;const row=await transaction(async client=>{const target=await one('SELECT * FROM organization_settings WHERE id=$1 FOR UPDATE',[req.params.id],client);if(!target||target.status!=='approved')return null;const documentAgent=await checkedDefaultDocumentAgent(target.defaultDocumentAgentId,client);if(documentAgent.error)return documentAgent;await execute("UPDATE organization_settings SET status='retired',effective_to=NOW(),updated_at=NOW() WHERE status='active'",[],client);const active=await one("UPDATE organization_settings SET status='active',effective_from=NOW(),effective_to=NULL,updated_at=NOW() WHERE id=$1 RETURNING *",[target.id],client);await audit('OrganizationSettings',active.id,'activated',req.broker.id,{version:active.version,defaultDocumentAgentId:active.defaultDocumentAgentId},client);return active;});if(!row)return res.status(409).json({error:'Only an approved organization version can be activated'});if(row.error)return res.status(409).json({error:row.error});res.json(publicOrganization(row));});
 r.post('/admin/organization-settings/:id/retire',async(req,res)=>{if(!adminOnly(req,res))return;const row=await one("UPDATE organization_settings SET status='retired',effective_to=COALESCE(effective_to,NOW()),updated_at=NOW() WHERE id=$1 AND status IN ('draft','approved') RETURNING *",[req.params.id]);if(!row)return res.status(409).json({error:'Draft or approved versions can be retired; activate a replacement to retire the active version'});await audit('OrganizationSettings',row.id,'retired',req.broker.id,{version:row.version});res.json(publicOrganization(row));
 });
 r.delete('/admin/organization-settings/:id',async(req,res)=>{

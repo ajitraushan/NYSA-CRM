@@ -37,6 +37,7 @@ before(async()=>{
     [fixture.manager,`${prefix} manager`,`${prefix}-manager@example.invalid`,fixture.agent,`${prefix} agent`,`${prefix}-agent@example.invalid`]);
   await execute('INSERT INTO teams(id,name,manager_id,active) VALUES($1,$2,$3,1)',[fixture.team,`${prefix} team`,fixture.manager]);
   await execute('UPDATE brokers SET team_id=$1 WHERE id IN ($2,$3)',[fixture.team,fixture.manager,fixture.agent]);
+  await execute("UPDATE brokers SET brn=$1,brn_issued_on=DATE '2026-01-01' WHERE id=$2",[`${prefix}-BRN`,fixture.agent]);
   await execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[tokenHash,fixture.agent]);
 
   const existingOrg=await one("SELECT id FROM organization_settings WHERE status='active' LIMIT 1");
@@ -47,6 +48,7 @@ before(async()=>{
       VALUES($1,1,$2,$2,'active',$3,'test-logo.png','image/png',$4,$5,$6,$3,NOW(),$7)`,
       [id(),`${prefix} organization`,fixture.manager,logo.length,storageKey,crypto.createHash('sha256').update(logo).digest('hex'),'Disposable integration-test approval']);
   }
+  await execute("UPDATE organization_settings SET default_document_agent_id=$1,orn=COALESCE(orn,'56017') WHERE status='active'",[fixture.agent]);
 
   const listingId=id(),opportunityId=id(),requirementId=id(),contactId=id(),leadId=id(),matchId=id(),assignmentId=id();
   Object.assign(fixture,{listingId,opportunityId,requirementId,contactId,leadId,matchId,assignmentId});
@@ -72,9 +74,9 @@ before(async()=>{
     VALUES($1,$2,$3,$4,'manual','strong_fit',$5,$6,$6)`,[matchId,opportunityId,requirementId,listingId,'Dedicated UAT-067/068 runtime evidence',fixture.agent]);
   await execute(`INSERT INTO inventory_assignments(id,opportunity_id,listing_id,property_match_id,created_by)
     VALUES($1,$2,$3,$4,$5)`,[assignmentId,opportunityId,listingId,matchId,fixture.agent]);
-  await execute(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,organizer_id,starts_at,ends_at,timezone,location,status,outcome,feedback,calendar_uid,created_by,updated_by)
-    VALUES($1,$2,$3,$4,$5,NOW()-INTERVAL '2 days',NOW()-INTERVAL '2 days'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer confirmed interest after viewing',$6,$5,$5)`,
-    [id(),opportunityId,matchId,listingId,fixture.agent,`${prefix}-viewing`]);
+  await execute(`INSERT INTO viewings(id,opportunity_id,property_match_id,listing_id,inventory_assignment_id,organizer_id,starts_at,ends_at,timezone,location,status,outcome,feedback,calendar_uid,created_by,updated_by)
+    VALUES($1,$2,$3,$4,$5,$6,NOW()-INTERVAL '2 days',NOW()-INTERVAL '2 days'+INTERVAL '30 minutes','Asia/Dubai','Integration Test Area','completed','Positive','Customer confirmed interest after viewing',$7,$6,$6)`,
+    [id(),opportunityId,matchId,listingId,assignmentId,fixture.agent,`${prefix}-viewing`]);
 
   fixture.tokens={agent:token};
   if(commissionJourney){

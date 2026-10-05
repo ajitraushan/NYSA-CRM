@@ -6,8 +6,10 @@ const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('all private PDF review links use the controlled separate-tab opener',()=>{
   const app=read('public/app.js');
-  assert.match(app,/a\[href\*="\/api\/crm\/document-versions\/"\]\[href\$="\/view"\]/);
-  assert.match(app,/event\.preventDefault\(\);openCrmPdfTab\(link\.href\)/);
+  assert.match(app,/a\[href\*="\/api\/crm\/document-versions\/"\]/);
+  assert.match(app,/isView=href\.endsWith\('\/view'\)/);
+  assert.match(app,/isLegacyPdf=href\.endsWith\('\/download'\)/);
+  assert.match(app,/event\.preventDefault\(\);openCrmPdfTab\(isLegacyPdf\?href\.replace/);
   assert.match(app,/tab\.opener=null/);
   assert.match(app,/The PDF tab was blocked/);
 });

@@ -8,14 +8,13 @@ const dashboard=readFileSync(new URL('public/dashboard-ui.js',root),'utf8');
 const app=readFileSync(new URL('public/app.js',root),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('package.json',root),'utf8'));
 
-test('dev.171 typography remains while the superseding login-anchored palette covers Agent dashboards',()=>{
-  assert.equal(pkg.version,'2.1.0-dev.217');
+test('dev.171 dashboard structure remains under the approved DEV218 workspace palette',()=>{
+  assert.equal(pkg.version,'2.1.0-dev.218');
   assert.match(dashboard,/agent-dashboard-website-theme/);
   for(const marker of [
-    'CORE-GLOBAL-DARK-THEME-DEV202','--panel:#15191b','--panel2:#1b2023','--text:#f7f4ed','--muted:#bdb9b0',
-    '--gold:#d4ab60','--gold-strong:#ebc982','--green:#d4ab60',
-    'font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
-    'font-family:"Iowan Old Style","Palatino Linotype",Baskerville,Georgia,serif'
+    'DEV218 approved NYSA light workspace','--panel:#ffffff','--panel2:#f4f1eb','--text:#14232c','--muted:#5b6770',
+    '--gold:#8f6a30','--gold-strong:#c9a86a','--green:#276749',
+    'font-family:Inter,Arial,sans-serif','font-family:\'GFS Baskerville\',Georgia,serif'
   ])assert.ok(html.includes(marker),`missing website theme marker ${marker}`);
 });
 

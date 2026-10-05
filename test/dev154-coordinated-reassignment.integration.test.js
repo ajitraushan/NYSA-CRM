@@ -31,7 +31,7 @@ test('M-04/J POST coordinated reassignment preserves an Accepted Offer in Postgr
     assert.equal(latest?.version,'099_dev153_inventory_assignment_lifecycle.sql','Dedicated database must be migrated through 099');
 
     await execute(`INSERT INTO brokers(id,name,email,role,status,password_hash,job_role)
-      VALUES($1,$2,$3,'admin','active','integration-only','admin'),
+      VALUES($1,$2,$3,'internal_broker','active','integration-only','manager'),
             ($4,$5,$6,'internal_broker','active','integration-only','sales_agent'),
             ($7,$8,$9,'internal_broker','active','integration-only','sales_agent')`,[
       fixture.admin,`${prefix} admin`,`${prefix}-admin@example.invalid`,

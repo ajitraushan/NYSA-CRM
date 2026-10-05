@@ -1,4 +1,5 @@
 import zlib from 'node:zlib';
+import {renderApprovedDocumentPdf} from './approved-document-renderer.js';
 
 const PAGE={width:595,height:842,margin:42};
 const C={ink:[0.10,0.12,0.11],muted:[0.42,0.44,0.41],gold:[0.62,0.47,0.20],pale:[0.95,0.94,0.91],line:[0.84,0.83,0.79],white:[1,1,1]};
@@ -59,7 +60,7 @@ function nextSteps(draw,top){
   return top+59;
 }
 
-export function makeProposalPdf(data){
+function makeProposalPdfLegacy(data){
   const {proposal,version,organization,recipient,requirement,properties,narrative,disclaimer,media=[],valueBriefs=[],logo=null}=data,doc=new PdfDoc(),logoImage=logo?doc.image(logo.buffer,logo.mediaType):null,mediaImages=new Map();
   for(const item of media){const image=doc.image(item.buffer,item.mediaType);if(image)mediaImages.set(item.id,image);}
   if(proposal.templateType==='Financial Illustration'){
@@ -104,5 +105,33 @@ export function makeProposalPdf(data){
   });
   return doc.finish();
 }
+
+const approvedDate=value=>value?new Intl.DateTimeFormat('en-AE',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Dubai'}).format(new Date(value)):'Not recorded';
+const approvedMoney=(value,currency='AED',digits=0)=>value===null||value===undefined?'Not recorded':`${currency} ${Number(value).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits})}`;
+
+export function proposalApprovedDocument(data){
+  const {proposal,version,organization={},recipient={},requirement={},properties=[],media=[],valueBriefs=[],narrative={},disclaimer,agent={}}=data;
+  if(proposal.templateType==='Financial Illustration'){
+    const property=properties[0]||{},scenario=data.financialScenario||{},output=scenario.outputSnapshot||{},input=scenario.inputSnapshot||{},currency=scenario.currency||property.currency||organization.defaultCurrency||'AED',roi=scenario.scenarioType==='roi';
+    return{documentCode:'financial_illustration',data:{
+      scenarioSnapshot:scenario,
+      replacements:{'Synthetic UAT Customer':recipient.fullName||'Not recorded','05 Oct 2026':data.preparedAt||approvedDate(new Date()),'NYSA-INV-SYN-000001':property.inventoryReference||'Not recorded','Synthetic Marina Residence':property.project||'Property not recorded','Dubai Marina':property.area||'Area not recorded','Apartment':property.propertyType||'Type not recorded','2 bed':property.bedrooms?`${property.bedrooms} bed`:'Bedrooms not recorded','2,350,000':Number(property.price||0).toLocaleString('en-US')},
+      labelValues:roi?[
+        {label:'Property price',value:approvedMoney(output.price??scenario.propertyPrice,currency)},{label:'Expected annual rent',value:approvedMoney(output.annualRent,currency)},{label:'Estimated annual costs',value:approvedMoney(output.annualCosts,currency)},{label:'Net yield',value:output.netYield==null?'Not calculated':`${Number(output.netYield).toFixed(2)}%`}
+      ]:[
+        {label:'Property price',value:approvedMoney(output.propertyPrice??scenario.propertyPrice,currency)},{label:'Down payment',value:approvedMoney(output.downPayment,currency)},{label:'Loan amount',value:approvedMoney(output.principal??scenario.loanAmount,currency)},{label:'Est. monthly payment',value:approvedMoney(output.monthlyPayment??scenario.monthlyPayment,currency)},{label:'Regulatory fees',value:approvedMoney(output.totalRegulatoryFees,currency)},{label:'Upfront cash required',value:approvedMoney(output.upfrontCash,currency)}
+      ],
+      textValues:[{selector:'.idrow .ref',value:proposal.proposalNumber},{selector:'.disc',value:disclaimer},{selector:'.assume',value:scenario.disclaimer||narrative.assumptions||'Figures remain subject to verification.'}]
+    }};
+  }
+  const currency=organization.defaultCurrency||'AED',budget=requirement.budgetMin||requirement.budgetMax?`${compactMoney(requirement.budgetMin,currency)} – ${compactMoney(requirement.budgetMax,currency)}`:'Open',briefByListing=new Map(valueBriefs.map(brief=>[brief.listingId,brief]));
+  return{documentCode:'buyer_proposal',data:{
+    reference:proposal.proposalNumber,title:proposal.title,version,issueDate:data.preparedAt,disclaimer,customer:{name:recipient.fullName,phone:recipient.phone,address:recipient.postalAddress,identityReference:recipient.idDocumentType&&recipient.idDocumentLast4?`Identity reference: ${recipient.idDocumentType==='emirates_id'?'Emirates ID':'Passport'} ending ${recipient.idDocumentLast4}`:'Identity reference: Not recorded'},agent,
+    requirementChips:[{label:'Purpose',value:label(requirement.businessLine)},{label:'Goal',value:label(requirement.purpose)},...(requirement.areas||[]).map(value=>({label:'Area',value})),...(requirement.propertyTypes||[]).map(value=>({label:'Type',value})),{label:'Beds',value:requirement.bedroomsMin?`${requirement.bedroomsMin}+`:'Open'},{label:'Budget',value:budget,highlight:true},{label:'Finance',value:label(requirement.fundingMethod)||'Open',highlight:true},{label:'Timeline',value:requirement.timelineCode||'Open',highlight:true}].filter(x=>x.value),
+    properties:properties.map(p=>{const brief=briefByListing.get(p.id);return{title:p.project,reference:p.inventoryReference,area:p.area,propertyType:p.propertyType,bedrooms:p.bedrooms,sizeSqft:p.sizeSqft,price:p.price,currency:p.currency||currency,availability:p.availabilityConfirmedAt?`Available ${approvedDate(p.availabilityConfirmedAt)}`:'Availability requires reconfirmation',handover:p.handoverDate||'Handover not recorded',developer:p.developer,parking:p.parkingSpaces,paymentPlan:[label(p.paymentPlanType),p.downPaymentPercent!=null?`${p.downPaymentPercent}% down payment`:null,p.onHandoverPercent!=null?`${p.onHandoverPercent}% on handover`:null,p.postHandoverYears?`${p.postHandoverYears} years post-handover`:null,p.paymentPlanNotes,p.availabilityConfirmedAt?`Availability ${approvedDate(p.availabilityConfirmedAt)}`:null].filter(Boolean).join(' · '),suitability:brief?.recommendation||narrative.suitability,highlights:[brief?.strengths,brief?`Expected annual rent ${approvedMoney(brief.expectedAnnualRent,brief.currency||p.currency||currency)} · Estimated annual costs ${approvedMoney(brief.estimatedAnnualCosts,brief.currency||p.currency||currency)} · Estimated net ROI ${brief.roiPercent==null?'Not calculated':`${Number(brief.roiPercent).toFixed(2)}%`}`:null,narrative.highlights].filter(Boolean).join(' · '),tradeoffs:narrative.assumptions,images:media.filter(item=>item.listingId===p.id&&item.buffer&&item.mediaType).slice(0,2).map(item=>({src:`data:${item.mediaType};base64,${item.buffer.toString('base64')}`,caption:item.caption||item.title||'Approved property image'}))};})
+  }};
+}
+
+export async function makeProposalPdf(data){const approved=proposalApprovedDocument(data);return renderApprovedDocumentPdf(approved.documentCode,approved.data);}
 
 export { PdfDoc,canvas,header,footer,C };

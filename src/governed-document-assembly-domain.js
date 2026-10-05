@@ -1,5 +1,5 @@
 export const GOVERNED_DOCUMENT_ASSEMBLY_POLICY_VERSION = 'r4-governed-document-assembly-v1';
-export const GOVERNED_DOCUMENT_CATALOG_VERSION = 'r4-document-catalog-2026-08-08-v1';
+export const GOVERNED_DOCUMENT_CATALOG_VERSION = 'r4-document-catalog-2026-10-05-v2';
 
 const CATALOG = Object.freeze({
   dld_contract_a: {
@@ -59,8 +59,16 @@ const CATALOG = Object.freeze({
     ]
   },
   listing_noc: {
-    label: 'Listing NOC', purpose: 'Owner definition required before activation',
-    mode: 'definition_required', requiredSources: [], fields: []
+    label: 'Listing NOC', purpose: 'Owner authorization for NYSA to market and publish the selected property',
+    mode: 'core_generated',
+    requiredSources: ['organization', 'agent', 'seller_authority', 'inventory', 'commercial_terms'],
+    fields: [
+      ['owner_reference','seller_authority','partyReference','locked'], ['authority_evidence','seller_authority','authorityEvidenceReference','locked'],
+      ['property_reference','inventory','inventoryReference','locked'], ['property_description','inventory','propertyDescription','locked'],
+      ['asking_price','inventory','askingPrice','controlled'], ['organization_name','organization','legalName','locked'],
+      ['agent_reference','agent','brokerReference','locked'], ['mandate_type','commercial_terms','mandateType','controlled'],
+      ['commission_terms','commercial_terms','commissionTerms','controlled']
+    ]
   }
 });
 

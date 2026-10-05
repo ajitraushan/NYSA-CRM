@@ -1,4 +1,5 @@
 import {PdfDoc,canvas,C} from './proposal-pdf.js';
+import {renderApprovedDocumentPdf} from './approved-document-renderer.js';
 
 const clean=value=>String(value??'').replace(/[\u2010-\u2015]/g,'-').replace(/[^\x20-\x7e]/g,' ').replace(/\s+/g,' ').trim();
 const amount=cents=>(Number(cents||0)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -14,7 +15,24 @@ function cell(draw,x,y,width,height,text,{label=false,bold=false,size=7,fill=C.w
   draw.paragraph(clean(text)||'-',x+padding,y+Math.max(3,(height-size)/2-2),width-padding*2,{size,bold:label||bold,leading:size+.5,maxLines});
 }
 
-export function makeCommissionInvoicePdf({invoice,organization={},transaction={},payer={},logo=null}){
+export function commissionInvoiceApprovedDocument({invoice,organization={},transaction={},payer={}}){
+  const subtotal=Number(invoice.commissionCents||0)/100,vat=Number(invoice.vatCents||0)/100,total=Number(invoice.totalCents||0)/100,currency=invoice.currency||'AED',fmt=value=>Number(value||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),quantity=Number(invoice.quantity??1),unitRate=invoice.unitRate==null?subtotal/quantity:Number(invoice.unitRate);
+  if(!Number.isFinite(quantity)||quantity<=0||!Number.isFinite(unitRate))throw new Error('Tax invoice quantity and rate must be valid positive numbers');
+  if(Math.abs(quantity*unitRate-subtotal)>.005)throw new Error('Tax invoice quantity x rate must reconcile to subtotal');
+  if(Math.abs(Math.round(subtotal*.05*100)/100-vat)>.005)throw new Error('Tax invoice VAT must equal 5% of subtotal');
+  if(Math.abs(subtotal+vat-total)>.005)throw new Error('Tax invoice total must equal subtotal plus VAT');
+  return{
+    replacements:{'TRN 105260934200003':`TRN ${organization.vatRegistrationNumber||'Not maintained'}`,'NYSA Realty LLC':organization.legalName||organization.displayName||'NYSA Realty LLC','2003-18, Citadel Towers, Marasi Drive':organization.registeredAddress||'Registered address not maintained','admin@nysarealty.com':organization.primaryEmail||'Email not maintained','www.nysarealty.com':organization.websiteUrl||'Website not maintained'},
+    lineValues:[{label:'Invoice No.',value:invoice.invoiceReference},{label:'Invoice Date',value:date(invoice.invoiceDate)},{label:'Date of Supply',value:date(invoice.supplyDate||transaction.bookedDate)},{label:'Payment Due',value:date(invoice.dueDate)},{label:'Client Name',value:payer.name||invoice.payerName},{label:'Address',value:payer.address||'Not maintained'},{label:'Client TRN (if registered)',value:payer.vatRegistrationNumber||'Not applicable'},{label:'Property / Unit',value:[transaction.project,transaction.unitReference].filter(Boolean).join(' · ')},{label:'Transaction',value:transaction.transactionType||'Sale / Lease'},{label:'Transaction Value (AED)',value:fmt(transaction.agreedValue)},{label:'Amount in words',value:`${currency} ${fmt(total)}`}],
+    labelValues:[{label:'Subtotal (excl. VAT)',value:fmt(subtotal)},{label:'VAT Rate',value:'5%'},{label:'VAT Amount',value:fmt(vat)},{label:'TOTAL AMOUNT DUE (AED)',value:fmt(total)},{label:'Beneficiary',value:organization.bankAccountName},{label:'Bank',value:organization.bankName},{label:'Account No.',value:organization.bankAccountNumber},{label:'IBAN',value:organization.bankIban},{label:'SWIFT',value:organization.bankSwiftCode},{label:'Currency',value:organization.bankCurrency||currency}],
+    table:{selector:'.items',headerRows:1,rows:[[1,invoice.description||`Agency commission · ${invoice.milestone||'transaction'}`,quantity,fmt(unitRate),fmt(subtotal)]]}
+  };
+}
+
+export async function makeCommissionInvoicePdf(input){
+  return renderApprovedDocumentPdf('tax_invoice',commissionInvoiceApprovedDocument(input));
+  const {invoice,organization={},transaction={},payer={},logo=null}=input;
+  /* Legacy renderer retained below only as a rollback reference until DEV218 is accepted. */
   const doc=new PdfDoc(),logoImage=logo?doc.image(logo.buffer,logo.mediaType):null,d=canvas(TEXT),images={};
   if(logoImage){images.Logo=logoImage;d.image('Logo',logoImage,24,25,125,63);}else d.text(clean(organization.displayName||'NYSA REALTY'),24,47,{size:18,bold:true,fill:C.gold});
 

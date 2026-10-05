@@ -5,8 +5,9 @@ import {registerAccountantWorkspace} from '../accountant-workspace.js';
 import {parseReceiptAmount} from '../../public/money-input.js';
 import {readFile} from 'node:fs/promises';
 import {registerCommissionReceivableRoutes} from '../commission-receivables.js';
-import {makeCommissionPayoutSheetPdf} from '../commission-payout-sheet-pdf.js';
-import {readPrivate} from '../private-files.js';
+import {commissionPayoutApprovedDocument,makeCommissionPayoutSheetPdf} from '../commission-payout-sheet-pdf.js';
+import {readPrivate,savePrivate,removePrivate} from '../private-files.js';
+import {approvedDocumentEvidence,recordApprovedDocumentIssuance} from '../approved-document-issuance.js';
 import {registerOpportunityFinance,opportunityReceipts} from '../opportunity-finance.js';
 import {lockOpportunityFinance} from '../receivable-receipt-posting.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
@@ -213,9 +214,21 @@ r.get('/finance/agent-payouts/:agentId/quarters/:quarter/document',async(req,res
   const statement=buildQuarterPayoutStatement(rows);
   const organization=await one("SELECT * FROM organization_settings WHERE status='active' ORDER BY version DESC LIMIT 1")||{displayName:'NYSA Realty'};
   let logo=null;try{logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:{buffer:await readFile(new URL('../../public/brand/nysa/raster/nysa-horizontal-light@2x.png',import.meta.url)),mediaType:'image/png'};}catch{}
-  const generatedDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai'}).format(new Date()),currency=rows[0].currency||'AED',pdf=makeCommissionPayoutSheetPdf({agent:agent.name,quarter,currency,rows:statement.rows,summary:statement.summary,organization,logo,generatedDate}),fileName=`NYSA-Payout-${clean(agent.name).replace(/[^a-z0-9]+/gi,'-')}-${quarter}.pdf`;
-  await audit('AgentPayoutCalculationSheet',agentId,'document_viewed',req.broker.id,{quarter,rowCount:rows.length,download:req.query.download==='1'});
-  res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`${req.query.download==='1'?'attachment':'inline'}; filename="${fileName}"`);res.setHeader('Cache-Control','private, no-store');res.end(pdf);
+  const latestSourceDate=rows.map(row=>row.updatedAt||row.createdAt||row.receiptDate).filter(Boolean).sort().at(-1),generatedDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai'}).format(new Date(latestSourceDate||Date.now())),currency=rows[0].currency||'AED',input={agent:agent.name,quarter,currency,rows:statement.rows,summary:statement.summary,organization,logo,generatedDate},data=commissionPayoutApprovedDocument(input),rendered=await makeCommissionPayoutSheetPdf(input),evidence=approvedDocumentEvidence('agent_payout',data,rendered),fileName=`NYSA-Payout-${clean(agent.name).replace(/[^a-z0-9]+/gi,'-')}-${quarter}.pdf`,idempotencyKey=`agent-payout:${agentId}:${quarter}:${evidence.dataHash}`;
+  let createdStorageKey=null;
+  try{
+    const issued=await transaction(async client=>{
+      await execute('SELECT pg_advisory_xact_lock(hashtext($1))',[`approved-agent-payout:${agentId}:${quarter}`],client);
+      const existing=await one('SELECT i.document_version_id,dv.storage_key,dv.file_name FROM approved_document_issuances i JOIN document_versions dv ON dv.id=i.document_version_id WHERE i.idempotency_key=$1',[idempotencyKey],client);if(existing)return existing;
+      const documentId=uuid(),documentVersionId=uuid(),documentReference=`NYSA-PAYOUT-${quarter}-${agentId.slice(0,8).toUpperCase()}-${evidence.dataHash.slice(0,8).toUpperCase()}`;createdStorageKey=await savePrivate(rendered,'.pdf');
+      await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by) VALUES($1,$2,'agent_payout',$3,'Internal','restricted','active',$4,$4)`,[documentId,documentReference,`Agent Payout · ${agent.name} · ${quarter}`,req.broker.id],client);
+      await execute(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by) VALUES($1,$2,1,$3,'application/pdf',$4,$5,$6,1,'generated','restricted','generated',$7,$7)`,[documentVersionId,documentId,fileName,rendered.length,createdStorageKey,evidence.pdfHash,req.broker.id],client);
+      for(const row of rows)if(row.dealId)await execute("INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES($1,$2,'Deal',$3,$4) ON CONFLICT DO NOTHING",[uuid(),documentId,row.dealId,req.broker.id],client);
+      await recordApprovedDocumentIssuance({execute,uuid,client,documentCode:'agent_payout',data,pdf:rendered,documentVersionId,sourceEntityType:'AgentPayoutQuarter',sourceEntityId:agentId,issuedBy:req.broker.id,idempotencyKey});
+      await audit('AgentPayoutCalculationSheet',agentId,'approved_document_issued',req.broker.id,{quarter,rowCount:rows.length,documentVersionId,dataHash:evidence.dataHash,pdfHash:evidence.pdfHash},client);return{documentVersionId,storageKey:createdStorageKey,fileName};
+    });
+    const committedStorageKey=createdStorageKey;createdStorageKey=null;const pdf=committedStorageKey&&issued.storageKey===committedStorageKey?rendered:await readPrivate(issued.storageKey);await audit('AgentPayoutCalculationSheet',agentId,'document_viewed',req.broker.id,{quarter,rowCount:rows.length,documentVersionId:issued.documentVersionId,download:req.query.download==='1'});res.setHeader('Content-Type','application/pdf');res.setHeader('Content-Disposition',`${req.query.download==='1'?'attachment':'inline'}; filename="${issued.fileName.replace(/"/g,'')}"`);res.setHeader('Cache-Control','private, no-store');res.end(pdf);
+  }catch(error){if(createdStorageKey)await removePrivate(createdStorageKey).catch(()=>{});throw error;}
 });
 
 const preparationFailure=(message,statusCode=409)=>Object.assign(new Error(message),{statusCode,payoutPreparationFailure:true});

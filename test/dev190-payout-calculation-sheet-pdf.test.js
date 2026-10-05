@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {makeCommissionPayoutSheetPdf} from '../src/commission-payout-sheet-pdf.js';
+import {commissionPayoutApprovedDocument} from '../src/commission-payout-sheet-pdf.js';
+import {buildApprovedDocumentHtml} from '../src/approved-document-renderer.js';
 import {buildQuarterPayoutStatement} from '../src/commission-payout-domain.js';
 import {accountantRequestAllowed} from '../src/accountant-access.js';
 
@@ -9,13 +10,10 @@ const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const agentId='11111111-1111-4111-8111-111111111111';
 const rows=[{receiptDate:'2026-07-05',quarterKey:'2026-Q3',opportunityReference:'NYSA-OP-202607-000001',dealReference:'NYSA-DL-202607-000001',propertySold:'NYSA-INV-000101 · Synthetic Tower · Unit 1204',salePrice:10000000,dealGrossCommissionExVat:200000,grossCommissionReceivedExVat:100000,quarterGrossCumulative:100000,agentCommissionSharePercent:75,agentRoleSplit:'Servicing 75.00%',eligibleCommissionPool:55000,currentCreditedAmount:75000,resultingCumulativeAmount:75000,achievedRate:55,currentDealPayout:41250,quarterTrueUpAmount:0,agentPayoutAmount:41250}];
 
-test('NYSA Agent-quarter payout calculation sheet is a printable PDF containing the Opportunity calculation',()=>{
+test('NYSA Agent-quarter payout calculation maps the Opportunity calculation into the approved sheet',()=>{
   const statement=buildQuarterPayoutStatement(rows.map(row=>({...row,releasedAmount:0})));
-  const pdf=makeCommissionPayoutSheetPdf({agent:'Synthetic Agent',quarter:'2026-Q3',currency:'AED',rows:statement.rows,summary:statement.summary,organization:{displayName:'NYSA Realty',proposalFooter:'NYSA Realty | Internal'},generatedDate:'2026-09-05'});
-  assert.equal(pdf.subarray(0,5).toString(),'%PDF-');
-  const text=pdf.toString('latin1');
-  assert.match(text,/\/MediaBox \[0 0 842 595\]/);
-  for(const expected of ['AGENT PAYOUT CALCULATION SHEET','Synthetic Agent','NYSA-OP-202607-000001','Unit particulars','Internal ref no','Sale Price','Company Gross','Commission','Received','Cumulative','Agent','Share','Split','Tier','Adjustment','Total','Already Paid','10,000,000.00','AED 100,000.00','55.00%','75.00%','41.25%','AED 41,250.00'])assert.match(text,new RegExp(expected));
+  const approved=commissionPayoutApprovedDocument({agent:'Synthetic Agent',quarter:'2026-Q3',currency:'AED',rows:statement.rows,summary:statement.summary,generatedDate:'2026-09-05'}),html=buildApprovedDocumentHtml('agent_payout',approved);
+  assert.equal(approved.header.Agent,'Synthetic Agent');assert.match(approved.rows[0].references,/NYSA-OP-202607-000001/);assert.equal(approved.rows[0].salePrice,'10,000,000.00');assert.equal(approved.rows[0].grossReceived,'100,000.00');assert.equal(approved.rows[0].agentShare,'55.00%');assert.equal(approved.rows[0].split,'75.00%');assert.equal(approved.rows[0].afterSplit,'41.25%');assert.equal(approved.rows[0].total,'41,250.00');assert.match(html,/Agent Payout Calculation Sheet/);assert.match(html,/Company Commission/);
 });
 
 test('calculation-sheet route sources the transparent commission chain from immutable Deal and credit records',()=>{

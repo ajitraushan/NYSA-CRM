@@ -10,7 +10,7 @@ test('R3B-INVENTORY-BOUNDARY-52 separates Internal Inventory from portal Listing
   const ui=read('public/app.js'),start=ui.indexOf('async function openListingForm'),end=ui.indexOf('\nasync function',start+20),inventoryForm=ui.slice(start,end);
   assert.ok(start>0&&end>start);assert.match(inventoryForm,/Who or what supplied this property to NYSA\?/);assert.match(inventoryForm,/Enter the owner only when the owner contacted NYSA directly/);assert.match(inventoryForm,/does not prove ownership or authorize NYSA to list the property/);assert.match(inventoryForm,/Owner and authority are completed after the Draft is saved/);
   for(const portalOnly of ['Agreement type','Agreement evidence','Portal permit number','Portal \/ channel'])assert.doesNotMatch(inventoryForm,new RegExp(portalOnly));
-  assert.match(ui,/NYSA CORE \/ EXTERNAL PORTAL LISTINGS/);assert.match(ui,/Marketing agreement and permit evidence/);assert.match(ui,/No automatic portal publication/);
+  assert.match(ui,/NYSA CORE \/ EXTERNAL PORTAL LISTINGS/);assert.match(ui,/Listing NOC authority and permit evidence/);assert.match(ui,/No automatic portal publication/);
 });
 
 test('R3B-INVENTORY-BOUNDARY-52 verifies owner authority without an unapproved availability-age gate',()=>{

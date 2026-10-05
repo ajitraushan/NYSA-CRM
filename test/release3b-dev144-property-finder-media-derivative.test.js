@@ -33,5 +33,5 @@ test('dev.144 stores a separate pending derivative with provenance and no PF ope
 test('historical migration 082 remains while the consolidated runtime version advances',()=>{
   const migrations=readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
   assert.ok(migrations.includes('082_release3b_property_finder_media_derivatives.sql'));assert.ok(migrations.length>=82);
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.217');assert.equal(JSON.parse(read('package-lock.json')).version,'2.1.0-dev.217');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.218');assert.equal(JSON.parse(read('package-lock.json')).version,'2.1.0-dev.218');
 });
