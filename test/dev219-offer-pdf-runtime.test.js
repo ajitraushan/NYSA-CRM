@@ -7,15 +7,29 @@ import {chromiumLaunchOptions} from '../src/approved-document-renderer.js';
 const read=file=>readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('DEV219 server renderer uses the headless-shell mode required by packaged Chromium',async()=>{
+  const runtimeDirectory='/application/tmp/pdf-renderer',executablePath=`${runtimeDirectory}/chromium`,calls=[];
+  const previousTmpdir=process.env.TMPDIR;
   const chromium={
     args:['--no-sandbox'],
     defaultViewport:{width:1920,height:1080},
     headless:'shell',
-    async executablePath(){return '/tmp/chromium';}
+    async executablePath(){assert.equal(process.env.TMPDIR,runtimeDirectory);return executablePath;}
   };
-  assert.deepEqual(await chromiumLaunchOptions('linux',{chromium}),{
-    executablePath:'/tmp/chromium',headless:'shell',args:['--no-sandbox'],defaultViewport:{width:1920,height:1080}
-  });
+  try{
+    assert.deepEqual(await chromiumLaunchOptions('linux',{
+      chromium,runtimeDirectory,
+      mkdir:(directory,options)=>calls.push(['mkdir',directory,options]),
+      chmod:(file,mode)=>calls.push(['chmod',file,mode])
+    }),{
+      executablePath,headless:'shell',args:['--no-sandbox'],defaultViewport:{width:1920,height:1080}
+    });
+    assert.deepEqual(calls,[
+      ['mkdir',runtimeDirectory,{recursive:true,mode:0o700}],
+      ['chmod',executablePath,0o700]
+    ]);
+  }finally{
+    if(previousTmpdir===undefined)delete process.env.TMPDIR;else process.env.TMPDIR=previousTmpdir;
+  }
 });
 
 test('DEV219 packaged Chromium major matches Puppeteer required headless-shell major',()=>{

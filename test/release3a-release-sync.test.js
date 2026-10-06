@@ -10,7 +10,8 @@ test('UI-RELEASE-SYNC-48 loads every browser asset using the served application 
   assert.match(bootstrap,/fetch\('\/api\/health\?asset-manifest='/);
   assert.match(bootstrap,/cache:'no-store'/);
   assert.match(bootstrap,/window\.NYSA_ASSET_BUILD=build/);
-  assert.match(bootstrap,/\['offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','dashboard-ui\.js'.*'document-compliance-ui\.js'.*'app\.js'\]/);
+  assert.match(bootstrap,/const featureFiles=\[[^\]]*'offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','dashboard-ui\.js'[^\]]*'document-compliance-ui\.js'[^\]]*\]/);
+  assert.match(bootstrap,/await loadScript\('app\.js'\)/);
   assert.match(bootstrap,/script\.src=`\/\$\{file\}\?v=\$\{encodeURIComponent\(build\)\}`/);
   assert.match(fs.readFileSync(new URL('../src/lib/http-kit.js',import.meta.url),'utf8'),/script-src 'self';/);
   assert.doesNotMatch(fs.readFileSync(new URL('../src/lib/http-kit.js',import.meta.url),'utf8'),/script-src 'self' 'unsafe-inline'/);

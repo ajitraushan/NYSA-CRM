@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.otf': 'font/otf',
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
 
 function compile(pattern) {
@@ -148,16 +148,19 @@ export function createApp() {
       if (err || !st.isFile()) {
         // SPA fallback
         const index = path.join(staticDir, 'index.html');
-        return fs.existsSync(index) ? streamFile(index, res) : res.status(404).json({ error: 'Not found' });
+        return fs.existsSync(index) ? streamFile(index, res, req) : res.status(404).json({ error: 'Not found' });
       }
-      streamFile(file, res);
+      streamFile(file, res, req);
     });
   }
 
-  function streamFile(file, res) {
+  function streamFile(file, res, req) {
     const extension=path.extname(file).toLowerCase();
     res.setHeader('Content-Type', MIME[extension] || 'application/octet-stream');
-    if (['.html','.js','.css'].includes(extension)) {
+    const versioned=Boolean(req?.query?.v),asset=versioned||['.woff2','.otf','.png','.svg','.ico'].includes(extension);
+    if(asset&&extension!=='.html'){
+      res.setHeader('Cache-Control','public, max-age=31536000, immutable');
+    } else if (['.html','.js','.css'].includes(extension)) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');

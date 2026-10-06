@@ -5,6 +5,7 @@ import puppeteer from 'puppeteer-core';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const templateDir=path.join(here,'approved-document-templates');
+const defaultChromiumRuntimeDir=path.join(here,'..','tmp','pdf-renderer');
 const templates=new Map([
   ['buyer_proposal','buyer-proposal.html'],['financial_illustration','financial-illustration.html'],
   ['offer_letter','offer-letter.html'],['viewing_confirmation','viewing-confirmation.html'],
@@ -65,10 +66,24 @@ export function buildApprovedDocumentHtml(documentCode,data={}){
   return html.replace('</body>',`${hydrationScript({...data,documentCode})}</body>`);
 }
 
-export async function chromiumLaunchOptions(platform=process.platform,{chromePath=process.env.CHROME_PATH,chromium:providedChromium}={}){
+export async function chromiumLaunchOptions(platform=process.platform,{
+  chromePath=process.env.CHROME_PATH,
+  chromium:providedChromium,
+  runtimeDirectory=process.env.PDF_RENDER_RUNTIME_DIR||defaultChromiumRuntimeDir,
+  mkdir=(directory,options)=>fs.mkdirSync(directory,options),
+  chmod=(file,mode)=>fs.chmodSync(file,mode)
+}={}){
   if(platform==='win32')return{executablePath:chromePath||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-setuid-sandbox']};
+  mkdir(runtimeDirectory,{recursive:true,mode:0o700});
+  // CloudLinux/cPanel mounts the shared /tmp directory as noexec. Sparticuz
+  // otherwise extracts its binary to /tmp/chromium, which makes every PDF
+  // request fail with EACCES even though the package and browser versions match.
+  // Keep all renderer binaries, libraries and profiles inside the application.
+  process.env.TMPDIR=runtimeDirectory;
   const chromium=providedChromium||(await import('@sparticuz/chromium')).default;
-  return{executablePath:await chromium.executablePath(),headless:chromium.headless,args:chromium.args,defaultViewport:chromium.defaultViewport};
+  const executablePath=await chromium.executablePath();
+  chmod(executablePath,0o700);
+  return{executablePath,headless:'shell',args:chromium.args,defaultViewport:chromium.defaultViewport};
 }
 
 export async function renderApprovedDocumentPdf(documentCode,data={}){
