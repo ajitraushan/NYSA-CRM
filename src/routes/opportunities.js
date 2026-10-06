@@ -12,7 +12,7 @@ import {recordApprovedDocumentIssuance} from '../approved-document-issuance.js';
 import {selectDocumentAgent} from '../document-agent-domain.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
 import { validateBookingCreate,validateBookingTransition,validateBookingExtension } from '../booking-domain.js';
-import { REQUIRED_PARTIES,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../deal-domain.js';
+import { REQUIRED_PARTIES,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealReservationReleaseAligned,dealClosureGates } from '../deal-domain.js';
 import { sortCustomerPriorityCases } from '../customer-intelligence-domain.js';
 import { requireDocumentComplianceGates } from '../document-compliance-gate.js';
 import { inventoryEvaluatorProjection,loadOpportunityInventoryEvaluation } from '../inventory-eligibility-service.js';
@@ -86,6 +86,45 @@ async function releaseOfferOwnedReservation(offer,reason,actorId,client){
   await audit('BookingStatus',booking.id,'cancelled_from_terminal_offer',actorId,{offerId:offer.id,
     opportunityId:offer.opportunityId,reason,inventoryStatusFrom:'Reserved',inventoryStatusTo:safeStatus},client);
   return {released:true,bookingId:booking.id,restoredStatus:safeStatus};
+}
+
+async function expireStaleReservationForProperty({listingId,externalPropertyId,actorId,client}){
+  const booking=await one(`SELECT b.*,o.stage AS opportunity_stage FROM bookings b
+    JOIN opportunities o ON o.id=b.opportunity_id
+    WHERE b.status='reserved' AND b.expires_at<=NOW()
+      AND (($1::uuid IS NOT NULL AND b.listing_id=$1) OR ($2::uuid IS NOT NULL AND b.external_property_id=$2))
+    ORDER BY b.created_at DESC LIMIT 1 FOR UPDATE OF b,o`,[listingId||null,externalPropertyId||null],client);
+  if(!booking)return null;
+  const reason='Reservation expired automatically before a competing reservation was created',governedDeal=await one(
+    "SELECT * FROM deals WHERE booking_id=$1 AND status NOT IN ('closed_won','closed_lost') FOR UPDATE",[booking.id],client);
+  const expired=await one(`UPDATE bookings SET status='expired',expired_at=NOW(),release_reason=$1,
+    version=version+1,updated_at=NOW() WHERE id=$2 AND status='reserved' AND expires_at<=NOW() RETURNING *`,[reason,booking.id],client);
+  if(!expired)return null;
+  await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+    VALUES($1,$2,'reserved','expired',$3,$4)`,[uuid(),booking.id,reason,actorId],client);
+  const assignment=booking.listingId?await one(`UPDATE inventory_assignments SET state='expired',ended_at=NOW(),end_reason=$1
+    WHERE opportunity_id=$2 AND listing_id=$3 AND state='active' RETURNING *`,[reason,booking.opportunityId,booking.listingId],client):null;
+  if(assignment)await execute(`INSERT INTO inventory_assignment_events(id,assignment_id,event_type,reason,actor_id,event_data)
+    VALUES($1,$2,'reservation_released',$3,$4,$5::jsonb)`,[uuid(),assignment.id,reason,actorId,
+      JSON.stringify({bookingId:booking.id,toStatus:'expired',assignmentState:'expired',automatic:true})],client);
+  if(booking.externalPropertyId)await execute(`UPDATE provisional_external_properties SET status=$1,updated_at=NOW()
+    WHERE id=$2 AND status='reserved'`,[booking.inventoryStatusBefore,booking.externalPropertyId],client);
+  const restoredStatus=booking.listingId?(await one('SELECT nysa_inventory_effective_status($1) AS status',[booking.listingId],client)).status:booking.inventoryStatusBefore;
+  if(governedDeal){const linkageId=uuid();await execute(`INSERT INTO deal_inventory_linkages(id,deal_id,opportunity_id,predecessor_linkage_id,change_kind,reason,created_by)
+    VALUES($1,$2,$3,$4,'detached',$5,$6)`,[linkageId,governedDeal.id,governedDeal.opportunityId,governedDeal.currentInventoryLinkageId,reason,actorId],client);
+    await execute(`UPDATE deals SET current_inventory_linkage_id=$1,listing_id=NULL,external_property_id=NULL,offer_id=NULL,
+      accepted_offer_revision_id=NULL,booking_id=NULL,version=version+1,updated_at=NOW() WHERE id=$2`,[linkageId,governedDeal.id],client);}
+  await execute(`UPDATE opportunities SET stage='Matching',listing_id=CASE WHEN listing_id=$3 THEN NULL ELSE listing_id END,
+    recovery_state='matching',next_action_code='return_to_matching',next_action=$1,next_action_notes=$1,
+    next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$2 AND stage IN ('Booking','Deal')`,
+    ['Reservation expired; confirm and assign eligible Inventory',booking.opportunityId,booking.listingId],client);
+  if(['Booking','Deal'].includes(booking.opportunityStage))await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+    VALUES($1,$2,$3,'Matching','reservation_expired',$4,$5)`,[uuid(),booking.opportunityId,booking.opportunityStage,reason,actorId],client);
+  await audit('BookingStatus',booking.id,'expired_automatically',actorId,{from:'reserved',to:'expired',reason,
+    listingId:booking.listingId,externalPropertyId:booking.externalPropertyId,propertyStatusTo:restoredStatus,
+    triggeredByCompetingReservation:true,dealId:governedDeal?.id||null},client);
+  return{bookingId:booking.id,opportunityId:booking.opportunityId,dealId:governedDeal?.id||null,restoredStatus,
+    opportunityRecoveryStage:'Matching'};
 }
 // One governed boundary is used both to populate the broker's selection list and
 // to revalidate the selected row under lock. A prior match/Lead selection is
@@ -894,7 +933,10 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
       if(!governedOfferType)return {code:409,error:'Confirm the Customer objective before creating an Offer'};
       if(checked.value.offerType!==governedOfferType)return {code:409,error:'Offer direction must follow the confirmed Customer objective'};
       const match=await one(`SELECT pm.*,COALESCE(li.project,ep.project_or_building) AS project,
-        COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
+        COALESCE(li.area,ep.property_address) AS area,li.community,li.building,
+        COALESCE(li.property_type,ep.property_type) AS property_type,
+        COALESCE(li.inventory_reference,ep.external_reference) AS inventory_reference,
+        li.unit_reference,li.bedrooms,li.size_sqft,
         COALESCE(li.price,ep.asking_price) AS price,COALESCE(li.currency,ep.currency) AS currency,
         li.deleted_at,li.workflow_status,ep.status AS external_status,ep.usage_kind AS external_usage_kind
         FROM property_matches pm LEFT JOIN listings li ON li.id=pm.listing_id
@@ -1120,13 +1162,15 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const assignment=offer.listingId?await one(`SELECT * FROM inventory_assignments WHERE opportunity_id=$1 AND listing_id=$2
         AND state='active' AND starts_at<=NOW() AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,[offer.opportunityId,offer.listingId],client):null;
       if(offer.listingId&&!assignment)return {code:409,error:'The exact Offer Inventory has no active unexpired assignment to this Opportunity'};
+      const expiredReservation=await expireStaleReservationForProperty({listingId:offer.listingId,externalPropertyId:offer.externalPropertyId,
+        actorId:req.broker.id,client});
       const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM bookings b
         JOIN opportunities o ON o.id=b.opportunity_id WHERE
-        (b.listing_id=$1 OR b.external_property_id=$2) AND b.status='reserved'
+        (b.listing_id=$1 OR b.external_property_id=$2) AND b.status='reserved' AND b.expires_at>NOW()
         ORDER BY b.created_at DESC LIMIT 1 FOR UPDATE OF b`,[offer.listingId,offer.externalPropertyId],client);
-      if(activeBooking)return {code:409,error:`Property is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Release, expire or cancel that booking before creating another reservation`};
+      if(activeBooking)return {code:409,error:`Property is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Try again after that time; an expired reservation will be released automatically.`};
       const effectiveBefore=offer.listingId?(await one('SELECT nysa_inventory_effective_status($1) AS status',[offer.listingId],client)).status:listing.status;
-      if(offer.listingId&&!['Available','Assigned'].includes(effectiveBefore))return {code:409,error:`Inventory is effectively ${effectiveBefore}; another current reservation or terminal closure blocks this Booking`};
+      if(offer.listingId&&!['Available','Assigned'].includes(effectiveBefore))return {code:409,error:`This property is ${effectiveBefore} and cannot be booked. Refresh the Opportunity to review its current availability.`};
       if(offer.externalPropertyId&&!['approved_for_opportunity','under_offer'].includes(listing.status))return {code:409,error:'External/co-broker property must remain approved for this Opportunity before reservation'};
       const period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
         counter=await one(`INSERT INTO booking_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
@@ -1161,7 +1205,7 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
         [uuid(),offer.opportunityId,offer.opportunityStage,`Reservation ${bookingReference} explicitly blocked inventory`,req.broker.id],client);
       await audit('Booking',booking.id,'reserved_from_accepted_offer',req.broker.id,{bookingReference,offerId:offer.id,acceptedOfferRevisionId:acceptedRevision.id,
         listingId:offer.listingId,externalPropertyId:offer.externalPropertyId,evidenceDocumentVersionId:documentVersionId,
-        fileHash:file.fileHash,propertyStatusFrom:listing.status,propertyStatusTo:'reserved'},client);
+        fileHash:file.fileHash,propertyStatusFrom:listing.status,propertyStatusTo:'reserved',expiredPriorBookingId:expiredReservation?.bookingId||null},client);
       return booking;
     });
     if(result.error){await removePrivate(storageKey);return res.status(result.code).json({error:result.error});}
@@ -1172,7 +1216,7 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM offers target
         JOIN bookings b ON b.status='reserved' AND (b.listing_id=target.listing_id OR b.offer_id=target.id)
         JOIN opportunities o ON o.id=b.opportunity_id WHERE target.id=$1 ORDER BY b.created_at DESC LIMIT 1`,[req.params.offerId]);
-      if(activeBooking)return res.status(409).json({error:`Inventory is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Open that Opportunity and ask its maintained manager to release, expire or cancel the reservation`});
+      if(activeBooking)return res.status(409).json({error:`Property is already reserved under ${activeBooking.bookingReference} for Opportunity ${activeBooking.opportunityReference} until ${new Date(activeBooking.expiresAt).toISOString()}. Try again after that time; an expired reservation will be released automatically.`});
       return res.status(409).json({error:'A reservation conflict was detected, but its owning record could not be resolved. Reload the Opportunity before retrying; CORE has not changed the inventory'});
     }
     throw error;
@@ -1194,10 +1238,15 @@ r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
     if(!isManager(req.broker))return {code:403,error:'Only the maintained manager for this Opportunity may release, expire or cancel its reservation'};
     const governedDeal=await one("SELECT * FROM deals WHERE booking_id=$1 AND status NOT IN ('closed_won','closed_lost') FOR UPDATE",[booking.id],client);
     if(booking.version!==expectedVersion)return {code:409,error:'This reservation changed after it was opened; reload before updating it'};
-    if(!['Reserved','reserved'].includes(booking.currentInventoryStatus))return {code:409,error:`Property is ${booking.currentInventoryStatus}; resolve that status conflict before changing this reservation`};
     const checked=validateBookingTransition(booking.status,{...req.body,expiresAt:booking.expiresAt});
     if(checked.error)return {code:409,error:checked.error};
-    const v=checked.value,column={released:'released_at',expired:'expired_at',cancelled:'cancelled_at'}[v.toStatus],
+    const v=checked.value,releaseAligned=dealReservationReleaseAligned({bookingId:booking.id,bookingStatus:booking.status,
+      listingId:booking.listingId,listingStatus:booking.currentInventoryStatus,currentLinkageKind:governedDeal?.currentInventoryLinkageKind});
+    if(v.toStatus==='expired'?!releaseAligned:!['Reserved','reserved'].includes(booking.currentInventoryStatus))
+      return {code:409,error:v.toStatus==='expired'
+        ?`This property is already ${booking.currentInventoryStatus}; the expired reservation cannot release it from this screen.`
+        :'This reservation no longer controls the property. Refresh the Booking; if its end time has passed, record it as expired.'};
+    const column={released:'released_at',expired:'expired_at',cancelled:'cancelled_at'}[v.toStatus],
       updated=await one(`UPDATE bookings SET status=$1,release_reason=$2,${column}=NOW(),version=version+1,updated_at=NOW()
         WHERE id=$3 AND version=$4 RETURNING *`,[v.toStatus,v.reason,booking.id,booking.version],client);
     await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
@@ -1218,12 +1267,24 @@ r.post('/crm/bookings/:bookingId/status',async(req,res)=>{
       VALUES($1,$2,$3,$4,'detached',$5,$6)`,[linkageId,governedDeal.id,governedDeal.opportunityId,governedDeal.currentInventoryLinkageId,v.reason||`Reservation ${v.toStatus}`,req.broker.id],client);
       await execute(`UPDATE deals SET current_inventory_linkage_id=$1,listing_id=NULL,external_property_id=NULL,offer_id=NULL,
         accepted_offer_revision_id=NULL,booking_id=NULL,version=version+1,updated_at=NOW() WHERE id=$2`,[linkageId,governedDeal.id],client);}
-    await execute(`UPDATE opportunities SET stage='Negotiation',next_action_code='follow_up_offer_feedback',next_action=$1,next_action_notes=$1,next_action_due_at=NOW()+INTERVAL '1 day',
-      version=version+1,updated_at=NOW() WHERE id=$2`,
-      [`Reservation ${v.toStatus}; review accepted offer and next customer action`,booking.opportunityId],client);
-    await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
-      VALUES($1,$2,$3,'Negotiation',$4,$5,$6)`,
-      [uuid(),booking.opportunityId,booking.opportunityStage,`reservation_${v.toStatus}`,v.reason||`Reservation reached ${v.toStatus}`,req.broker.id],client);
+    if(['released','expired'].includes(v.toStatus)){
+      const recoveryReasonCode=v.toStatus==='expired'?'reservation_expired':'reservation_released_to_matching',
+        recoveryAction=v.toStatus==='expired'?'Reservation expired; confirm and assign eligible Inventory':'Property released; confirm and assign different eligible Inventory';
+      await execute(`UPDATE opportunities SET stage='Matching',listing_id=CASE WHEN listing_id=$3 THEN NULL ELSE listing_id END,
+        recovery_state='matching',next_action_code='return_to_matching',next_action=$1,next_action_notes=$1,next_action_due_at=NOW()+INTERVAL '1 day',
+        version=version+1,updated_at=NOW() WHERE id=$2`,
+        [recoveryAction,booking.opportunityId,booking.listingId],client);
+      await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Matching',$4,$5,$6)`,
+        [uuid(),booking.opportunityId,booking.opportunityStage,recoveryReasonCode,v.reason||`Reservation ${v.toStatus}`,req.broker.id],client);
+    }else{
+      await execute(`UPDATE opportunities SET stage='Negotiation',next_action_code='follow_up_offer_feedback',next_action=$1,next_action_notes=$1,next_action_due_at=NOW()+INTERVAL '1 day',
+        version=version+1,updated_at=NOW() WHERE id=$2`,
+        [`Reservation ${v.toStatus}; review accepted offer and next customer action`,booking.opportunityId],client);
+      await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Negotiation',$4,$5,$6)`,
+        [uuid(),booking.opportunityId,booking.opportunityStage,`reservation_${v.toStatus}`,v.reason||`Reservation reached ${v.toStatus}`,req.broker.id],client);
+    }
     await audit('BookingStatus',booking.id,v.toStatus,req.broker.id,{from:'reserved',to:v.toStatus,reason:v.reason,
       listingId:booking.listingId,externalPropertyId:booking.externalPropertyId,
       propertyStatusFrom:'reserved',propertyStatusTo:restoredStatus},client);
@@ -1569,9 +1630,15 @@ r.post('/crm/deals/:dealId/close-won',async(req,res)=>{
     // Transaction completion is independent of commission collection. Finance receipts,
     // reconciliation and payout remain separate; closure must not fabricate those records.
     const developerStock=deal.dealType==='off_plan'&&!deal.bookingId&&deal.propertySource==='developer_stock'&&deal.externalUsageKind==='developer_stock';
-    if((!developerStock&&(deal.bookingStatus!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)))||
-      developerStock&&!['under_offer','approved_for_opportunity'].includes(deal.listingStatus)||deal.opportunityStage!=='Deal')
-      return{code:409,error:`Closure records are not aligned: ${developerStock?'Developer stock':'Booking'} ${developerStock?deal.listingStatus:deal.bookingStatus}, Opportunity ${deal.opportunityStage}`};
+    if(deal.opportunityStage!=='Deal')return{code:409,error:'This Opportunity is no longer at the Deal stage. Refresh it before recording the final outcome.'};
+    if(developerStock&&!['under_offer','approved_for_opportunity'].includes(deal.listingStatus))
+      return{code:409,error:'This developer property is no longer available for this Deal. Refresh the Deal and review its current property status.'};
+    if(!developerStock&&deal.bookingStatus!=='reserved')
+      return{code:409,error:`The reservation is already ${deal.bookingStatus||'unavailable'}. Create a current reservation before closing this Deal as won.`};
+    if(!developerStock&&['Closed','Sold','Rented'].includes(deal.listingStatus))
+      return{code:409,error:`This property is already ${deal.listingStatus}. It cannot be completed through this Deal.`};
+    if(!developerStock&&!['Reserved','reserved'].includes(deal.listingStatus))
+      return{code:409,error:'The reservation has expired or no longer controls this property. Create a current reservation before closing this Deal as won.'};
     const v=checked.value,inventoryOutcome=['rental','commercial_rental'].includes(deal.dealType)?'Rented':'Sold';
     const updated=await one(`UPDATE deals SET status='closed_won',actual_completion_at=$1,closed_by=$2,closed_at=NOW(),
       closed_reason=$3,closure_evidence_reference=$4,version=version+1,updated_at=NOW()
@@ -1658,9 +1725,15 @@ r.post('/crm/deals/:dealId/close-lost',async(req,res)=>{
     if(!['draft','completion_in_progress','approved'].includes(deal.status))return{code:409,error:`Deal is already ${deal.status.replaceAll('_',' ')}`};
     if(deal.version!==expectedVersion)return{code:409,error:'This Deal changed after it was opened; reload before closing'};
     const lockedBooking=deal.bookingId?await one('SELECT * FROM bookings WHERE id=$1 FOR UPDATE',[deal.bookingId],client):null;
-    if(deal.opportunityStage!=='Deal'||(deal.bookingId&&(!lockedBooking||lockedBooking.status!=='reserved'||!['Reserved','reserved'].includes(deal.listingStatus)))||
-      (!deal.bookingId&&!['detached','developer_stock_attached'].includes(deal.currentLinkageKind)))
-      return{code:409,error:`Closure records are not aligned: Booking ${lockedBooking?.status||'detached'}, property ${deal.listingStatus||'detached'}, Opportunity ${deal.opportunityStage}`};
+    if(deal.opportunityStage!=='Deal')return{code:409,error:'This Opportunity is no longer at the Deal stage. Refresh it before deciding the cancellation request.'};
+    const releaseAligned=dealReservationReleaseAligned({bookingId:deal.bookingId,bookingStatus:lockedBooking?.status,listingId:deal.listingId,
+      listingStatus:deal.listingStatus,currentLinkageKind:deal.currentLinkageKind});
+    if(!releaseAligned){
+      if(deal.bookingId&&!lockedBooking)return{code:409,error:'The reservation record is no longer available. Refresh the Deal before deciding the cancellation request.'};
+      if(lockedBooking?.status&&lockedBooking.status!=='reserved')return{code:409,error:`The reservation is already ${lockedBooking.status}; no Inventory release is required from this cancellation screen.`};
+      if(deal.listingId&&['Closed','Sold','Rented'].includes(deal.listingStatus))return{code:409,error:`This property is already ${deal.listingStatus} and cannot be released through Deal cancellation.`};
+      return{code:409,error:'This Deal is no longer linked to a releasable property reservation. Refresh the Deal before deciding the cancellation request.'};
+    }
     const cancellationRequest=req.body?.cancellationRequestId?await one("SELECT * FROM deal_cancellation_requests WHERE id=$1 AND deal_id=$2 AND status='pending' FOR UPDATE",[req.body.cancellationRequestId,deal.id],client):null;
     if(req.body?.cancellationRequestId&&!cancellationRequest)return{code:409,error:'The Deal cancellation request is no longer pending'};
     if(!cancellationRequest)return{code:409,error:'A Sales Agent cancellation request is required before a Manager or Director can cancel this Deal'};

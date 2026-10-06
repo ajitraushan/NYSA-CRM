@@ -18,7 +18,7 @@ test('route uses existing Deal split fields and has no standard client split inp
 test('Close Won keeps transaction gates and no longer depends on commission receipt',()=>{
   const source=read('src/routes/opportunities.js').split("r.post('/crm/deals/:dealId/close-won'")[1].split("r.post('/crm/deals/:dealId/close-lost'")[0];
   assert.doesNotMatch(source,/commissionReceiptReady|deal_commission_receipt_confirmations|Confirmed actual commission receipt is required/);
-  for(const marker of ['canApproveDeal','requireDocumentComplianceGates','Closure records are not aligned','expectedVersion',"deal.status!=='approved'"])
+  for(const marker of ['canApproveDeal','requireDocumentComplianceGates','The reservation has expired or no longer controls this property','expectedVersion',"deal.status!=='approved'"])
     assert.ok(source.includes(marker),marker);
 });
 test('payout APIs reserve consolidated approval for the exact Director job role',()=>{const source=read('src/routes/commission-payout.js');assert.match(source,/director=broker=>mayViewPayoutWorkspace\(broker\)/);assert.match(source,/commission-payment-batches\/:batchId\/decision'.*if\(!director\(req\.broker\)\)/);assert.match(source,/MD approval access required/);assert.match(read('src/commission-payout-domain.js'),/broker\?\.jobRole==='director'/);});

@@ -41,7 +41,7 @@ test('assignment expiry defaults to seven days and Manager changes are audited',
 
 test('reservation is exclusive while assignments remain shared',()=>{
   assert.match(opportunities,/Inventory already has an active assignment to the Opportunity/);
-  assert.match(opportunities,/another current reservation or terminal closure blocks this Booking/);
+  assert.match(opportunities,/This property is \$\{effectiveBefore\} and cannot be booked/);
   assert.match(opportunities,/reservation_won/);
   assert.match(opportunities,/reservation_released/);
   assert.match(opportunities,/nysa_inventory_effective_status/);
@@ -65,7 +65,7 @@ test('historical terminal assignments close during migration and a detached reta
   assert.match(migration,/Historical terminal Deal formalized during dev\.153 migration/);
   assert.match(migration,/l\.status IN \('Sold','Rented','Closed'\)/);
   assert.match(opportunities,/current_link\.change_kind AS current_linkage_kind/);
-  assert.match(opportunities,/!deal\.bookingId&&!\['detached','developer_stock_attached'\]\.includes\(deal\.currentLinkageKind\)/);
+  assert.match(opportunities,/dealReservationReleaseAligned/);
   assert.match(opportunities,/WHERE opportunity_id=\$2 AND state='active' RETURNING id,listing_id/);
 });
 

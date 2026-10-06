@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { dealTypeForOffer,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealClosureGates } from '../src/deal-domain.js';
+import { dealTypeForOffer,validateDealCreate,validateDealParty,validateDealApproval,validateDealCloseWon,validateDealCloseLost,dealReservationReleaseAligned,dealClosureGates } from '../src/deal-domain.js';
 
 test('deal type follows the accepted offer and requires a commercial mode',()=>{
   assert.equal(dealTypeForOffer('purchase'),'sale');
@@ -41,6 +41,18 @@ test('lost Deal closure requires controlled reason, evidence, explanation and co
   assert.deepEqual(validateDealCloseLost({reasonCode:'finance_failed',reason:'Mortgage approval was declined',evidenceReference:'BANK-42',confirmCloseLost:true}),{
     value:{reasonCode:'finance_failed',reason:'Mortgage approval was declined',evidenceReference:'BANK-42'}
   });
+});
+
+test('Deal cancellation can release an expired reservation whose Inventory reverted to Assigned or Available',()=>{
+  const base={bookingId:'booking-1',bookingStatus:'reserved',listingId:'listing-1'};
+  assert.equal(dealReservationReleaseAligned({...base,listingStatus:'Reserved'}),true);
+  assert.equal(dealReservationReleaseAligned({...base,listingStatus:'Assigned'}),true);
+  assert.equal(dealReservationReleaseAligned({...base,listingStatus:'Available'}),true);
+  for(const listingStatus of ['Closed','Sold','Rented'])assert.equal(dealReservationReleaseAligned({...base,listingStatus}),false,listingStatus);
+  assert.equal(dealReservationReleaseAligned({...base,bookingStatus:'cancelled',listingStatus:'Available'}),false);
+  assert.equal(dealReservationReleaseAligned({bookingId:'booking-1',bookingStatus:'reserved',listingStatus:'reserved'}),true);
+  assert.equal(dealReservationReleaseAligned({currentLinkageKind:'developer_stock_attached'}),true);
+  assert.equal(dealReservationReleaseAligned({currentLinkageKind:'unexpected'}),false);
 });
 
 test('closure gates clearly expose missing parties, checklist and later approval',()=>{

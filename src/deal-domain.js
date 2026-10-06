@@ -68,6 +68,16 @@ export function validateDealCloseLost(input={}){
   return{value:{reasonCode,reason,evidenceReference}};
 }
 
+const TERMINAL_INVENTORY_STATES=Object.freeze(['Closed','Sold','Rented']);
+const RELEASABLE_EXTERNAL_STATES=Object.freeze(['reserved','approved_for_opportunity','under_offer']);
+
+export function dealReservationReleaseAligned({bookingId,bookingStatus,listingId,listingStatus,currentLinkageKind}={}){
+  if(!bookingId)return['detached','developer_stock_attached'].includes(currentLinkageKind);
+  if(bookingStatus!=='reserved')return false;
+  if(listingId)return!TERMINAL_INVENTORY_STATES.includes(listingStatus);
+  return RELEASABLE_EXTERNAL_STATES.includes(listingStatus);
+}
+
 export function dealClosureGates({deal,parties=[],items=[]}={}){
   if(!deal)return[{code:'deal',label:'Create the governed Deal record',complete:false}];
   const roles=new Set(parties.filter(x=>!x.effectiveTo).map(x=>x.partyRole));
