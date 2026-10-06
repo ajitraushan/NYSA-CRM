@@ -852,7 +852,7 @@ async function createOfferRevisionRecords({client,req,offer,opportunity,listing,
   const logo=organization.logoStorageKey?{buffer:await readPrivate(organization.logoStorageKey),mediaType:organization.logoMediaType}:null,
     revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
     renderInput={offer,revision,opportunity,customer,listing,agent:documentAgent,organization,logo},approvedData=offerApprovedDocumentData(renderInput),
-    pdf=await makeOfferPdf(renderInput),storageKey=await savePrivate(pdf,'.pdf'),
+    pdf=await makeOfferPdf(renderInput).catch(error=>{throw Object.assign(new Error('The approved Offer PDF could not be generated. Please retry; if the issue continues, ask the CRM administrator to check the document renderer.'),{status:503,cause:error});}),storageKey=await savePrivate(pdf,'.pdf'),
     fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=`${offer.offerReference}-R${revisionNumber}.pdf`;
   try{
     await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)

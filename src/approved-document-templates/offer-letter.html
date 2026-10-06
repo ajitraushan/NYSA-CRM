@@ -92,6 +92,9 @@ footer{ margin-top:auto; }
 .terms b{ color:var(--navy); }
 .sig3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:4mm; margin-top:3mm; }
 .sigarea{ height:17mm; }
+.company-execution{ height:17mm; display:grid; grid-template-columns:1fr 16mm; gap:2mm; align-items:end; }
+.authorised-signature{ height:14mm; border-bottom:.3mm solid var(--line); display:flex; align-items:flex-end; padding-bottom:.8mm; color:var(--mut); font-size:6.2pt; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.stamparea{ width:16mm; height:16mm; border:.3mm dashed var(--line); border-radius:50%; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--mut); font-size:5.8pt; font-weight:700; line-height:1.15; text-transform:uppercase; }
 .dec{ display:flex; gap:3mm; font-size:7.6pt; font-weight:700; margin:.8mm 0 1mm; }
 </style>
 <header>
@@ -111,8 +114,8 @@ footer{ margin-top:auto; }
 </header>
 <main>
   <div class="toggle">
-    <div class="t"><span class="cb"><i></i></span>Offer to Purchase <small>Sale</small></div>
-    <div class="t"><span class="cb"><i></i></span>Offer to Lease <small>Rent</small></div>
+    <div class="t"><span class="cb" data-checkbox-label="Offer to Purchase"><i></i></span>Offer to Purchase <small>Sale</small></div>
+    <div class="t"><span class="cb" data-checkbox-label="Offer to Lease"><i></i></span>Offer to Lease <small>Rent</small></div>
   </div>
 
   <div class="sec"><div class="n">1</div><h2>Property</h2><div class="bar"></div></div>
@@ -179,7 +182,7 @@ footer{ margin-top:auto; }
     <div class="sigbox"><div class="hd">Seller / Landlord <span>Response</span></div>
       <div class="dec"><span class="cb"><i></i>Accepted</span><span class="cb"><i></i>Counter</span><span class="cb"><i></i>Declined</span></div>
       <div class="sigarea" style="height:12mm"></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
-    <div class="sigbox"><div class="hd">NYSA Realty LLC <span>Agent</span></div><div class="sigarea"></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
+    <div class="sigbox"><div class="hd">NYSA Realty LLC <span>Authorisation</span></div><div class="company-execution"><div class="authorised-signature">Authorised signature</div><div class="stamparea">Company<br>stamp</div></div><div class="f"><label>Date</label><div class="ln"></div></div></div>
   </div>
   <div class="f" style="margin-top:2mm"><label>Counter-offer (if any) — Amount (AED) &amp; terms</label><div class="ln"></div></div>
   <div class="f"><div class="ln"></div></div>

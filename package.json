@@ -1,6 +1,6 @@
 {
   "name": "nysa-crm",
-  "version": "2.1.0-dev.218",
+  "version": "2.1.0-dev.219",
   "description": "NYSA CORE consolidated CRM Test candidate - Releases 3 to 6",
   "type": "module",
   "main": "app.cjs",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "5.2.5",
-    "@sparticuz/chromium": "133.0.0",
+    "@sparticuz/chromium": "137.0.1",
     "pg": "8.22.0",
     "puppeteer-core": "24.10.2",
     "read-excel-file": "^9.3.2"

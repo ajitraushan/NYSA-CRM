@@ -28,7 +28,7 @@ const labelled=(label,r=document)=>all('label',r).filter(e=>e.textContent.trim()
 const setLine=(label,v,i=0,r=document)=>{const l=labelled(label,r)[i],e=l?.parentElement?.querySelector('.ln');if(e)e.textContent=txt(v);return e};
 const setLabelSpan=(label,v,i=0,r=document)=>{const l=all('label,.lb',r).filter(e=>e.textContent.trim().toLowerCase()===String(label).toLowerCase())[i],e=l?.parentElement?.querySelector('span:not(.lb),.ln');if(e)e.textContent=txt(v);return e};
 const money=(v,c='AED',digits=0)=>v===null||v===undefined||v===''?'Not specified':c+' '+Number(v).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
-const checkbox=(needle,on,r=document)=>{if(!on)return;const e=all('.cb',r).find(x=>x.textContent.trim().toLowerCase()===String(needle).toLowerCase());if(e){e.classList.add('checked');const i=e.querySelector('i');if(i)i.textContent='✓'}};
+const checkbox=(needle,on,r=document)=>{if(!on)return;const expected=String(needle).trim().toLowerCase(),e=all('.cb',r).find(x=>(x.dataset.checkboxLabel||x.textContent).trim().toLowerCase()===expected);if(e){e.classList.add('checked');const i=e.querySelector('i');if(i)i.textContent='✓'}};
 if(d.replacements)for(const [from,to] of Object.entries(d.replacements))all('body *').filter(e=>e.children.length===0&&e.textContent.includes(from)).forEach(e=>e.textContent=e.textContent.replaceAll(from,txt(to)));
 for(const x of d.lineValues||[])setLine(x.label,x.value,x.index||0);
 for(const x of d.labelValues||[])setLabelSpan(x.label,x.value,x.index||0);
@@ -65,9 +65,10 @@ export function buildApprovedDocumentHtml(documentCode,data={}){
   return html.replace('</body>',`${hydrationScript({...data,documentCode})}</body>`);
 }
 
-async function chromiumLaunchOptions(){
-  if(process.platform==='win32')return{executablePath:process.env.CHROME_PATH||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-setuid-sandbox']};
-  const {default:chromium}=await import('@sparticuz/chromium');return{executablePath:await chromium.executablePath(),headless:true,args:chromium.args};
+export async function chromiumLaunchOptions(platform=process.platform,{chromePath=process.env.CHROME_PATH,chromium:providedChromium}={}){
+  if(platform==='win32')return{executablePath:chromePath||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-setuid-sandbox']};
+  const chromium=providedChromium||(await import('@sparticuz/chromium')).default;
+  return{executablePath:await chromium.executablePath(),headless:chromium.headless,args:chromium.args,defaultViewport:chromium.defaultViewport};
 }
 
 export async function renderApprovedDocumentPdf(documentCode,data={}){

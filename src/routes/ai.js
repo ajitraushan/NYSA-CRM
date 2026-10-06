@@ -135,10 +135,20 @@ r.patch('/crm/leads/:id/action-suggestions/:suggestionId',async(req,res)=>{
 
 r.post('/crm/leads/:id/ai/requirements-draft',async(req,res)=>{
   const lead=await scopedLead(req,res);if(!lead)return;
-  const notes=redactSensitiveText(req.body?.conversationNotes);if(notes.length<20)return res.status(400).json({error:'Provide at least 20 characters of requirement conversation notes'});
+  const notes=redactSensitiveText(req.body?.conversationNotes);
   const current=await one('SELECT * FROM lead_requirements WHERE lead_id=$1 AND superseded_at IS NULL',[lead.id]);
+  const latestQualification=await one('SELECT * FROM qualification_assessments WHERE lead_id=$1 ORDER BY assessed_at DESC,id DESC LIMIT 1',[lead.id]);
+  if(notes&&notes.length<20)return res.status(400).json({error:'Provide at least 20 characters when adding supplemental conversation notes'});
+  if(!notes&&!current&&!latestQualification)return res.status(400).json({error:'Record a Requirement Version, Qualification Assessment, or at least 20 characters of conversation notes before generating a draft'});
   const catalogue=await loadActiveClassificationCatalogue();
-  await invoke(req,res,lead,'requirements_draft',{conversationNotes:notes,existingStructuredRequirement:current?{customerObjective:current.customerObjective,marketStageRequirement:current.marketStageRequirement,propertySegmentRequirement:current.propertySegmentRequirement,purpose:current.purpose,propertyTypes:current.propertyTypes,areas:current.areas,budgetMin:current.budgetMin,budgetMax:current.budgetMax,fundingMethod:current.fundingMethod,bedroomsMin:current.bedroomsMin,bedroomsMax:current.bedroomsMax,timelineCode:current.timelineCode}:null,leadClassification:{customerObjective:lead.customerObjective,marketStageRequirement:lead.marketStageRequirement,propertySegmentRequirement:lead.propertySegmentRequirement,classificationVersion:catalogue.version.code},policy:{draftOnly:true,maximumOptions:3,agentAndCustomerConfirmationRequired:true}},aiSchemaFor('requirements_draft',catalogue));
+  await invoke(req,res,lead,'requirements_draft',{
+    conversationNotes:notes||null,
+    currentStructuredRequirement:current?{requirementId:current.id,versionNo:current.versionNo,customerObjective:current.customerObjective,marketStageRequirement:current.marketStageRequirement,propertySegmentRequirement:current.propertySegmentRequirement,purpose:current.purpose,propertyTypes:current.propertyTypes,areas:current.areas,budgetMin:current.budgetMin,budgetMax:current.budgetMax,fundingMethod:current.fundingMethod,bedroomsMin:current.bedroomsMin,bedroomsMax:current.bedroomsMax,sizeSqftMin:current.sizeSqftMin,sizeSqftMax:current.sizeSqftMax,timelineCode:current.timelineCode,notes:current.notes}:null,
+    latestQualificationAssessment:latestQualification?{assessmentId:latestQualification.id,finalTemperature:latestQualification.finalTemperature,calculatedTemperature:latestQualification.calculatedTemperature,calculatedScore:latestQualification.calculatedScore,factorInputs:latestQualification.factorInputs,factorContributions:latestQualification.factorContributions,assessedAt:latestQualification.assessedAt}:null,
+    leadClassification:{customerObjective:lead.customerObjective,marketStageRequirement:lead.marketStageRequirement,propertySegmentRequirement:lead.propertySegmentRequirement,classificationVersion:catalogue.version.code},
+    evidencePrecedence:['currentStructuredRequirement','latestQualificationAssessment','conversationNotes','leadClassification'],
+    policy:{draftOnly:true,maximumOptions:3,agentAndCustomerConfirmationRequired:true,currentVersionsOverrideEarlierLeadIntake:true}
+  },aiSchemaFor('requirements_draft',catalogue));
 });
 
 r.post('/crm/leads/:id/ai/match-explanation',async(req,res)=>{

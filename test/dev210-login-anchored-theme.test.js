@@ -5,9 +5,9 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const read=name=>readFileSync(new URL(name,root),'utf8');
 
-test('dev.210 shell is superseded by the approved DEV218 light workspace',()=>{
+test('dev.210 shell remains superseded by the approved light workspace',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.218');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.219');
   for(const marker of [
     'DEV218 approved NYSA light workspace',
     '--workspace:#f4f1eb',
