@@ -11,7 +11,7 @@ test('DEV220 installer is CRM-Test-only, provenance-bound, backup-first and rend
     'LATEST_MIGRATION=132_approved_documents_and_brand.sql','EXPECTED_MIGRATION_COUNT=132',
     'nysa-core-2.1.0-dev.220-origin.zip','RELEASE_PROVENANCE.json','RUNTIME_MANIFEST.sha256',
     'pg_dump','pre-dev220.dump','pre-dev220-app.tar.gz','verify_pdf_renderer',
-    "renderApprovedDocumentPdf('offer_letter'",'SYNTHETIC-DEV220','rollback_application',
+    'verifyApprovedDocumentRuntime','approved-document-runtime-smoke.js','rollback_application',
     'PRODUCTION_ROOT=/home/nysareal/nysa-crm','R2_CLONE_ROOT=/home/nysareal/nysa-r2-prod-clone',
     'Production and R2 clone snapshots: unchanged'
   ]) assert.ok(deploy.includes(marker),`missing guarded installer marker: ${marker}`);
@@ -20,6 +20,17 @@ test('DEV220 installer is CRM-Test-only, provenance-bound, backup-first and rend
   assert.match(deploy,/\[\[ "\$APPROVED_SHA256" =~ \^\[0-9a-f\]\{64\}\$ \]\]/);
   assert.match(deploy,/PDF_RENDER_RUNTIME_DIR="\$APP_ROOT\/tmp\/pdf-renderer"/);
   assert.match(deploy,/verify_pdf_renderer\s+restart_worker/);
+});
+
+test('DEV220 renderer gate covers every approved report and form format',()=>{
+  const smoke=read('src/approved-document-runtime-smoke.js');
+  for(const code of [
+    'buyer_proposal','financial_illustration','offer_letter','viewing_confirmation',
+    'a2a_buyer','a2a_seller','listing_noc','agent_payout','tax_invoice'
+  ]) assert.match(smoke,new RegExp(`'${code}'`));
+  assert.match(smoke,/for\(const documentCode of approvedDocumentRuntimeSmokeCodes\)/);
+  assert.match(smoke,/pdf\.subarray\(0,5\)\.toString\(\)!=='%PDF-'/);
+  assert.match(smoke,/documentCode==='offer_letter'\?\[\{label:'Offer to Purchase'\}\]/);
 });
 
 test('DEV220 load-path keeps application restoration gated after parallel features',()=>{

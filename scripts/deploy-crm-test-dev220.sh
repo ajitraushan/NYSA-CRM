@@ -106,7 +106,7 @@ verify_contract() {
   [[ "$result" == "t|t|t" ]] || fail "DEV220 database contract failed: $result"
 }
 verify_pdf_renderer() {
-  (cd "$APP_ROOT" && PDF_RENDER_RUNTIME_DIR="$APP_ROOT/tmp/pdf-renderer" "$NODE_BIN" --input-type=module -e "import {renderApprovedDocumentPdf} from './src/approved-document-renderer.js';const pdf=await renderApprovedDocumentPdf('offer_letter',{checkboxes:[{label:'Offer to Purchase'}],replacements:{'LQ-2025-0001':'SYNTHETIC-DEV220'}});if(pdf.subarray(0,5).toString()!=='%PDF-')throw Error('synthetic Offer output is not a PDF');console.log('Synthetic Offer PDF renderer verified:',pdf.length,'bytes');")
+  (cd "$APP_ROOT" && PDF_RENDER_RUNTIME_DIR="$APP_ROOT/tmp/pdf-renderer" "$NODE_BIN" --input-type=module -e "import {verifyApprovedDocumentRuntime} from './src/approved-document-runtime-smoke.js';const results=await verifyApprovedDocumentRuntime();console.log('Approved document renderers verified:',results.map(x=>x.documentCode+':'+x.bytes).join(','));")
 }
 
 [[ "$APP_ROOT" != "$PRODUCTION_ROOT" && "$APP_ROOT" != "$R2_CLONE_ROOT" ]] || fail "protected environment path selected"
@@ -209,6 +209,6 @@ echo "Installed/served version: $EXPECTED_VERSION"
 echo "Git commit: $EXPECTED_COMMIT"
 echo "Latest migration: $LATEST_MIGRATION ($EXPECTED_MIGRATION_COUNT total)"
 echo "Backup: $backup"
-echo "Synthetic Offer PDF renderer: verified"
+echo "All nine approved PDF formats: verified"
 echo "Production and R2 clone snapshots: unchanged"
 confirmed=1
