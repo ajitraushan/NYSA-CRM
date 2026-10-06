@@ -44,7 +44,7 @@ test('UTM behavior is unchanged in this closure candidate',()=>{
 });
 
 test('dev.113 candidate is checksum-bound, rerunnable and CRM-Test-only',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.220');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.221');
   const plugin=read('release-artifacts/release-3/r3a/wordpress-staging/nysa-crm-test-intake-connector/nysa-crm-test-intake-connector.php');
   assert.match(plugin,/Version: 1\.9\.4/);assert.match(plugin,/VERSION = '1\.9\.4'/);assert.match(plugin,/nysa-wordpress-bridge-1\.9\.4/);
   const deploy=read('release-artifacts/release-3/r3a/deploy-crm-test-r3ai-dev113-uat-closure.sh');

@@ -9,7 +9,7 @@ const app=readFileSync(new URL('public/app.js',root),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('package.json',root),'utf8'));
 
 test('dev.171 dashboard structure remains under the approved DEV218 workspace palette',()=>{
-  assert.equal(pkg.version,'2.1.0-dev.220');
+  assert.equal(pkg.version,'2.1.0-dev.221');
   assert.match(dashboard,/agent-dashboard-website-theme/);
   for(const marker of [
     'DEV218 approved NYSA light workspace','--panel:#ffffff','--panel2:#f4f1eb','--text:#14232c','--muted:#5b6770',

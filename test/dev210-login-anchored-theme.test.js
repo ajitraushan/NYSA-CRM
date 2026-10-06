@@ -7,7 +7,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 
 test('dev.210 shell remains superseded by the approved light workspace',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.220');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.221');
   for(const marker of [
     'DEV218 approved NYSA light workspace',
     '--workspace:#f4f1eb',
