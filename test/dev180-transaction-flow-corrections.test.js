@@ -22,7 +22,7 @@ test('transaction completion documents are Deal-level and configurable without p
   assert.match(route,/LEFT JOIN deal_parties dp ON dp\.id=i\.deal_party_id/);
   assert.match(gate,/'transaction'::text AS party_role/);
   assert.match(ui,/Transaction completion document/);
-  assert.match(ui,/Sale Deed, Transfer Deed, Oqood, Ejari/);
+  assert.match(ui,/signed or authority-issued documents required for a Sale or Lease/);
 });
 
 test('pipeline ranks closed pursuits ahead of historical active stages',()=>{

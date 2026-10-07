@@ -8,7 +8,7 @@ test('current candidate carries the four post-DEV216 corrections',()=>{
   const pkg=JSON.parse(read('package.json')),
     leave=read('src/routes/agent-leave.js'),app=read('public/app.js'),
     offer=read('public/offer-ui.js'),opportunities=read('src/routes/opportunities.js');
-  assert.equal(pkg.version,'2.1.0-dev.222');
+  assert.equal(pkg.version,'2.1.0-dev.223');
   assert.match(leave,/activeLineManager/);
   assert.match(app,/openCrmPdfTab/);
   assert.match(offer,/Not specified in accepted Offer/);

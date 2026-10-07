@@ -6,7 +6,7 @@ const read=file=>readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('dev.165 exposes a governed exact-version alignment action without rewriting prior matching evidence',()=>{
   const route=read('src/routes/opportunities.js'),matching=read('src/routes/governed-matching.js'),migration=read('src/migrations/106_dev165_opportunity_requirement_realignment.sql');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.222');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.223');
   assert.match(route,/current broker-confirmed Requirement is required before alignment/);
   assert.match(route,/acknowledgeStaleMatching/);
   assert.match(route,/requirement_version_aligned/);

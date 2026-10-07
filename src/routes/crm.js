@@ -13,6 +13,7 @@ import { buildCustomer360Profile } from '../customer-intelligence-domain.js';
 import { checkEmailCredibility,checkApolloProfessionalEvidence,contactEnrichmentConfiguration } from '../email-credibility-domain.js';
 import { loadActiveClassificationCatalogue,validateClassificationSelection,legacyBusinessType,isInventorySideObjective } from '../classification-catalogue.js';
 import {CAPABILITY,hasCapability} from '../role-access.js';
+import {deriveCustomerKycStatus,effectiveIdentityState,validateIdentitySubmission,validateCompanyDocumentSubmission,CUSTOMER_IDENTITY_TYPES,CORPORATE_IDENTITY_TYPES} from '../customer-document-domain.js';
 
 const r = Router();
 const EXTERNAL_COMPANY_ROLES=['developer','agency','referral_partner','service_provider','employer','supplier','corporate_client','landlord','vendor','other'];
@@ -44,6 +45,28 @@ function numberOrNull(value) {
 async function staffMember(id) {
   if (!id) return null;
   return one("SELECT id, team_id, job_role FROM brokers WHERE id=$1 AND role IN ('admin','internal_broker') AND status='active'", [id]);
+}
+
+async function activeCustomerIdentityRequirement(client){
+  return (await one(`SELECT * FROM customer_document_requirement_versions
+    WHERE requirement_code='individual_identity' AND status='active' AND effective_from<=NOW()
+    ORDER BY version_number DESC LIMIT 1`,[],client))||{acceptedDocumentTypes:CUSTOMER_IDENTITY_TYPES,requiredDocumentGroups:[['passport','emirates_id']],minimumValidDocuments:1,reviewRequired:true,expiryRequired:true};
+}
+
+async function activeCorporateIdentityRequirement(client){
+  return (await one(`SELECT * FROM customer_document_requirement_versions
+    WHERE requirement_code='corporate_identity' AND status='active' AND effective_from<=NOW()
+    ORDER BY version_number DESC LIMIT 1`,[],client))||{acceptedDocumentTypes:CORPORATE_IDENTITY_TYPES,requiredDocumentGroups:[['trade_license','certificate_of_incorporation'],['memorandum_of_association'],['power_of_attorney']],minimumValidDocuments:3,reviewRequired:true,expiryRequired:true};
+}
+
+async function syncCustomerKycSummary(contactId,client){
+  const requirement=await activeCustomerIdentityRequirement(client),documents=await many('SELECT * FROM customer_identity_documents WHERE contact_id=$1 ORDER BY updated_at DESC',[contactId],client),eligible=documents.filter(document=>['passport','emirates_id'].includes(document.documentType)),
+    kycStatus=deriveCustomerKycStatus(documents,requirement),primary=eligible.find(document=>effectiveIdentityState(document)==='verified')||eligible.find(document=>effectiveIdentityState(document)==='pending_review')||eligible[0]||null;
+  await execute(`UPDATE contacts SET id_document_type=$1,id_document_last4=$2,id_document_expiry=$3,kyc_status=$4,
+    kyc_verified_at=CASE WHEN $4='verified' THEN COALESCE($5,kyc_verified_at,NOW()) ELSE NULL END,
+    kyc_verified_by=CASE WHEN $4='verified' THEN $6::uuid ELSE NULL::uuid END,updated_at=NOW() WHERE id=$7`,
+    [primary?.documentType||null,primary?.maskedFinalFour||null,primary?.expiryDate||null,kycStatus,primary?.reviewedAt||null,primary?.reviewedBy||null,contactId],client);
+  return{kycStatus,requirement,documents};
 }
 async function liveLeadInventory(listingId,client){
   if(!listingId)return null;
@@ -225,6 +248,34 @@ r.patch('/crm/companies/:id', async (req,res)=>{
   await audit('Company',company.id,'edited',req.broker.id,changes);res.json(updated);
 });
 
+r.get('/crm/companies/:id/identity-documents',async(req,res)=>{
+  const params=[req.params.id],scope=companyScopeSql('c',req.broker,params),company=await one(`SELECT c.* FROM companies c WHERE c.id=$1 AND c.archived_at IS NULL AND (${scope.clause})`,scope.params);
+  if(!company)return res.status(404).json({error:'Company not found or outside your permitted scope'});
+  const [documents,requirement]=await Promise.all([many('SELECT * FROM company_identity_documents WHERE company_id=$1 ORDER BY document_type',[company.id]),activeCorporateIdentityRequirement()]);
+  res.json({company,documents,requirement,identityStatus:deriveCustomerKycStatus(documents,requirement),canMaintain:canWriteCrm(req.broker)&&(company.ownerId===req.broker.id||isManager(req.broker)),canReview:['manager','director'].includes(req.broker.jobRole)});
+});
+
+r.put('/crm/companies/:id/identity-documents/:documentType',async(req,res)=>{
+  const company=await one('SELECT * FROM companies WHERE id=$1 AND archived_at IS NULL',[req.params.id]);
+  if(!company)return res.status(404).json({error:'Company not found'});
+  if(!canWriteCrm(req.broker)||(company.ownerId!==req.broker.id&&!isManager(req.broker)))return res.status(403).json({error:'Company document maintenance is outside your scope'});
+  const checked=validateCompanyDocumentSubmission({...req.body,documentType:req.params.documentType});if(!checked.valid)return res.status(400).json({error:checked.errors[0],errors:checked.errors});const v=checked.value;
+  if(!v.documentId||!v.documentVersionId)return res.status(400).json({error:'Upload the restricted corporate document file'});
+  const linked=await one(`SELECT d.id FROM documents d JOIN document_versions dv ON dv.document_id=d.id WHERE d.id=$1 AND dv.id=$2 AND d.company_id=$3 AND d.access_classification='restricted'`,[v.documentId,v.documentVersionId,company.id]);
+  if(!linked)return res.status(409).json({error:'The uploaded document must be a restricted file linked to this Company'});
+  const managerDirect=['manager','director'].includes(req.broker.jobRole),row=await one(`INSERT INTO company_identity_documents(id,company_id,document_type,document_id,document_version_id,masked_final_four,expiry_date,status,notes,submitted_by,reviewed_by,reviewed_at,version)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CASE WHEN $8='verified' THEN NOW() END,1)
+    ON CONFLICT(company_id,document_type) DO UPDATE SET document_id=EXCLUDED.document_id,document_version_id=EXCLUDED.document_version_id,masked_final_four=EXCLUDED.masked_final_four,expiry_date=EXCLUDED.expiry_date,status=EXCLUDED.status,notes=EXCLUDED.notes,submitted_by=EXCLUDED.submitted_by,submitted_at=NOW(),reviewed_by=EXCLUDED.reviewed_by,reviewed_at=CASE WHEN EXCLUDED.status='verified' THEN NOW() END,review_notes=NULL,version=company_identity_documents.version+1,updated_at=NOW() RETURNING *`,[uuid(),company.id,v.documentType,v.documentId,v.documentVersionId,v.maskedFinalFour,v.expiryDate,managerDirect?'verified':'pending_review',v.notes,req.broker.id,managerDirect?req.broker.id:null]);
+  await audit('CompanyIdentityDocument',row.id,managerDirect?'saved_and_verified':'submitted_for_review',req.broker.id,{companyId:company.id,documentType:v.documentType,version:row.version});res.json({document:row});
+});
+
+r.post('/crm/companies/:id/identity-documents/:documentType/review',async(req,res)=>{
+  if(!['manager','director'].includes(req.broker.jobRole))return res.status(403).json({error:'Manager or Director review required'});const decision=clean(req.body?.decision),reviewNotes=clean(req.body?.reviewNotes);
+  if(!['verified','rejected','expired'].includes(decision))return res.status(400).json({error:'Select verify, reject or mark expired'});if(decision!=='verified'&&String(reviewNotes||'').length<5)return res.status(400).json({error:'Meaningful review notes are required'});
+  const row=await one(`UPDATE company_identity_documents SET status=$1,review_notes=$2,reviewed_by=$3,reviewed_at=NOW(),updated_at=NOW() WHERE company_id=$4 AND document_type=$5 AND status='pending_review' RETURNING *`,[decision,reviewNotes,req.broker.id,req.params.id,req.params.documentType]);
+  if(!row)return res.status(409).json({error:'No pending corporate document is available for review'});await audit('CompanyIdentityDocument',row.id,`review_${decision}`,req.broker.id,{companyId:req.params.id,documentType:req.params.documentType,reviewNotes});res.json({document:row});
+});
+
 r.get('/crm/contacts', async (req, res) => {
   const where = ['c.archived_at IS NULL'], params = [];
   where.push(contactScopeSql('c',req.broker,params).clause);
@@ -287,7 +338,7 @@ r.get('/crm/customers/:id',async(req,res)=>{
     LEFT JOIN LATERAL (SELECT a.created_at,a.activity_type,a.subject FROM activities a WHERE a.lead_id=l.id ORDER BY a.created_at DESC LIMIT 1) activity ON TRUE
     WHERE l.contact_id=$1 ORDER BY l.created_at DESC`,[customer.id]);
   const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
-  const [roles,channels,consent,documents,intakeEvidence,changeRequests]=await Promise.all([
+  const [roles,channels,consent,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
     one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
@@ -299,11 +350,16 @@ r.get('/crm/customers/:id',async(req,res)=>{
       ORDER BY f.captured_at DESC,f.fact_group,f.fact_code`,[customer.id]),
     many(`SELECT r.*,requester.name AS requested_by_name,decider.name AS decided_by_name FROM customer_change_requests r
       JOIN brokers requester ON requester.id=r.requested_by LEFT JOIN brokers decider ON decider.id=r.decided_by
-      WHERE r.contact_id=$1 ORDER BY r.requested_at DESC LIMIT 25`,[customer.id])
+      WHERE r.contact_id=$1 ORDER BY r.requested_at DESC LIMIT 25`,[customer.id]),
+    many(`SELECT i.*,submitter.name AS submitted_by_name,reviewer.name AS reviewed_by_name,v.file_name,v.media_type
+      FROM customer_identity_documents i JOIN brokers submitter ON submitter.id=i.submitted_by
+      LEFT JOIN brokers reviewer ON reviewer.id=i.reviewed_by LEFT JOIN document_versions v ON v.id=i.document_version_id
+      WHERE i.contact_id=$1 ORDER BY CASE i.document_type WHEN 'passport' THEN 1 ELSE 2 END`,[customer.id]),
+    activeCustomerIdentityRequirement()
   ]);
   const effectiveConsent=Boolean(consent?.effectiveConsent),restricted=Boolean(customer.doNotContact),profile=buildCustomer360Profile({customer,pursuits:leads,effectiveConsent,restricted});
   const enrichmentConfig=contactEnrichmentConfiguration();
-  res.json({customer,roles,channels,leads,pursuits:leads,profile,documents,intakeEvidence,changeRequests,canMaintain,canReviewKyc,canRefreshContactCredibility,
+  res.json({customer,roles,channels,leads,pursuits:leads,profile,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
     contactCredibilityConfig:{apolloConfigured:enrichmentConfig.apolloConfigured,advisoryOnly:true},effectiveConsent,restricted});
 });
 
@@ -515,6 +571,34 @@ r.post('/crm/customer-change-requests/:id/decision',async(req,res)=>{
     }
     const updated=await one(`UPDATE customer_change_requests SET status=$1,decided_by=$2,decided_at=NOW(),decision_reason=$3,applied_at=CASE WHEN $1='approved' THEN NOW() END,version=version+1 WHERE id=$4 RETURNING *`,[decision,req.broker.id,reason,request.id],client);await audit('CustomerChangeRequest',request.id,decision,req.broker.id,{contactId:request.contactId,reason,proposedValues:request.proposedValues},client);return updated;});
   if(result.error)return res.status(result.code).json({error:result.error});res.json({changeRequest:result});
+});
+
+r.put('/crm/contacts/:id/identity-documents/:documentType',async(req,res)=>{
+  const scopeParams=[req.params.id],scope=contactScopeSql('c',req.broker,scopeParams),contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
+  if(!contact)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
+  const canMaintain=canWriteCrm(req.broker)&&(contact.ownerId===req.broker.id||contact.createdBy===req.broker.id),canReview=isManager(req.broker);
+  if(!canMaintain&&!canReview)return res.status(403).json({error:'Only the Customer owner or an authorized Manager can maintain identity documents'});
+  if(contact.lifecycleStatus!=='active'||!['not_required','approved'].includes(contact.duplicateReviewStatus))return res.status(409).json({error:'Identity documents cannot be submitted for an inactive or unresolved duplicate Customer'});
+  const checked=validateIdentitySubmission({...req.body,documentType:req.params.documentType});if(!checked.valid)return res.status(400).json({error:checked.errors[0],errors:checked.errors});const value=checked.value,
+    requirement=await activeCustomerIdentityRequirement();if(!requirement.acceptedDocumentTypes.includes(value.documentType))return res.status(409).json({error:'This identity document type is not enabled by the active Customer document requirement'});
+  if(!value.documentId||!value.documentVersionId)return res.status(400).json({error:'Upload the restricted identity document before submitting it for review'});
+  const evidence=await one(`SELECT d.id,v.id AS version_id FROM documents d JOIN document_versions v ON v.document_id=d.id
+    WHERE d.id=$1 AND v.id=$2 AND d.contact_id=$3 AND d.document_type='identity_document'
+      AND d.access_classification='restricted' AND v.classification='restricted'`,[value.documentId,value.documentVersionId,contact.id]);
+  if(!evidence)return res.status(409).json({error:'The selected file is not a restricted identity document for this Customer'});
+  const directVerification=canReview&&canMaintain,status=directVerification?'verified':'pending_review';
+  const result=await transaction(async client=>{const existing=await one('SELECT * FROM customer_identity_documents WHERE contact_id=$1 AND document_type=$2 FOR UPDATE',[contact.id,value.documentType],client),id=existing?.id||uuid();
+    const row=existing?await one(`UPDATE customer_identity_documents SET document_id=$1,document_version_id=$2,masked_final_four=$3,expiry_date=$4,status=$5,notes=$6,
+      submitted_by=$7,submitted_at=NOW(),reviewed_by=$8,reviewed_at=CASE WHEN $5='verified' THEN NOW() ELSE NULL END,review_notes=NULL,version=version+1,updated_at=NOW() WHERE id=$9 RETURNING *`,
+      [value.documentId,value.documentVersionId,value.maskedFinalFour,value.expiryDate,status,value.notes,req.broker.id,directVerification?req.broker.id:null,id],client):await one(`INSERT INTO customer_identity_documents(id,contact_id,document_type,document_id,document_version_id,masked_final_four,expiry_date,status,notes,submitted_by,reviewed_by,reviewed_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CASE WHEN $8='verified' THEN NOW() END) RETURNING *`,[id,contact.id,value.documentType,value.documentId,value.documentVersionId,value.maskedFinalFour,value.expiryDate,status,value.notes,req.broker.id,directVerification?req.broker.id:null],client);
+    const summary=await syncCustomerKycSummary(contact.id,client);await audit('CustomerIdentityDocument',row.id,existing?'new_version_submitted':'submitted',req.broker.id,{contactId:contact.id,documentType:value.documentType,maskedFinalFour:`***${value.maskedFinalFour}`,expiryDate:value.expiryDate,status,documentVersionId:value.documentVersionId,overallKycStatus:summary.kycStatus},client);return{identityDocument:row,...summary};});res.status(201).json(result);
+});
+
+r.post('/crm/contacts/:id/identity-documents/:documentType/review',async(req,res)=>{
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager access is required for identity review'});const scopeParams=[req.params.id],scope=contactScopeSql('c',req.broker,scopeParams),contact=await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);if(!contact)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
+  const decision=clean(req.body?.decision),reviewNotes=clean(req.body?.reviewNotes);if(!['verified','rejected','expired'].includes(decision))return res.status(400).json({error:'Select Verify, Reject or Mark expired'});if(decision!=='verified'&&reviewNotes.length<5)return res.status(400).json({error:'Meaningful review notes are required for rejection or expiry'});
+  const result=await transaction(async client=>{const current=await one('SELECT * FROM customer_identity_documents WHERE contact_id=$1 AND document_type=$2 FOR UPDATE',[contact.id,req.params.documentType],client);if(!current)return{code:404,error:'Identity document not found'};if(current.status!=='pending_review')return{code:409,error:'Only an identity document awaiting review can receive a decision'};if(decision==='verified'&&Date.parse(`${String(current.expiryDate).slice(0,10)}T23:59:59Z`)<=Date.now())return{code:409,error:'An expired identity document cannot be verified'};const row=await one(`UPDATE customer_identity_documents SET status=$1,reviewed_by=$2,reviewed_at=NOW(),review_notes=$3,version=version+1,updated_at=NOW() WHERE id=$4 RETURNING *`,[decision,req.broker.id,reviewNotes||null,current.id],client),summary=await syncCustomerKycSummary(contact.id,client);await audit('CustomerIdentityDocument',row.id,'review_decided',req.broker.id,{contactId:contact.id,documentType:row.documentType,decision,reviewNotes,overallKycStatus:summary.kycStatus},client);return{identityDocument:row,...summary};});if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
 r.patch('/crm/contacts/:id/kyc',async(req,res)=>{

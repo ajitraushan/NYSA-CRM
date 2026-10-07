@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { hasNysaStaffIdentity,isManager,isProposalApprover,canApproveProposal,canReadLead,canOperateLead,canReadOpportunity,contactScopeSql } from '../crm-policy.js';
+import { hasNysaStaffIdentity,isManager,isProposalApprover,canApproveProposal,canReadLead,canOperateLead,canReadOpportunity,contactScopeSql,companyScopeSql } from '../crm-policy.js';
 import { decodeAndValidateFile,validatePropertyImage,PROPERTY_IMAGE_POLICY,savePrivate,readPrivate,removePrivate } from '../private-files.js';
 import { makeProposalPdf,proposalApprovedDocument } from '../proposal-pdf.js';
 import {recordApprovedDocumentIssuance} from '../approved-document-issuance.js';
@@ -23,7 +23,7 @@ const imageTypes=['image/jpeg','image/png','image/webp','application/pdf'];
 const propertyVideoTypes=['video/mpeg','video/quicktime'];
 const propertyMediaTypes=[...imageTypes,...propertyVideoTypes];
 const documentTypes=[...imageTypes,'text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-const fallbackDocumentTypeCodes=['customer_requirement','mortgage_pre_approval','offer_letter','signed_form','property_document','correspondence','marketing_agreement','identity_document','financial_document','other'];
+const fallbackDocumentTypeCodes=['customer_requirement','mortgage_pre_approval','offer_letter','signed_form','property_document','correspondence','marketing_agreement','identity_document','corporate_identity_document','financial_document','other'];
 const admin=(req,res)=>req.broker.role==='admin'||(res.status(403).json({error:'Admin access required'}),false);
 async function lead(req,res,id=req.params.id,write=false){const row=await one('SELECT * FROM leads WHERE id=$1',[id]);if(!row)return res.status(404).json({error:'Lead not found'});if(!(write?canOperateLead(req.broker,row):canReadLead(req.broker,row)))return res.status(403).json({error:'Lead is outside your permitted scope'});return row;}
 const managedListing=(broker,listing)=>broker.jobRole==='manager'&&(broker.managedTeamIds||[]).includes(String(listing.postedByTeamId||''));
@@ -158,6 +158,7 @@ async function validateDocumentLink(req,b){
   if(b.activityId&&!await one('SELECT id FROM activities WHERE id=$1',[b.activityId]))return 'Activity not found';
   if(b.channelId){const channel=await one('SELECT contact_id FROM contact_channels WHERE id=$1',[b.channelId]);if(!channel)return 'Contact channel not found';const params=[channel.contactId],scope=contactScopeSql('c',req.broker,params);if(!await one(`SELECT c.id FROM contacts c WHERE c.id=$1 AND (${scope.clause})`,scope.params))return 'Contact channel is outside your permitted scope';}
   if(b.proposalId){const proposal=await one('SELECT p.id,l.* FROM proposals p JOIN leads l ON l.id=p.lead_id WHERE p.id=$1',[b.proposalId]);if(!proposal||!canOperateLead(req.broker,proposal))return 'Proposal is outside your writable scope';}
+  if(b.companyId){const params=[b.companyId],scope=companyScopeSql('c',req.broker,params);if(!await one(`SELECT c.id FROM companies c WHERE c.id=$1 AND c.archived_at IS NULL AND (${scope.clause})`,scope.params))return 'Company is outside your permitted scope';}
   return null;
 }
 async function canAccessDocument(req,doc){
@@ -218,12 +219,12 @@ r.post('/crm/documents',async(req,res)=>{
   const file=decodeAndValidateFile({...b,maxBytes:Number(process.env.MAX_DOCUMENT_BYTES||10485760),allowedTypes:documentTypes});if(file.error)return res.status(400).json({error:file.error});
   const key=await savePrivate(file.buffer,path.extname(file.fileName));try{const row=await transaction(async client=>{let doc=b.documentId?await one('SELECT * FROM documents WHERE id=$1 FOR UPDATE',[b.documentId],client):null;if(b.documentId&&!doc)throw new Error('Document not found');
       if(doc&&doc.ownerId!==req.broker.id&&!isManager(req.broker))throw new Error('Document revision is outside your scope');
-      if(!doc){const id=uuid();doc=await one(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,activity_id,listing_id)
-        VALUES($1,$2,$3,$4,$5,$6,'active',$7,$7,$8,$9,$10,$11) RETURNING *`,[id,`DOC-${Date.now()}-${id.slice(0,8)}`,documentType,title,direction,classification,req.broker.id,b.contactId||null,b.leadId||null,b.activityId||null,b.listingId||null],client);}
+      if(!doc){const id=uuid();doc=await one(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,activity_id,listing_id,company_id)
+        VALUES($1,$2,$3,$4,$5,$6,'active',$7,$7,$8,$9,$10,$11,$12) RETURNING *`,[id,`DOC-${Date.now()}-${id.slice(0,8)}`,documentType,title,direction,classification,req.broker.id,b.contactId||null,b.leadId||null,b.activityId||null,b.listingId||null,b.companyId||null],client);}
       const prior=await one('SELECT * FROM document_versions WHERE document_id=$1 ORDER BY version_number DESC LIMIT 1',[doc.id],client),version=(prior?.versionNumber||0)+1,id=uuid();
       const created=await one(`INSERT INTO document_versions(id,document_id,version_number,template_id,supersedes_version_id,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,recipient,source,classification,status,owner_id,created_by,sent_at,received_at)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,1,$11,'upload',$12,$13,$14,$14,CASE WHEN $13='sent' THEN NOW() END,CASE WHEN $13='received' THEN NOW() END) RETURNING *`,[id,doc.id,version,b.templateId||null,prior?.id||null,file.fileName,b.mediaType,file.buffer.length,key,file.fileHash,clean(b.recipient),classification,status,req.broker.id],client);
-      for(const [entityType,entityId] of [['Contact',b.contactId],['Lead',b.leadId],['Activity',b.activityId],['Listing',b.listingId],['Proposal',b.proposalId],['ContactChannel',b.channelId]])if(entityId)
+      for(const [entityType,entityId] of [['Contact',b.contactId],['Company',b.companyId],['Lead',b.leadId],['Activity',b.activityId],['Listing',b.listingId],['Proposal',b.proposalId],['ContactChannel',b.channelId]])if(entityId)
         await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(document_id,entity_type,entity_id) DO NOTHING`,[uuid(),doc.id,entityType,entityId,req.broker.id],client);
       await audit('DocumentVersion',id,'uploaded',req.broker.id,{documentId:doc.id,version,hash:file.fileHash,direction,classification,status},client);return {document:doc,version:created};});res.status(201).json(row);}catch(error){await removePrivate(key);if(/not found|outside your scope/.test(error.message))return res.status(error.message.includes('not found')?404:403).json({error:error.message});throw error;}
 });

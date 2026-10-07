@@ -7,7 +7,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 
 test('dev.204 no-teal rule remains under the DEV218 navy and gold palette',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.222');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.223');
   for(const marker of [
     'DEV218 approved NYSA light workspace',
     '--workspace:#f4f1eb',
