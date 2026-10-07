@@ -99,6 +99,13 @@ export function evaluateComplianceGate({instances=[],gateCode}){
   return{gateCode,canProceed:blocking.length===0,requirements:applicable,blocking:blocking.map(x=>({instanceId:x.id,label:x.label,state:x.state,partyRole:x.partyRole}))};
 }
 
+export function describeDocumentComplianceBlockers(blocking=[]){
+  const states={missing:'is missing',pending_review:'is awaiting Manager or Director review',returned:'was returned for correction',
+    rejected:'was rejected',expired:'has expired',expiring:'is nearing expiry',party_details_required:'requires a maintained Customer or Company party',
+    context_mismatch:'must be refreshed after transaction details changed',configuration_error:'could not be prepared'};
+  return blocking.map(item=>`${item.label} ${states[item.state]||`is ${String(item.state||'incomplete').replaceAll('_',' ')}`}`);
+}
+
 export function complianceTaskPlan({instance,reason,now=new Date().toISOString(),reminderOffsetDays=0}){
   if(!REMINDER_REASONS.includes(reason))throw new Error('Unsupported compliance follow-up reason');
   const priority=['returned','rejected','expired'].includes(reason)?'high':'normal',dueAt=reason==='expiring'&&instance.expiresAt?new Date(Date.parse(instance.expiresAt)-Number(reminderOffsetDays)*86400000).toISOString():new Date(Date.parse(now)+(reason==='missing'?8:4)*3600000).toISOString();

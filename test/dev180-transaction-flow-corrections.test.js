@@ -6,7 +6,8 @@ const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 test('closure document workspace uses clear transaction wording and no seller promotion prompt',()=>{
   const ui=read('public/document-compliance-ui.js');
-  for(const text of ['TRANSACTION DOCUMENTS','Required documents','Document checklist not configured','Refresh document checklist','Document checklist refreshed for the current transaction details'])assert.match(ui,new RegExp(text));
+  for(const text of ['SIGNED TRANSACTION DOCUMENTS','Deal document register','Preparing the Deal document register','No signed documents are configured','does not block closure'])assert.match(ui,new RegExp(text));
+  assert.doesNotMatch(ui,/Refresh document checklist/);
   assert.doesNotMatch(ui,/Promote the transaction-only party/);
   assert.doesNotMatch(ui,/Current party-document checklist resolved and frozen/);
   const route=read('src/routes/document-compliance.js');

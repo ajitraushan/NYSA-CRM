@@ -112,7 +112,7 @@ test('UI shell, calendar, closure, diary and cache regressions have explicit con
     'environment-badge'])assert.match(page,new RegExp(marker.replace(/[{}[\]]/g,'\\$&')));
   for(const marker of ['representative email and phone','Administration','User management','correctionRoute'])
     assert.match(integrations,new RegExp(marker));
-  for(const marker of ['Return for correction','Close as Lost only when the transaction has genuinely failed','Record management decision'])
+  for(const marker of ['Return for correction','Approve and close Deal as Won','Record approval and close Deal as Won'])
     assert.match(deal,new RegExp(marker));
   assert.match(opportunities,/Complete mandatory transaction parties before management review/);
   assert.match(migration,/GRANT UPDATE ON deal_checklists/);

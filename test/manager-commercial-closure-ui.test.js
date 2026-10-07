@@ -7,17 +7,18 @@ function render(dealType,status,jobRole='manager',writable=true,cancellationRequ
   const context=vm.createContext({window:{},ME:{jobRole},esc:v=>String(v??''),fmtPrice:String,fmtDate:String});
   vm.runInContext(source,context);
   return context.dealWorkspaceHTML({writable,deals:[{id:'synthetic',dealType,status,cancellationRequestStatus,cancellationRequestId:cancellationRequestStatus?'request-1':null,cancellationReasonCode:'other',cancellationReason:'Synthetic cancellation reason',cancellationEvidenceReference:'SYN-EVIDENCE',parties:[],
-    closureGates:['terms','reservation','parties','checklist'].map(code=>({code,complete:true,label:code})),
+    closureGates:['commercial','reservation','documents','approval'].map(code=>({code,complete:code!=='approval',label:code})),
     checklistItems:[{id:'review',itemCode:'DIRECTOR_REVIEW',responsibleRole:'director',label:'Director-designated commercial review',required:true,evidenceRequired:true,status:'pending'}]}]});
 }
 for(const type of ['commercial_sale','commercial_rental'])test(`${type}: Manager gets standard review, approval and closure actions without MD dependency`,()=>{
   const draft=render(type,'draft');
-  assert.match(draft,/Commercial completion review/);
-  assert.match(draft,/deal-checklist-form/);
+  assert.match(draft,/Three evidence gates lead to one management decision/);
+  assert.doesNotMatch(draft,/deal-checklist-form/);
   assert.match(draft,/deal-approval-form/);
   assert.doesNotMatch(draft,/A Director must approve/);
   const approved=render(type,'approved');
   assert.match(approved,/deal-close-won-form/);
+  assert.match(approved,/Complete previously approved Deal/);
   assert.doesNotMatch(approved,/deal-close-lost-form/);
   assert.match(render(type,'approved','manager',true,'pending'),/deal-close-lost-form/);
   assert.match(render(type,'approved','manager',true,'pending'),/Approve cancellation and release Inventory/);

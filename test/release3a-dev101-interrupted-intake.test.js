@@ -15,7 +15,7 @@ test('R3A-WEBSITE-INTAKE-RECOVERY-53: evidence failures become failed and interr
 });
 
 test('dev.101 CRM Test package is cumulative, idempotent and isolated',()=>{
-  assert.equal(JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).version,'2.1.0-dev.221');
+  assert.equal(JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).version,'2.1.0-dev.222');
   for(const marker of ['EXPECTED_VERSION=2.1.0-dev.101','PREVIOUS_VERSION=2.1.0-dev.100','EXPECTED_PACKAGE=nysa-core-r3a-interrupted-intake-recovery-dev101.zip','70|$LATEST_MIGRATION','Deployment already confirmed','Production and R2 clone snapshots: unchanged'])assert.match(deployment,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.doesNotMatch(deployment,/\/dev\/fd|<\(/);
 });

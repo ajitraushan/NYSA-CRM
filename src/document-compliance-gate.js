@@ -1,5 +1,46 @@
-import {many,one} from './db.js';
-import {complianceFingerprint,transactionFamily} from './document-compliance-domain.js';
+import {many,one,execute,transaction,uuid,audit} from './db.js';
+import {complianceFingerprint,resolveComplianceMatrix,transactionFamily,DOCUMENT_COMPLIANCE_RESOLVER_VERSION} from './document-compliance-domain.js';
+export {describeDocumentComplianceBlockers} from './document-compliance-domain.js';
+
+async function activeRules(client){return many(`SELECT v.*,r.requirement_code
+  FROM document_compliance_requirement_versions v
+  JOIN document_compliance_requirements r ON r.id=v.requirement_id
+  WHERE v.status='active' AND v.effective_from<=NOW()
+  ORDER BY v.transaction_family,v.party_role,v.party_kind,v.gate_code,v.label`,[],client);}
+
+export async function ensureDocumentComplianceSnapshot({dealId,actorId=null,client=null}){
+  if(!client)return transaction(tx=>ensureDocumentComplianceSnapshot({dealId,actorId,client:tx}));
+  const deal=await one(`SELECT d.*,dc.id AS checklist_id FROM deals d
+    JOIN deal_checklists dc ON dc.deal_id=d.id WHERE d.id=$1 FOR UPDATE OF d`,[dealId],client);
+  if(!deal)return{valid:false,error:'Deal not found'};
+  const parties=await many(`SELECT id,party_role,contact_id,company_id,transaction_counterparty_id,effective_from
+    FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL ORDER BY id`,[deal.id],client);
+  const resolved=resolveComplianceMatrix({deal:{...deal,checklistId:deal.checklistId,ownerId:deal.ownerId},parties,requirements:await activeRules(client)});
+  if(!resolved.valid)return resolved;
+  await execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`document-compliance-auto:${deal.checklistId}`],client);
+  const current=await one("SELECT * FROM deal_document_compliance_snapshots WHERE deal_checklist_id=$1 AND status='active' FOR UPDATE",[deal.checklistId],client);
+  if(current?.requestFingerprint===resolved.requestFingerprint)return{valid:true,snapshot:current,reused:true,instances:await many('SELECT * FROM deal_document_requirement_instances WHERE snapshot_id=$1',[current.id],client)};
+  if(current)await execute("UPDATE deal_document_compliance_snapshots SET status='superseded' WHERE id=$1",[current.id],client);
+  let snapshot=await one('SELECT * FROM deal_document_compliance_snapshots WHERE request_fingerprint=$1 FOR UPDATE',[resolved.requestFingerprint],client);
+  if(snapshot){snapshot=await one("UPDATE deal_document_compliance_snapshots SET status='active',supersedes_snapshot_id=$1 WHERE id=$2 RETURNING *",[current?.id||snapshot.supersedesSnapshotId,snapshot.id],client);}
+  else snapshot=await one(`INSERT INTO deal_document_compliance_snapshots(id,deal_checklist_id,deal_id,deal_version,deal_type,transaction_family,
+      party_context_hash,resolver_version,status,supersedes_snapshot_id,created_by,request_fingerprint)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10,$11) RETURNING *`,
+    [uuid(),deal.checklistId,deal.id,deal.version,deal.dealType,resolved.transactionFamily,resolved.partyContextHash,
+      DOCUMENT_COMPLIANCE_RESOLVER_VERSION,current?.id||null,actorId||deal.ownerId,resolved.requestFingerprint],client);
+  let instances=await many('SELECT * FROM deal_document_requirement_instances WHERE snapshot_id=$1',[snapshot.id],client);
+  if(!instances.length){
+    for(const item of resolved.instances)instances.push(await one(`INSERT INTO deal_document_requirement_instances(id,snapshot_id,deal_checklist_id,deal_id,
+        deal_party_id,requirement_id,requirement_version_id,party_role,party_kind,gate_code,requirement_level,evidence_authority,label,
+        responsible_agent_id,instance_fingerprint,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+      [uuid(),snapshot.id,item.dealChecklistId,item.dealId,item.dealPartyId,item.requirementId,item.requirementVersionId,item.partyRole,item.partyKind,
+        item.gateCode,item.requirementLevel,item.evidenceAuthority,item.label,item.responsibleAgentId,item.instanceFingerprint,actorId||deal.ownerId],client));
+  }
+  await audit('DocumentComplianceSnapshot',snapshot.id,'automatically_prepared',actorId||deal.ownerId,{dealId:deal.id,
+    requirementCount:instances.length,partyContextHash:resolved.partyContextHash,manualRefreshRequired:false},client);
+  return{valid:true,snapshot,instances,reused:false};
+}
 
 export async function checkDocumentComplianceGate({dealId,gateCode,client}){
   const deal=await one(`SELECT d.id,d.version,d.deal_type,dc.id AS checklist_id FROM deals d JOIN deal_checklists dc ON dc.deal_id=d.id WHERE d.id=$1`,[dealId],client);
@@ -16,10 +57,12 @@ export async function checkDocumentComplianceGate({dealId,gateCode,client}){
       AND v.party_role<>'transaction' AND v.gate_code=$3 AND v.status='active' AND v.effective_from<=NOW()
       AND (dp.transaction_counterparty_id IS NOT NULL OR v.party_kind=CASE WHEN dp.contact_id IS NOT NULL THEN 'individual' ELSE 'organization' END)
     WHERE dp.deal_id=$1 AND dp.effective_to IS NULL`,[deal.id,family,gateCode],client);
+  const prepared=await ensureDocumentComplianceSnapshot({dealId,client});
+  if(!prepared.valid)return{canProceed:false,blocking:[{label:prepared.error||'Signed transaction document register',state:'configuration_error'}]};
   const required=applicable.filter(x=>x.requirementLevel==='required');if(!required.length)return{canProceed:true,blocking:[]};
   const unsupported=(gateCode==='before_close_won'?[]:required.filter(x=>x.partyKind==='unpromoted')).map(x=>({label:`${x.partyRole[0].toUpperCase()+x.partyRole.slice(1)} details required`,state:'party_details_required',partyRole:x.partyRole}));
   const snapshot=await one("SELECT * FROM deal_document_compliance_snapshots WHERE deal_checklist_id=$1 AND status='active'",[deal.checklistId],client);
-  if(!snapshot)return{canProceed:false,blocking:[...unsupported,{label:'Resolve the current document compliance checklist',state:'missing'}]};
+  if(!snapshot)return{canProceed:false,blocking:[...unsupported,{label:'Signed transaction document register could not be prepared',state:'configuration_error'}]};
   const parties=await many(`SELECT id,party_role,contact_id,company_id,effective_from FROM deal_parties WHERE deal_id=$1 AND effective_to IS NULL AND party_role IN('buyer','seller','landlord','tenant') AND (contact_id IS NOT NULL OR company_id IS NOT NULL) ORDER BY id`,[deal.id],client),partyContextHash=complianceFingerprint({dealId:deal.id,dealType:deal.dealType,parties:parties.map(x=>({id:x.id,partyRole:x.partyRole,contactId:x.contactId||null,companyId:x.companyId||null,effectiveFrom:x.effectiveFrom?new Date(x.effectiveFrom).toISOString():null}))});
   if(snapshot.partyContextHash!==partyContextHash)return{canProceed:false,blocking:[...unsupported,{label:'Deal party context changed; resolve compliance again',state:'context_mismatch'}]};
   const rows=await many(`SELECT i.id,i.label,i.party_role,i.evidence_authority,rv.review_required,

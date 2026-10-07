@@ -55,13 +55,13 @@ test('Deal cancellation can release an expired reservation whose Inventory rever
   assert.equal(dealReservationReleaseAligned({currentLinkageKind:'unexpected'}),false);
 });
 
-test('closure gates clearly expose missing parties, checklist and later approval',()=>{
+test('closure gates expose four business gates with signed documents as evidence',()=>{
   const deal={dealType:'sale',acceptedOfferRevisionId:'r1',bookingStatus:'reserved',status:'completion_in_progress'};
-  const gates=dealClosureGates({deal,parties:[{partyRole:'buyer'}],items:[{required:true,status:'pending'}]});
-  assert.equal(gates.find(x=>x.code==='terms').complete,true);
-  assert.match(gates.find(x=>x.code==='parties').label,/seller/);
-  assert.equal(gates.find(x=>x.code==='checklist').complete,false);
-  assert.match(gates.find(x=>x.code==='approval').label,/closure approval recorded/);
+  const gates=dealClosureGates({deal,parties:[{partyRole:'buyer'}],documentsComplete:false,documentBlockers:[{label:'Sale agreement'}]});
+  assert.deepEqual(gates.map(x=>x.code),['commercial','reservation','documents','approval']);
+  assert.match(gates.find(x=>x.code==='commercial').label,/seller/);
+  assert.equal(gates.find(x=>x.code==='documents').complete,false);
+  assert.match(gates.find(x=>x.code==='approval').label,/approval and closure/);
 });
 
 test('R2.4A migration, API and workspace preserve exact commercial evidence and closure gates',()=>{
@@ -73,18 +73,18 @@ test('R2.4A migration, API and workspace preserve exact commercial evidence and 
   assert.match(migration,/checklist_templates/);
   assert.match(migration,/deal_parties/);
   assert.match(routes,/A Deal can only start from an active governed reservation/);
-  assert.match(routes,/Complete mandatory Deal parties and completion checklist/);
+  assert.match(routes,/Complete parties and signed transaction documents/);
   assert.match(routes,/THEN \$3::uuid ELSE NULL END/);
   assert.match(ui,/Closure readiness/);
   assert.match(ui,/dealEditable=writable&&\['draft','completion_in_progress'\]\.includes\(deal\.status\)/);
-  assert.match(ui,/managementReviewComplete=items\.some/);
+  assert.doesNotMatch(ui,/managementReviewComplete=items\.some/);
   assert.match(ui,/partyAdditionAllowed=dealEditable/);
-  assert.match(ui,/Complete all mandatory transaction parties before management review/);
+  assert.match(ui,/Three evidence gates lead to one management decision/);
   assert.match(ui,/Return for correction/);
   assert.doesNotMatch(ui,/Reject closure request/);
-  assert.match(ui,/Close as Lost only when the transaction has genuinely failed/);
+  assert.match(ui,/Approve and close Deal as Won/);
   assert.doesNotMatch(ui,/governed/i);
-  assert.match(ui,/class="span3"><label>Decision evidence reference/);
+  assert.match(ui,/class="span3"><label>Approval record \/ reference/);
   assert.match(ui,/requiredPartiesComplete\?'Add another transaction party':'Add missing required transaction party'/);
   assert.match(ui,/Transaction parties are locked because this Deal has entered approval or closure/);
   assert.match(correction,/DROP CONSTRAINT opportunities_stage_check/);

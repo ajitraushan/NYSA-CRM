@@ -38,7 +38,7 @@ test('governed budget remains original input while expanded website text stays i
 });
 
 test('dev.114 and connector 1.9.4 are the isolated retest candidates',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.221');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.222');
   const plugin=read('release-artifacts/release-3/r3a/wordpress-staging/nysa-crm-test-intake-connector/nysa-crm-test-intake-connector.php');
   assert.match(plugin,/Version: 1\.9\.4/);assert.match(plugin,/VERSION = '1\.9\.4'/);assert.match(plugin,/nysa-wordpress-bridge-1\.9\.4/);
   const deploy=read('release-artifacts/release-3/r3a/deploy-crm-test-r3ai-dev114-lossless-output.sh');

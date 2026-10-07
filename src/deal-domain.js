@@ -78,18 +78,16 @@ export function dealReservationReleaseAligned({bookingId,bookingStatus,listingId
   return RELEASABLE_EXTERNAL_STATES.includes(listingStatus);
 }
 
-export function dealClosureGates({deal,parties=[],items=[]}={}){
+export function dealClosureGates({deal,parties=[],documentsComplete=false,documentBlockers=[]}={}){
   if(!deal)return[{code:'deal',label:'Create the governed Deal record',complete:false}];
   const roles=new Set(parties.filter(x=>!x.effectiveTo).map(x=>x.partyRole));
   const required=REQUIRED_PARTIES[deal.dealType]||[];
   const missing=required.filter(role=>!roles.has(role));
-  const incomplete=items.filter(item=>item.required&& !['completed','waived'].includes(item.status));
   return[
-    {code:'terms',label:'Exact accepted offer terms linked',complete:Boolean(deal.acceptedOfferRevisionId)},
+    {code:'commercial',label:missing.length?`Commercial evidence: add ${missing.join(', ')}`:'Commercial evidence verified',
+      complete:Boolean(deal.acceptedOfferRevisionId)&&missing.length===0},
     {code:'reservation',label:deal.dealType==='off_plan'&&!deal.bookingId?'Developer stock recorded without internal reservation':'Governed reservation preserved',complete:deal.dealType==='off_plan'&&!deal.bookingId||['reserved','completed'].includes(deal.bookingStatus)},
-    {code:'parties',label:missing.length?`Add mandatory parties: ${missing.join(', ')}`:'Mandatory parties recorded',complete:missing.length===0},
-    {code:'checklist',label:incomplete.length?`Complete ${incomplete.length} required checklist item${incomplete.length===1?'':'s'}`:'Required checklist items complete',complete:incomplete.length===0},
-    {code:'approval',label:'Manager/Director closure approval recorded',complete:Boolean(deal.approvedAt)},
-    {code:'closure',label:'Authoritative Closed Won recorded',complete:deal.status==='closed_won'}
+    {code:'documents',label:documentsComplete?'Required signed documents verified':documentBlockers.length?`${documentBlockers.length} signed document requirement${documentBlockers.length===1?'':'s'} outstanding`:'Required signed documents verified',complete:documentsComplete},
+    {code:'approval',label:deal.status==='closed_won'?'Manager/Director approval recorded and Deal closed Won':'Manager/Director approval and closure',complete:deal.status==='closed_won'}
   ];
 }
