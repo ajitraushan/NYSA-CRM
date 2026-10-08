@@ -7,7 +7,7 @@ const read=name=>readFileSync(new URL(name,root),'utf8');
 
 test('dev.203 navy identity remains present under the DEV218 light workspace',()=>{
   const html=read('public/index.html');
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.223');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.224');
   for(const marker of [
     'DEV218 approved NYSA light workspace',
     '--workspace:#f4f1eb',

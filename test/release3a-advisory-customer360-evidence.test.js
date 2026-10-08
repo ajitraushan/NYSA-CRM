@@ -46,7 +46,7 @@ test('R3A-ADVISORY-EVIDENCE-63 exposes the latest structured journey in Customer
 });
 
 test('R3A-ADVISORY-EVIDENCE-63 migration governs advisory facts and safely backfills retained journeys',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.223');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.224');
   assert.match(migration,/fact_group IN \('identity','enquiry','requirement','profile','attribution','consent','advisory'\)/);
   assert.match(migration,/jsonb_each_text\(COALESCE\(e\.received_payload/);
   assert.match(migration,/advisory_answer_'\|\|a\.question_id/);
