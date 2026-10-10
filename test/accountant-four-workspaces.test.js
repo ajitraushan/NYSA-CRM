@@ -22,7 +22,7 @@ test('Accountant UI includes Receivables and Commission Payments without MD appr
   const view={innerHTML:'',querySelectorAll:()=>[]},window={};
   const context=vm.createContext({window,document:{querySelector:()=>view},esc:String});
   vm.runInContext(fs.readFileSync(new URL('../public/accountant-workspace-ui.js',import.meta.url),'utf8'),context);
-  assert.deepEqual(Array.from(window.accountantTabs,t=>t.label),['Dashboard','Opportunities','My Leave','Commission Payments','Receivables']);
+  assert.deepEqual(Array.from(window.accountantTabs,t=>t.label),['Overview','Client Invoices','Client Collections','Agent Payouts','Agent Statements','Payout Advice','Opportunities','My Leave']);
   for(const tab of ['customers','crm','listings','externalListings','admin','payout','marketingCompliance'])assert.equal(window.accountantTabAllowed(tab),false);
   window.renderAccountantDashboard();assert.match(view.innerHTML,/Read|read-only/);assert.doesNotMatch(view.innerHTML,/data-accountant-tab="(?:listings|crm|customers|payout)"/);
 });

@@ -18,7 +18,7 @@
       }catch(error){status.classList.add('receivable-form-error');status.setAttribute('role','alert');status.textContent=error.message;}finally{button.disabled=false;}
     };
   }
-  window.renderCommissionReceivables=async()=>{
+  window.renderCommissionReceivables=async(options={})=>{
     const {parseReceiptAmount}=await import('/money-input.js');
     const centsOf=value=>Math.round(parseReceiptAmount(value)*100);
     const view=document.querySelector('#view');
@@ -45,7 +45,7 @@
     }
     const overview=view.querySelector('#ar-overview');
     function showEditor(){overview.hidden=true;editor.hidden=false;editor.scrollIntoView({block:'start'});}
-    function closeEditor(){editor.hidden=true;overview.hidden=false;overview.scrollIntoView({block:'start'});}
+    function closeEditor(){if(options.onBack)return options.onBack();editor.hidden=true;overview.hidden=false;overview.scrollIntoView({block:'start'});}
     async function newSchedule(preselectedOpportunityId=null,preselectedOpportunityReference=''){
       editor.innerHTML=`<div class="ar-actions"><h3>Create commission invoice</h3><button type="button" class="btn" id="ar-cancel-editor">Back to Receivables Register</button></div><p>Select the commission receivable from a Closed Won Opportunity and its payer, then issue one invoice for each commission payment instalment. VAT is added at 5%. NYSA assigns each invoice number beginning with NYSA-INV- and the invoice date when you confirm.</p>
         <form id="ar-create" class="form-grid">
@@ -71,15 +71,29 @@
         const remove=row.querySelector('[data-remove]');if(remove)remove.onclick=()=>{row.remove();delete form.dataset.requestKey;preview();};rows.append(row);preview();
       };
       editor.querySelector('#ar-add-instalment').onclick=()=>{delete form.dataset.requestKey;addRow();};addRow();form.addEventListener('input',preview);
-      let contextSequence=0;
+      let contextSequence=0,payerRevision=0;
+      form.elements.payerId.addEventListener('change',()=>payerRevision++);
+      form.elements.payerType.addEventListener('change',()=>payerRevision++);
       form.elements.opportunityId.onchange=async()=>{
-        const seq=++contextSequence,id=form.elements.opportunityId.value,target=editor.querySelector('#ar-opportunity-context');
+        const seq=++contextSequence,id=form.elements.opportunityId.value,target=editor.querySelector('#ar-opportunity-context'),revision=payerRevision;
         delete form.dataset.requestKey;
         if(!id){target.textContent='Select a commission receivable to review its commission terms.';return;}
         target.textContent='Loading agreed commission…';
         try{
           const {context:c}=await api(`/finance/receivables/opportunities/${id}/context`);
           if(seq!==contextSequence||form.elements.opportunityId.value!==id)return;
+          if(revision===payerRevision){
+            if(c.dealType==='off_plan'){
+              form.elements.payerType.value='developer';
+              form.elements.payerId.innerHTML='<option value="">Select the maintained Developer</option>';
+              form.querySelector('[data-form-status]').textContent='Off-plan commission must be invoiced to the maintained Developer. Find and select the Developer linked to this Deal or Inventory.';
+            }else if(c.stage==='Closed Won'&&c.dealStatus==='closed_won'&&c.customerId&&c.customerName){
+              form.elements.payerType.value='customer';
+              form.elements.payerId.innerHTML=`<option value="${safe(c.customerId)}">${safe(c.customerName)}</option>`;
+              form.elements['payer-query'].value='';
+              form.querySelector('[data-form-status]').textContent='Buyer selected from the Closed Opportunity. Change the payer if the commission is payable by another party.';
+            }
+          }
           const amount=v=>v==null?'Not recorded':money(Math.round(Number(v)*100));
           target.innerHTML=`<b>${safe(c.opportunityReference)}</b><p>Agreed gross commission: ${amount(c.agreedGrossCommission)} · Referral fee recorded on Opportunity: ${amount(c.referralFee)} · Expected company receipt: ${amount(c.expectedCompanyReceipt)} · Already scheduled excluding VAT: ${money(c.scheduledCommissionCents)}</p><p>Originating agent split: ${safe(c.originatingAgentSplitPercent??'Not recorded')}% · Servicing agent split: ${safe(c.servicingAgentSplitPercent??'Not recorded')}%. Review any referral fee before invoicing; these agreed terms do not calculate agent payout.</p>`;
           if(c.currency&&c.currency!=='AED'){target.textContent+=' Only AED schedules are supported.';return;}
@@ -105,7 +119,7 @@
       editor.querySelector('#ar-cancel-editor').onclick=closeEditor;editor.querySelector('#ar-cancel-editor-bottom').onclick=closeEditor;
       bindSubmit(form,'/finance/receivables/schedules',()=>({opportunityId:form.elements.opportunityId.value,payerType:form.elements.payerType.value,payerId:form.elements.payerId.value,commissionAmount:form.elements.commissionAmount.value,
         issueInvoices:true,instalments:[...rows.querySelectorAll('[data-ar-instalment]')].map(row=>({commissionAmount:row.querySelector('[name="instalmentAmount"]').value,dueDate:row.querySelector('[name="dueDate"]').value,milestone:row.querySelector('[name="milestone"]').value}))}),async data=>{
-          await loadAwaiting();await load();await openInvoice(data.invoices[0].id);toast(`${data.invoices.length} commission invoice${data.invoices.length===1?'':'s'} issued with NYSA invoice number${data.invoices.length===1?'':'s'}.`);
+          if(!options.onBack){await loadAwaiting();await load();}await openInvoice(data.invoices[0].id);toast(`${data.invoices.length} commission invoice${data.invoices.length===1?'':'s'} issued with NYSA invoice number${data.invoices.length===1?'':'s'}.`);
         });
     }
     async function openInvoice(id){
@@ -124,7 +138,7 @@
           ${data.adjustments.length?`<details open><summary>Cancellation / amendment history (${data.adjustments.length})</summary><ul>${data.adjustments.map(a=>`<li><b>${safe(a.requestType==='cancel'?'Cancellation':'Amendment')} · ${safe(a.status)}</b> — ${safe(a.reason)} · evidence ${safe(a.evidenceReference)}</li>`).join('')}</ul></details>`:''}
           <details><summary>Audit history (${data.events.length})</summary><ul>${data.events.map(e=>`<li>${safe(e.createdAt)} · ${safe(e.action.replaceAll('_',' '))}</li>`).join('')}</ul></details>`;
         editor.querySelector('#ar-close-detail').onclick=closeEditor;
-        const reload=async()=>{await load();await openInvoice(id);};
+        const reload=async()=>{if(!options.onBack)await load();await openInvoice(id);};
         const collectionForm=editor.querySelector('#ar-collect');
         if(collectionForm){
           const receiptDate=collectionForm.elements.receivedDate,dateStatus=collectionForm.querySelector('[data-form-status]');
@@ -169,6 +183,6 @@
         target.querySelectorAll('[data-ar-decide]').forEach(button=>button.onclick=async()=>{const decisionReason=prompt(`${button.dataset.decision==='approve'?'Approval':'Rejection'} reason`);if(!decisionReason)return;try{await api(`/finance/receivables-adjustments/${button.dataset.arDecide}/decision`,{method:'POST',refreshWorkspace:false,body:{decision:button.dataset.decision,decisionReason,idempotencyKey:key()}});toast(`Request ${button.dataset.decision}d`);await Promise.all([loadAdjustments(),loadAwaiting(),load()]);}catch(error){toast(error.message,9000);}});
       }catch(error){target.innerHTML=`<p role="alert">${safe(error.message)}</p>`;}
     }
-    view.querySelector('#ar-new').onclick=()=>newSchedule();view.querySelector('#ar-filter').onsubmit=event=>{event.preventDefault();page=1;load();};await Promise.all([loadAwaiting(),loadAdjustments(),load()]);
+    view.querySelector('#ar-new').onclick=()=>newSchedule();view.querySelector('#ar-filter').onsubmit=event=>{event.preventDefault();page=1;load();};if(options.startId)return newSchedule(options.startId,options.startReference);if(options.invoiceId)return openInvoice(options.invoiceId);await Promise.all([loadAwaiting(),loadAdjustments(),load()]);
   };
 })();

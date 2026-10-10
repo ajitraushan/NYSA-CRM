@@ -11,7 +11,7 @@ const templates=new Map([
   ['offer_letter','offer-letter.html'],['viewing_confirmation','viewing-confirmation.html'],
   ['a2a_buyer','a2a-buyer.html'],['a2a_seller','a2a-seller.html'],
   ['listing_noc','listing-noc.html'],['agent_payout','agent-payout.html']
-  ,['tax_invoice','tax-invoice.html']
+  ,['tax_invoice','tax-invoice.html'],['payout_advice','payout-advice.html']
 ]);
 
 const fontCss=()=>[
@@ -36,6 +36,10 @@ for(const x of d.labelValues||[])setLabelSpan(x.label,x.value,x.index||0);
 for(const x of d.textValues||[])setText(x.selector,x.value,x.index||0);
 for(const x of d.checkboxes||[])checkbox(x.label,x.checked!==false);
 if(d.table){const table=document.querySelector(d.table.selector),rows=table&&all('tr',table);if(table&&rows.length){rows.slice(d.table.headerRows||1).forEach(x=>x.remove());const body=table.tBodies[0]||table;for(const values of d.table.rows||[]){const tr=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=txt(value);tr.appendChild(td)}body.appendChild(tr)}}}
+if(d.documentCode==='payout_advice'){
+ const details=document.querySelector('#advice-details');for(const [label,value] of Object.entries(d.header||{})){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=txt(value);details.append(dt,dd)}
+ setText('#advice-total',d.total);
+}
 if(d.documentCode==='buyer_proposal'){
  const pages=all('.page'),summary=pages[0],propertyTemplate=pages[1]?.cloneNode(true),properties=d.properties||[];pages.slice(1).forEach(x=>x.remove());
  if(summary){setText('.ref',d.reference,0,summary);const small=summary.querySelector('.ref small');if(small)small.textContent=txt(d.title)+' · Version '+txt(d.version||1);setLabelSpan('Prepared for',d.customer?.name,0,summary);setLabelSpan('Mobile',d.customer?.phone,0,summary);setLabelSpan('Customer address',d.customer?.address||'Not recorded',0,summary);setText('.idnote',d.customer?.identityReference||'Identity reference: Not recorded',0,summary);setText('.prep .who',d.agent?.name+' · '+d.issueDate,0,summary);setText('.disc',d.disclaimer,0,summary);setText('.sec .aside',properties.length+' shortlisted '+(properties.length===1?'property':'properties'),0,summary);
@@ -93,7 +97,8 @@ export async function renderApprovedDocumentPdf(documentCode,data={}){
     await page.setContent(buildApprovedDocumentHtml(documentCode,data),{waitUntil:'networkidle0'});
     await page.waitForFunction(()=>document.documentElement.dataset.hydrated==='true');
     await page.evaluate(()=>document.fonts.ready);
-    return Buffer.from(await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false}));
+    const pagination=documentCode==='payout_advice'?{displayHeaderFooter:true,headerTemplate:'<span></span>',footerTemplate:'<div style="font-size:9px;width:100%;text-align:center;color:#53616a">NYSA Realty · Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'}:{displayHeaderFooter:false};
+    return Buffer.from(await page.pdf({format:'A4',preferCSSPageSize:true,printBackground:true,...pagination}));
   }catch(error){throw new Error(`Approved PDF rendering failed: ${error.message}`,{cause:error});}
   finally{await browser.close();}
 }

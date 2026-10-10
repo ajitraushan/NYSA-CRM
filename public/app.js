@@ -402,7 +402,7 @@ async function renderShell() {
     </div>
   </header>
   <nav class="tabs">
-    ${ME.jobRole==='accountant'?window.accountantTabs.map(t=>`<button data-tab="${t.id}" class="${t.id==='dashboard'?'active':''}">${t.label}</button>`).join(''):governedNavigation(ME)||`
+    ${ME.jobRole==='accountant'?window.accountantTabs.map(t=>`<button data-tab="${t.id}" class="${t.id==='dashboard'?'active':''}">${t.label}</button>`).join(''):(governedNavigation(ME)?governedNavigation(ME):null)||`
     <button data-tab="dashboard" class="active">Dashboard</button>
     ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="diary">My Diary</button>' : ''}
     ${hasCrmAccess() ? '<button data-tab="tasks">My Tasks</button>' : ''}
@@ -418,6 +418,7 @@ async function renderShell() {
     ${ME.jobRole === 'director' ? '<button data-tab="payout">Commission Payments</button>' : ''}
     ${['director','accountant'].includes(ME.jobRole) ? '<button data-tab="receivables">Receivables</button>' : ''}
     ${ME.role === 'admin' ? '<button data-tab="admin">Administration</button>' : ''}
+    ${['sales_agent','listing_agent','manager','director'].includes(ME.jobRole)?'<button data-tab="myPayoutAdvice">My Payout Advice</button>':''}
     `}
   </nav>
   <main id="view"></main><footer class="app-footer"><img src="/brand/nysa/vector/nysa-horizontal-dark.svg?v=20260815-dev146" alt="NYSA Realty LLC"></footer>`;
@@ -429,13 +430,14 @@ async function renderShell() {
     document.querySelectorAll('nav.tabs button[data-tab]').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     currentTab = b.dataset.tab;
-     currentTab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : currentTab === 'receivables' ? window.renderCommissionReceivables?.() : currentTab === 'financeReceipts' ? window.renderCommissionPayments?.() : currentTab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : currentTab === 'myLeave' ? window.renderMyLeave?.() : currentTab === 'leaveAdministration' ? renderLeaveAdministration() : currentTab === 'payout' ? window.renderCommissionPayments?.() : currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'tasks' ? renderTasks() : currentTab === 'opportunities' ? renderOpportunities() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : currentTab === 'diary' ? renderDiary() : currentTab === 'externalListings' ? renderExternalPortalListings() : renderListings();
+     ['clientInvoices','clientCollections','agentStatements','payoutAdvice','myPayoutAdvice'].includes(currentTab) ? window.renderFinanceQueue?.({clientInvoices:'invoices',clientCollections:'collections',agentStatements:'statements',payoutAdvice:'advice',myPayoutAdvice:'advice'}[currentTab]) : currentTab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : currentTab === 'receivables' ? window.renderCommissionReceivables?.() : currentTab === 'financeReceipts' ? window.renderCommissionPayments?.() : currentTab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : currentTab === 'myLeave' ? window.renderMyLeave?.() : currentTab === 'leaveAdministration' ? renderLeaveAdministration() : currentTab === 'payout' ? window.renderCommissionPayments?.() : currentTab === 'admin' ? renderAdmin() : currentTab === 'dashboard' ? renderDashboard() : currentTab === 'tasks' ? renderTasks() : currentTab === 'opportunities' ? renderOpportunities() : currentTab === 'crm' ? renderCrm() : currentTab === 'customers' ? renderCustomers() : currentTab === 'diary' ? renderDiary() : currentTab === 'externalListings' ? renderExternalPortalListings() : renderListings();
    }));
   $('#assignment-queue-nav')?.addEventListener('click',()=>openAssignmentQueue());
   refreshAssignmentQueueNavigation({repeat:true});
   const initialTab=ME.accessPolicy?.workspaceTabs?.[0]||'dashboard';
   currentTab=initialTab;
   initialTab==='admin'?renderAdmin():renderDashboard();
+  const financeRoute=new URL(window.location.href).searchParams.get('financeGroup');if(financeRoute&&['invoices','collections','payouts','statements','advice'].includes(financeRoute)){const tab=ME.jobRole==='accountant'?{invoices:'clientInvoices',collections:'clientCollections',payouts:'financeReceipts',statements:'agentStatements',advice:'payoutAdvice'}[financeRoute]:'myPayoutAdvice';switchTab(tab);}else
   if(new URL(window.location.href).searchParams.get('workspace'))setTimeout(openRecordRouteFromLocation,0);
 }
 
@@ -500,8 +502,13 @@ async function renderDashboard() {
 }
 
 function switchTab(tab) {
+  const financeRestore=arguments[1]||null;
   if(ME?.jobRole==='accountant'&&!window.accountantTabAllowed(tab)){toast('This workspace is not available to Accountant');return;}
-  if(tab==='financeReceipts'){currentTab=tab;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));return window.renderCommissionPayments();}
+  if(typeof location!=='undefined'&&typeof history!=='undefined'&&!['clientInvoices','clientCollections','agentStatements','payoutAdvice','myPayoutAdvice','financeReceipts'].includes(tab)){
+    const workspaceUrl=new URL(location.href),fromFinance=workspaceUrl.searchParams.has('financeGroup');workspaceUrl.searchParams.delete('financeGroup');workspaceUrl.searchParams.set('workspace',tab);history[fromFinance?'pushState':'replaceState'](null,'',workspaceUrl);
+  }
+  if(['clientInvoices','clientCollections','agentStatements','payoutAdvice','myPayoutAdvice'].includes(tab)){currentTab=tab;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));return window.renderFinanceQueue({clientInvoices:'invoices',clientCollections:'collections',agentStatements:'statements',payoutAdvice:'advice',myPayoutAdvice:'advice'}[tab],financeRestore);}
+  if(tab==='financeReceipts'){currentTab=tab;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));return financeRestore&&ME.jobRole==='accountant'?window.renderFinanceQueue('payouts',financeRestore):window.renderCommissionPayments();}
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
   tab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : tab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : tab === 'receivables' ? window.renderCommissionReceivables?.() : tab === 'myLeave' ? window.renderMyLeave?.() : tab === 'leaveAdministration' ? renderLeaveAdministration() : tab === 'payout' ? window.renderDirectorPayout?.() : tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'tasks' ? renderTasks() : tab === 'opportunities' ? renderOpportunities() : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : tab === 'externalListings' ? renderExternalPortalListings() : renderListings();
@@ -882,7 +889,7 @@ function renderCrm() {
     <div><div class="eyebrow">CRM / RELEASE 1</div><h2>Lead pipeline</h2><p>Capture, assign, qualify, and follow every customer conversation.</p></div>
     <div class="dashboard-actions">
       ${canWriteCrm() ? '<button class="btn btn-primary" id="crm-add">+ Add lead</button>' : ''}
-      ${ME.jobRole!=='accountant'?'<button class="btn" id="crm-opportunities">Opportunities</button>':''}
+      ${['sales_agent','listing_agent','manager','director'].includes(ME.jobRole)?'<button class="btn" id="crm-opportunities">Opportunities</button>':''}
       <button class="btn" id="crm-companies">Companies</button><button class="btn" id="crm-reports">Reports</button><button class="btn" id="crm-mortgage">Mortgage calculator</button>
       <button class="btn" id="crm-queue">Assignment queue</button>
       <button class="btn" id="crm-sla">SLA queue</button><button class="btn" id="crm-tasks">Task queue</button>
@@ -1992,8 +1999,13 @@ function recordWorkspace(html,{type,id,returnTab=RECORD_WORKSPACE_TABS[type]||cu
   host.remove=()=>restoreRecordBackground(state);
   return host;
 }
+function restoreFinanceQueueFromLocation(){
+  if(!ME||!window.renderFinanceQueue)return false;const group=new URL(location.href).searchParams.get('financeGroup'),tabs={invoices:'clientInvoices',collections:'clientCollections',payouts:'financeReceipts',statements:'agentStatements',advice:'payoutAdvice'};
+  if(!tabs[group]||(ME.jobRole!=='accountant'&&(group!=='advice'||!['sales_agent','listing_agent','manager','director'].includes(ME.jobRole))))return false;
+  currentTab=ME.jobRole==='accountant'?tabs[group]:'myPayoutAdvice';document.querySelectorAll('nav.tabs button').forEach(button=>button.classList.toggle('active',button.dataset.tab===currentTab));window.renderFinanceQueue(group);return true;
+}
 function openRecordRouteFromLocation(){const url=new URL(window.location.href),type=url.searchParams.get('workspace'),id=url.searchParams.get('record');if(!ME||!type||!id)return;const tab=RECORD_WORKSPACE_TABS[type];if(ME.jobRole==='accountant'&&(type!=='opportunity'||id.startsWith('new:'))){toast('This record workspace is not available to Accountant');return;}if(tab&&currentTab!==tab)switchTab(tab);setTimeout(()=>type==='inventory'?(id==='new'?openListingForm():openDetail(id)):type==='customer'?(id==='new'?openNewCustomerForm():openCustomer(id)):type==='lead'?(id==='new'?openNewLeadForm():id.startsWith('new:')?openNewLeadForm(id.slice(4)):openLead(id)):type==='opportunity'?(id.startsWith('new:')?openLead(id.slice(4)):openOpportunityDetail(id)):null,0);}
-window.addEventListener('popstate',()=>{const state=recordWorkspaceStack.at(-1);if(state?.dirty){history.pushState({workspace:state.type,record:String(state.id),returnTab:state.returnTab},'',recordWorkspaceUrl(state.type,state.id));leaveRecordWorkspace(state);return;}if(state){leaveRecordWorkspace(state,{fromHistory:true,discard:true});const url=new URL(window.location.href);if(url.searchParams.get('workspace'))openRecordRouteFromLocation();return;}openRecordRouteFromLocation();});
+window.addEventListener('popstate',()=>{const state=recordWorkspaceStack.at(-1);if(state?.dirty){history.pushState({workspace:state.type,record:String(state.id),returnTab:state.returnTab},'',recordWorkspaceUrl(state.type,state.id));leaveRecordWorkspace(state);return;}if(state){leaveRecordWorkspace(state,{fromHistory:true,discard:true});if(restoreFinanceQueueFromLocation())return;const url=new URL(window.location.href);if(url.searchParams.get('workspace'))openRecordRouteFromLocation();return;}if(restoreFinanceQueueFromLocation())return;openRecordRouteFromLocation();});
 function overlay(html) {
   if(pendingRecordWorkspace){
     const options=pendingRecordWorkspace,expected=options.type==='opportunity'?(String(options.id).startsWith('new:')?'LEAD CONVERSION':'opportunity-modal'):{inventory:'listing-'}[options.type];

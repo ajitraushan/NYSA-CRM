@@ -119,6 +119,6 @@ test('dev.139 HTTP and UI boundary is confirmed, Director-only, duplicate-safe a
   for (const marker of ['Import existing Property Finder sandbox listings', 'Discover PF sandbox listings', 'Review Draft import', 'Visible sandbox test tag', 'Governed CORE Area', 'Create reviewed Internal Inventory Draft', 'PF media, owner/contact information, approval, verification and availability will not be imported', 'IMPORT_PROPERTY_FINDER_SANDBOX_LISTING_AS_DRAFT']) assert.ok(ui.includes(marker), marker);
   const importUiStart = ui.indexOf('Import existing Property Finder sandbox listings'), importUi = ui.slice(importUiStart, ui.indexOf('</section>', importUiStart));
   assert.doesNotMatch(importUi, /publish|unpublish|creditsSpent/i);
-  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.225');
-  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.225');
+  assert.equal(JSON.parse(read('package.json')).version, '2.1.0-dev.226');
+  assert.equal(JSON.parse(read('package-lock.json')).version, '2.1.0-dev.226');
 });

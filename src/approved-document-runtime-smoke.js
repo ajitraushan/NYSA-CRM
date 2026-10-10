@@ -2,7 +2,7 @@ import {renderApprovedDocumentPdf} from './approved-document-renderer.js';
 
 export const approvedDocumentRuntimeSmokeCodes=Object.freeze([
   'buyer_proposal','financial_illustration','offer_letter','viewing_confirmation',
-  'a2a_buyer','a2a_seller','listing_noc','agent_payout','tax_invoice'
+  'a2a_buyer','a2a_seller','listing_noc','agent_payout','tax_invoice','payout_advice'
 ]);
 
 const syntheticData=documentCode=>({

@@ -1,6 +1,6 @@
 {
   "name": "nysa-crm",
-  "version": "2.1.0-dev.225",
+  "version": "2.1.0-dev.226",
   "description": "NYSA CORE consolidated CRM Test candidate - Releases 3 to 6",
   "type": "module",
   "main": "app.cjs",

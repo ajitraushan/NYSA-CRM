@@ -87,14 +87,16 @@ export function registerCommissionReceivableRoutes(r){
   r.get('/finance/receivables/opportunities/:id/context',async(req,res)=>{
     authority(req);
     const row=await one(`SELECT o.id,o.opportunity_reference,o.stage,o.transaction_type,
+      c.id AS customer_id,c.full_name AS customer_name,
       o.buyer_commission_percent,o.buyer_commission_minimum,o.seller_commission_percent,o.seller_commission_minimum,o.referral_fee,
       o.originating_agent_split_percent,o.servicing_agent_split_percent,
-      d.id AS deal_id,d.deal_reference,d.status AS deal_status,d.agreed_value,d.currency,
+      d.id AS deal_id,d.deal_reference,d.status AS deal_status,d.deal_type,d.agreed_value,d.currency,
       e.id AS expectation_id,e.expected_gross_amount,e.expected_company_receipt,e.referral_amount,e.referral_settlement_basis,
       COALESCE((SELECT SUM(i.commission_cents) FROM commission_receivable_schedules s
         JOIN commission_receivable_invoices i ON i.schedule_id=s.id
         WHERE s.opportunity_id=o.id AND i.state<>'cancelled'),0) AS scheduled_commission_cents
-      FROM opportunities o LEFT JOIN LATERAL (SELECT id,deal_reference,status,agreed_value,currency FROM deals
+      FROM opportunities o LEFT JOIN leads l ON l.id=o.lead_id LEFT JOIN contacts c ON c.id=l.contact_id
+      LEFT JOIN LATERAL (SELECT id,deal_reference,status,deal_type,agreed_value,currency FROM deals
         WHERE opportunity_id=o.id ORDER BY created_at DESC,id DESC LIMIT 1) d ON TRUE
       LEFT JOIN deal_commission_expectation_versions e ON e.deal_id=d.id AND e.status='frozen'
       WHERE o.id=$1`,[requireId(req.params.id)]);

@@ -1,14 +1,16 @@
 (()=>{
   const tabs=Object.freeze([
-    {id:'dashboard',label:'Dashboard'}, {id:'opportunities',label:'Opportunities'},
-    {id:'myLeave',label:'My Leave'}, {id:'financeReceipts',label:'Commission Payments'},
-    {id:'receivables',label:'Receivables'}
+    {id:'dashboard',label:'Overview'}, {id:'clientInvoices',label:'Client Invoices'},
+    {id:'clientCollections',label:'Client Collections'}, {id:'financeReceipts',label:'Agent Payouts'},
+    {id:'agentStatements',label:'Agent Statements'}, {id:'payoutAdvice',label:'Payout Advice'},
+    {id:'opportunities',label:'Opportunities'}, {id:'myLeave',label:'My Leave'}
   ]);
   window.accountantTabs=tabs;
   window.accountantTabAllowed=tab=>tabs.some(t=>t.id===tab);
   const safe=v=>esc(v??''),money=(v,c='AED')=>v==null?'Not recorded':`${safe(c)} ${Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   const pct=v=>v==null?'Not recorded':`${safe(v)}%`;
   window.renderAccountantDashboard=async()=>{
+    if(window.renderFinanceOverview)return window.renderFinanceOverview();
     const view=document.querySelector('#view');
     view.innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">ACCOUNTANT WORKSPACE</div><h2>Dashboard</h2><p>Review Opportunity commission information and manage actual company-account receipts.</p></div></section>
       <section class="dashboard-panel"><h3>Your workspaces</h3><div class="dashboard-actions">
@@ -26,6 +28,7 @@
   const showReceipts=async reference=>{
     currentTab='financeReceipts';
     document.querySelectorAll('nav.tabs button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='financeReceipts'));
+    if(window.renderFinanceQueue)return window.renderFinanceQueue('payouts',{q:reference,category:'payout-approved'});
     await window.renderCommissionPayments({reference});
   };
   window.renderAccountantOpportunities=async({q='',page=1}={})=>{
@@ -55,8 +58,9 @@
         <div><small>Frozen expected company receipt</small><b>${o.expectedCompanyReceipt==null?'Not frozen':money(o.expectedCompanyReceipt,o.currency)}</b></div>
         <div><small>Confirmed actual receipt</small><b>${o.confirmedActualReceived==null?'Not confirmed':money(o.confirmedActualReceived,o.currency)}</b></div></div>
         <p>Agreed gross commission is derived from maintained commission terms and the agreed transaction value; it is not an invoice or agent payout.</p>
-        <button class="btn btn-primary" data-accountant-receipts>Open Commission Payments</button></div>`);
+        <div class="dashboard-actions"><button class="btn" data-finance-group="invoices" data-finance-tab="clientInvoices" data-finance-category="invoice-issued">Client invoices</button><button class="btn" data-finance-group="collections" data-finance-tab="clientCollections" data-finance-category="collection-unpaid">Client collections</button><button class="btn btn-primary" data-accountant-receipts>Agent payouts</button><button class="btn" data-finance-group="advice" data-finance-tab="payoutAdvice" data-finance-category="advice-generated">Payout advice</button></div></div>`);
       dialog.querySelector('[data-accountant-receipts]')?.addEventListener('click',()=>{dialog.remove();showReceipts(o.opportunityReference);});
+      dialog.querySelectorAll('[data-finance-group]').forEach(button=>button.onclick=()=>{dialog.remove();switchTab(button.dataset.financeTab,{q:o.opportunityReference,category:button.dataset.financeCategory});});
     }catch(error){toast(error.message,7000);}
   };
 })();

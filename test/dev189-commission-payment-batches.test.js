@@ -49,6 +49,6 @@ test('Navigation calls the shared Commission Payments table for Accountant and M
   const shell=read('public/app.js'),accountant=read('public/accountant-workspace-ui.js');
   assert.match(shell,/data-tab="payout">Commission Payments/);
   assert.match(shell,/financeReceipts' \? window\.renderCommissionPayments/);
-  assert.match(accountant,/financeReceipts',label:'Commission Payments'/);
+  assert.match(accountant,/financeReceipts',label:'Agent Payouts'/);
   assert.doesNotMatch(accountant,/Open Finance Receipts/);
 });

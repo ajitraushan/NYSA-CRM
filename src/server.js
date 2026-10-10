@@ -1,3 +1,4 @@
+import {startAdviceWorker} from './payout-advice.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './lib/http-kit.js';
@@ -90,6 +91,7 @@ const shutdown = createShutdownHandler({
 async function start() {
   writeRuntimeEvent('starting');
   await migrate();
+  startAdviceWorker();
   await new Promise((resolve, reject) => {
     server = app.listen(PORT, () => {
       server.off('error', reject);

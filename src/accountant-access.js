@@ -5,6 +5,9 @@ export function accountantRequestAllowed(actor, method, requestPath) {
   if (!isRestrictedAccountant(actor)) return true;
   const p = String(requestPath || '').replace(/^\/api(?=\/)/, '').replace(/\/$/, '');
   if (method === 'GET') return [
+    /^\/finance\/workspace\/(queue|counts|filters)$/,
+    /^\/finance\/workspace\/batches\/[a-f0-9-]{36}$/,
+    /^\/finance\/payout-advice\/[a-f0-9-]{36}\/document$/,
     /^\/me$/, /^\/crm\/classification-catalogue\/active$/,
     /^\/crm\/my-(employment|leave-balances|leave-applications)$/,
     /^\/finance\/commission-deals$/,
@@ -23,6 +26,8 @@ export function accountantRequestAllowed(actor, method, requestPath) {
     /^\/crm\/deals\/[a-f0-9-]{36}\/commission-proofs(?:\/[a-f0-9-]{36}\/download)?$/
   ].some(rule => rule.test(p));
   if (method === 'POST') return [
+    /^\/finance\/payout-advice\/[a-f0-9-]{36}\/retry$/,
+    /^\/finance\/workspace\/batches\/[a-f0-9-]{36}\/advice$/,
     /^\/auth\/logout$/,
     /^\/finance\/opportunities\/[a-f0-9-]{36}\/commission-(proofs|receipts|receipt-confirmations)$/,
     /^\/finance\/receivables\/schedules$/,
