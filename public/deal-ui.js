@@ -72,7 +72,7 @@ function dealWorkspaceHTML({opportunity={opportunityReference:'Opportunity refer
 function bindDealWorkspace(root,{opportunityId,onChanged,writable=false}){
   const refresh=message=>{toast(message);if(root.refreshOpportunity)return root.refreshOpportunity();root.remove();onChanged();};
   const officialDeal=root.querySelector('.deal-workspace[data-deal-id]');
-  if(officialDeal)window.bindDocumentComplianceWorkspace?.(root,{dealId:officialDeal.dataset.dealId,writable});
+  if(officialDeal)window.bindDocumentComplianceWorkspace?.(root,{dealId:officialDeal.dataset.dealId,writable,onChanged:()=>refresh('Document register and closure readiness updated')});
   if(officialDeal)window.bindDealCommissionWorkspace?.(root,{dealId:officialDeal.dataset.dealId,writable});
   root.querySelector('[data-jump-commission]')?.addEventListener('click',()=>{const pane=root.querySelector('.commission-deal-workspace')||document.querySelector('.opportunity-stage-page .commission-deal-workspace');pane?.scrollIntoView({behavior:'smooth',block:'start'});});
   const create=$('#deal-create-form',root);

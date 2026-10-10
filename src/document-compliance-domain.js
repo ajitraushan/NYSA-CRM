@@ -67,7 +67,8 @@ export function resolveComplianceMatrix({deal,parties=[],requirements=[]}){
 export function validateGenericEvidence(input={},now=new Date().toISOString()){
   const errors=[],issuedAt=instant(input.issuedAt),expiresAt=input.expiresAt?instant(input.expiresAt):null,value={requirementInstanceId:clean(input.requirementInstanceId),issuedAt,expiresAt,idempotencyKey:clean(input.idempotencyKey),supersedesEvidenceId:clean(input.supersedesEvidenceId)||null};
   if(!value.requirementInstanceId)errors.push('Requirement instance is required');
-  if(!issuedAt||Date.parse(issuedAt)>Date.parse(now))errors.push('A valid issue or receipt time is required');
+  if(!issuedAt)errors.push('Enter a valid document issue or receipt date and time');
+  else if(Date.parse(issuedAt)>Date.parse(now))errors.push('Document date cannot be in the future. Enter the actual issue or receipt date and time.');
   if(input.expiresAt&&(!expiresAt||Date.parse(expiresAt)<=Date.parse(issuedAt)))errors.push('Expiry must be after issue or receipt');
   if(value.idempotencyKey.length<8||value.idempotencyKey.length>160)errors.push('A valid idempotency key is required');
   return{valid:errors.length===0,errors,value};

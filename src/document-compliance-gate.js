@@ -35,7 +35,7 @@ export async function ensureDocumentComplianceSnapshot({dealId,actorId=null,clie
         responsible_agent_id,instance_fingerprint,created_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
       [uuid(),snapshot.id,item.dealChecklistId,item.dealId,item.dealPartyId,item.requirementId,item.requirementVersionId,item.partyRole,item.partyKind,
-        item.gateCode,item.requirementLevel,item.evidenceAuthority,item.label,item.responsibleAgentId,item.instanceFingerprint,actorId||deal.ownerId],client));
+        item.gateCode,item.requirementLevel,item.evidenceAuthority,item.label,item.responsibleAgentId,complianceFingerprint({snapshotId:snapshot.id,instanceFingerprint:item.instanceFingerprint}),actorId||deal.ownerId],client));
   }
   await audit('DocumentComplianceSnapshot',snapshot.id,'automatically_prepared',actorId||deal.ownerId,{dealId:deal.id,
     requirementCount:instances.length,partyContextHash:resolved.partyContextHash,manualRefreshRequired:false},client);

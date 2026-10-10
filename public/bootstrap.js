@@ -8,7 +8,7 @@
   // Feature modules must exist before app.js restores the last workspace. Loading
   // app.js early made Administration sections appear/disappear across refreshes.
   // The independent feature modules can load in parallel; only app.js is gated.
-  const featureFiles=['accountant-workspace-ui.js','purchased-data-import-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js'];
+  const featureFiles=['shared-review-panel.js','accountant-workspace-ui.js','purchased-data-import-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js'];
   const [moneyInput]=await Promise.all([import(`/money-input.js?v=${encodeURIComponent(build)}`),...featureFiles.map(loadScript)]);
   window.parseReceiptAmount=moneyInput.parseReceiptAmount;
   await loadScript('app.js');

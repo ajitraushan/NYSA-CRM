@@ -53,6 +53,15 @@ test('generic evidence requires valid chronology and idempotency',()=>{
   assert.equal(validateGenericEvidence({requirementInstanceId:'instance',issuedAt:'2026-08-01',expiresAt:'2027-08-01',idempotencyKey:'request-123'},'2026-08-14').valid,true);assert.equal(validateGenericEvidence({requirementInstanceId:'instance',issuedAt:'2026-08-20',idempotencyKey:'short'},'2026-08-14').valid,false);
 });
 
+test('document date errors distinguish malformed input from a future issue time',()=>{
+  const input={requirementInstanceId:'instance',idempotencyKey:'date-regression-123'},now='2026-10-10T08:00:00Z';
+  assert.match(validateGenericEvidence({...input,issuedAt:'invalid'},now).errors[0],/valid document issue or receipt date and time/);
+  assert.match(validateGenericEvidence({...input,issuedAt:'2026-10-29T07:27:00Z'},now).errors[0],/cannot be in the future/);
+  assert.equal(validateGenericEvidence({...input,issuedAt:now},now).valid,true);
+  assert.equal(validateGenericEvidence({...input,issuedAt:'2026-10-01T11:27:00+04:00'},now).valid,true);
+  assert.match(validateGenericEvidence({...input,issuedAt:now,expiresAt:'2026-10-09T08:00:00Z'},now).errors[0],/Expiry must be after/);
+});
+
 test('review contract requires confirmation and meaningful adverse reason',()=>{
   assert.equal(validateComplianceReview({decision:'accepted',reviewConfirmation:true}).valid,true);assert.equal(validateComplianceReview({decision:'returned',reason:'too short',reviewConfirmation:true}).valid,false);assert.equal(validateComplianceReview({decision:'accepted',reviewConfirmation:false}).valid,false);
 });
