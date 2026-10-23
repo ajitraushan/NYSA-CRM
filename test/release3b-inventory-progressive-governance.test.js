@@ -36,14 +36,14 @@ test('R3B-OPPORTUNITY-INVENTORY-62 accepts verified active Inventory without tre
   assert.match(opportunities,/requireLiveInventory\(match\.listingId,opportunity\.id,client\)/);
 });
 
-test('R3A-OPPORTUNITY-AUTHORITY-CARRYOVER-68 uses verified internal authority for buyer representation and reserves mandates for seller-side paths',()=>{
+test('R3A-OPPORTUNITY-AUTHORITY-CARRYOVER-68 retains internal authority while optional mandates do not block conversion',()=>{
   const opportunities=read('src/routes/opportunities.js'),ui=read('public/app.js'),creationStart=opportunities.indexOf("r.post('/crm/leads/:id/opportunities'"),creationEnd=opportunities.indexOf('\nr.',creationStart+10),creation=opportunities.slice(creationStart,creationEnd);
   assert.ok(creationStart>0&&creationEnd>creationStart);
   assert.match(creation,/if\(\['inventory','dual'\]\.includes\(input\.representationPath\)\)/);
   assert.match(creation,/representationAgreement\?\.evidenceReference\|\|inventoryParty\.authorityEvidence/);
-  assert.match(creation,/Seller\/landlord or dual representation requires an active mandate agreement/);
+  assert.doesNotMatch(creation,/Seller\/landlord or dual representation requires an active mandate agreement/);
   assert.doesNotMatch(creation,/The selected Inventory must have an active mandate or authority agreement/);
-  assert.match(ui,/An active mandate is required only when NYSA represents the seller\/landlord or both sides/);
+  assert.match(ui,/A mandate document may be maintained optionally on Inventory/);
 });
 
 test('R3B-OPPORTUNITY-REQUIREMENT-64 binds conversion to the exact current requirement instead of stale Lead summaries',()=>{
@@ -92,9 +92,9 @@ test('R3B-PORTAL-LISTING-69 exposes portal-only fields while keeping owner and a
   for(const field of ['Portal / channel','Internal marketing authority','Permit number','Permit expiry'])assert.match(workspace,new RegExp(field));
 });
 
-test('R3A-OPPORTUNITY-CORRECTION-LINK-70 links mandate correction to External Portal Listings and distinguishes placeholder guidance',()=>{
+test('R3A-OPPORTUNITY-CORRECTION-LINK-70 links optional mandate maintenance to selected Inventory and distinguishes placeholder guidance',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
-  assert.match(ui,/Open External Portal Listings to maintain mandate/);
+  assert.match(ui,/Open selected Inventory to maintain optional mandate/);
   assert.match(ui,/portalCorrection\.hidden=form\.elements\.representationPath\.value==='buyer'/);
   assert.match(ui,/switchTab\('externalListings'\)/);
   assert.match(styles,/input::placeholder,textarea::placeholder/);

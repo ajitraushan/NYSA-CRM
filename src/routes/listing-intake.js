@@ -116,6 +116,7 @@ r.get('/listing-intake',requireAuth,queueAccess,async(req,res)=>{
   const params=[],where=[];
   if(req.broker.jobRole==='manager'&&req.broker.role!=='admin'){params.push(req.broker.managedTeamIds||[]);where.push(`b.team_id=ANY($${params.length}::uuid[])`);}
   else{params.push(req.broker.id);where.push(`e.assigned_to=$${params.length}`);}
+  if(req.query.id){if(!/^[a-f0-9-]{36}$/i.test(req.query.id))return res.status(400).json({error:'Invalid intake request identifier'});params.push(req.query.id);where.push(`e.id=$${params.length}`);}
   if(['processing','accepted','failed','unmapped','duplicate_review'].includes(req.query.status)){params.push(req.query.status);where.push(`e.status=$${params.length}`);}
   const events=await many(`SELECT e.id,e.event_id,e.provider_code,e.source_kind,e.external_record_id,e.mapping_version,e.received_mapping_version,e.status,e.error_code,e.error_detail,e.listing_id,e.duplicate_listing_id,e.attempt_count,e.received_at,e.processed_at,b.name AS assigned_to_name
     FROM listing_intake_events e JOIN brokers b ON b.id=e.assigned_to ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY e.received_at DESC LIMIT 200`,params);

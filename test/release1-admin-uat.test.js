@@ -197,13 +197,13 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
 test('existing customer selection displays matches and requires explicit confirmation',()=>{
   const ui=read('public/app.js'),crm=read('src/routes/crm.js');
   assert.match(ui,/Matching Customers/);
-  assert.match(ui,/id="existing-customer-select" name="contactId" type="hidden"/);
+  assert.match(ui,/<select id="existing-customer-select" name="contactId"/);
   assert.match(ui,/customer-picker-result/);
   assert.match(ui,/Selected existing Customer/);
   assert.match(ui,/Create a new Customer instead/);
   assert.match(ui,/Type a name, email or phone, e\.g\. Ajit/);
   assert.match(ui,/rankCustomerChoices/);
-  assert.match(ui,/Select one explicitly/);
+  assert.match(ui,/Select an existing Customer explicitly/);
   assert.match(crm,/ORDER BY array_position\(\$1::uuid\[\],c\.id\)/);
 });
 

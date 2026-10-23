@@ -105,7 +105,8 @@
         const select=form.elements[kind==='opportunity'?'opportunityId':'payerId'],status=form.querySelector('[data-form-status]');select.innerHTML='<option value="">Loading…</option>';
         try{
           const payerType=form.elements.payerType.value;
-          const url=kind==='opportunity'?'/finance/receivables/opportunities?q='+encodeURIComponent(form.elements['opp-query'].value):'/finance/receivables/payers?type='+payerType+'&q='+encodeURIComponent(form.elements['payer-query'].value);
+          const identity=new URLSearchParams();if(payerType==='customer')window.customerIdentityParams('payer',identity,form);
+          const url=kind==='opportunity'?'/finance/receivables/opportunities?q='+encodeURIComponent(form.elements['opp-query'].value):'/finance/receivables/payers?type='+payerType+'&q='+encodeURIComponent(form.elements['payer-query'].value)+(identity.size?'&'+identity:'');
           const data=await api(url);if(kind==='payer'&&form.elements.payerType.value!==payerType)return;
           const found=kind==='opportunity'?data.opportunities:data.payers;
           select.innerHTML=`<option value="">${kind==='opportunity'?'Select a commission receivable':'Select a payer'}</option>`+found.map(row=>`<option value="${safe(row.id)}"${kind==='opportunity'?` data-deal-type="${safe(row.dealType||'')}"`:''}>${kind==='opportunity'?`${safe(row.opportunityReference)} · ${safe(row.displayParty)} · ${money(row.outstandingCommissionCents)} outstanding`:safe(row.name)}</option>`).join('');
@@ -113,6 +114,7 @@
         }catch(error){select.innerHTML='<option value="">Search failed</option>';status.textContent=error.message;}
       };
       editor.querySelector('#ar-find-opportunity').onclick=()=>lookup('opportunity');editor.querySelector('#ar-find-payer').onclick=()=>lookup('payer');
+      form.querySelector('#ar-payer-query').closest('div').insertAdjacentHTML('afterend',window.customerIdentityFields('payer'));
       form.elements.opportunityId.addEventListener('change',()=>{const status=form.querySelector('[data-form-status]'),selected=form.elements.opportunityId.selectedOptions[0];if(selected?.dataset.dealType==='off_plan'){form.elements.payerType.value='developer';form.elements.payerId.innerHTML='<option value="">Select the maintained Developer</option>';form.elements['payer-query'].value='';status.textContent='Off-plan commission must be invoiced to the maintained Developer. Select Find payers, then choose the Developer linked to this Deal or Inventory.';}});
         if(preselectedOpportunityId){form.elements.opportunityId.innerHTML=`<option value="${safe(preselectedOpportunityId)}">${safe(preselectedOpportunityReference||'Closed Opportunity')}</option>`;form.elements.opportunityId.value=preselectedOpportunityId;form.elements.opportunityId.dispatchEvent(new Event('change'));}
       form.elements.payerType.onchange=()=>{form.elements.payerId.innerHTML='<option value="">Search and select a payer</option>';delete form.dataset.requestKey;};

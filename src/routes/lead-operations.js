@@ -1,3 +1,8 @@
+import {readPrivate} from '../private-files.js';
+import {canReadAllCrmDocuments,isCrmDocumentReadRequest} from '../document-read-policy.js';
+import {pdfDisposition} from '../offer-document-labels.js';
+import {reviewQueueTasks} from '../review-task-sources.js';
+import {filterTaskPage} from '../task-catalogue.js';
 import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
@@ -18,7 +23,7 @@ function staffOnly(req,res,next){
   // The central Admin capability policy has already rejected every Lead and
   // assignment operation. This boundary admits Admin only to its explicitly
   // allowed personal Task endpoints.
-  if(!hasNysaStaffIdentity(req.broker)) return res.status(403).json({error:'CORE access requires an active NYSA staff account'});
+  if(!hasNysaStaffIdentity(req.broker)&&!(canReadAllCrmDocuments(req.broker)&&isCrmDocumentReadRequest(req.method,req.path))) return res.status(403).json({error:'CORE access requires an active NYSA staff account'});
   next();
 }
 const text=v=>typeof v==='string'&&v.trim()?v.trim():null;
@@ -519,7 +524,7 @@ r.get('/crm/tasks',async(req,res)=>{
     const changes=await many(`SELECT r.id,r.contact_id,r.change_reason,r.requested_at AS due_at,c.customer_reference,c.full_name,requester.name AS requested_by_name
       FROM customer_change_requests r JOIN contacts c ON c.id=r.contact_id JOIN brokers requester ON requester.id=r.requested_by
       WHERE r.status='pending' ORDER BY r.requested_at,r.id`);
-    customerChangeTasks=changes.map(row=>({id:`customer-change-${row.id}`,taskType:'customer_change_approval',customerChangeRequestId:row.id,
+    customerChangeTasks=(req.broker.jobRole==='manager'?changes:[]).map(row=>({id:`customer-change-${row.id}`,taskType:'customer_change_approval',customerChangeRequestId:row.id,
       contactId:row.contactId,contactName:row.fullName,subject:'Review Customer change',details:`${row.customerReference} · requested by ${row.requestedByName} · ${row.changeReason}`,
       priority:'high',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'}));
     const cancellationParams=[],cancellationScope=opportunityScopeSql('o',req.broker,cancellationParams);
@@ -533,8 +538,29 @@ r.get('/crm/tasks',async(req,res)=>{
       leadId:row.leadId,contactId:row.contactId,leadTitle:row.leadTitle,contactName:row.contactName,subject:'Review Deal cancellation',details:row.reason,
       priority:'urgent',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'}));
   }
-  res.json({tasks:[...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks,...customerChangeTasks,...dealCancellationTasks].sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
+  let inventoryTasks=[];
+  if(req.query.mine==='1'&&req.broker.jobRole==='manager'&&['open','completed',undefined].includes(req.query.bucket)){
+    const rows=await many(`SELECT vr.*,l.inventory_reference,l.project,t.name AS team_name FROM inventory_verification_requests vr JOIN listings l ON l.id=vr.listing_id JOIN brokers maintainer ON maintainer.id=l.posted_by JOIN teams t ON t.id=maintainer.team_id WHERE l.deleted_at IS NULL AND vr.status${req.query.bucket==='completed'?"<>'pending'":"='pending'"} AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL) OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL)) ORDER BY vr.submitted_at,vr.id`,[req.broker.id]);
+    inventoryTasks=rows.map(row=>({id:'inventory-review-'+row.id,taskType:row.requestType==='exemption'?'inventory_exemption':'inventory_verification',listingId:row.listingId,inventoryReference:row.inventoryReference,subject:row.requestType==='exemption'?'Review Inventory exemption':'Review Inventory verification',details:row.inventoryReference+' · '+row.project+' · '+row.teamName+' · submitted '+new Date(row.submittedAt).toISOString(),status:row.status==='pending'?'open':'completed',submittedAt:row.submittedAt,dueAt:null,priority:'normal',assigneeId:req.broker.id}));
+  }
+  const queueTasks=req.query.mine==='1'?await reviewQueueTasks(req.broker,req.query):[];
+  const allTasks=[...queueTasks,...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks,...customerChangeTasks,...dealCancellationTasks,...inventoryTasks];
+  res.json(req.query.mine==='1'?filterTaskPage(allTasks,req.query,req.broker):{tasks:allTasks.sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))});
 });
+
+r.get('/crm/task-reviews/:kind/:id/document',async(req,res)=>{
+ const allowed=new Set(['company_identity_review','proposal_review','developer_arrangement_review','developer_noc_review','listing_noc_evidence_review','official_evidence_review','compliance_evidence_review']);
+ if(!allowed.has(req.params.kind))return res.status(404).json({error:'No review document is available for this request type'});
+ const tables={company_identity_review:'company_identity_documents',proposal_review:'proposal_versions',developer_arrangement_review:'developer_brokerage_arrangement_versions',developer_noc_review:'property_listing_noc_versions',listing_noc_evidence_review:'listing_noc_evidence_versions',official_evidence_review:'official_document_evidence_versions',compliance_evidence_review:'document_compliance_evidence_versions'};
+ const source=canReadAllCrmDocuments(req.broker)?await one(`SELECT document_version_id FROM ${tables[req.params.kind]} WHERE id=$1`,[req.params.id]):null;
+ const task=source?{...source,reviewKind:req.params.kind,reviewId:req.params.id}:null;
+ if(!task?.documentVersionId)return res.status(404).json({error:'Review document not found or outside your current review authority'});
+ const version=await one('SELECT id,file_name,media_type,storage_key FROM document_versions WHERE id=$1',[task.documentVersionId]);if(!version)return res.status(404).json({error:'Exact review document version not found'});
+ await audit('DocumentVersion',version.id,'review_document_viewed',req.broker.id,{requestType:task.reviewKind,requestId:task.reviewId});
+ res.setHeader('Content-Type',version.mediaType);res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Disposition',pdfDisposition(version.fileName,true));res.end(await readPrivate(version.storageKey));
+});
+
+r.get('/crm/task-reviews/:kind/:id',async(req,res)=>{const rows=[...await reviewQueueTasks(req.broker,{bucket:'open'}),...await reviewQueueTasks(req.broker,{bucket:'completed'})],task=rows.find(x=>x.reviewKind===req.params.kind&&x.reviewId===req.params.id);if(!task)return res.status(404).json({error:'Review request not found or outside your current authority'});res.json({task});});
 
 r.post('/crm/leads/:id/tasks',async(req,res)=>{
   const {lead,error}=await scopedLead(req);if(error)return res.status(error[0]).json({error:error[1]});
@@ -549,6 +575,7 @@ r.post('/crm/leads/:id/tasks',async(req,res)=>{
 });
 
 r.patch('/crm/tasks/:id',async(req,res)=>{
+  if(String(req.params.id).startsWith('review-'))return res.status(409).json({error:'Record the decision through the source review workspace; generic Task completion does not approve a request'});
   const task=await one(`SELECT t.*,l.assigned_to,l.assigned_team_id,l.created_by AS lead_created_by FROM tasks t LEFT JOIN leads l ON l.id=t.lead_id WHERE t.id=$1`,[req.params.id]);
   if(!task)return res.status(404).json({error:'Task not found'});
   if(['leave_approval','marketing_material_review','marketing_material_follow_up'].includes(task.taskType)){

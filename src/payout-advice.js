@@ -1,3 +1,4 @@
+import {canReadAllCrmDocuments} from './document-read-policy.js';
 import {mayReadFinanceQueues,queueFilters} from './finance-workspace-domain.js';
 import {hasInternalCrmIdentity} from './crm-policy.js';
 import {adviceReference,adviceDocument,adviceSnapshots} from './payout-advice-domain.js';
@@ -34,10 +35,10 @@ export function startAdviceWorker(){let busy=false;const tick=async()=>{if(busy)
 export function registerAdviceRoutes(r){
  const finance=mayReadFinanceQueues;
  r.get('/finance/payout-advice/:id/document',async(req,res)=>{
-  if(!hasInternalCrmIdentity(req.broker))return res.status(403).json({error:'NYSA business staff access required'});
+  if(!canReadAllCrmDocuments(req.broker))return res.status(403).json({error:'Active account required'});
   queueFilters({agentId:req.params.id});
   const row=await one('SELECT * FROM agent_payout_advices WHERE id=$1',[req.params.id]);
-  if(!row||(!finance(req.broker)&&row.agentId!==req.broker.id))return res.status(404).json({error:'Payout advice not found'});
+  if(!row)return res.status(404).json({error:'Payout advice not found'});
   if(row.status!=='generated')return res.status(409).json({error:'Payout advice is not yet generated'});
   const pdf=await readPrivate(row.storageKey);await audit('CommissionPaymentBatch',row.batchId,'payout_advice_downloaded',req.broker.id,{adviceId:row.id});
   res.setHeader('Content-Type','application/pdf');res.setHeader('Cache-Control','private, no-store');res.setHeader('Content-Disposition',`${req.query.download?'attachment':'inline'}; filename="${adviceReference(row)}.pdf"`);res.end(pdf);

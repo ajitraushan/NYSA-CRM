@@ -1,3 +1,5 @@
+import {canReadAllCrmDocuments} from '../document-read-policy.js';
+import {registerDirectorSummary} from '../director-commission-summary.js';
 import {createAdviceIntents,registerAdviceRoutes} from '../payout-advice.js';
 import {registerFinanceQueues} from '../finance-workspace-queues.js';
 import { Router } from '../lib/http-kit.js';
@@ -186,7 +188,7 @@ r.get('/finance/agent-payouts',async(req,res)=>{if(!financeReceipt(req.broker))r
     LEFT JOIN brokers pb ON pb.id=ba.paid_by
     JOIN commission_payment_batch_items bi ON bi.batch_id=ba.id JOIN agent_payout_calculations p ON p.id=bi.calculation_id
     GROUP BY ba.id,sb.name,db.name,pb.name ORDER BY ba.submitted_at DESC`);
-  for(const batch of batches)batch.items=await many(`SELECT bi.*,p.payout_reference,p.agent_payout_amount,p.currency,p.release_due_date,p.status AS payout_status,p.trigger_method,p.current_credited_amount,
+  for(const batch of batches)batch.items=await many(`SELECT bi.*,p.agent_id,p.payout_reference,p.agent_payout_amount,p.currency,p.release_due_date,p.status AS payout_status,p.trigger_method,p.current_credited_amount,
     CASE WHEN p.trigger_method='quarter_achieved_rate' THEN p.agent_payout_amount-ROUND(p.current_credited_amount*COALESCE((SELECT MAX(pb.agent_percent) FROM agent_payout_calculation_bands pb WHERE pb.calculation_id=p.id),0)/100,2) ELSE 0 END AS quarter_true_up_amount,
     b.name AS agent_name,d.deal_reference,o.opportunity_reference
     FROM commission_payment_batch_items bi JOIN agent_payout_calculations p ON p.id=bi.calculation_id JOIN brokers b ON b.id=p.agent_id JOIN deals d ON d.id=p.deal_id JOIN opportunities o ON o.id=d.opportunity_id
@@ -194,7 +196,7 @@ r.get('/finance/agent-payouts',async(req,res)=>{if(!financeReceipt(req.broker))r
   res.json({payouts:rows,eligible,batches,permissions:{canSubmit:accountant(req.broker),canApprove:director(req.broker),canRecordPayment:accountant(req.broker)}});});
 
 r.get('/finance/agent-payouts/:agentId/quarters/:quarter/document',async(req,res)=>{
-  if(!financeReceipt(req.broker))return res.status(403).json({error:'Accountant or MD commission-payment access required'});
+  if(!canReadAllCrmDocuments(req.broker)&&!financeReceipt(req.broker))return res.status(403).json({error:'Active account required'});
   const agentId=clean(req.params.agentId),quarter=clean(req.params.quarter);
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(agentId)||!/^\d{4}-Q[1-4]$/.test(quarter))return res.status(400).json({error:'A valid Agent and settlement quarter are required'});
   const agent=await one('SELECT id,name FROM brokers WHERE id=$1',[agentId]);
@@ -207,7 +209,7 @@ r.get('/finance/agent-payouts/:agentId/quarters/:quarter/document',async(req,res
     line.originating_percent,line.servicing_percent,line.total_credit_percent AS agent_commission_share_percent,
     COALESCE((SELECT MAX(pb.agent_percent) FROM agent_payout_calculation_bands pb WHERE pb.calculation_id=p.id),0) AS achieved_rate,
     CASE WHEN p.trigger_method='quarter_achieved_rate' THEN p.agent_payout_amount-ROUND(p.current_credited_amount*COALESCE((SELECT MAX(pb.agent_percent) FROM agent_payout_calculation_bands pb WHERE pb.calculation_id=p.id),0)/100,2) ELSE 0 END AS quarter_true_up_amount,
-    COALESCE((SELECT SUM(re.released_amount) FROM agent_payout_release_events re WHERE re.calculation_id=p.id AND re.event_type='release'),0) AS released_amount
+    COALESCE((SELECT SUM(CASE WHEN re.event_type='release' THEN re.released_amount ELSE -re.released_amount END) FROM agent_payout_release_events re WHERE re.calculation_id=p.id),0) AS released_amount
     FROM agent_payout_calculations p JOIN deal_agent_credit_lines line ON line.id=p.credit_line_id JOIN deal_agent_credit_versions credit ON credit.id=line.credit_version_id LEFT JOIN commission_receivable_collections collection ON collection.id=credit.source_collection_id
     JOIN deals d ON d.id=p.deal_id JOIN brokers tier_broker ON tier_broker.id=COALESCE(p.tier_agent_id,d.owner_id) JOIN opportunities o ON o.id=d.opportunity_id LEFT JOIN listings l ON l.id=d.listing_id
     LEFT JOIN LATERAL (SELECT expected_gross_amount FROM deal_commission_expectation_versions e
@@ -300,5 +302,6 @@ r.post('/finance/agent-payout-calculations/:calculationId/decision',async(req,re
 
 r.post('/finance/agent-payout-calculations/:calculationId/release',async(req,res)=>{if(!accountant(req.broker))return res.status(403).json({error:'Accountant records the approved agent payment'});const key=requireIdempotency(req,res);if(!key)return;const result=await transaction(async client=>{const item=await one('SELECT * FROM agent_payout_calculations WHERE id=$1 FOR UPDATE',[req.params.calculationId],client);if(!item)return{code:404,error:'Commission payment not found'};if(item.status!=='approved')return{code:409,error:'MD approval is required before recording payment'};const amount=Number(req.body?.releasedAmount),releasedAt=clean(req.body?.releasedAt),evidence=clean(req.body?.evidenceReference),date=String(releasedAt).slice(0,10);if(amount!==Number(item.agentPayoutAmount)||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dubai'}).format(new Date())||evidence.length<3)return{code:400,error:'Enter the approved amount, actual payment date (not a future date), and bank payment reference'};const id=uuid(),event=await one(`INSERT INTO agent_payout_release_events(id,release_reference,calculation_id,event_type,released_amount,released_at,evidence_reference,idempotency_key,recorded_by) VALUES($1,$2,$3,'release',$4,$5,$6,$7,$8) RETURNING *`,[id,`REL-${item.payoutReference}`,item.id,amount,`${date}T12:00:00+04:00`,evidence,key,req.broker.id],client);await execute("UPDATE agent_payout_calculations SET status='released' WHERE id=$1",[item.id],client);await execute("UPDATE commission_payment_batch_items SET status='paid' WHERE calculation_id=$1 AND status='approved'",[item.id],client);await audit('AgentPayoutRelease',id,'recorded_by_accountant',req.broker.id,{payoutReference:item.payoutReference,releasedAmount:amount,releasedAt:date},client);return{release:event};});if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);});
 
+registerDirectorSummary(r);
 export default r;
 

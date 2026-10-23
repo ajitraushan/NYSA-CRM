@@ -397,7 +397,7 @@ r.get('/admin/website-intake',requireAuth,supportOnly,async(req,res)=>{
   const events=await many(`SELECT id,event_id,status,contact_id,lead_id,received_at,processed_at,attempt_count,error_code,replayed_by,
     source_code,campaign_code,campaign_id,campaign_mapping_status,source_page,source_form,email_credibility,identity_conflict_contact_ids,review_due_at,resolution,resolution_reason,resolved_at,
     requirement_fingerprint,duplicate_candidate_lead_id,duplicate_resolution,duplicate_resolution_reason,ai_routing_status,ai_routing_business_type,ai_routing_reason,ai_routing_decision,received_payload
-    FROM website_intake_events WHERE ($1::text IS NULL OR status=$1) ORDER BY received_at DESC LIMIT 200`,[status]);
+    FROM website_intake_events WHERE ($1::text IS NULL OR status=$1) AND ($2::text IS NULL OR event_id=$2) ORDER BY received_at DESC LIMIT 200`,[status,req.query.eventId||null]);
   res.json({events:events.map(event=>{const {receivedPayload,...safeEvent}=event;return {...safeEvent,reviewEvidence:intakeReviewEvidence(receivedPayload),recoverable:event.status==='processing'&&!event.processedAt&&Date.now()-new Date(event.receivedAt).getTime()>=5*60*1000};})});
 });
 r.post('/admin/website-intake/:eventId/resolve-email',requireAuth,supportOnly,async(req,res)=>{

@@ -51,7 +51,9 @@ test('UAT-035 uses route-backed record workspaces for all four core records',()=
   assert.match(app,/type:'customer',id,returnTab:'customers'/);
   assert.match(app,/type:'lead',id,returnTab:'crm'/);
   assert.match(app,/type:'opportunity',id,returnTab:'opportunities'/);
-  assert.match(app,/type:'inventory',id,returnTab:'listings'/);
+  assert.match(app,/type:'inventory',id,returnTab/);
+  assert.match(app,/afterWorkflow=null,returnTab='listings'/);
+  assert.match(app,/returnTab:'tasks',afterWorkflow:renderTasks/);
   assert.match(app,/type:'customer',id:'new',returnTab:'customers'/);
   assert.match(app,/type:'lead',id:preselectedCustomerId\?`new:\$\{preselectedCustomerId\}`:'new'/);
   assert.match(app,/type:'opportunity',id:`new:\$\{lead\.id\}`/);

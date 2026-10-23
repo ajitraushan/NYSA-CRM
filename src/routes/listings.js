@@ -1,3 +1,5 @@
+import {registerMandateDocuments} from '../inventory-mandate-documents.js';
+import {customerIdentityFilter} from '../customer-search.js';
 import { Router } from '../lib/http-kit.js';
 import path from 'node:path';
 import { one, many, execute, uuid, audit, transaction } from '../db.js';
@@ -9,11 +11,12 @@ import { validateInventoryPartyInput } from '../inventory-party-domain.js';
 import { inventoryAgentEligibilitySql,inventoryAgentScopeSql } from '../inventory-agent-governance.js';
 import { inspectInventoryDuplicate,inventoryDuplicateError,normalizeInventoryIdentity } from '../inventory-duplicate-gate.js';
 import { PARTNER_ORGANIZATION_POLICY_VERSION,partnerClassificationForRelationship,validateInventoryOrganizationLinkEvent } from '../partner-organization-domain.js';
-import { companyScopeSql } from '../crm-policy.js';
+import { companyScopeSql,contactScopeSql } from '../crm-policy.js';
 import {CAPABILITY,hasCapability} from '../role-access.js';
 import { PORTAL_FIELD_CATALOGUE,PROPERTY_FINDER_CONTENT_LIMITS,PROPERTY_FINDER_PROPERTY_TYPES,inventoryPortalSnapshot,normalizePortalPreparation,portalPayloadHash,portalReadiness,
   normalizePortalPermitEvidence,validatePortalFieldMapping,validatePortalMappingVersion } from '../portal-publication-domain.js';
 import { decodeAndValidateFile,savePrivate,removePrivate,readPrivate } from '../private-files.js';
+import {canReadAllCrmDocuments} from '../document-read-policy.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -23,11 +26,12 @@ const TIERS = ['Exclusive to Nysa','Shared network','Off-market'];
 const CLOSED_REASONS = ['Withdrawn','Expired','Duplicate','Invalid','No longer marketable'];
 const VERIFICATION_STATUSES = ['unverified','pending','verified','expired','not_required'];
 const TRANSACTION_TYPES = ['Sale','Rental','Off-plan','Commercial'];
-const EDITABLE = ['project','developer','areaId','communityId','buildingId','community','building','unitReference','propertyType','bedrooms','parkingSpaces','sizeSqft','price','referencePrice',
+const EDITABLE = ['contact','project','developer','areaId','communityId','buildingId','community','building','unitReference','propertyType','bedrooms','parkingSpaces','sizeSqft','price','referencePrice',
   'transactionTypes',
   'currency','paymentPlanType','downPaymentPercent','onHandoverPercent','postHandoverYears','paymentPlanNotes',
   'inventoryHeadline','handoverDate','handoverStatus','handoverExpectedDate','exclusivityTier','notes','availabilityConfirmedAt','availabilityExpiresAt','verificationExpiresAt','permitNumber','permitExpiresAt'];
 const COLUMN = {
+  contact:'contact',
   project:'project', developer:'developer', areaId:'area_id', communityId:'community_id',buildingId:'building_id',community:'community', building:'building', unitReference:'unit_reference', propertyType:'property_type', bedrooms:'bedrooms', parkingSpaces:'parking_spaces',
   sizeSqft:'size_sqft', price:'price', referencePrice:'reference_price', currency:'currency',
   transactionTypes:'transaction_types',
@@ -101,7 +105,8 @@ async function developerExternalListingAuthority(listingId,client){
     error:!arrangement?'An active Developer Brokerage Arrangement is required before preparing this Developer Inventory for external listing':!(noc||executedNoc)?'A current independently verified property Listing NOC is required before preparing this Inventory for external listing':null};
 }
 
-function validateListingFields(body) {
+function validateListingFields(body,{submittedBody=body}={}) {
+  if(submittedBody.contact!==undefined&&!String(submittedBody.contact||'').trim())return 'Property information source is required';
   if(body.parkingSpaces!==undefined&&body.parkingSpaces!==null&&body.parkingSpaces!==''&&(!Number.isInteger(Number(body.parkingSpaces))||Number(body.parkingSpaces)<0))return 'parkingSpaces must be a non-negative whole number';
   if(body.transactionTypes!==undefined&&(!Array.isArray(body.transactionTypes)||!body.transactionTypes.length||new Set(body.transactionTypes).size!==body.transactionTypes.length||body.transactionTypes.some(value=>!TRANSACTION_TYPES.includes(value))))return 'Select one or more valid Inventory transaction types';
   if (body.currency !== undefined && !/^[A-Z]{3}$/.test(String(body.currency))) return 'currency must be a 3-letter ISO code';
@@ -115,7 +120,7 @@ function validateListingFields(body) {
   for(const field of ['availabilityConfirmedAt','availabilityExpiresAt','verificationExpiresAt','permitExpiresAt'])if(body[field]!==undefined&&body[field]!==null&&body[field]!==''&&Number.isNaN(new Date(body[field]).valueOf()))return `${field} must be a valid date/time`;
   if(body.availabilityConfirmedAt&&body.availabilityExpiresAt&&new Date(body.availabilityExpiresAt)<=new Date(body.availabilityConfirmedAt))return 'availabilityExpiresAt must be later than availabilityConfirmedAt';
   if(body.verificationStatus!==undefined&&!VERIFICATION_STATUSES.includes(body.verificationStatus))return 'Invalid verificationStatus';
-  if(body.portalStatus!==undefined)return 'Portal readiness is calculated by the system and cannot be edited';
+  if(submittedBody.portalStatus!==undefined)return 'Portal readiness is calculated by the system and cannot be edited';
   return null;
 }
 
@@ -150,6 +155,7 @@ r.get('/listings', async (req, res) => {
   if (q.developer) add('l.developer ILIKE ?', `%${q.developer}%`);
   if (q.handoverBefore) add("(l.handover_date = 'Ready' OR l.handover_date <= ?)", q.handoverBefore);
   if (q.handoverAfter) add("(l.handover_date != 'Ready' AND l.handover_date >= ?)", q.handoverAfter);
+  if(q.mobile||q.passportLast4||q.emiratesIdLast4){const identity=customerIdentityFilter(q,'owner_customer',params);where.push(`EXISTS(SELECT 1 FROM inventory_counterparties owner_party JOIN contacts owner_customer ON owner_customer.id=owner_party.contact_id WHERE owner_party.listing_id=l.id AND ${identity})`);}
   if (q.q) {
     const term = `%${String(q.q).replaceAll('*','%')}%`;
     params.push(term);
@@ -198,7 +204,9 @@ r.get('/inventory-developers',async(_req,res)=>{
 
 r.get('/inventory-owner-customers',async(req,res)=>{
   const q=String(req.query.q||'').trim(),params=[],where=["c.archived_at IS NULL","c.lifecycle_status<>'merged'"];
-  if(q){params.push(`%${q}%`);where.push(`(c.full_name ILIKE $1 OR COALESCE(c.email,'') ILIKE $1 OR COALESCE(c.phone,'') ILIKE $1 OR COALESCE(c.postal_address,'') ILIKE $1)`);}
+  where.push(contactScopeSql('c',req.broker,params).clause);
+  where.push(customerIdentityFilter(req.query,'c',params));
+  if(q){const position=params.push(`%${q}%`);where.push(`(c.full_name ILIKE $${position} OR COALESCE(c.email,'') ILIKE $${position} OR COALESCE(c.phone,'') ILIKE $${position} OR COALESCE(c.postal_address,'') ILIKE $${position})`);}
   const customers=await many(`SELECT c.id,c.full_name,c.email,c.phone,c.postal_address,c.kyc_status,
     c.lifecycle_status,c.duplicate_review_status FROM contacts c WHERE ${where.join(' AND ')}
     ORDER BY LOWER(c.full_name),c.id LIMIT 50`,params);
@@ -424,9 +432,9 @@ r.get('/external-permit-evidence/:id/download',async(req,res)=>{
   const evidence=await one(`SELECT evidence.*,l.posted_by,b.team_id AS posted_by_team_id FROM external_portal_permit_evidence_versions evidence
     JOIN listings l ON l.id=evidence.listing_id JOIN brokers b ON b.id=l.posted_by WHERE evidence.id=$1 AND l.deleted_at IS NULL`,[req.params.id]);
   if(!evidence)return res.status(404).json({error:'Permit evidence not found'});
-  if(!ownsListing(req.broker,evidence)&&!canEdit(req.broker,evidence)&&!await canReview(req.broker,evidence))return res.status(403).json({error:'Permit evidence is outside your scope'});
+  if(!canReadAllCrmDocuments(req.broker)&&!ownsListing(req.broker,evidence)&&!canEdit(req.broker,evidence)&&!await canReview(req.broker,evidence))return res.status(403).json({error:'Permit evidence is outside your scope'});
   const data=await readPrivate(evidence.storageKey);await audit('ExternalListingPublication',evidence.id,'permit_evidence_downloaded',req.broker.id,{listingId:evidence.listingId});
-  res.setHeader('Content-Type',evidence.mediaType);res.setHeader('Content-Disposition',`attachment; filename="${evidence.fileName.replace(/"/g,'')}"`);res.end(data);
+  res.setHeader('Content-Type',evidence.mediaType);res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Disposition',`attachment; filename="${evidence.fileName.replace(/"/g,'')}"`);res.end(data);
 });
 
 r.post('/listings/:id/external-publications',async(req,res)=>{
@@ -626,14 +634,14 @@ r.get('/listings/:id', async (req, res) => {
       JOIN brokers creator ON creator.id=p.created_by
       LEFT JOIN brokers approver ON approver.id=p.approved_by
       WHERE p.listing_id=$1 ORDER BY p.created_at DESC`,[listing.id]),
-    many(`SELECT p.*,
+    many(`SELECT p.*,c.customer_reference,
       COALESCE(c.full_name,p.display_name) AS display_name,
       COALESCE(c.phone,p.phone) AS phone,
       COALESCE(c.email,p.email) AS email,
       c.postal_address AS customer_address,c.kyc_status AS customer_kyc_status
       FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
       WHERE p.listing_id=$1 ORDER BY p.created_at`,[listing.id]),
-    many(`SELECT a.*,c.display_name AS counterparty_name FROM inventory_agreements a
+    many(`SELECT a.*,a.effective_from::text AS effective_from,a.effective_to::text AS effective_to,c.display_name AS counterparty_name FROM inventory_agreements a
       LEFT JOIN inventory_counterparties c ON c.id=a.counterparty_id
       WHERE a.listing_id=$1 ORDER BY a.created_at DESC`,[listing.id]),
     many(`SELECT h.*,originator.name AS originating_agent_name,prior.name AS from_responsible_agent_name,current.name AS to_responsible_agent_name,
@@ -738,20 +746,29 @@ r.patch('/listings/:id/responsible-agent',async(req,res)=>{
   return res.status(410).json({error:'Inventory has no transferable custodian. The Listing Executive maintains and submits the Inventory; a Sales Agent assigns available Inventory inside an Opportunity'});
 });
 
-r.post('/listings/:id/counterparties',requirePostRights,async(req,res)=>{
+async function saveInventoryParty(req,res){
   const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
   if(!listing)return res.status(404).json({error:'Inventory not found'});
   if(!canEdit(req.broker,listing))return res.status(403).json({error:'Only the Inventory owner can maintain its seller or lessor parties'});
-  const b=req.body||{},validationError=validateInventoryPartyInput(b);
+  const b={...(req.body||{})};let customer=null;
+  if(b.contactId){const scopeParams=[b.contactId],scope=contactScopeSql('c',req.broker,scopeParams);customer=await one("SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND c.lifecycle_status='active' AND c.duplicate_review_status IN ('approved','not_required') AND "+scope.clause,scope.params);if(!customer)return res.status(403).json({error:'Select an active permitted Customer with resolved duplicate status'});Object.assign(b,{displayName:customer.fullName,phone:customer.phone,email:customer.email});}
+  const validationError=validateInventoryPartyInput(b);
   if(validationError)return res.status(400).json({error:validationError});
+  if(req.params.partyId){
+    if(!String(b.changeReason||'').trim())return res.status(400).json({error:'Record a reason for correcting this Inventory party'});
+    const prior=await one('SELECT * FROM inventory_counterparties WHERE id=$1 AND listing_id=$2',[req.params.partyId,listing.id]);if(!prior)return res.status(404).json({error:'Inventory party not found'});
+    const row=await transaction(async client=>{const updated=await one('UPDATE inventory_counterparties SET contact_id=$1,display_name=$2,phone=$3,email=$4,party_role=$5,party_type=$6,source=$7,authority_evidence=$8,identity_snapshot=$9::jsonb WHERE id=$10 AND listing_id=$11 RETURNING *',[customer?.id||null,b.displayName,b.phone||null,b.email||null,b.partyRole,b.partyType,b.source,b.authorityEvidence,customer?JSON.stringify({customerReference:customer.customerReference,fullName:customer.fullName}):null,prior.id,listing.id],client);await audit('InventoryCounterparty',prior.id,'corrected',req.broker.id,{listingId:listing.id,fromContactId:prior.contactId,toContactId:customer?.id||null,reason:b.changeReason},client);return updated;});return res.json(row);
+  }
   const id=uuid(),row=await one(`INSERT INTO inventory_counterparties
-    (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    (id,listing_id,party_role,party_type,display_name,phone,email,represented_party,source,authority_evidence,contact_restrictions,created_by,contact_id,identity_snapshot)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb) RETURNING *`,
     [id,listing.id,b.partyRole,b.partyType,String(b.displayName).trim(),String(b.phone||'').trim()||null,String(b.email||'').trim()||null,
-      String(b.representedParty||'').trim()||null,String(b.source).trim(),String(b.authorityEvidence).trim(),String(b.contactRestrictions||'').trim()||null,req.broker.id]);
+      String(b.representedParty||'').trim()||null,String(b.source).trim(),String(b.authorityEvidence).trim(),String(b.contactRestrictions||'').trim()||null,req.broker.id,customer?.id||null,customer?JSON.stringify({customerReference:customer.customerReference,fullName:customer.fullName,phone:customer.phone,email:customer.email}):null]);
   await audit('InventoryCounterparty',id,'created',req.broker.id,{listingId:listing.id,partyRole:row.partyRole,partyType:row.partyType});
   res.status(201).json(row);
-});
+}
+r.post('/listings/:id/counterparties',requirePostRights,saveInventoryParty);
+r.patch('/listings/:id/counterparties/:partyId',requirePostRights,saveInventoryParty);
 
 r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
   const listing=await one('SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL',[req.params.id]);
@@ -762,6 +779,9 @@ r.post('/listings/:id/agreements',requirePostRights,async(req,res)=>{
   if(!types.includes(b.agreementType)||!representations.includes(b.representationType))return res.status(400).json({error:'Select a valid agreement and representation type'});
   if(!String(b.evidenceReference||'').trim())return res.status(400).json({error:'Agreement evidence reference is required'});
   if(b.counterpartyId&&!(await one('SELECT id FROM inventory_counterparties WHERE id=$1 AND listing_id=$2',[b.counterpartyId,listing.id])))return res.status(400).json({error:'Select a party maintained on this Inventory'});
+  if(!['draft','active','expired','terminated'].includes(b.status||'active'))return res.status(400).json({error:'Select a valid agreement status'});
+  for(const value of [b.effectiveFrom,b.effectiveTo])if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value))))return res.status(400).json({error:'Use valid YYYY-MM-DD agreement dates'});
+  if(b.effectiveFrom&&b.effectiveTo&&b.effectiveTo<b.effectiveFrom)return res.status(400).json({error:'Agreement end date must not precede its start date'});
   const id=uuid(),row=await one(`INSERT INTO inventory_agreements
     (id,listing_id,counterparty_id,agreement_type,representation_type,evidence_reference,effective_from,effective_to,
      commission_terms,marketing_authorized,viewing_authorized,status,created_by)
@@ -909,7 +929,7 @@ r.patch('/listings/:id', async (req, res) => {
   if(req.body.bulkUnits!==undefined||req.body.propertyType!==undefined){bulk=normalizeBulkUnits(targetPropertyType,req.body.bulkUnits??[]);if(bulk.error)return res.status(400).json({error:bulk.error});if(targetPropertyType==='Bulk deal'){req.body.bedrooms=null;req.body.parkingSpaces=null;req.body.sizeSqft=bulk.units.reduce((sum,item)=>sum+item.sizeSqft,0);req.body.price=bulk.units.reduce((sum,item)=>sum+item.price,0);req.body.referencePrice=null;}}
   for(const [field,label,required] of [['price','Asking price',true],['referencePrice','Reference / market price',false]])if(req.body[field]!==undefined){const amount=normalizeInventoryAmount(req.body[field],{required,label});if(amount.error)return res.status(400).json({error:amount.error});req.body[field]=amount.value;}
   if(req.body.handoverStatus!==undefined||req.body.handoverExpectedDate!==undefined||req.body.handoverDate!==undefined){const handover=normalizeHandover(req.body);if(handover.error)return res.status(400).json({error:handover.error});Object.assign(req.body,{handoverStatus:handover.status,handoverExpectedDate:handover.expectedDate,handoverDate:handover.legacyValue});}
-  const validationError = validateListingFields({...listing,...req.body});
+  const validationError = validateListingFields({...listing,...req.body},{submittedBody:req.body});
   if (validationError) return res.status(400).json({ error: validationError });
   const changes = {}, sets = [], params = [];
   for (const field of EDITABLE) {
@@ -1030,4 +1050,5 @@ r.delete('/listings/:id', async (req, res) => {
   res.json({ ok:true, archived:listing.id });
 });
 
+registerMandateDocuments(r,{canEdit,canReview,ownsListing});
 export default r;

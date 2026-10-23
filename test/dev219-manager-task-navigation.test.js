@@ -12,6 +12,6 @@ test('operational users have a direct My Tasks navigation entry',()=>{
 test('My Tasks navigation opens the existing personal task workspace',()=>{
   assert.match(app,/currentTab === 'tasks' \? renderTasks\(\)/);
   assert.match(app,/tab === 'tasks' \? renderTasks\(\)/);
-  assert.match(app,/api\(`\/crm\/tasks\?mine=1&bucket=/);
+  assert.match(app,/URLSearchParams\(\{mine:'1',bucket:/);assert.match(app,/api\('\/crm\/tasks\?'\+p\)/);
   assert.match(app,/NYSA CORE \/ PERSONAL WORK QUEUE/);
 });

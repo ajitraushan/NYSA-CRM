@@ -1,3 +1,5 @@
+import {canReadAllCrmDocuments} from './document-read-policy.js';
+import {customerIdentityFilter} from './customer-search.js';
 import {one,many,execute,transaction,uuid,audit} from './db.js';
 import {mayRecordFinanceReceipt} from './commission-proof.js';
 import {payoutFingerprint,calculateExpectedCommission} from './commission-payout-domain.js';
@@ -156,7 +158,8 @@ export function registerCommissionReceivableRoutes(r){
     authority(req);
     const type=clean(req.query.type),q=clean(req.query.q).slice(0,100);
     if(!['customer','agency','developer'].includes(type))throw badRequest('Choose a payer type');
-    const payers=type==='customer'?await many(`SELECT id,full_name AS name FROM contacts WHERE archived_at IS NULL AND ($1='' OR full_name ILIKE '%'||$1||'%') ORDER BY full_name,id LIMIT 50`,[q]):
+    const params=[q],identity=type==='customer'?customerIdentityFilter(req.query,'c',params):'TRUE';
+    const payers=type==='customer'?await many(`SELECT c.id,c.full_name AS name FROM contacts c WHERE c.archived_at IS NULL AND ($1='' OR c.full_name ILIKE '%'||$1||'%' OR c.phone ILIKE '%'||$1||'%') AND ${identity} ORDER BY c.full_name,c.id LIMIT 50`,params):
       await many(`SELECT id,name FROM companies WHERE archived_at IS NULL AND company_type=$1 AND ($2='' OR name ILIKE '%'||$2||'%') ORDER BY name,id LIMIT 50`,[type,q]);
     res.json({payers,limit:50});
   });
@@ -193,7 +196,7 @@ export function registerCommissionReceivableRoutes(r){
     res.json({invoice:item,collections,events,adjustments});
   });
   r.get('/finance/receivables/:id/document',async(req,res)=>{
-    authority(req);
+    if(!canReadAllCrmDocuments(req.broker))authority(req);
     const item=await invoice(req.params.id);
     if(item.state!=='issued'||!item.invoiceReference)throw badRequest('Generate this invoice before opening its paper invoice',409);
     const persisted=await transaction(client=>persistInvoiceDocument(item,req.broker.id,client)),version=await one('SELECT * FROM document_versions WHERE id=$1',[persisted.documentVersionId]),stored=await readPrivate(version.storageKey);

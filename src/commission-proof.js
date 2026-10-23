@@ -1,3 +1,4 @@
+import {canReadAllCrmDocuments} from './document-read-policy.js';
 import path from 'node:path';
 import {one,many,execute,transaction,uuid,audit} from './db.js';
 import {hasInternalCrmIdentity,canReadOpportunity,canWriteOpportunity} from './crm-policy.js';
@@ -11,12 +12,12 @@ const fail=(message,statusCode=400)=>Object.assign(new Error(message),{statusCod
 const validId=value=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value||'');
 
 export async function commissionProofScope(actor,dealId,write=false,client){
-  if(!hasInternalCrmIdentity(actor))throw fail('NYSA staff access required',403);
+  if(!hasInternalCrmIdentity(actor)&&!(!write&&canReadAllCrmDocuments(actor)))throw fail('NYSA staff access required',403);
   if(!validId(dealId))throw fail('Valid Deal identifier required');
   const deal=await one(`SELECT d.id,d.deal_reference,o.id AS opportunity_id,o.owner_id,o.created_by,o.assigned_team_id
     FROM deals d JOIN opportunities o ON o.id=d.opportunity_id WHERE d.id=$1`,[dealId],client);
   if(!deal)throw fail('Deal not found',404);
-  if(mayRecordFinanceReceipt(actor))return deal;
+  if(mayRecordFinanceReceipt(actor)||(!write&&canReadAllCrmDocuments(actor)))return deal;
   const participants=await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active=TRUE',[deal.opportunityId],client);
   const scope={...deal,participantIds:participants.map(x=>x.brokerId)};
   if(!(write?canWriteOpportunity(actor,scope):canReadOpportunity(actor,scope)))throw fail('Commission proof is outside your permitted Deal scope',403);
@@ -54,11 +55,11 @@ export function registerCommissionProofRoutes(r){
 }
 
 async function opportunityProofScope(actor,id,write=false,client){
-  if(!hasInternalCrmIdentity(actor))throw fail('NYSA staff access required',403);
+  if(!hasInternalCrmIdentity(actor)&&!(!write&&canReadAllCrmDocuments(actor)))throw fail('NYSA staff access required',403);
   if(!validId(id))throw fail('Valid Opportunity identifier required');
   const opportunity=await one('SELECT id,id AS opportunity_id,opportunity_reference,owner_id,created_by,assigned_team_id FROM opportunities WHERE id=$1',[id],client);
   if(!opportunity)throw fail('Opportunity not found',404);
-  if(mayRecordFinanceReceipt(actor))return opportunity;
+  if(mayRecordFinanceReceipt(actor)||(!write&&canReadAllCrmDocuments(actor)))return opportunity;
   const participants=await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active=TRUE',[id],client);
   const scope={...opportunity,participantIds:participants.map(x=>x.brokerId)};
   if(!(write?canWriteOpportunity(actor,scope):canReadOpportunity(actor,scope)))throw fail('Proof outside permitted Opportunity scope',403);

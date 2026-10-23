@@ -1,3 +1,4 @@
+import {offerAmountWords} from './offer-document-labels.js';
 import { PdfDoc,canvas,header,footer,C } from './proposal-pdf.js';
 import {renderApprovedDocumentPdf} from './approved-document-renderer.js';
 
@@ -14,7 +15,7 @@ export function offerApprovedDocumentData({offer,revision,opportunity,customer,l
       {label:'Building / Project',value:listing.project},{label:'Unit No.',value:listing.unitReference},{label:'Community',value:listing.community||listing.area},{label:'Property Type',value:listing.propertyType},{label:'Bedrooms',value:listing.bedrooms},{label:'Size (sq ft)',value:listing.sizeSqft},{label:'Listing Ref.',value:listing.inventoryReference},
       {label:'Full Name',value:customer.fullName,index:0},{label:'Nationality',value:customer.nationality},{label:'Passport / EID No.',value:customer.idDocumentLast4?`${customer.idDocumentType||'ID'} ending ${customer.idDocumentLast4}`:'Not recorded'},{label:'Mobile',value:customer.phone},{label:'Email',value:customer.email},
       {label:'Full Name',value:listing.ownerName||opportunity.sellerCounterpartyName||'Seller / Landlord',index:1},{label:'Represented by',value:organization.displayName||organization.legalName||'NYSA Realty LLC'},{label:'Agent',value:agent.name},{label:'BRN',value:agent.brn},{label:'Agent Email',value:agent.email},
-      {label:'Offer Amount (AED)',value:formatMoney(revision.amount)},{label:'In words',value:revision.amountInWords||''},{label:'Deposit on MOU (AED)',value:formatMoney(revision.depositAmount)},{label:'Proposed Transfer Date',value:revision.proposedTransferDate?date(revision.proposedTransferDate):''},{label:'Annual Rent (AED)',value:purchase?'':formatMoney(revision.amount)},{label:'Security Deposit (AED)',value:purchase?'':formatMoney(revision.depositAmount)},{label:'Special Conditions',value:[revision.paymentTerms,revision.conditions].filter(Boolean).join(' · ')||'No additional conditions'}
+      {label:'Offer Amount (AED)',value:formatMoney(revision.amount)},{label:'In words',value:offerAmountWords(revision.amount,revision.currency||'AED')},{label:'Deposit on MOU (AED)',value:formatMoney(revision.depositAmount)},{label:'Proposed Transfer Date',value:revision.proposedTransferDate?date(revision.proposedTransferDate):''},{label:'Annual Rent (AED)',value:purchase?'':formatMoney(revision.amount)},{label:'Security Deposit (AED)',value:purchase?'':formatMoney(revision.depositAmount)},{label:'Special Conditions',value:[revision.paymentTerms,revision.conditions].filter(Boolean).join(' · ')||'No additional conditions'}
     ],checkboxes:[{label:purchase?'Offer to Purchase':'Offer to Lease'},{label:String(revision.financingMethod||'').toLowerCase().includes('mortgage')?'Mortgage':'Cash'}]
   };
 }

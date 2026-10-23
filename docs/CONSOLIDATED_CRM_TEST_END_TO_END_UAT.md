@@ -5613,3 +5613,198 @@ Deal version. Each scenario 2/2; finance regression 6/6; prior runtime 11/11; ro
 Not deployed or human accepted. The original CRM Test blocker awaits approved deployment of both
 code and migration, then exact-record human retest. No production/R2/PF/personal-data action.
 See [implementation, evidence and rollback](COMMISSION_INDEPENDENT_CLOSURE_CORRECTION.md).
+
+### SPEC-GAP-003 — Link an existing Customer as the Inventory owner
+
+Recorded: 12 October 2026. Status: **Open — requirement recorded; not implemented or deployed.**
+
+User-confirmed requirement: while maintaining Inventory, select and link an existing NYSA Customer as the actual owner, in the same way an existing Customer can be selected when maintaining a buyer Lead.
+
+Observed gap in the current source: Inventory Step 2 → Owner / represented party and Internal Inventory authority provides manual name/phone/email entry but no existing-Customer selector. A maintained owner-customer search API and underlying contact linkage exist, but this form does not expose or submit that linkage. Entering matching text alone does not establish the Customer relationship.
+
+Required outcome:
+
+- Provide **Link existing Customer** in the Inventory owner/represented-party form, with search and selection of the maintained Customer record.
+- Persist the selected Customer relationship on the Inventory owner-side party and display the linked Customer reference/name after saving and reopening.
+- Reuse maintained Customer identity/contact details without creating a duplicate Customer; preserve the original Customer record.
+- Preserve the appropriate owner-side role (Seller/Landlord/etc.), internal-use authority evidence and existing maintenance permissions. Customer linkage alone must not grant verification, activation or publication authority.
+- Retain manual owner-party capture for parties who are not existing Customers. Permit governed correction of an incorrect link with audit history.
+
+Acceptance: select an existing Customer, save the Inventory party, reopen the property and verify that the Customer reference and relationship remain linked; no new Customer is created. Verify search, no-match handling, role/permission boundaries and link correction audit. Confirm that manual non-Customer parties and authority/verification controls still work.
+
+Related existing requirement: R3B-INVENTORY-OWNER-54 covers owner capture during intake; this gap adds explicit existing-Customer linkage during Inventory maintenance. Documentation only: no application, database, customer-data or deployment changes made to record this gap.
+
+### SPEC-GAP-004 — Consistent Customer identity search across CRM workspaces and selectors
+
+Recorded: 12 October 2026. Status: **Open — requirement and initial source audit recorded; filters not implemented or deployed.** Related: SPEC-GAP-003 provides the Inventory owner Customer selector; this item defines shared search behaviour for that selector and other CRM searches.
+
+User-confirmed requirement: wherever a Customer is selected, allow search by name, mobile number, passport number or Emirates ID number. Apply consistent Customer lookup filters to Customer, Lead, Opportunity and Inventory searches. Selecting the Customer must retain the existing Customer relationship, not create a duplicate or merely copy a name.
+
+Initial source audit on DEV226:
+
+| Search surface | Current inspected behaviour | Required addition |
+|---|---|---|
+| Customer register / existing-Customer lookup | Name, email and phone text search | Explicit Mobile, Passport and Emirates ID search modes with consistent matching |
+| Lead register | Lead reference, title and Customer name | Search through linked Customer mobile and identity references |
+| Opportunity register | Opportunity reference, title, Customer name and transaction type | Search through linked Customer mobile and identity references |
+| Inventory register | Inventory reference, headline, project, developer, area and community | Search through maintained owner-side Customer links, including mobile and identity references |
+| Inventory owner-Customer API | Name, email, phone and address; owner form has no Customer selector | Expose the existing-Customer selector under SPEC-GAP-003 and apply this shared search contract |
+
+This is an initial review of the principal register queries, not a claim that every secondary picker or search endpoint has been audited. Implementation must inventory all Customer-selection surfaces, including buyer Lead creation, transaction-party selection and Finance payer selection, and record each surface's coverage.
+
+Required search contract:
+
+- Preserve existing name, email, Customer/Lead/Opportunity/Inventory reference and property filters. Add clear **Mobile number**, **Passport number** and **Emirates ID number** filters consistently; keep filters across paging and return navigation.
+- Normalize mobile formatting and international/local UAE variants without merging distinct Customer identities. Normalize identity formatting appropriately and use exact identity matching; do not identify a person solely by an ambiguous last-four match.
+- Reuse one Customer lookup component/contract across selection forms. Results identify the maintained Customer reference/name with permitted contact context; selection persists the Customer ID.
+- Lead and Opportunity results follow their linked Customer. Inventory results follow explicitly linked owner-side Customers; free-text owner names alone must not imply a Customer identity link. Multiple co-owners must not duplicate Inventory results.
+- Preserve existing record visibility, edit permissions, Customer lifecycle and duplicate-resolution rules. No broadened visibility is implied by knowing a mobile or identity number.
+- Passport/Emirates ID queries and full values must not be exposed in URLs, ordinary logs, result tables or telemetry. Results remain masked and scoped. Current legacy KYC summary records only masked final-four references; implementation must assess governed identity evidence/storage and define an authorized secure exact-match lookup before claiming full-number support. Do not silently add unrestricted full-number storage or weaken current privacy controls.
+- Bound and paginate results; support no-match, multiple-match, invalid-input and unauthorized cases. Customer lookup does not automatically create Customers or alter ownership/authority.
+
+Acceptance: use synthetic Customers with mobile-format variants, maintained passport/Emirates identity evidence, shared names and colliding last-four values. Verify each audited register and selector finds only authorized linked records by each supported identifier; duplicate Customers are not created; selected IDs survive save/reopen; co-owner Inventory results are distinct; invalid/no-match behaviour is clear. Verify masked results, no identity values in URLs/logs, authorization, stable pagination and representative volume performance.
+
+Documentation only for this item: no search implementation, migration, Customer-data mutation or deployment performed. SPEC-GAP-003 remains the owner-linking requirement and DEF-126 remains the unrelated property-facts save validation defect.
+
+### DEF-127 — Pending Inventory verification missing from Manager My Tasks
+
+Recorded: 12 October 2026. Status: **Open — user-reported defect with supporting source evidence; exact-record verification and remediation pending.**
+
+User screenshots show Inventory NYSA-INV-000077 with verification pending and a Manager My Tasks list without the review action. The journey label “Ready for verification” alone is not proof of submission; the displayed pending verification and underlying request must be checked together.
+
+Source evidence: POST /listings/:id/verification-requests creates inventory_verification_requests, marks Inventory pending and audits submission, but creates no linked tasks row. My Tasks uses /crm/tasks; current task rendering has no Inventory-verification-specific review action. The separate Inventory verification queue does not satisfy the requirement that the actionable request appear in Manager My Tasks.
+
+Expected: an actually submitted, pending verification or exemption request appears once in each applicable reviewer's My Tasks according to the existing team/role authority. Show Inventory reference, request type, submission/due information, priority and **Review Inventory** linking to the exact governed decision. On decision, withdraw/supersede or loss of eligibility, synchronize task visibility/status; do not allow a generic task-complete button to substitute for approval. Preserve immutable verification evidence and audit.
+
+Acceptance: synthetic submission produces a discoverable actionable Manager item; authorized review opens the correct Inventory/request, unauthorized reviewers cannot see or decide it, duplicate submissions/refreshes do not duplicate tasks, and decisions resolve the task consistently. Include pending requests created before the fix without changing their decisions. Verify exact-record user retest after CRM Test deployment. No implementation, migration or deployment performed for this item.
+
+### ENH-001 — Shared My Tasks category and request-type filters for Manager/Director
+
+Recorded: 12 October 2026. Status: **Open — enhancement recorded; source request catalogue identified; not implemented or deployed.** Separate from DEF-127, which concerns a missing task rather than filtering.
+
+Requirement: add **Task category** and **Request type** filters to My Tasks across applicable workspaces, alongside existing status/search. Include All types, category counts, role-appropriate options, server-side filtering/pagination and retained state on reload/back. A filter must not hide unclassified work: retain General/Other. Category/request labels and routing must be reusable rather than independently hard-coded per screen.
+
+Source review covered review/approval/decision/verification/reopening routes and persisted task types under src/routes and src/migrations. Candidate request catalogue for authority mapping and integration:
+
+| Task category | Review/request types identified |
+|---|---|
+| Customer / Company | Customer duplicate review; Customer change request; KYC summary and Customer/Company identity-document review |
+| Lead | Routed Lead assignment/reassignment; duplicate Lead resolution; qualification/SLA exception and follow-up; legacy Lead review where still applicable |
+| Inventory | Inventory workflow approval; verification; exemption; reopening; duplicate/property correction review; provisional external-property verification |
+| External Listings / Marketing | External publication review; property media approval; property Listing NOC/evidence review; marketing-material channel review and returned correction |
+| Opportunity / Deal | Proposal-version review and returned correction; management closure approval; Deal cancellation decision; current Opportunity action and customer-response follow-up |
+| Documents / Compliance | Transaction/document-compliance evidence review; official-document evidence review and correction follow-up |
+| Leave | Leave application approval/return/rejection routed to the governed line manager or permitted reviewer |
+| Finance / Commission | Commission payment-batch approval; individual payout-calculation decisions where applicable; associated returned corrections |
+| Partner / Developer | Partner duplicate resolution and verification; Developer brokerage-arrangement review; maintained property Listing NOC review |
+| Market intelligence | Market-intelligence snapshot review |
+| Administration / Governance | Organization-profile approval; dashboard-target approval; document/proposal-template approval; qualification-model and regulatory-assumption approval, only where current policy assigns that action to the signed-in Manager/Director |
+| General / Other | Assigned general work and future/uncategorized request types, with explicit labels rather than silent exclusion |
+
+This catalogue includes decision endpoints and follow-up work; not every listed item currently creates a task or grants Manager/Director authority. Implementation must map each entry to its actual configured reviewer, source queue, lifecycle, task linkage and deep link. Admin-only or otherwise restricted actions must remain outside Manager/Director visibility unless existing policy authorizes that reviewer. Filtering is not permission to expand access or alter approval routes. Assess task coverage separately from filter coverage; DEF-127 is the confirmed Inventory coverage omission.
+
+Acceptance: enumerate applicable request types by actual Manager/Director authority; verify category/request filters alone and with status/search, counts and pagination; each result opens its exact review; decisions update task status/counts; no duplicate rows or cross-team leakage; returned corrections are distinguishable from pending approvals. Verify desktop/mobile layout, keyboard labels and volume performance. Test All and General/Other so newly introduced request types remain discoverable. No customer data or runtime changes made while recording this enhancement.
+
+### DEF-128 — Required representation mandate has no maintenance form in Inventory
+
+**User clarification:** Inventory must provide an optional **Mandate agreement** upload/maintenance section when an agreement exists. Allow an authorized maintainer to upload the actual document and maintain its party, type, effective dates, status and reference; display/view/download the saved document and retain version/audit history when updated. Leaving this section empty must not block internal Opportunity creation. External Portal Listing authority requirements remain unchanged. A text evidence reference alone does not satisfy this optional document-upload requirement.
+
+**User-approved requirement revision, 12 October 2026:** remove the mandatory active-mandate prerequisite for internal Opportunity creation, including seller/landlord and dual representation, for operational ease. Optional mandate maintenance may remain. External Portal Listing authority requirements remain governed and mandatory. Preserve owner linkage, Inventory verification, representation attribution and dual-side disclosure. This supersedes the internal-mandate-blocker correction below; implementation and tests are pending. No legal requirement conclusion or runtime rule change is claimed by this documentation.
+
+Recorded: 12 October 2026. Status: **Open — user-reported conversion blocker with source confirmation; not corrected or deployed.**
+
+Opportunity creation with seller/landlord or dual representation refuses conversion when selected Inventory has no active inventory_agreements record. User reports no place in Inventory to maintain the required mandate. Source confirms that Inventory has a submit listener for inventory-agreement-form but no rendered form with that ID. The available form is instead under External Portal Listings, labelled Listing NOC / sale or leasing mandate; the conversion screen routes users to that workspace. This makes an internal representation prerequisite dependent on finding a portal-labelled maintenance screen, even when no external publication is intended.
+
+Existing workaround, subject to current edit authority: External Portal Listings → Listing NOC authority and permit evidence → select the Inventory and owner/represented party, appropriate agreement type/representation, actual executed evidence reference and effective dates → Save Listing NOC authority reference. This saves an Inventory agreement; it does not create or publish an external Listing. Do not invent agreement evidence or change representation merely to bypass the gate.
+
+Expected correction: Inventory Step 2 exposes a clearly labelled **Representation mandate / agreement** section and maintained agreement register, with owner-side party linkage, appropriate agreement type, representation, effective dates, status and evidence reference. Opportunity blocker links directly to the selected Inventory's mandate maintenance and preserves entered conversion values when returning. Distinguish internal representation authority from marketing/publication NOC. Existing maintenance and approval permissions remain governed.
+
+### DEF-129 — Viewing calendar invitation returns Internal server error
+
+Recorded: 12 October 2026. Status: **Open — user-reported send failure; exact runtime cause and delivery status unconfirmed.**
+
+User screenshot shows the Viewing saved successfully and the client invitation preview. User reports Internal server error when selecting Send calendar invitation. Treat Viewing persistence and invitation delivery as separate states; the preview alone does not establish whether Google accepted an event before a later local failure.
+
+Initial source trace: POST /crm/opportunities/:id/viewings/:viewingId/google-calendar validates record scope/contact prerequisites, looks for an existing recorded event, decrypts the connected refresh token, refreshes Google access, creates an event with attendee notifications, persists viewing_calendar_events and audits. Errors from decryption/configuration, OAuth, network, Google Calendar, event persistence or audit can reach the generic HTTP 500 handler. This explains the non-actionable message but does not identify the cause of this reported request.
+
+Investigation: inspect sanitized server error and integration/connection readiness, schema/runtime privileges and exact viewing event linkage; reconcile any existing external event before retrying. Do not resend to the actual client during diagnosis or expose credentials/customer identifiers in diagnostic output. Use synthetic recipients and mocked/provider-safe fixtures for failure testing.
+
+Expected correction: retain the saved Viewing, expose actionable and sanitized calendar failure status, distinguish configuration/reconnection/permission/network failures, and make retries/concurrent sends safe against duplicate invitations. Confirm delivery/event linkage and audit after success. Test invalid/revoked authorization, unavailable provider, provider success followed by persistence failure, repeat/concurrent sends and normal successful send. No actual client invitation sent, runtime fix or deployment performed while recording this defect.
+
+### SPEC-GAP-005 — Meaningful Offer PDF download filenames
+
+Recorded: 12 October 2026. Status: **Open — enhancement recorded, not implemented or deployed.**
+
+User screenshot shows an Offer PDF Save As default of view.pdf. The filename should identify the document in ordinary business language rather than a generic endpoint name or only numerical/internal identifiers.
+
+Recommended pattern: **NYSA_Offer_Letter_<Project-or-Building>_<Unit>_<YYYY-MM-DD>_Rev-<revision>.pdf**. Synthetic example: NYSA_Offer_Letter_Marina_Tower_Unit-2501_2026-10-12_Rev-1.pdf. Use maintained issued-document property/date/revision context; omit unavailable components and use a short readable property title when unit details are absent. Multiple revisions must be distinguishable. Keep the authoritative Offer reference within the PDF and document register.
+
+Apply the suggested name consistently to direct download and browser PDF preview Save As, including Content-Disposition and any frontend download attribute. Sanitize filename/path/header characters, bound filename length, support readable Unicode safely and avoid identity numbers, phone numbers or other sensitive identifiers. Customer name is not required in the default filename. Do not change the issued document content, reference, hash, revision, permissions or storage key merely to change its download name.
+
+Acceptance: issued Offer download and preview Save As suggest the same meaningful filename; property/unit/date/revision are accurate; missing/long/non-ASCII context and unsafe characters produce a safe readable filename; revisions are distinguishable; PDF bytes and access controls remain unchanged. Test synthetic documents and browser download behaviour. Scope is Offer PDFs; a shared filename helper may support other document types with their own appropriate patterns.
+
+### DEF-130 — Offer PDF amount in words is blank
+
+Recorded: 12 October 2026. Status: **Open — user-reported PDF defect; initial source evidence identified; correction not implemented or deployed.**
+
+User screenshot shows Offer Amount AED 7,200,000 while the adjacent In words line is blank. Expected wording for this integer amount: **Seven million two hundred thousand UAE dirhams only**.
+
+Initial source evidence: src/offer-pdf.js supplies the In words value from revision.amountInWords and otherwise uses an empty string; the approved offer-letter template provides the printed line. Exact revision payload, amount-word generation and hydration must be traced before asserting the runtime cause.
+
+Required correction: derive currency-aware wording from the exact frozen Offer revision amount before issuance/rendering, so numeric and written values agree without manual duplicate entry. Preserve issued document immutability: correcting an already issued document requires the governed revision/reissue path, not overwriting historical PDF bytes. Handle dirhams/fils, rounding, zero/large amounts, and supported sale/rental document paths consistently; unsupported currency or invalid amount must not silently produce misleading text.
+
+Acceptance: synthetic AED 7,200,000 prints the expected words; integer/decimal amounts reconcile to displayed numeric precision; words appear in preview and issued/downloaded PDF without clipping or overlap; revision changes update words while old issued PDFs remain unchanged. No customer-data, schema or deployment changes made while recording this defect.
+
+### DEF-131 — Negotiation completes after one party accepts revised Offer
+
+Recorded: 12 October 2026. Status: **Open — user-reported workflow defect; source acceptance-gate weakness identified; not corrected or deployed.**
+
+User scenario: buyer rejects the original Offer and counters; revised Offer is sent to the buyer; seller acceptance is recorded, but buyer acceptance of the revised terms is not yet recorded. Screenshots show accepted Revision 2, Negotiation completed and Booking/reservation in progress. The acceptance history uses a generic Customer/counterparty label while its note identifies seller acceptance. The Opportunity header still says Negotiation; this is advancement of stage readiness/next action, not evidence of a completed Booking.
+
+Source evidence: the offer event handler uses one accepted event to set offer status accepted and accepted_revision_id and schedule the booking/reservation action. Reservation creation checks that overall accepted state. Buyer and seller acceptance of the same revision must be separately evidenced rather than inferred from this generic event or free-text note.
+
+User-confirmed rule: **both buyer/tenant and seller/landlord must accept the exact same current Offer revision before Negotiation is completed or Booking/reservation/Deal creation becomes available.** Sending the revision, proposing a counteroffer, or acceptance of an earlier revision does not constitute acceptance of the revised terms.
+
+Required correction: capture the accepting side and actual party identity, exact revision/document, evidence, acceptance timestamp and recording actor in immutable events. Show separate Buyer acceptance and Seller acceptance statuses. One acceptance leaves the Offer awaiting the other party. New material revisions require fresh acceptance from both parties. A generic historical accepted event cannot be silently converted to two acceptances; assess existing accepted/booked records through governed remediation without deleting or rewriting evidence or blindly reversing reservations.
+
+Enforce the rule in API/domain and Booking/reservation/Deal gates, not only stage labels or disabled buttons. Preserve expiry, withdrawal/rejection, evidence, permissions, concurrency and version controls. Existing final accepted revisions remain traceable. Do not assume the proposer implicitly accepted unless a separately agreed rule explicitly permits and evidences that behaviour; no such exception is approved here.
+
+Acceptance: original rejection/counter → revised sent → seller-only acceptance stays Negotiation awaiting buyer; buyer acceptance of that same revision then unlocks the next step. Repeat with buyer-first, mismatched revisions, older acceptance, expired Offer, rejection/withdrawal after one acceptance, and simultaneous/duplicate acceptance requests. Direct Booking/Deal API calls must reject one-sided acceptance. UI clearly names the missing side and exact revision. Verify historical remediation and no actual customer transactions during synthetic tests. No runtime, schema or production changes made while recording this defect.
+
+### ENH-002 — MD Commission Payments summary first with drill-down
+
+Recorded: 12 October 2026. Status: **Open — user-requested enhancement recorded; not implemented or deployed.** Separate from ENH-001 (My Tasks filters) and DEF-132 (premature advice actions).
+
+The current Director Commission Payments screen renders detailed per-agent/quarter calculation tables at the first level. User requires a compact summary that handles many agents and makes approval decisions easier to navigate.
+
+First-level table, one row per Agent and currency in the selected reporting context: **Agent name, Team, Total commission pending MD approval, Payments recorded in current/selected quarter, Payments recorded year to date, Payments recorded lifetime, View details / Review pending approvals**. Keep earned/calculated commission separate from submitted approval amounts and actual recorded payments; never aggregate different currencies into a single unlabeled sum. Define the reporting date and quarter explicitly using Asia/Dubai; payment period totals use recorded payment dates, net of governed corrections/reversals. Distinguish current maintained Team context from historical team attribution.
+
+Provide search, Agent/Team/quarter/currency filters, sorting, counts and server-side pagination. Quarter and YTD totals run to the stated as-of date; lifetime means all recorded available history to that date, with an opening/history limitation disclosed if necessary. Agents with pending approvals remain discoverable even when their payment totals are zero.
+
+Drill-down opens the selected Agent's submitted batches and selectable approval rows, paid history and underlying Opportunity/Deal/receipt/split/slab/tier-adjustment details. Retain existing PDF/statement actions within detail. Approval reason/evidence and exact selected-row total remain required. Summary navigation must not silently approve all of an Agent's rows or change the existing per-row/batch authority, partial-approval or payment lifecycle. Back retains the summary filters/page.
+
+Acceptance: independently reconcile pending submitted amounts and quarter/YTD/lifetime net recorded payment totals; verify quarter/year boundaries, multiple currencies, corrections, partially approved/paid batches, Agent/team filtering, scoped access and large record volumes. Details resolve to the correct underlying records and existing approval audit, and return navigation preserves context. No approval/payment performed or runtime change made while recording this enhancement.
+
+### DEF-132 — Pending MD batch shows premature payment/advice actions and misleading status
+
+Recorded: 12 October 2026. Status: **Open — user screenshot confirms confusing batch-detail presentation; not corrected or deployed.**
+
+A batch in Pending MD displays a submitted item but its detail heading says Awaiting payment, blank payment date/reference, Open Payout Advice and Generate advice from recorded payment. Opening advice finds no advice because no payment has been recorded. Showing historical-payment advice generation at this stage suggests an invalid next step even if the server or disabled state prevents generation.
+
+Required presentation by lifecycle: submitted → Pending MD approval, reviewable batch breakdown and submission/approval context only; approved/unpaid → Approved — awaiting payment, authorized Record payment action; paid → Recorded payment details and advice generation status, with View/download advice once available. Historical advice generation is offered only for an evidenced recorded paid batch lacking advice. Hide empty payment metadata and premature advice controls. Distinguish approval status from payment status, and distinguish a preapproval calculation statement from postpayment advice.
+
+The intended workflow remains Accountant submits → MD approves → Accountant records actual completed payment → per-agent payout advice generates. Open Payout Advice navigates to advice records; it is not an instruction to generate a document before payment. Existing financial authority, recorded-payment prerequisite and advice uniqueness remain unchanged.
+
+Acceptance: submitted, returned/rejected, approved, partially approved, paid/pending-advice, paid/generated and paid/failed-advice batches show correct status and only applicable actions. Backend still rejects advice creation before recorded payment and unauthorized approvals/payment; duplicate historical generation is idempotent. Verify exact review/record/advice links and explanatory text. No actual approval/payment/advice action, schema change or deployment performed while recording this defect.
+
+Acceptance: authorized maintainer records an evidenced mandate on exact Inventory without external publication; reopening shows it; seller/landlord and dual conversion resolve that prerequisite; buyer-only conversion does not gain this prerequisite. Verify unauthorized maintenance rejection, wrong-Inventory/party linkage, inactive/expired/future agreement handling against the agreed mandate-validity contract, and preserved Opportunity inputs. Source currently selects any status-active agreement without agreement-type or effective-date qualification: include this in the validity review rather than claiming that dated/type-specific validity is already enforced. No rule changes, migrations or customer-data mutations made while recording the defect.
+
+### DEF-126 — Inventory property-facts edit falsely rejected as portal-readiness edit
+
+Recorded: 12 October 2026. User screenshot reports that changing the property-source description and saving property facts fails with “Portal readiness is calculated by the system and cannot be edited”. The edited field is the source of property information, not the actual owner Customer link tracked separately by SPEC-GAP-003.
+
+Confirmed source cause on DEV226 commit 9db8387b8bdbd66087414ec62adf387c82172e79: the PATCH handler merges the stored Inventory row with submitted edits for cross-field validation. The validator then rejects the stored portalStatus even when the request did not submit that field. An ordinary source-text change is consequently rejected before persistence.
+
+Local correction: check the submitted request for prohibited portal-readiness writes while retaining merged validation of property facts and availability date ordering. Explicit portalStatus writes remain rejected on creation and edit. Existing edit permissions, owner identity, internal authority and publication readiness rules remain unchanged.
+
+Verification: nine focused tests passed, including the reproduced source-only validation failure, explicit portal-status rejection and cross-field date ordering. This is local validation evidence, not an exact-record browser save or human acceptance. Status: **Corrected locally — CRM Test deployment and user retest pending.** No schema migration, customer-data mutation or production/R2 change. Rollback is the committed DEV226 route; local baseline recorded in uat-evidence/DEF126-baseline.txt.

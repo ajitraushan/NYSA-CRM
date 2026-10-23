@@ -1,3 +1,4 @@
+import {canReadAllCrmDocuments,isCrmDocumentReadRequest} from './document-read-policy.js';
 const normalizedPath=value=>String(value||'').replace(/^\/api(?=\/)/,'').replace(/\/$/,'');
 const frozen=value=>Object.freeze(value);
 
@@ -66,6 +67,7 @@ export function hasCapability(actor,capability){return capabilitiesFor(actor).in
 export function principalForCapability(capability){const profile=Object.values(ROLE_ACCESS_POLICY).find(item=>item.capabilities.includes(capability));return profile?{accountRole:profile.accountRole,jobRole:profile.jobRole}:null;}
 export function governedRoleRequestDecision(actor,method,requestPath){
   const profile=governedAccessProfile(actor);if(!profile)return{allowed:true,profile:null,capability:null,message:null};
+  if(canReadAllCrmDocuments(actor)&&isCrmDocumentReadRequest(method,requestPath))return{allowed:true,profile,capability:null,message:null};
   const path=normalizedPath(requestPath),verb=String(method||'GET').toUpperCase();
   const rule=GOVERNED_API_POLICY.find(item=>item.pattern.test(path)&&item.methods.includes(verb));
   const allowed=Boolean(rule&&profile.capabilities.includes(rule.capability));

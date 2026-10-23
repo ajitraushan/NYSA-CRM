@@ -1,8 +1,10 @@
+import {canReadAllCrmDocuments,isCrmDocumentReadRequest} from './document-read-policy.js';
 // Accountant scope: receivables plus commission-payment preparation and recording.
 // MD approval authority remains excluded.
 export const isRestrictedAccountant = actor => actor?.jobRole === 'accountant';
 export function accountantRequestAllowed(actor, method, requestPath) {
   if (!isRestrictedAccountant(actor)) return true;
+  if(canReadAllCrmDocuments(actor)&&isCrmDocumentReadRequest(method,requestPath))return true;
   const p = String(requestPath || '').replace(/^\/api(?=\/)/, '').replace(/\/$/, '');
   if (method === 'GET') return [
     /^\/finance\/workspace\/(queue|counts|filters)$/,

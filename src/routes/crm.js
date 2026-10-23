@@ -1,3 +1,5 @@
+import {customerIdentityFilter} from '../customer-search.js';
+import {canReadAllCrmDocuments} from '../document-read-policy.js';
 import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
@@ -279,6 +281,7 @@ r.post('/crm/companies/:id/identity-documents/:documentType/review',async(req,re
 r.get('/crm/contacts', async (req, res) => {
   const where = ['c.archived_at IS NULL'], params = [];
   where.push(contactScopeSql('c',req.broker,params).clause);
+  where.push(customerIdentityFilter(req.query,'c',params));
   if (req.query.q) {
     params.push(`%${String(req.query.q).replaceAll('*','%')}%`);
     where.push(`(c.full_name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length})`);
@@ -342,7 +345,7 @@ r.get('/crm/customers/:id',async(req,res)=>{
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
     one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
-    canMaintain||canReviewKyc?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([]),
+    canReadAllCrmDocuments(req.broker)?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([]),
     many(`SELECT f.id,f.lead_id,f.fact_group,f.fact_code,f.value_json,f.evidence_kind,f.review_status,f.source_code,f.source_version,f.captured_at,
       e.event_id,e.source_page,e.source_form,e.campaign_code,e.campaign_mapping_status
       FROM customer_evidence_facts f JOIN website_intake_events e ON e.id=f.intake_event_id
@@ -658,6 +661,7 @@ r.get('/crm/leads', async (req, res) => {
   if (req.query.assignedTo === 'me') add('l.assigned_to=?',req.broker.id);
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
+  where.push(customerIdentityFilter(req.query,'c',params));
   if (req.query.q) { params.push(`%${String(req.query.q).replaceAll('*','%')}%`); where.push(`(l.lead_reference ILIKE $${params.length} OR l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||25)),offset=(page-1)*pageSize;
   const total=Number((await one(`SELECT COUNT(*)::int AS count FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);

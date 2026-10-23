@@ -1,0 +1,33 @@
+(()=>{
+ window.openReviewQueueTask=async(initial,reload)=>{
+  try{
+   const {task:t}=await api(`/crm/task-reviews/${encodeURIComponent(initial.reviewKind)}/${encodeURIComponent(initial.reviewId)}`);
+   const refreshed=()=>{reload?.();};
+   if(t.status==='completed'){overlay(`<div class="modal lead-modal"><button class="close-x">×</button><h2>${esc(t.subject)}</h2><p>${esc(t.details)}</p><p>This source request is completed. Its decision history is retained.</p></div>`);return;}
+   switch(t.reviewContext){
+    case 'customer':return openCustomer(t.reviewContextId);
+
+    case 'company-governance':return openCompanyGovernance(t.reviewContextId);
+    case 'inventory':return openDetail(t.reviewContextId,{returnTab:'tasks',afterWorkflow:renderTasks});
+    case 'media':return openPropertyMedia(await api('/listings/'+t.reviewContextId));
+    case 'listing-noc':return openListingNocWorkspace(t.reviewContextId);
+    case 'proposal':return openProposalPdfReview({id:t.reviewId,versionNumber:t.versionNumber,documentVersionId:t.documentVersionId,status:t.sourceStatus},{afterApproval:refreshed,reviewRequest:true});
+    case 'commission-batch':return window.renderCommissionPayments({detail:true,batchId:t.reviewId});
+    case 'publication':EXTERNAL_PORTAL_CONTEXT={listingId:t.reviewContextId,publicationId:t.reviewId};return renderExternalPortalListings();
+    case 'inventory-intake':return openListingIntakeQueue(t.reviewId);
+    case 'website-intake':{const o=overlay('<div class="modal lead-modal"><button class="close-x">×</button><h2>Review Website intake</h2><div id="intake-table"></div></div>');return loadIntakeEvents(t.reference);}
+
+   }
+   if(!['official-evidence','deal-compliance','external-property','market','company-identity'].includes(t.reviewContext))throw new Error('This review type has no governed decision workspace');
+   const external=t.reviewContext==='external-property',market=t.reviewContext==='market',corporate=t.reviewContext==='company-identity',official=t.reviewContext==='official-evidence';
+   const evidence=official?(await api('/crm/official-document-evidence/'+t.reviewId)).evidence:t;
+   const facts=corporate?[['Company',t.reference],['Document',t.title],['Masked final four',t.maskedFinalFour],['Expiry',t.expiryDate]]:market?[['As of',t.asOf],['Policy',t.policyVersion],['Narrative',t.narrative]]:external?[['Property',t.title],['Address',t.propertyAddress],['Asking price',t.askingPrice==null?'Not recorded':t.currency+' '+t.askingPrice],['Type',t.propertyType],['Source',t.source],['Source evidence',t.sourceEvidence],['Verification evidence',t.verificationNotes]]:[['Evidence reference',evidence.evidenceReference||t.reference],['Document',evidence.label||t.title],['Official reference',evidence.officialReference],['Issuer reference',evidence.issuerReference],['Issue date',evidence.issuedAt],['Expiry',evidence.expiresAt]];
+   const choices=corporate?[['verified','Verify document'],['rejected','Reject document'],['expired','Mark document expired']]:market?[['customer_ready','Mark customer-ready'],['returned','Return for correction'],['rejected','Reject snapshot']]:external?[['approve','Approve for Opportunity'],['reject','Reject external property']]:[[official?'verified':'accepted','Accept / verify exact evidence'],['returned','Return for correction'],['rejected','Reject evidence']];
+   const renderFacts=value=>Array.isArray(value)?'<ol>'+value.map(x=>'<li>'+renderFacts(x)+'</li>').join('')+'</ol>':value&&typeof value==='object'?'<dl>'+Object.entries(value).map(([k,v])=>'<dt>'+esc(k.replaceAll('_',' '))+'</dt><dd>'+renderFacts(v)+'</dd>').join('')+'</dl>':esc(value);
+   const o=overlay(`<div class="modal lead-modal"><button class="close-x">×</button><span class="eyebrow">${esc(t.entityReference)}</span><h2>${esc(t.subject)}</h2><p>${esc(t.sourceStatus||'Pending independent review')}</p><dl>${facts.filter(([,v])=>v!=null&&v!=='').map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${market?'<details open><summary>Exact frozen market evidence</summary>'+renderFacts(t.deterministicReport)+'</details>':''}${!external&&!market&&evidence.documentVersionId?`<button type="button" class="btn" data-exact-pdf>Review exact PDF</button>`:''}${t.status==='open'?`<form class="form-grid" data-review-decision><label>Decision<select name="decision" required><option value="">Select a decision after review</option>${choices.map(([v,label])=>`<option value="${v}">${esc(label)}</option>`).join('')}</select></label><label class="span3">${external?'Verification notes':'Decision reason'}<textarea name="reason"></textarea></label>${!external&&!market&&!corporate?'<label class="span3"><input type="checkbox" name="confirmed" required> I reviewed the exact PDF, issuer facts and case links. I did not upload this evidence.</label>':''}<button class="btn btn-primary" type="submit">Record governed review decision</button></form>`:'<p>This source request has already been decided. Its history is retained.</p>'}</div>`);
+   o.querySelector('[data-exact-pdf]')?.addEventListener('click',()=>openCrmPdfTab('/api/crm/task-reviews/'+t.reviewKind+'/'+t.reviewId+'/document'));
+   const decisionForm=o.querySelector('form');if(decisionForm){const sync=()=>{const chosen=decisionForm.elements.decision.value,required=external||(corporate?chosen!=='verified':['returned','rejected'].includes(chosen));decisionForm.elements.reason.required=required;decisionForm.elements.reason.minLength=required?(external?1:corporate?5:10):0;};decisionForm.elements.decision.addEventListener('change',sync);sync();}
+   o.querySelector('form')?.addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;try{const route=corporate?'/crm/companies/'+t.reviewContextId+'/identity-documents/'+t.documentType+'/review':market?'/crm/market-intelligence-snapshots/'+t.reviewId+'/review':external?'/crm/external-properties/'+t.reviewId+'/verification':official?'/crm/official-document-evidence/'+t.reviewId+'/review':'/crm/document-compliance/evidence/'+t.reviewId+'/review';const body=corporate?{decision:form.elements.decision.value,reviewNotes:form.elements.reason.value}:market?{decision:form.elements.decision.value,reason:form.elements.reason.value}:external?{action:form.elements.decision.value,notes:form.elements.reason.value}:{decision:form.elements.decision.value,reason:form.elements.reason.value,reviewConfirmation:form.elements.confirmed.checked};await api(route,{method:'POST',body});toast('Review decision recorded against the source request');o.remove();refreshed();}catch(error){toast(error.message,7000);}finally{button.disabled=false;}});
+  }catch(error){toast(error.message,7000);}
+ };
+})();

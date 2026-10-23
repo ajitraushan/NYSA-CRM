@@ -2,6 +2,7 @@
    validation and authorization; this component never submits a decision. */
 (()=>{
   const screens=[
+    ['[data-review-decision]','Review this source request'],
     ['[data-compliance-review]','Review this signed document'],
     ['[data-official-review]','Review this official document'],
     ['#customer-kyc-form','Review customer identity'],

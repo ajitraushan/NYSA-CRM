@@ -40,7 +40,7 @@ test('Release 2.6 separates Internal Inventory from optional external portal Lis
 
 test('Release 2.6 repairs Customer selection and User record layout contracts',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
-  for(const marker of ['customer-picker-results','data-customer-choice','Selected existing Customer','Create a new Customer instead'])
+  for(const marker of ['customer-picker-results','installCustomerLookup','Selected existing Customer','Create a new Customer instead'])
     assert.match(ui,new RegExp(marker));
   assert.match(styles,/#broker-table table\{min-width:1180px;table-layout:fixed\}/);
   assert.match(styles,/#broker-table td:first-child b,#broker-table td:first-child small\{display:block/);

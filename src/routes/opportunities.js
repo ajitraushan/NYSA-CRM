@@ -1,3 +1,6 @@
+import {bilateralDecision,assertBilateralBooking} from '../offer-acceptance.js';
+import {customerIdentityFilter} from '../customer-search.js';
+import {offerDownloadName} from '../offer-document-labels.js';
 import crypto from 'node:crypto';
 import { Router } from '../lib/http-kit.js';
 import { one,many,execute,transaction,uuid,audit } from '../db.js';
@@ -244,6 +247,7 @@ r.get('/crm/opportunities',async(req,res)=>{
   if(req.query.stage){if(!OPPORTUNITY_STAGES.includes(req.query.stage))return res.status(400).json({error:'Invalid opportunity stage'});params.push(req.query.stage);where.push(`o.stage=$${params.length}`);}
   if(req.query.assignedTo==='me'){params.push(req.broker.id);where.push(`o.owner_id=$${params.length}`);}
   if(req.query.leadId){params.push(req.query.leadId);where.push(`o.lead_id=$${params.length}`);}
+  where.push(customerIdentityFilter(req.query,'c',params));
   if(clean(req.query.q)){
     const raw=String(clean(req.query.q)),copiedReference=raw.match(/NYSA-OP-[0-9]{6}-[0-9]{6}/i)?.[0];
     params.push(`%${String(copiedReference||raw).replaceAll('*','%')}%`);
@@ -891,7 +895,7 @@ async function createOfferRevisionRecords({client,req,offer,opportunity,listing,
     revisionId=uuid(),documentId=uuid(),documentVersionId=uuid(),createdAt=new Date(),revision={...input,id:revisionId,revisionNumber,createdAt},
     renderInput={offer,revision,opportunity,customer,listing,agent:documentAgent,organization,logo},approvedData=offerApprovedDocumentData(renderInput),
     pdf=await makeOfferPdf(renderInput).catch(error=>{throw Object.assign(new Error('The approved Offer PDF could not be generated. Please retry; if the issue continues, ask the CRM administrator to check the document renderer.'),{status:503,cause:error});}),storageKey=await savePrivate(pdf,'.pdf'),
-    fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=`${offer.offerReference}-R${revisionNumber}.pdf`;
+    fileHash=crypto.createHash('sha256').update(pdf).digest('hex'),fileName=offerDownloadName({listing,revision});
   try{
     await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
       VALUES($1,$2,'Offer Letter',$3,$8,'private','active',$4,$4,$5,$6,$7)`,
@@ -1078,6 +1082,7 @@ r.post('/crm/offers/:offerId/send',async(req,res)=>{
 r.post('/crm/offers/:offerId/events',async(req,res)=>{
   const expectedVersion=Number(req.body?.expectedVersion);
   const result=await transaction(async client=>{
+    await one('SELECT id FROM offers WHERE id=$1 FOR UPDATE',[req.params.offerId],client);
     const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
     const developerStock=offer.transactionType==='Off-plan'&&offer.propertySource==='developer_stock'&&offer.externalUsageKind==='developer_stock';
@@ -1085,10 +1090,14 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
     if(offer.version!==expectedVersion)return {code:409,error:'This offer changed after it was opened; reload before recording the negotiation event'};
     if(offer.status==='accepted')return {code:409,error:developerStock?'This accepted Off-plan Offer now governs its Deal; use the Deal cancellation or closure controls':'Accepted Offer outcomes must use the governed Manager reservation release, cancellation or expiry path'};
     const checked=validateOfferEvent(offer.status,req.body||{});if(checked.error)return {code:409,error:checked.error};
-    const v=checked.value,revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client),
-      nextStatus=v.eventType==='acknowledged'?'viewed':v.eventType,terminalAt={
+    const v=checked.value,revision=await one('SELECT * FROM offer_revisions WHERE id=$1 AND offer_id=$2',[offer.currentRevisionId,offer.id],client);
+    const priorEvents=await many('SELECT * FROM negotiation_events WHERE offer_revision_id=$1',[revision.id],client),acceptance=v.eventType==='accepted'?bilateralDecision(revision,priorEvents,v.counterpartyRole,req.body.acceptanceEvidence):{complete:false,side:null};
+    if(acceptance.error)return{code:409,error:acceptance.error};
+    let acceptingPartyId=null;if(acceptance.side){const parties=await one('SELECT contact_id,buyer_counterparty_id,seller_counterparty_id FROM opportunities WHERE id=$1',[offer.opportunityId],client);acceptingPartyId=acceptance.side==='buyer'?(parties.contactId||parties.buyerCounterpartyId):parties.sellerCounterpartyId;if(!acceptingPartyId)return{code:409,error:'Maintain the accepting party identity before recording acceptance'};}
+    const fullyAccepted=v.eventType==='accepted'&&acceptance.complete;
+    const nextStatus=v.eventType==='accepted'&&!fullyAccepted?offer.status:v.eventType==='acknowledged'?'viewed':v.eventType,terminalAt={
         accepted:'accepted_at',rejected:'rejected_at',expired:'expired_at',withdrawn:'withdrawn_at',viewed:'viewed_at',acknowledged:'viewed_at'
-      }[v.eventType],sets=["status=$1","version=version+1","updated_at=NOW()"],params=[nextStatus];
+      }[v.eventType==='accepted'&&!fullyAccepted?'partial_acceptance':v.eventType],sets=["status=$1","version=version+1","updated_at=NOW()"],params=[nextStatus];
     const validityExpired=new Date(revision.validityExpiresAt)<=new Date();
     if(v.eventType==='accepted'&&validityExpired)return {code:409,error:'This revision has expired and cannot be accepted'};
     if(v.eventType==='accepted'){
@@ -1108,13 +1117,13 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
     if(['withdrawn','expired'].includes(v.eventType)&&await one("SELECT id FROM deals WHERE offer_id=$1 AND status NOT IN ('closed_won','closed_lost')",[offer.id],client))return {code:409,error:'This accepted Offer already governs an active Deal. Use the governed Deal close-lost or future replacement action; the Offer cannot be withdrawn independently'};
     if(v.eventType==='expired'&&!validityExpired)return {code:409,error:'This revision remains valid; record withdrawal or rejection instead'};
     if(terminalAt)sets.push(`${terminalAt}=NOW()`);
-    if(v.eventType==='accepted'){params.push(revision.id);sets.push(`accepted_revision_id=$${params.length}`);}
+    if(fullyAccepted){params.push(revision.id);sets.push(`accepted_revision_id=$${params.length}`);}
     params.push(offer.id,offer.version);
     const updated=await one(`UPDATE offers SET ${sets.join(',')} WHERE id=$${params.length-1} AND version=$${params.length} RETURNING *`,params,client);
-    await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [uuid(),offer.id,revision.id,revision.documentVersionId,v.eventType,v.direction,v.counterpartyRole,v.summary,v.reason,req.broker.id],client);
-    const recovered=['rejected','expired','withdrawn'].includes(v.eventType),nextAction=v.eventType==='accepted'?(developerStock?'Create the Off-plan Deal from this accepted revision':'Create the separate seven-day reservation from this accepted revision'):
+    await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id,accepting_side,acceptance_evidence,accepting_party_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [uuid(),offer.id,revision.id,revision.documentVersionId,v.eventType,v.direction,v.counterpartyRole,v.summary,v.reason,req.broker.id,acceptance.side,v.eventType==='accepted'?String(req.body.acceptanceEvidence||'').trim()||null:null,acceptingPartyId],client);
+    const recovered=['rejected','expired','withdrawn'].includes(v.eventType),nextAction=fullyAccepted?(developerStock?'Create the Off-plan Deal from this accepted revision':'Create the separate seven-day reservation from this accepted revision'):
       recovered?'Offer outcome recorded: renegotiate, create a new offer, return to Matching, or close as Lost':'Continue negotiation and record the next exact revision';
     if(recovered){
       const reservationRelease=await releaseOfferOwnedReservation(offer,`${v.eventType} offer: ${v.reason||v.summary}`,req.broker.id,client);
@@ -1124,16 +1133,16 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
       await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,'Offer','terminal_offer_recovery',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,`${v.eventType} offer retained immutably; recovery checkpoint opened`,req.broker.id],client);
     }else{
-      await execute("UPDATE opportunities SET stage=CASE WHEN $1='accepted' THEN 'Negotiation' ELSE stage END,next_action_code=$2,next_action=$3,next_action_notes=NULL,next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$4",[v.eventType,v.eventType==='accepted'?(developerStock?'complete_deal':'create_reservation'):'follow_up_offer_feedback',nextAction,offer.opportunityId],client);
-      if(v.eventType==='accepted'&&offer.opportunityStage!=='Negotiation')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+      await execute("UPDATE opportunities SET stage=CASE WHEN $1='accepted' THEN 'Negotiation' ELSE stage END,next_action_code=$2,next_action=$3,next_action_notes=NULL,next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$4",[fullyAccepted?'accepted':v.eventType==='accepted'?'partial_acceptance':v.eventType,fullyAccepted?(developerStock?'complete_deal':'create_reservation'):'follow_up_offer_feedback',nextAction,offer.opportunityId],client);
+      if(fullyAccepted&&offer.opportunityStage!=='Negotiation')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,'Negotiation','offer_revision_accepted',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,
         `Customer/counterparty accepted exact Offer revision ${revision.revisionNumber}`,req.broker.id],client);
     }
-    if(v.eventType==='accepted'&&offer.externalPropertyId)await execute(`UPDATE provisional_external_properties
+    if(fullyAccepted&&offer.externalPropertyId)await execute(`UPDATE provisional_external_properties
       SET status='under_offer',updated_at=NOW() WHERE id=$1 AND status='approved_for_opportunity'`,[offer.externalPropertyId],client);
     await audit('NegotiationEvent',offer.id,v.eventType,req.broker.id,{offerRevisionId:revision.id,documentVersionId:revision.documentVersionId,reason:v.reason,counterpartyRole:v.counterpartyRole,
       inventoryReleasePolicy:'only reservation owned by this Offer and Opportunity; restore recorded pre-block status only'},client);
-    return updated;
+    return {...updated,requiresBilateralAcceptance:revision.requiresBilateralAcceptance,acceptanceComplete:fullyAccepted};
   });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
 
@@ -1151,7 +1160,8 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       const lockedOffer=await one('SELECT * FROM offers WHERE id=$1 FOR UPDATE',[offer.id],client);
       if(lockedOffer.status!=='accepted'||!lockedOffer.acceptedRevisionId)return {code:409,error:'Record Customer/counterparty acceptance in Negotiation before creating a reservation'};
       const acceptedRevisionId=lockedOffer.acceptedRevisionId;
-      const acceptedRevision=await one('SELECT id,deposit_amount,currency,validity_expires_at,document_version_id FROM offer_revisions WHERE id=$1 AND offer_id=$2',[acceptedRevisionId,offer.id],client);
+      await assertBilateralBooking(acceptedRevisionId,(sql,values)=>one(sql,values,client));
+    const acceptedRevision=await one('SELECT id,deposit_amount,currency,validity_expires_at,document_version_id FROM offer_revisions WHERE id=$1 AND offer_id=$2',[acceptedRevisionId,offer.id],client);
       if(!acceptedRevision||new Date(acceptedRevision.validityExpiresAt)<=new Date())return {code:409,error:'The exact Offer revision has expired and cannot be accepted'};
       const listing=offer.listingId?await requireLiveInventory(offer.listingId,offer.opportunityId,client):
         await one(`SELECT id,external_reference AS inventory_reference,project_or_building AS project,status,
@@ -1344,6 +1354,7 @@ r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
     if(!booking)return{code:404,error:'Booking not found'};
     const opportunity=await opportunityWithParticipants(booking.opportunityId,client);
     if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Booking is outside your writable scope'};
+    await assertBilateralBooking(booking.acceptedOfferRevisionId,(sql,values)=>one(sql,values,client));
     if(booking.status!=='reserved')return{code:409,error:'A Deal can only start from an active governed reservation'};
     const existing=await one('SELECT * FROM deals WHERE opportunity_id=$1 OR booking_id=$2 FOR UPDATE',[booking.opportunityId,booking.id],client);
     if(existing?.bookingId===booking.id)return{code:409,error:`Deal ${existing.dealReference} already governs this reservation`};
@@ -1449,6 +1460,7 @@ r.post('/crm/offers/:offerId/off-plan-deal',async(req,res)=>{
     if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Offer is outside your writable scope'};
     if(offer.status!=='accepted'||offer.transactionType!=='Off-plan'||offer.propertySource!=='developer_stock')
       return{code:409,error:'This action requires an accepted Offer for verified off-plan developer stock'};
+    await assertBilateralBooking(offer.acceptedRevisionId,(sql,values)=>one(sql,values,client));
     if(await one('SELECT id FROM deals WHERE opportunity_id=$1',[offer.opportunityId],client))return{code:409,error:'This Opportunity already has a Deal'};
     const checked=validateDealCreate(req.body||{},{offerType:'off_plan',agreedValue:offer.acceptedAmount,currency:offer.acceptedCurrency});
     if(checked.error)return{code:400,error:checked.error};
@@ -1921,7 +1933,7 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         if(['inventory','dual'].includes(input.representationPath)){
           representationAgreement=await one(`SELECT * FROM inventory_agreements WHERE listing_id=$1 AND status='active'
             ORDER BY created_at DESC LIMIT 1`,[representationListing.id],client);
-          if(!representationAgreement)return {code:409,error:'Seller/landlord or dual representation requires an active mandate agreement for the selected Inventory'};
+
         }
         const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';
         const inherited=await inheritInventoryOwner(representationListing.id,input.transactionType,req.broker.id,client);

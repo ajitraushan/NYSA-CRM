@@ -91,7 +91,10 @@ test('Admin configuration references do not restore business-record access',()=>
   assert.match(crm,/if \(!hasNysaStaffIdentity\(req\.broker\)\)/);
   assert.doesNotMatch(crm,/if \(!hasInternalCrmIdentity\(req\.broker\)\)/);
   assert.match(operations,/r\.use\(requireAuth, staffOnly\)/);
-  assert.match(operations,/if\(!hasNysaStaffIdentity\(req\.broker\)\)/);
+  assert.match(operations,/if\(!hasNysaStaffIdentity\(req\.broker\)&&!\(canReadAllCrmDocuments\(req\.broker\)&&isCrmDocumentReadRequest\(req\.method,req\.path\)\)\)/);
+  const documentPath='/crm/document-versions/11111111-1111-4111-8111-111111111111/view';
+  assert.equal(governedRoleRequestAllowed(admin,'GET',documentPath),true);
+  assert.equal(governedRoleRequestAllowed(admin,'POST',documentPath),false);
   assert.doesNotMatch(operations,/if\(!hasInternalCrmIdentity\(req\.broker\)\)/);
   assert.match(crm,/hasCapability\(req\.broker,CAPABILITY\.STAFF_CONFIGURATION_REFERENCE_READ\)/);
   assert.match(crm,/hasCapability\(req\.broker,CAPABILITY\.TEAM_CONFIGURATION\)/);

@@ -12,7 +12,8 @@ test('shared review presentation decorates every registered screen idempotently 
  }};
  const context={window:{},document,MutationObserver:class{constructor(fn){observer=fn;}observe(){}}};
  vm.runInNewContext(source,context);
- assert.equal(forms.size,15);
+ assert.equal(forms.size,16);
+ assert.ok(forms.has('[data-review-decision]'),'Unified review queue decisions use the reusable presentation');
  const handlers=[...forms.values()].map(f=>f.onsubmit);
  context.window.NysaReviewPanel.apply();
  for(const [i,form] of [...forms.values()].entries()){

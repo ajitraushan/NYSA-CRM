@@ -22,12 +22,12 @@ test('Customer Master lead creation resolves the exact scoped Customer by ID',()
 
 test('Lead customer search queries the full permitted register instead of a prefetched first page',()=>{
   const source=leadCaptureSource();
-  assert.match(source,/new URLSearchParams\(\{q:query,pageSize:'100',sort:'name'\}\)/);
-  assert.match(source,/api\(`\/crm\/contacts\?\$\{params\}`\)/);
-  assert.match(source,/params\.set\('page',String\(page\)\)/);
-  assert.match(source,/while\(matches\.length<count\)/);
-  assert.match(source,/Searching the full permitted Customer register/);
-  assert.match(source,/matching Customer.*full permitted register/);
+  const lookup=readFileSync(new URL('../public/customer-lookup-ui.js',import.meta.url),'utf8');
+  assert.match(source,/installCustomerLookup/);
+  assert.match(lookup,/pageSize:'25'/);
+  assert.match(lookup,/api\('\/crm\/contacts\?'/);
+  assert.match(lookup,/data-next/);
+  assert.match(lookup,/passportLast4/);
   assert.doesNotMatch(source,/filter\(customer=>customerSearchText\(customer\)\.includes\(query\)\)/);
   assert.doesNotMatch(source,/\.slice\(0,12\)/);
 });
