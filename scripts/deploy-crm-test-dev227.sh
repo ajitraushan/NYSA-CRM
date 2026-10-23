@@ -62,7 +62,7 @@ finish(){
 }
 trap finish EXIT
 snapshot(){ local root=$1; [[ -f "$root/package.json" ]] && sha256sum "$root/package.json" | awk '{print $1}' || printf missing; }
-verify_worker_socket(){
+worker_owns_test_socket(){
   local pid=$1 fd link inode line found=0
   for fd in /proc/"$pid"/fd/*; do
     link=$(readlink "$fd" 2>/dev/null || true)
@@ -71,8 +71,9 @@ verify_worker_socket(){
     line=$(awk -v inode="$inode" '$7==inode{print}' /proc/net/unix 2>/dev/null || true)
     [[ "$line" == *"$WORKER_SOCKET_PREFIX"* ]] && found=1
   done
-  [[ "$found" -eq 1 ]] || fail "PID $pid does not own the CRM Test listener"
+  [[ "$found" -eq 1 ]]
 }
+verify_worker_socket(){ worker_owns_test_socket "$1" || fail "PID $1 does not own the CRM Test listener"; }
 load_db_env(){
   [[ "${PGDATABASE:-}" == "$EXPECTED_DATABASE" && -n "${PGUSER:-}" && -n "${PGPASSWORD:-}" ]] || fail "Run through the verified hosting-configuration runner"
 }
@@ -115,7 +116,13 @@ manifest_identity=$($NODE_BIN -e "const m=require(process.argv[1]);process.stdou
 old_text=$(worker_pids || true); old_pids=(); [[ -n "$old_text" ]] && read -r -a old_pids <<< "$old_text"
 [[ "${#old_pids[@]}" -ge 1 && "${#old_pids[@]}" -le 2 ]] || fail "expected one or two CRM Test workers"
 mkdir -p "$APP_ROOT/tmp"
-for pid in "${old_pids[@]}"; do verify_worker_socket "$pid"; verify_switches "$pid"; done
+test_listener_count=0
+for pid in "${old_pids[@]}"; do
+  [[ "$(readlink "/proc/$pid/cwd")" == "$APP_ROOT" ]] || fail "PID $pid is outside the CRM Test root"
+  if worker_owns_test_socket "$pid"; then test_listener_count=$((test_listener_count+1)); fi
+done
+[[ "$test_listener_count" -ge 1 ]] || fail "No verified CRM Test listener exists"
+verify_switches
 load_db_env "${old_pids[0]}"
 [[ "${PGDATABASE:-}" == "$EXPECTED_DATABASE" ]] || fail "unexpected database identity"
 installed_version=$($NODE_BIN -p "require('$APP_ROOT/package.json').version")
