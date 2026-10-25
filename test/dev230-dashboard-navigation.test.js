@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {buildRoleDashboardPresentation} from '../src/dashboard-domain.js';
 const source=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8'),start=source.indexOf('async function renderCrmDashboard('),end=source.indexOf('\nasync function ',start+10),dashboardCode=source.slice(start,end);
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -12,7 +13,7 @@ function harness(){
  const view={set innerHTML(html){for(const n of nodes.values())n.isConnected=false;nodes=new Map();for(const [,id]of html.matchAll(/id="([^"]+)"/g))nodes.set('#'+id,node('#'+id));renders++;}};
  const context={Date,URLSearchParams,FormData:class{constructor(){return new Map();}},ME:{jobRole:'manager'},LEAD_SOURCES:[],BUSINESS_TYPES:[],LEAD_STAGES:[],esc:x=>String(x??''),fmtDate:x=>x,fmtMinutesFromSeconds:x=>x,openDashboardRecords:(...args)=>drilldowns.push(args),document:{querySelectorAll:selector=>selector==='[data-dashboard-segment]'?[...nodes.get('#dashboard-kpis').innerHTML.matchAll(/data-dashboard-segment="([^"]+)"/g)].map(match=>{const button={dataset:{dashboardSegment:match[1]},addEventListener:(event,handler)=>button.click=handler};kpiButtons.push(button);return button;}):selector==='[data-dashboard-summary]'?[...nodes.get('#dashboard-body').innerHTML.matchAll(/data-dashboard-summary="(\d+)"/g)].map(match=>{const button={dataset:{dashboardSummary:match[1]},addEventListener:(event,handler)=>button.click=handler};summaryButtons.push(button);return button;}):[]},overlay:html=>{detailHtml=html;return{querySelectorAll:()=>[],remove(){}}},$:selector=>selector==='#view'?view:nodes.get(selector)||null,api:path=>{const d=deferred();calls.push({path,...d});return d.promise;}};
  vm.createContext(context);vm.runInContext(dashboardCode,context);
- return{context,calls,bound,summaryButtons,kpiButtons,drilldowns,getDetail:()=>detailHtml,get:selector=>nodes.get(selector),navigate(){for(const n of nodes.values())n.isConnected=false;nodes=new Map([['#other-workflow',node('#other-workflow')]]);},render:()=>context.renderCrmDashboard()};
+ return{context,calls,bound,summaryButtons,kpiButtons,drilldowns,getDetail:()=>detailHtml,get:selector=>nodes.get(selector),navigate(){for(const n of nodes.values())n.isConnected=false;nodes=new Map([['#other-workflow',node('#other-workflow')]]);},render:selected=>context.renderCrmDashboard(selected)};
 }
 const settleStaff=async(h,offset=0)=>{h.calls[offset].resolve({teams:[]});h.calls[offset+1].resolve({staff:[]});await tick();};
 
@@ -60,4 +61,16 @@ for(const role of ['sales_agent','manager','director'])test(`Agent has no lower 
  if(role==='sales_agent'){assert.equal(html,'');assert.equal(h.summaryButtons.length,0);}else{assert.ok(html.includes('Proposal workload'));assert.ok(html.includes('Inventory readiness'));assert.match(html,/data-dashboard-summary=/);assert.equal(h.summaryButtons.length,11);}
  assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-filters'&&event==='submit'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-reset'&&event==='click'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-calls'&&event==='click'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-save'&&event==='click'));
  assert.ok(h.get('#dashboard-export').href);
+});
+
+for(const [role,type,view] of [['sales_agent','agent',null],['manager','manager',null],...['Executive','Sales','Inventory','Operations and Risk'].map(view=>['director','executive',view])])test('API-shaped all-card drill-down contract: '+role+'/'+(view||'default'),async()=>{
+ const h=harness();h.context.ME.jobRole=role;h.context.FormData=class{constructor(){return new Map([['source','Synthetic source'],['teamId','synthetic-team']]);}};
+ const presentation=buildRoleDashboardPresentation({type,view,current:{leads:3},dataAsOf:'2026-10-26'}),data={...payload('Real API contract'),dashboardType:type,...presentation};
+ assert.equal(Object.hasOwn(data,'futureMetrics'),false,'Use the real API field rather than a fabricated legacy field');
+ const run=h.render(view?{view}:{});await settleStaff(h);h.calls[2].resolve(data);h.calls[3].resolve({views:[]});await run;
+ assert.equal(h.kpiButtons.length,presentation.kpis.length);assert.equal(h.summaryButtons.length,role==='sales_agent'?0:role==='director'?12:11);
+ for(const [i,button]of h.kpiButtons.entries()){button.click();assert.equal(h.drilldowns[i][0],presentation.kpis[i].drilldownSegment);assert.equal(h.drilldowns[i][1].source,'Synthetic source');assert.equal(h.drilldowns[i][1].teamId,'synthetic-team');if(view)assert.equal(h.drilldowns[i][1].view,view);}
+ for(const button of h.summaryButtons){button.click();assert.match(h.getDetail(),/<h3>[^<]+<\/h3>/);assert.doesNotMatch(h.getDetail(),/undefined/);}
+ if(role==='director'){h.summaryButtons.at(-1).click();assert.match(h.getDetail(),/Weighted opportunity pipeline/);assert.match(h.getDetail(),/Revenue and commission forecast/);}
+ assert.ok(h.get('#dashboard-export').href);assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-filters'&&event==='submit'));
 });
