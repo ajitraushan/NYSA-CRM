@@ -16,7 +16,8 @@ const leave=read('src/routes/agent-leave.js');
 test('administration navigation has one stable label for each rendered workspace',()=>{
   const definitionBlock=app.match(/const definitions=new Map\(\[(.*?)\]\);\s*const workspace=/s)?.[1]||'';
   const keys=[...definitionBlock.matchAll(/\['[^']+',\['([^']+)'/g)].map(match=>match[1]);
-  assert.equal(keys.length,23);
+  assert.equal(keys.length,24);
+  assert.ok(keys.includes('business_lines'));
   assert.equal(new Set(keys).size,keys.length);
   assert.equal(keys.filter(key=>key==='users').length,1);
   for(const key of ['market_intelligence','commission_policy','customer_documents','document_compliance','operations','about'])assert.ok(keys.includes(key),key);

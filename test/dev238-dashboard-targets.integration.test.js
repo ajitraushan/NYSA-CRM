@@ -12,7 +12,7 @@ test('DEV238 target API lifecycle, authorization, period values and optimistic c
   }
   const app=createApp();app.mount('/api',routes);server=await new Promise(resolve=>{const s=app.listen(0,()=>resolve(s));});
   const request=async(path,body,token=tokens[0])=>{const r=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method:body?'POST':'GET',headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return{status:r.status,data:await r.json()};};
-  const {data:setup}=await request('/admin/dashboard-metrics');assert.ok(setup.businessTypes.includes('Rental'));assert.equal(setup.metrics.find(m=>m.code==='team_capacity_pressure').unit,'agents');
+  const {data:setup}=await request('/admin/dashboard-metrics');assert.ok(setup.businessLines.some(x=>x.name==='Rental'));assert.equal(setup.metrics.find(m=>m.code==='team_capacity_pressure').unit,'agents');
   await t.test('hosting preflight target-state SELECT is valid PostgreSQL',async()=>{
    const source=fs.readFileSync(new URL('../scripts/dev238-host-run.mjs',import.meta.url),'utf8'),sql=JSON.parse(source.match(/const targetState=\(await db.query\(("[^\n]+")\)/)[1]),result=await db.one(sql);assert.equal(typeof result.total,'number');
   });

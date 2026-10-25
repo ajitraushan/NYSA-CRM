@@ -1,6 +1,6 @@
 import {one,many,execute,transaction,uuid,audit} from './db.js';
 import {DASHBOARD_METRICS} from './admin-governance.js';
-import {loadActiveClassificationCatalogue,legacyBusinessType} from './classification-catalogue.js';
+import {businessLineSetup} from './business-lines.js';
 import {validateTarget,targetDate,dubaiToday,alignedTargetDate,periodsForTarget} from './dashboard-target-domain.js';
 export const TARGET_METRICS=Object.fromEntries(Object.entries(DASHBOARD_METRICS).map(([code,metric])=>[code,{...metric,
   ...({won_leads:{definition:'Leads created in the selected period whose current status is Won (existing dashboard creation-cohort calculation).'},
@@ -11,11 +11,11 @@ const fail=(message,statusCode=400)=>{throw Object.assign(new Error(message),{st
 const camelPayload=p=>Object.fromEntries(Object.entries(p).map(([k,v])=>[k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase()),v]));
 export const normalizeTargetRow=row=>({...row,periodStart:targetDate(row.periodStart),periodEnd:row.periodEnd?targetDate(row.periodEnd):null});
 export async function targetSetup(client){
-  const [catalogue,teams,agents]=await Promise.all([loadActiveClassificationCatalogue(client),many('SELECT id,name FROM teams WHERE active=1 ORDER BY name',[],client),many("SELECT id,name FROM brokers WHERE status='active' AND role='internal_broker' AND job_role IN ('sales_agent','listing_agent') ORDER BY name",[],client)]);
-  const businessTypes=[...new Set(catalogue.mappings.filter(m=>m.targetContext==='derived_transaction').map(m=>legacyBusinessType(m.targetValueCode)).filter(v=>v!=='Unconfirmed'))];
-  return{metrics:Object.entries(TARGET_METRICS).map(([code,m])=>({code,...m})),businessTypes,teams,agents};
+  const [catalogue,teams,agents]=await Promise.all([businessLineSetup(client),many('SELECT id,name FROM teams WHERE active=1 ORDER BY name',[],client),many("SELECT id,name FROM brokers WHERE status='active' AND role='internal_broker' AND job_role IN ('sales_agent','listing_agent') ORDER BY name",[],client)]);
+  const businessLines=catalogue.businessLines.filter(x=>x.active),businessTypes=businessLines.map(x=>x.id);
+  return{metrics:Object.entries(TARGET_METRICS).map(([code,m])=>({code,...m})),businessTypes,businessLines,teams,agents};
 }
-async function validated(body,client){const setup=await targetSetup(client),result=validateTarget(body,TARGET_METRICS,{businessTypes:setup.businessTypes,teamIds:setup.teams.map(x=>x.id),agentIds:setup.agents.map(x=>x.id)});if(result.error)fail(result.error);return result.value;}
+async function validated(body,client){const setup=await targetSetup(client),result=validateTarget(body,TARGET_METRICS,{businessTypes:setup.businessTypes,teamIds:setup.teams.map(x=>x.id),agentIds:setup.agents.map(x=>x.id)});if(result.error)fail(result.error);if(body.scopeType==='business_line'&&!setup.businessLines.find(x=>x.id===body.scopeId)?.metricCodes.includes(body.metricCode))fail('This KPI is not enabled for the selected business line');return result.value;}
 async function snapshot(row,effectiveOn,reason,actor,client){await execute('INSERT INTO dashboard_target_revisions(id,target_id,revision,effective_on,payload,reason,changed_by) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7)',[uuid(),row.id,row.revision,effectiveOn,JSON.stringify(normalizeTargetRow(row)),reason,actor],client);}
 async function overlap(target,client){
   // Serialize approvals, edits and activations for the same metric/scope/cadence.
@@ -52,6 +52,7 @@ export async function changeTarget(id,action,body,actor){return transaction(asyn
     const expected={approve:'draft',activate:'approved'};
     if(action==='retire'){if(!['draft','approved','active'].includes(before.status))fail('Target is already retired',409);}
     else if(!expected[action]||before.status!==expected[action])fail('This action is not available in the current target status',409);
+    if(['approve','activate'].includes(action)&&before.scopeType==='business_line')await validated(normalizeTargetRow(before),client);
     if(['approve','activate'].includes(action)&&await overlap(before,client))fail('Another approved or active target overlaps this KPI, scope and frequency',409);
     const status={approve:'approved',activate:'active',retire:'retired'}[action];
     row=await one(`UPDATE dashboard_targets SET status=$1,revision=revision+1,updated_at=NOW(),approved_by=CASE WHEN $1='approved' THEN $2 ELSE approved_by END,approved_at=CASE WHEN $1='approved' THEN NOW() ELSE approved_at END,approval_reason=CASE WHEN $1='approved' THEN $3 ELSE approval_reason END,effective_from=CASE WHEN $1='active' THEN NOW() ELSE effective_from END,effective_to=CASE WHEN $1='retired' THEN NOW() ELSE effective_to END WHERE id=$4 RETURNING *`,[status,actor,reason,id],client);

@@ -12,5 +12,5 @@ test('Director dashboard is company-wide while Agent scope remains personal',()=
  assert.equal(dashboardLeadScopeSql('l',{role:'internal_broker',jobRole:'sales_agent',id:'agent'},[]).clause,'l.assigned_to=$1');
 });
 test('Dashboard current/prior/filter/drill-down routes use the dedicated scope; Manager inventory cannot overwrite company snapshots',()=>{
- const s=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');assert.equal((s.match(/scope=dashboardLeadScopeSql\(alias/g)||[]).length,2);assert.match(s,/deleted_at IS NULL AND \$\{inventoryScope.clause\}/);assert.match(s,/if\(!req.targetComparison&&isCompanyReader\(req.broker\)\)for\(const \[metricCode,value\]/);assert.match(s,/canSeeIntegration=isCompanyReader/);
+ const s=fs.readFileSync(new URL('../src/routes/dashboards.js',import.meta.url),'utf8');assert.equal((s.match(/scope=dashboardLeadScopeSql\(alias/g)||[]).length,2);assert.match(s,/deleted_at IS NULL AND \$\{inventoryScope.clause\}/);assert.match(s,/if\(!req.targetComparison&&!f.selected.businessLineId&&isCompanyReader\(req.broker\)\)for\(const \[metricCode,value\]/);assert.match(s,/canSeeIntegration=isCompanyReader/);
 });
