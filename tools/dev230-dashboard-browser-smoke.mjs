@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import http from 'node:http';
+const source=fs.readFileSync('public/app.js','utf8'),a=source.indexOf('async function renderCrmDashboard('),b=source.indexOf('\nasync function ',a+10);
+const html=`<!doctype html><html><head><meta charset="utf-8"><title>DEV230 dashboard navigation test</title><style>body{font:16px system-ui;max-width:1000px;margin:auto;padding:24px;color:#192630;background:#f6f3ec}button,a{padding:10px;margin:4px}#test-status{background:#fff;border:1px solid #977740;padding:16px}#view{border:1px solid #bbb;padding:16px;margin-top:20px}.filter-grid{display:flex;flex-wrap:wrap;gap:8px}.dashboard-grid{display:none}</style></head><body><h1>DEV230 dashboard navigation test</h1><p>Synthetic responses; no CRM or Customer records accessed.</p><nav><button id="start">Start dashboard</button><button id="staff">Deliver staff responses</button><button id="leave">Navigate to other workflow</button><button id="data">Deliver dashboard responses</button><button id="failure">Reject dashboard response</button></nav><p id="test-status">Ready</p><div id="view"></div><script>
+const ME={jobRole:'manager'},LEAD_SOURCES=[],BUSINESS_TYPES=[],LEAD_STAGES=[],esc=x=>String(x??''),fmtDate=x=>x,fmtMinutesFromSeconds=x=>x,$=s=>document.querySelector(s),pending=[],errors=[];let serial=0;
+const data=label=>({calculationContext:label,dataAsOf:'2026-10-26',filters:{dateFrom:'2026-10-01',dateTo:'2026-10-26'},kpis:[],stages:[],sources:[],teams:[],agents:[],tasks:[],exceptions:{},proposals:{},qualification:{hot:0,warm:0},calls:{total:0,durationSeconds:0,followUpRequired:0},inventory:{available:0,stale:0,mediaNotReady:0},hierarchy:{company:'Synthetic company',businessLines:[]},recentActivities:[]});
+const api=path=>new Promise((resolve,reject)=>pending.push({path,resolve,reject,serial,done:false}));
+${source.slice(a,b)}
+const status=message=>$('#test-status').textContent=message+' · Errors: '+errors.length;
+$('#start').onclick=()=>{serial++;status('Dashboard request '+serial+' started');renderCrmDashboard().then(()=>status('Dashboard request completed safely')).catch(error=>{errors.push(error.message);status('ERROR: '+error.message);});};
+$('#leave').onclick=()=>{$('#view').innerHTML='<h2>Other workflow</h2><p>Navigation must remain intact after delayed dashboard responses.</p>';status('Other workflow opened');};
+$('#staff').onclick=()=>{for(const p of pending.filter(x=>!x.done&&(x.path==='/crm/teams'||x.path==='/crm/staff'))){p.done=true;p.resolve(p.path==='/crm/teams'?{teams:[]}:{staff:[]});}status('Staff responses delivered');};
+const deliver=reject=>{for(const p of pending.filter(x=>!x.done&&x.path.startsWith('/crm/dashboard'))){p.done=true;if(p.path==='/crm/dashboard/views')p.resolve({views:[]});else if(reject)p.reject(new Error('Synthetic dashboard request failed'));else p.resolve(data('Dashboard result '+p.serial));}status(reject?'Dashboard failure delivered':'Dashboard responses delivered');};
+$('#data').onclick=()=>deliver(false);$('#failure').onclick=()=>deliver(true);
+</script></body></html>`;
+http.createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);}).listen(0,'127.0.0.1',function(){console.log(JSON.stringify({url:`http://127.0.0.1:${this.address().port}`}));});
