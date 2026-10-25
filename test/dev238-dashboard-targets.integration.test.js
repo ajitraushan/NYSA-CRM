@@ -13,6 +13,9 @@ test('DEV238 target API lifecycle, authorization, period values and optimistic c
   const app=createApp();app.mount('/api',routes);server=await new Promise(resolve=>{const s=app.listen(0,()=>resolve(s));});
   const request=async(path,body,token=tokens[0])=>{const r=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method:body?'POST':'GET',headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return{status:r.status,data:await r.json()};};
   const {data:setup}=await request('/admin/dashboard-metrics');assert.ok(setup.businessTypes.includes('Rental'));assert.equal(setup.metrics.find(m=>m.code==='team_capacity_pressure').unit,'agents');
+  await t.test('hosting preflight target-state SELECT is valid PostgreSQL',async()=>{
+   const source=fs.readFileSync(new URL('../scripts/dev238-host-run.mjs',import.meta.url),'utf8'),sql=JSON.parse(source.match(/const targetState=\(await db.query\(("[^\n]+")\)/)[1]),result=await db.one(sql);assert.equal(typeof result.total,'number');
+  });
   await t.test('benchmark retirement is narrowly identified, audited and reversible in fixture transaction',async()=>{
    const client=await db.db.connect(),ids=['d7000000-0000-4000-8000-999999999991','d7000000-0000-4000-8000-999999999992',crypto.randomUUID()];
    try{await client.query('BEGIN');for(let i=0;i<ids.length;i++)await client.query(`INSERT INTO dashboard_targets(id,metric_code,scope_type,scope_id,period_start,period_end,target_value,unit,definition,status,benchmark_source,created_by) VALUES($1,'new_leads','agent',$2,$3,$3,$4,'leads','Controlled test definition for new_leads','active','CORE Release 1 test benchmark',$5)`,[ids[i],agent,`2051-01-0${i+1}`,i===1?20:10,actor]);
