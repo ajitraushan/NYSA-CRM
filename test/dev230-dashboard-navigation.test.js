@@ -43,4 +43,3 @@ test('DEV230 current dashboard errors remain visible and do not bind incomplete 
  const h=harness(),run=h.render();await settleStaff(h);h.calls[2].reject(new Error('Synthetic service unavailable'));h.calls[3].resolve({views:[]});await run;
  assert.equal(h.get('#dashboard-kpis').textContent,'Synthetic service unavailable');assert.equal(h.bound.length,0);
 });
-
