@@ -144,7 +144,7 @@ r.get('/crm/dashboard',async(req,res)=>{
       COUNT(*) FILTER(WHERE l.stage NOT IN('Won','Lost'))::int AS open,COUNT(*) FILTER(WHERE l.next_follow_up_at<NOW() AND l.stage NOT IN('Won','Lost'))::int AS overdue,
       COUNT(*) FILTER(WHERE l.accepted_at IS NULL AND l.acceptance_due_at<NOW())::int AS sla_breaches FROM leads l LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${f.where} GROUP BY b.name,l.assigned_to,l.assigned_team_id ORDER BY value DESC`,f.params),
     many(`SELECT DATE_TRUNC('week',l.created_at)::date AS period,COUNT(*)::int AS value FROM leads l WHERE ${f.where} GROUP BY period ORDER BY period`,f.params),
-    many(`SELECT CASE WHEN t.status='completed' THEN 'completed' WHEN t.due_at<NOW() THEN 'overdue' WHEN t.due_at<CURRENT_DATE+INTERVAL '1 day' THEN 'today' ELSE 'upcoming' END AS label,COUNT(*)::int AS value
+    many(`SELECT CASE WHEN t.status='completed' THEN 'completed' WHEN t.status='cancelled' THEN 'cancelled' WHEN t.due_at<NOW() THEN 'overdue' WHEN t.due_at<CURRENT_DATE+INTERVAL '1 day' THEN 'today' ELSE 'upcoming' END AS label,COUNT(*)::int AS value
       FROM tasks t JOIN leads l ON l.id=t.lead_id WHERE ${f.where} GROUP BY label`,f.params),
     one(`SELECT COUNT(*) FILTER(WHERE (c.email IS NULL AND c.phone IS NULL))::int AS missing_contact,
       COUNT(*) FILTER(WHERE NOT EXISTS(SELECT 1 FROM lead_requirements q WHERE q.lead_id=l.id AND q.superseded_at IS NULL))::int AS missing_requirement,
