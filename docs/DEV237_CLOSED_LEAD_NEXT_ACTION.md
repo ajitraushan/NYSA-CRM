@@ -1,0 +1,7 @@
+# DEV237 — Closed Lead follow-up regression completion
+
+CRM Test only. DEV236 fixed obsolete Lead task lifecycle using migration 138 and corrected Cancelled task categorization. Its hosted check confirmed one obsolete qualification task cancelled, zero terminal Lead follow-ups pending, and dashboard overdue count zero.
+
+The same live check exposed a related no-next-action regression: Lead current_status was closed_won but historical stage remained Qualified. Clearing the obsolete follow-up pointer exposed that Lead in four stage-only no-next-action predicates. DEV237 requires active current_status in current/prior totals, accountability and matching drill-down; no unrelated metrics or workflows change. Tests execute the actual drill-down predicate in PostgreSQL, checking closed status excluded and active Lead without action still included.
+
+Baseline DEV236 commit f405b5ad9f1f1cec87a366ffc80275bb27c444cf / migration 138; fresh pre-DEV237 application/database backup required. No additional migration. DEV236 backup /home/nysareal/crm-backups/consolidated-crm-test-dev236-20261025T214428Z remains the rollback point before the lifecycle migration. Previous application restoration is schema-compatible; database reconciliation remains audited unless controlled database recovery is required. Production and R2 excluded. All prior dashboard layout, scope, targets and document access unchanged.

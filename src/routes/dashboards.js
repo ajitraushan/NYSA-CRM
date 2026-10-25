@@ -121,7 +121,7 @@ r.get('/crm/dashboard',async(req,res)=>{
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND accepted_at IS NULL)::int AS awaiting_acceptance,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND ((accepted_at IS NULL AND acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR
         (accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes')))::int AS sla_risk,
-      COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
+      COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND current_status='active' AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
       COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS stale_risk,
       COUNT(*) FILTER(WHERE temperature IN('Hot','Warm') AND current_status='active' AND updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS hot_warm_aging,
@@ -129,7 +129,7 @@ r.get('/crm/dashboard',async(req,res)=>{
     one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active')::int AS warm,
       COUNT(*) FILTER(WHERE current_status='closed_won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
-      COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
+      COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND current_status='active' AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND ((accepted_at IS NULL AND acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR (accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes')))::int AS sla_risk,
       COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS stale_risk FROM leads l WHERE ${prior.where}`,prior.params),
@@ -192,7 +192,7 @@ r.get('/crm/dashboard',async(req,res)=>{
     many(`SELECT l.business_type,t.name AS team_name,m.name AS manager_name,b.name AS agent_name,
       COUNT(*) FILTER(WHERE (l.accepted_at IS NULL AND l.acceptance_due_at<NOW()) OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at<NOW()))::int AS sla_breaches,
       COUNT(*) FILTER(WHERE l.assigned_to IS NULL AND l.stage NOT IN('Won','Lost'))::int AS unassigned_leads,
-      COUNT(*) FILTER(WHERE l.next_follow_up_at IS NULL AND l.stage NOT IN('Won','Lost'))::int AS no_next_action,
+      COUNT(*) FILTER(WHERE l.next_follow_up_at IS NULL AND l.current_status='active' AND l.stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE l.updated_at<NOW()-INTERVAL '7 days' AND l.stage NOT IN('Won','Lost'))::int AS stale_risk,
       COUNT(*) FILTER(WHERE (c.email IS NULL AND c.phone IS NULL) OR c.do_not_contact=1 OR EXISTS(SELECT 1 FROM contact_channels cc JOIN contact_channels dc ON dc.channel_kind=cc.channel_kind AND dc.normalized_value=cc.normalized_value AND dc.contact_id<>cc.contact_id WHERE cc.contact_id=c.id AND cc.normalized_value IS NOT NULL) OR (c.do_not_contact=0 AND NOT EXISTS(SELECT 1 FROM marketing_agreements ma WHERE ma.contact_id=c.id AND ma.status='executed' AND ma.effective_at<=NOW() AND (ma.expires_at IS NULL OR ma.expires_at>NOW()))) OR NOT EXISTS(SELECT 1 FROM lead_requirements q WHERE q.lead_id=l.id AND q.superseded_at IS NULL) OR NOT EXISTS(SELECT 1 FROM documents d WHERE d.lead_id=l.id AND d.status<>'retired'))::int AS operational_exceptions
       FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
@@ -311,7 +311,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
   }
   const clauses={sla_breaches:"((l.accepted_at IS NULL AND l.acceptance_due_at<NOW()) OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at<NOW()))",
     sla_risk:"l.stage NOT IN('Won','Lost') AND ((l.accepted_at IS NULL AND l.acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes'))",
-    no_next_action:"l.next_follow_up_at IS NULL AND l.stage NOT IN('Won','Lost')",won_leads:"l.stage='Won'",hot_leads:"l.temperature='Hot'",warm_leads:"l.temperature='Warm'",
+    no_next_action:"l.next_follow_up_at IS NULL AND l.current_status='active' AND l.stage NOT IN('Won','Lost')",won_leads:"l.stage='Won'",hot_leads:"l.temperature='Hot'",warm_leads:"l.temperature='Warm'",
     hot_warm_pipeline:"l.temperature IN('Hot','Warm') AND l.stage NOT IN('Won','Lost')",hot_warm_aging:"l.temperature IN('Hot','Warm') AND l.updated_at<NOW()-INTERVAL '7 days' AND l.stage NOT IN('Won','Lost')",
     stale_risk:"l.updated_at<NOW()-INTERVAL '7 days' AND l.stage NOT IN('Won','Lost')",unassigned_leads:"l.assigned_to IS NULL AND l.stage NOT IN('Won','Lost')",
     awaiting_acceptance:"l.accepted_at IS NULL AND l.stage NOT IN('Won','Lost')",overdue_tasks:"EXISTS(SELECT 1 FROM tasks dt WHERE dt.lead_id=l.id AND dt.status NOT IN('completed','cancelled') AND dt.due_at<NOW())",

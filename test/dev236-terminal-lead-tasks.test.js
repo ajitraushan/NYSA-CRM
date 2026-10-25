@@ -16,6 +16,10 @@ test('DEV236 cancels obsolete follow-ups without completing independent approval
 test('DEV236 cancelled dashboard tasks cannot fall through into overdue',()=>{
   assert.match(dashboard,/WHEN t.status='cancelled' THEN 'cancelled' WHEN t.due_at<NOW\(\) THEN 'overdue'/);
 });
+test('DEV237 closed current status cannot become a missing next-action exception',()=>{
+  assert.equal((dashboard.match(/next_follow_up_at IS NULL AND current_status='active' AND stage NOT IN/g)||[]).length,2);
+  assert.equal((dashboard.match(/l.next_follow_up_at IS NULL AND l.current_status='active' AND l.stage NOT IN/g)||[]).length,2);
+});
 
 test('DEV236 actual PostgreSQL migration and lifecycle regression',{
   skip:process.env.NYSA_RUN_DEV236_DB!=='1'?'Dedicated local PostgreSQL fixture required':false
@@ -82,6 +86,13 @@ test('DEV236 actual PostgreSQL migration and lifecycle regression',{
       const key=await lead(),taskId=await task(key);await client.query('SAVEPOINT closure_failure');
       await client.query("UPDATE leads SET stage='Won' WHERE id=$1",[key]);assert.equal((await row(taskId)).status,'cancelled');
       await client.query('ROLLBACK TO SAVEPOINT closure_failure');assert.equal((await row(taskId)).status,'open');
+    });
+    await t.test('closed Opportunity status with historical Qualified stage stays out of no-next-action',async()=>{
+      const key=await lead();await task(key);await client.query("UPDATE leads SET current_status='closed_won' WHERE id=$1",[key]);
+      const predicate=dashboard.match(/no_next_action:"([^"]+)"/)[1];
+      assert.equal((await client.query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.id=$1 AND ${predicate}`,[key])).rows[0].n,0);
+      const open=await lead();await client.query('UPDATE leads SET next_follow_up_at=NULL WHERE id=$1',[open]);
+      assert.equal((await client.query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.id=$1 AND ${predicate}`,[open])).rows[0].n,1);
     });
   }finally{await client.query('ROLLBACK');client.release();await pool.end();}
 });
