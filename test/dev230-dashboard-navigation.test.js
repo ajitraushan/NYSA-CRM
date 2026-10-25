@@ -49,7 +49,7 @@ for(const tasks of [{open:3,in_progress:2,completed:7},[{label:'open',value:3},{
  h.summaryButtons.find(button=>{button.click();return h.getDetail().includes('<h3>Task status</h3>');});const html=h.getDetail();assert.match(html,/<td>open<\/td><td>3<\/td>/);assert.match(html,/<td>completed<\/td><td>7<\/td>/);assert.ok(h.get('#dashboard-export').href);
 });
 
-for(const role of ['sales_agent','manager','director'])test(`Only the six requested summary panels are removed for ${role}`,async()=>{
+for(const role of ['sales_agent','manager','director'])test(`Agent has no lower sections; management summary cards remain for ${role}`,async()=>{
  const h=harness();h.context.ME.jobRole=role;const run=h.render();await settleStaff(h);
  const data=payload('Role scope');data.kpis=[{code:'overdue',label:'Overdue tasks',current:1,unit:'tasks',target:null,definition:'Synthetic overdue tasks'}];
  h.calls[2].resolve(data);h.calls[3].resolve({views:[]});await run;
@@ -57,6 +57,7 @@ for(const role of ['sales_agent','manager','director'])test(`Only the six reques
  for(const title of ['Lead stages','Source quality','Team workload','Agent workload','Task status','Data, consent & integration exceptions'])assert.equal(html.includes(`<h3>${title}</h3>`),false,title);
  if(role!=='sales_agent'){assert.ok(h.summaryButtons.length>6);h.summaryButtons[0].click();assert.match(h.getDetail(),/<h3>Lead stages<\/h3>/);}
  assert.match(h.get('#dashboard-kpis').innerHTML,/Overdue tasks/);h.kpiButtons[0].click();assert.equal(h.drilldowns[0][0],'overdue');
- assert.ok(html.includes('Proposal workload'));assert.ok(html.includes('Inventory readiness'));if(role!=='sales_agent')assert.match(html,/data-dashboard-summary=/);
+ if(role==='sales_agent'){assert.equal(html,'');assert.equal(h.summaryButtons.length,0);}else{assert.ok(html.includes('Proposal workload'));assert.ok(html.includes('Inventory readiness'));assert.match(html,/data-dashboard-summary=/);assert.equal(h.summaryButtons.length,11);}
+ assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-filters'&&event==='submit'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-reset'&&event==='click'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-calls'&&event==='click'));assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-save'&&event==='click'));
  assert.ok(h.get('#dashboard-export').href);
 });

@@ -1558,6 +1558,7 @@ async function renderCrmDashboard(selected={}){
       return '<button class="stat-card" data-dashboard-summary="'+index+'"><span>'+esc(title)+'</span><strong>'+total+' '+esc(unit)+'</strong><small>View details</small></button>';
     }).join('');
   }
+  if(ME.jobRole==='sales_agent')panels='';
   $('#dashboard-body').className=['manager','director'].includes(ME.jobRole)?'stat-grid':'dashboard-grid';$('#dashboard-body').innerHTML=panels;
   const currentFilters=()=>{const x=Object.fromEntries(new FormData($('#dashboard-filters')));if(defaults.view)x.view=defaults.view;return x;};$('#dashboard-filters').addEventListener('submit',e=>{e.preventDefault();renderCrmDashboard(currentFilters());});$('#dashboard-reset').addEventListener('click',()=>renderCrmDashboard());
   document.querySelectorAll('[data-dashboard-summary]').forEach(button=>button.addEventListener('click',()=>{
