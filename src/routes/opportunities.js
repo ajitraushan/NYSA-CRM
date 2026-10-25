@@ -11,6 +11,8 @@ import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,valid
 import { syncGoogleViewing } from '../calendar-sync.js';
 import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
 import { makeOfferPdf,offerApprovedDocumentData } from '../offer-pdf.js';
+import {acceptancePdfData,makeAcceptancePdf} from '../offer-acceptance-pdf.js';
+import {canReadAllCrmDocuments,isCrmDocumentReadRequest} from '../document-read-policy.js';
 import {recordApprovedDocumentIssuance} from '../approved-document-issuance.js';
 import {selectDocumentAgent} from '../document-agent-domain.js';
 import { savePrivate,removePrivate,readPrivate,decodeAndValidateFile } from '../private-files.js';
@@ -53,7 +55,7 @@ r.get('/public/property-shares/:token/media/:mediaId',async(req,res)=>{
 });
 
 r.use(requireAuth,(req,res,next)=>{
-  if(!hasInternalCrmIdentity(req.broker))return res.status(403).json({error:'Opportunity data is restricted to NYSA staff'});
+  if(!hasInternalCrmIdentity(req.broker)&&!(canReadAllCrmDocuments(req.broker)&&isCrmDocumentReadRequest(req.method,req.path)))return res.status(403).json({error:'Opportunity data is restricted to NYSA staff'});
   next();
 });
 
@@ -862,7 +864,7 @@ r.get('/crm/opportunities/:id/viewings/:viewingId/calendar.ics',async(req,res)=>
   res.setHeader('Content-Type','text/calendar; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="nysa-viewing-${viewing.id}.ics"`);res.end(buildViewingIcs(viewing));
 });
 
-async function offerContext(req,offerId,client){
+async function offerContext(req,offerId,client,documentRead=false){
   const offer=await one(`SELECT f.*,o.lead_id,o.contact_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
     o.assigned_team_id,o.opportunity_reference,o.title AS opportunity_title,o.stage AS opportunity_stage,
     o.transaction_type,o.property_source,ep.usage_kind AS external_usage_kind,
@@ -879,9 +881,32 @@ async function offerContext(req,offerId,client){
     WHERE f.id=$1`,[offerId],client);
   if(!offer)return {error:[404,'Offer not found']};
   offer.participantIds=(await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active',[offer.opportunityId],client)).map(x=>x.brokerId);
-  if(!canReadOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {error:[403,'Offer is outside your permitted scope']};
+  if(!(documentRead&&canReadAllCrmDocuments(req.broker))&&!canReadOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {error:[403,'Offer is outside your permitted scope']};
   return {offer};
 }
+
+r.get('/crm/offers/:offerId/acceptance.pdf',async(req,res)=>{
+  const result=await transaction(async client=>{
+    const {offer,error}=await offerContext(req,req.params.offerId,client,true);
+    if(error)return{code:error[0],error:error[1]};
+    const revision=await one(`SELECT rev.*,dv.file_name,dv.file_hash FROM offer_revisions rev
+      JOIN document_versions dv ON dv.id=rev.document_version_id WHERE rev.id=$1 AND rev.offer_id=$2`,[offer.acceptedRevisionId,offer.id],client);
+    if(!revision)return{code:409,error:'No accepted Offer revision is available'};
+    const events=await many(`SELECT e.*,COALESCE(c.full_name,p.display_name) AS party_name,b.name AS actor_name
+      FROM negotiation_events e LEFT JOIN contacts c ON c.id=e.accepting_party_id
+      LEFT JOIN transaction_counterparties p ON p.id=e.accepting_party_id
+      JOIN brokers b ON b.id=e.actor_id WHERE e.offer_revision_id=$1 AND e.event_type='accepted'`,[revision.id],client);
+    let data;try{data=acceptancePdfData(offer,revision,events);}catch(error){if(error.status===409)return{code:409,error:error.message};throw error;}
+    const organization=await one("SELECT * FROM organization_settings WHERE status='active' LIMIT 1",[],client);
+    const pdf=makeAcceptancePdf(data,organization||{});
+    await audit('Offer',offer.id,'acceptance_record_downloaded',req.broker.id,{offerRevisionId:revision.id,documentVersionId:revision.documentVersionId},client);
+    const fileName=String(revision.fileName).replace(/\.pdf$/i,'').replace(/[^A-Za-z0-9_.-]/g,'_')+'_Acceptance_Record.pdf';
+    return{pdf,fileName};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.setHeader('Content-Type','application/pdf');res.setHeader('Cache-Control','private, no-store');
+  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Disposition',`attachment; filename="${result.fileName}"`);res.end(result.pdf);
+});
 
 async function createOfferRevisionRecords({client,req,offer,opportunity,listing,customer,input,revisionNumber,supersedesRevisionId}){
   const organization=await one("SELECT * FROM organization_settings WHERE status='active' LIMIT 1",[],client);

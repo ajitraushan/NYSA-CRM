@@ -231,7 +231,15 @@ r.get('/crm/opportunities/:id/approved-documents',async(req,res)=>{
   const {opportunity,error}=await scoped(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
   const [drafts,issuances,viewings]=await Promise.all([
     many("SELECT * FROM approved_document_drafts WHERE source_entity_type='Opportunity' AND source_entity_id=$1 ORDER BY updated_at DESC",[opportunity.id]),
-    many("SELECT i.*,dv.file_name FROM approved_document_issuances i JOIN document_versions dv ON dv.id=i.document_version_id WHERE i.source_entity_type='Opportunity' AND i.source_entity_id=$1 ORDER BY i.issued_at DESC",[opportunity.id]),
+    many(`SELECT i.*,dv.file_name,f.offer_reference,rev.revision_number,
+      (f.accepted_revision_id=rev.id) AS accepted_revision,f.accepted_at,
+      CASE WHEN f.accepted_revision_id=rev.id THEN f.id ELSE NULL END AS acceptance_offer_id
+      FROM approved_document_issuances i JOIN document_versions dv ON dv.id=i.document_version_id
+      LEFT JOIN offers f ON i.source_entity_type='Offer' AND f.id=i.source_entity_id
+      LEFT JOIN offer_revisions rev ON rev.offer_id=f.id AND rev.document_version_id=i.document_version_id
+      WHERE (i.source_entity_type='Opportunity' AND i.source_entity_id=$1)
+      OR (i.source_entity_type='Offer' AND f.opportunity_id=$1)
+      ORDER BY i.issued_at DESC`,[opportunity.id]),
     many(`SELECT v.id,v.starts_at,v.location,v.outcome,v.feedback,li.inventory_reference,COALESCE(li.inventory_headline,li.project) AS inventory_title,li.project,li.community,li.unit_reference
       FROM viewings v JOIN listings li ON li.id=v.listing_id WHERE v.opportunity_id=$1 AND v.status='completed' ORDER BY v.starts_at`,[opportunity.id])
   ]);

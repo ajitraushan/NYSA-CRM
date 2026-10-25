@@ -12,6 +12,7 @@ export function isCrmDocumentReadRequest(method,requestPath) {
   const id='[a-f0-9-]{36}';
   return [
     `/crm/documents/${id}`,`/crm/document-versions/${id}/(?:view|download)`,
+    `/crm/offers/${id}/acceptance\\.pdf`,
     `/crm/(?:customers|leads)/${id}/documents`,
     `/crm/task-reviews/[a-z_]+/${id}/document`,
     `/listings/${id}/agreements/${id}/documents(?:/${id})?`,

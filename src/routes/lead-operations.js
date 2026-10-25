@@ -76,7 +76,11 @@ r.post('/admin/sla-policies/:id/activate',async(req,res)=>{
 
 r.get('/admin/routing-rules',async(req,res)=>{
   if(!operationalAdmin(req)) return res.status(403).json({error:'Admin access required'});
-  res.json({rules:await many(`SELECT r.*,t.name AS team_name,a.business_label AS area_label FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id LEFT JOIN areas a ON a.id=r.area_id ORDER BY priority,name`)});
+  const catalogue=await loadActiveClassificationCatalogue();
+  const rules=await many(`SELECT r.*,t.name AS team_name,a.business_label AS area_label FROM routing_rules r LEFT JOIN teams t ON t.id=r.team_id LEFT JOIN areas a ON a.id=r.area_id ORDER BY priority,name`);
+  // Unconfirmed is a classification fallback, not a valid routing business type.
+  const businessTypes=[...new Set([...catalogue.mappings.filter(m=>m.targetContext==='derived_transaction').map(m=>legacyBusinessType(m.targetValueCode)).filter(type=>type!=='Unconfirmed'),...rules.map(rule=>rule.businessType).filter(Boolean)])];
+  res.json({rules,businessTypes});
 });
 
 r.get('/admin/areas',async(req,res)=>{if(!operationalAdmin(req))return res.status(403).json({error:'Admin access required'});res.json({areas:await many('SELECT * FROM areas ORDER BY active DESC,display_order,business_label')});});
