@@ -173,14 +173,15 @@ r.get('/listings', async (req, res) => {
     b.team_id AS posted_by_team_id,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
     reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    reservation.agent_name AS active_booking_agent_name,reservation.reservation_starts_at AS active_booking_starts_at,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
     0::int AS incomplete_bulk_unit_count,
     (SELECT COUNT(*)::int FROM comments c WHERE c.listing_id = l.id AND c.deleted_at IS NULL) AS comment_count,
     (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by
-    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
-      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
-      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at,bk.reservation_starts_at,reserving.name AS agent_name
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id JOIN brokers reserving ON reserving.id=bk.created_by
+      WHERE bk.listing_id=l.id AND bk.status='reserved' AND bk.expires_at>NOW() ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
     WHERE ${where.join(' AND ')} ORDER BY ${sorts[q.sort] || sorts.newest} LIMIT $${params.length+1} OFFSET $${params.length+2}`, [...params,pageSize,offset]);
   res.json({ count: total, page, pageSize, listings: rows.map(row=>withDiscount({...row,storedStatus:row.status,status:row.effectiveStatus})) });
 });
@@ -608,13 +609,14 @@ r.get('/listings/:id', async (req, res) => {
   const listing = await one(`SELECT l.*, b.name AS posted_by_name, b.brokerage AS posted_by_brokerage,b.team_id AS posted_by_team_id,
     reservation.booking_reference AS active_booking_reference,reservation.opportunity_id AS active_booking_opportunity_id,
     reservation.opportunity_reference AS active_booking_opportunity_reference,reservation.expires_at AS active_booking_expires_at,
+    reservation.agent_name AS active_booking_agent_name,reservation.reservation_starts_at AS active_booking_starts_at,
     (SELECT COUNT(*)::int FROM listing_units u WHERE u.listing_id=l.id) AS bulk_unit_count,
     0::int AS incomplete_bulk_unit_count,
     (SELECT COUNT(*)::int FROM property_media m WHERE m.listing_id=l.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW()) AND m.media_type IN ('image/jpeg','image/png','image/webp')) AS approved_media_count
     FROM listings l JOIN brokers b ON b.id = l.posted_by
-    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at
-      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id
-      WHERE bk.listing_id=l.id AND bk.status='reserved' ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
+    LEFT JOIN LATERAL (SELECT bk.booking_reference,o.id AS opportunity_id,o.opportunity_reference,bk.expires_at,bk.reservation_starts_at,reserving.name AS agent_name
+      FROM bookings bk JOIN opportunities o ON o.id=bk.opportunity_id JOIN brokers reserving ON reserving.id=bk.created_by
+      WHERE bk.listing_id=l.id AND bk.status='reserved' AND bk.expires_at>NOW() ORDER BY bk.created_at DESC LIMIT 1) reservation ON TRUE
     WHERE l.id = $1 AND l.deleted_at IS NULL`, [req.params.id]);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if(listing.workflowStatus!=='approved'&&!ownsListing(req.broker,listing)&&!canEdit(req.broker,listing)&&!await canReview(req.broker,listing))return res.status(403).json({error:'This draft is outside your inventory scope'});

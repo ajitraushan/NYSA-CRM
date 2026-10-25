@@ -5,7 +5,7 @@ export const PAYMENT_PLANS = Object.freeze(['Cash','Mortgage','Developer plan','
 export const FUNDING_METHODS = Object.freeze(['cash','mortgage','mixed','unknown']);
 export const PROPERTY_TYPES = Object.freeze(['Apartment','Villa','Townhouse','Penthouse','Duplex','Plot','Bulk deal']);
 export const UNIT_PROPERTY_TYPES = Object.freeze(PROPERTY_TYPES.filter(value=>value!=='Bulk deal'));
-export const BEDROOMS = Object.freeze(['Studio','1','2','3','4','5+']);
+export const BEDROOMS = Object.freeze(['Studio','1','1.5','2','2.5','3','4','5+']);
 
 export function normalizeInventoryAmount(value,{required=false,label='Amount'}={}) {
   if(value===null||value===undefined||String(value).trim()==='')return required?{error:`${label} is required`}:{value:null};

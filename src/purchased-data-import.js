@@ -74,7 +74,7 @@ export function validatePurchasedRows(sourceRows,{moduleType,sourceSystemCode=''
       if(!candidates.length&&!email&&!phone)errors.push('Email or phone is required when the Lead must create a minimal Customer');
       const min=amount(source.budgetMin),max=amount(source.budgetMax),bedrooms=clean(source.bedroomsMin)===''?null:Number(source.bedroomsMin);
       if((min!==null&&!Number.isFinite(min))||(max!==null&&!Number.isFinite(max))||(min!==null&&max!==null&&max<min))errors.push('Budget range is invalid');
-      if(bedrooms!==null&&(!Number.isInteger(bedrooms)||bedrooms<0))errors.push('Minimum bedrooms must be a whole number');
+      if(bedrooms!==null&&(!Number.isFinite(bedrooms)||bedrooms<0))errors.push('Minimum bedrooms must be a non-negative number');
       const enriched=[min,max,clean(source.preferredAreas),clean(source.propertyType),bedrooms,clean(source.objective),clean(source.purpose),clean(source.timeline)].some(value=>value!==null&&value!=='');
       if(enriched&&!['own_use','investment','business','other'].includes(clean(source.purpose)))errors.push('Enriched rows require purpose: own_use, investment, business or other');
       if(enriched&&!clean(source.timeline))errors.push('Enriched rows require an explicit timing value; missing timing is not invented');

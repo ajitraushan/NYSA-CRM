@@ -7,6 +7,7 @@ import { one,many,execute,transaction,uuid,audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { hasInternalCrmIdentity,isManager,canReadLead,canCreateOpportunity,canReadOpportunity,canWriteOpportunity,canApproveDeal,canCompleteDealChecklistItem,opportunityScopeSql,leadScopeSql,agentWorkLeadScopeSql,contactScopeSql,companyScopeSql } from '../crm-policy.js';
 import { buildOpportunityAttribution,validateOpportunityCreate,validateOpportunityNextAction,validateOpportunityTransition,OPPORTUNITY_STAGES } from '../opportunity-domain.js';
+import {viewingReadiness} from '../viewing-readiness.js';
 import { validatePropertyMatch,validateMatchDecision,validateViewingCreate,validateViewingOutcome,buildViewingIcs } from '../matching-viewing-domain.js';
 import { syncGoogleViewing } from '../calendar-sync.js';
 import { OFFER_COUNTERPARTY_ROLES,validateOfferRevision,validateOfferEvent,offerStatusAfterRevision } from '../offer-domain.js';
@@ -368,7 +369,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
         WHERE extension.booking_id=b.id),'[]'::json) AS extensions
     FROM bookings b JOIN offers f ON f.id=b.offer_id JOIN offer_revisions r ON r.id=b.accepted_offer_revision_id
     LEFT JOIN listings li ON li.id=b.listing_id LEFT JOIN provisional_external_properties ep ON ep.id=b.external_property_id
-    JOIN document_versions dv ON dv.id=b.evidence_document_version_id JOIN brokers owner ON owner.id=b.owner_id
+    LEFT JOIN document_versions dv ON dv.id=b.evidence_document_version_id JOIN brokers owner ON owner.id=b.owner_id
     WHERE b.opportunity_id=$1 ORDER BY b.created_at DESC`,[opportunity.id]);
   const deals=await many(`SELECT d.*,b.booking_reference,b.status AS booking_status,f.offer_reference,f.offer_type,r.revision_number AS accepted_revision_number,
     link.id AS authoritative_linkage_id,link.change_kind AS linkage_change_kind,link.created_at AS linkage_created_at,
@@ -825,6 +826,7 @@ r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
 r.patch('/crm/opportunities/:id/viewings/:viewingId',async(req,res)=>{
   const checked=validateViewingOutcome(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
   const result=await transaction(async client=>{
+    await one('SELECT id FROM opportunities WHERE id=$1 FOR UPDATE',[req.params.id],client);
     const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
     const prior=await one('SELECT * FROM viewings WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[req.params.viewingId,opportunity.id],client);
@@ -840,11 +842,11 @@ r.patch('/crm/opportunities/:id/viewings/:viewingId',async(req,res)=>{
       await execute('UPDATE viewing_attendees SET attendance_status=$1 WHERE id=$2 AND viewing_id=$3',[item.attendanceStatus,item.id,prior.id],client);
     }
     const updated=await one(`UPDATE viewings SET status=$1,outcome=$2,feedback=$3,follow_up_action=$4,follow_up_due_at=$5,
-      updated_by=$6,updated_at=NOW(),version=version+1 WHERE id=$7 AND version=$8 RETURNING *`,[v.status,v.outcome,v.feedback,v.followUpAction,v.followUpDueAt,req.broker.id,prior.id,v.expectedVersion],client);
+      updated_by=$6,customer_next_decision=$9,updated_at=NOW(),version=version+1 WHERE id=$7 AND version=$8 RETURNING *`,[v.status,v.outcome,v.feedback,v.followUpAction,v.followUpDueAt,req.broker.id,prior.id,v.expectedVersion,v.customerNextDecision],client);
     if(!updated)return {code:409,error:'This viewing changed after it was opened; reload before updating it'};
     await execute('INSERT INTO viewing_status_history(id,viewing_id,from_status,to_status,reason,changed_by) VALUES($1,$2,$3,$4,$5,$6)',[uuid(),prior.id,prior.status,v.status,v.feedback||v.outcome,req.broker.id],client);
     if(v.followUpAction)await execute("UPDATE opportunities SET next_action_code='follow_up_offer_feedback',next_action=$1,next_action_notes=$1,next_action_due_at=$2,version=version+1,updated_at=NOW() WHERE id=$3",[v.followUpAction,v.followUpDueAt,opportunity.id],client);
-    await audit('Viewing',prior.id,'outcome_recorded',req.broker.id,{from:prior.status,to:v.status,outcome:v.outcome,followUpAction:v.followUpAction},client);return updated;
+    await audit('Viewing',prior.id,'outcome_recorded',req.broker.id,{from:prior.status,to:v.status,outcome:v.outcome,customerNextDecision:v.customerNextDecision,followUpAction:v.followUpAction},client);return updated;
   });if(result.error)return res.status(result.code).json({error:result.error});const calendarSync=result.status==='cancelled'?await syncGoogleViewing(result.id,req.broker.id):null;res.json({...result,calendarSync});
 });
 
@@ -985,10 +987,11 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
         // retaining the terminal predecessor even when the property changed.
       }
       const developerStock=opportunity.transactionType==='Off-plan'&&opportunity.propertySource==='developer_stock'&&match.externalUsageKind==='developer_stock';
-      const completedViewing=developerStock?{id:null}:await one(`SELECT id FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2
-        AND ($3::uuid IS NULL OR inventory_assignment_id=$3) AND status='completed' AND NULLIF(BTRIM(feedback),'') IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
-        [opportunity.id,match.id,offerAssignment?.id||null],client);
-      if(!completedViewing)return {code:409,error:'Complete the property viewing and record customer feedback before creating an offer for this property'};
+      const propertyViewings=developerStock?[]:await many(`SELECT * FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2
+        AND ($3::uuid IS NULL OR inventory_assignment_id=$3) ORDER BY updated_at DESC,id FOR UPDATE`,[opportunity.id,match.id,offerAssignment?.id||null],client);
+      const readiness=developerStock?{ready:true,viewingId:null}:viewingReadiness(propertyViewings);
+      if(!readiness.ready)return {code:409,error:readiness.reason};
+      const completedViewing={id:readiness.viewingId};
       const customer=opportunity.contactId?await one('SELECT * FROM contacts WHERE id=$1',[opportunity.contactId],client):
         await one(`SELECT display_name AS full_name,email,phone FROM transaction_counterparties WHERE id=$1`,[opportunity.buyerCounterpartyId],client),
         period=(await one("SELECT TO_CHAR(NOW() AT TIME ZONE 'Asia/Dubai','YYYYMM') AS code",[],client)).code,
@@ -1173,11 +1176,6 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
 
 r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
   const checked=validateBookingCreate(req.body||{});if(checked.error)return res.status(400).json({error:checked.error});
-  const file=decodeAndValidateFile({...checked.value.evidence,maxBytes:10*1024*1024,
-    allowedTypes:['application/pdf','image/jpeg','image/png']});
-  if(file.error)return res.status(400).json({error:`Reservation evidence document is required: ${file.error}`});
-  const extension=file.fileName.includes('.')?file.fileName.slice(file.fileName.lastIndexOf('.')):'';
-  const storageKey=await savePrivate(file.buffer,extension);
   try{
     const result=await transaction(async client=>{
       const {offer,error}=await offerContext(req,req.params.offerId,client);if(error)return {code:error[0],error:error[1]};
@@ -1210,24 +1208,15 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
         counter=await one(`INSERT INTO booking_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
           DO UPDATE SET last_value=booking_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),
         bookingReference=`NYSA-BK-${period}-${String(counter.lastValue).padStart(6,'0')}`,
-        documentId=uuid(),documentVersionId=uuid(),bookingId=uuid();
-      await execute(`INSERT INTO documents(id,document_reference,document_type,title,direction,access_classification,status,owner_id,created_by,contact_id,lead_id,listing_id)
-        VALUES($1,$2,'reservation_evidence',$3,'Inbound','private','active',$4,$4,$5,$6,$7)`,
-        [documentId,`DOC-${Date.now()}-${documentId.slice(0,8)}`,`Reservation evidence ${bookingReference}`,req.broker.id,offer.contactId,offer.leadId,offer.listingId],client);
-      await execute(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by,received_at)
-        VALUES($1,$2,1,$3,$4,$5,$6,$7,1,'upload','private','received',$8,$8,NOW())`,
-        [documentVersionId,documentId,file.fileName,checked.value.evidence.mediaType,file.buffer.length,storageKey,file.fileHash,req.broker.id],client);
+        bookingId=uuid();
       const booking=await one(`INSERT INTO bookings(id,booking_reference,opportunity_id,listing_id,external_property_id,offer_id,accepted_offer_revision_id,status,
         booking_amount,currency,refundable_state,reservation_starts_at,expires_at,evidence_document_version_id,inventory_status_before,owner_id,created_by)
         VALUES($1,$2,$3,$4,$5,$6,$7,'reserved',$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
         [bookingId,bookingReference,offer.opportunityId,offer.listingId,offer.externalPropertyId,offer.id,acceptedRevision.id,acceptedRevision.depositAmount===null?null:Number(acceptedRevision.depositAmount),
-          acceptedRevision.currency,checked.value.refundableState,checked.value.reservationStartsAt,checked.value.expiresAt,documentVersionId,
+          acceptedRevision.currency,checked.value.refundableState,checked.value.reservationStartsAt,checked.value.expiresAt,null,
           offer.listingId?effectiveBefore:listing.status,offer.opportunityOwnerId,req.broker.id],client);
       await execute(`INSERT INTO booking_status_history(id,booking_id,to_status,reason,actor_id)
         VALUES($1,$2,'reserved','Explicit reservation created from accepted offer',$3)`,[uuid(),booking.id,req.broker.id],client);
-      await execute(`INSERT INTO document_links(id,document_id,entity_type,entity_id,created_by) VALUES
-        ($1,$2,'Booking',$3,$4),($5,$2,'Opportunity',$6,$4),($7,$2,'Offer',$8,$4)`,
-        [uuid(),documentId,booking.id,req.broker.id,uuid(),offer.opportunityId,uuid(),offer.id],client);
       if(offer.externalPropertyId)await execute("UPDATE provisional_external_properties SET status='reserved',updated_at=NOW() WHERE id=$1",[offer.externalPropertyId],client);
       if(assignment)await execute(`INSERT INTO inventory_assignment_events(id,assignment_id,event_type,reason,actor_id,event_data)
         VALUES($1,$2,'reservation_won',$3,$4,$5::jsonb)`,[uuid(),assignment.id,'The accepted Offer revision was separately reserved through Booking',req.broker.id,
@@ -1238,14 +1227,12 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
         VALUES($1,$2,$3,'Booking','reservation_created',$4,$5)`,
         [uuid(),offer.opportunityId,offer.opportunityStage,`Reservation ${bookingReference} explicitly blocked inventory`,req.broker.id],client);
       await audit('Booking',booking.id,'reserved_from_accepted_offer',req.broker.id,{bookingReference,offerId:offer.id,acceptedOfferRevisionId:acceptedRevision.id,
-        listingId:offer.listingId,externalPropertyId:offer.externalPropertyId,evidenceDocumentVersionId:documentVersionId,
-        fileHash:file.fileHash,propertyStatusFrom:listing.status,propertyStatusTo:'reserved',expiredPriorBookingId:expiredReservation?.bookingId||null},client);
+        listingId:offer.listingId,externalPropertyId:offer.externalPropertyId,reservedBy:req.broker.id,reservationStartsAt:booking.reservationStartsAt,expiresAt:booking.expiresAt,propertyStatusFrom:listing.status,propertyStatusTo:'reserved',expiredPriorBookingId:expiredReservation?.bookingId||null},client);
       return booking;
     });
-    if(result.error){await removePrivate(storageKey);return res.status(result.code).json({error:result.error});}
+    if(result.error){return res.status(result.code).json({error:result.error});}
     res.status(201).json(result);
   }catch(error){
-    await removePrivate(storageKey);
     if(error.code==='23505'){
       const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM offers target
         JOIN bookings b ON b.status='reserved' AND (b.listing_id=target.listing_id OR b.offer_id=target.id)

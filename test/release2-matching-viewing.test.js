@@ -23,9 +23,9 @@ test('R2.2 viewing validation requires bounded scheduling and complete outcomes'
   assert.equal(viewing.value.attendees.length,1);
   assert.equal(viewing.value.clientMessage,'Please arrive ten minutes early.');
   assert.match(validateViewingCreate({propertyMatchId:'m1',startsAt:'2026-07-24T10:00:00+04:00',endsAt:'2026-07-24T11:00:00+04:00',timezone:'Asia/Dubai',location:'Dubai Marina',instructions:'Tower lobby',clientMessage:'x'.repeat(1001)}).error,/1,000 characters/);
-  assert.match(validateViewingOutcome({status:'completed',expectedVersion:1}).error,/outcome and feedback/);
-  assert.match(validateViewingOutcome({status:'completed',outcome:'Interested',feedback:'Customer requested terms',expectedVersion:1}).error,/follow-up/);
-  assert.equal(validateViewingOutcome({status:'completed',outcome:'Interested',feedback:'Customer requested terms',followUpAction:'Prepare options',followUpDueAt:'2026-07-25',attendance:[{id:'a1',attendanceStatus:'attended'}],expectedVersion:1}).value.status,'completed');
+  assert.match(validateViewingOutcome({status:'completed',customerNextDecision:'ready_for_offer',expectedVersion:1}).error,/outcome and feedback/);
+  assert.match(validateViewingOutcome({status:'completed',customerNextDecision:'ready_for_offer',outcome:'Interested',feedback:'Customer requested terms',expectedVersion:1}).error,/follow-up/);
+  assert.equal(validateViewingOutcome({status:'completed',customerNextDecision:'ready_for_offer',outcome:'Interested',feedback:'Customer requested terms',followUpAction:'Prepare options',followUpDueAt:'2026-07-25',attendance:[{id:'a1',attendanceStatus:'attended'}],expectedVersion:1}).value.status,'completed');
 });
 
 test('R2.2 calendar export is provider-neutral and escaped',()=>{
@@ -39,6 +39,6 @@ test('R2.2 migration and API preserve inventory authority and audit history',()=
   for(const marker of ['CREATE TABLE property_matches','CREATE TABLE property_match_history','CREATE TABLE viewings','CREATE TABLE viewing_attendees','CREATE TABLE viewing_status_history','opportunities_r2_2_enabled_stage_ck'])assert.match(sql,new RegExp(marker));
   assert.doesNotMatch(sql,/UPDATE listings/i);
   for(const marker of ["workflow_status='approved'",'Property automatically shortlisted when its viewing was scheduled','property_match_history','viewing_status_history','Record attendance for every viewing attendee','calendar.ics','buildViewingIcs'])assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','You do not need a separate shortlist step','Confirm property viewing','Confirm viewing','Download .ics','Record viewing outcome','Attendance','Viewing completed - customer feedback recorded'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','You do not need a separate shortlist step','Confirm property viewing','Confirm viewing','Download .ics','Record viewing outcome','Attendance','Customer next decision:'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(ui,/startsAt=start\.toISOString\(\)/);
 });

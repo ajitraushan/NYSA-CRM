@@ -99,7 +99,7 @@ test('finance, multi-Inventory and viewing remediation contracts are visible and
     assert.match(routes+crm,new RegExp(marker));
   assert.equal(validateViewingCreate({propertyMatchId:'m1',startsAt:'2099-01-01T10:00:00Z',endsAt:'2099-01-01T11:00:00Z',
     timezone:'Asia/Dubai',location:'Tower',instructions:'Lobby',rescheduledFromViewingId:'v1'}).value.rescheduleReason,null);
-  assert.equal(validateViewingOutcome({status:'cancelled',expectedVersion:1}).value.followUpDueAt,null);
+  assert.equal(validateViewingOutcome({status:'cancelled',outcome:'Customer requested cancellation',expectedVersion:1}).value.followUpDueAt,null);
   for(const marker of ['Reschedule the previous viewing','Rescheduling reason / note (optional)','original viewing and invitation remain unchanged'])
     assert.match(app,new RegExp(marker.replace(/[()]/g,'\\$&')));
 });

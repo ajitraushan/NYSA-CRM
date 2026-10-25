@@ -27,7 +27,7 @@ test('G-02 and K-03 acceptance completes Negotiation before the separate atomic 
   assert.match(opportunities,/Accepted Offer Inventory cannot be detached/);
   assert.match(offerUi,/countered:\['accepted'/);
   assert.match(offerUi,/Customer acceptance is already recorded against the exact Offer revision/);
-  assert.match(offerUi,/Create seven-day reservation/);
+  assert.match(offerUi,/Confirm seven-day reservation/);
 });
 
 test('G-06 initial reservation ignores client timestamps and is exactly seven days',()=>{

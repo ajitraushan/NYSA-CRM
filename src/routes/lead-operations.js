@@ -332,7 +332,7 @@ r.post('/crm/leads/:id/requirements',async(req,res)=>{
   const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
   const propertyTypes=normalizeDelimitedValues(b.propertyTypes);if(propertyTypes.some(x=>!REQUIREMENT_PROPERTY_TYPES.includes(x)))return res.status(400).json({error:'Select property types from the approved list'});
   const bedroomValue=n=>b[n]===undefined||b[n]===null||String(b[n]).trim()===''?null:Number(b[n]),bedroomsMin=bedroomValue('bedroomsMin'),bedroomsMax=bedroomValue('bedroomsMax');
-  for(const [name,value] of [['bedroomsMin',bedroomsMin],['bedroomsMax',bedroomsMax]])if(value!==null&&(!Number.isInteger(value)||value<0))return res.status(400).json({error:`${name} must be a non-negative integer`});
+  for(const [name,value] of [['bedroomsMin',bedroomsMin],['bedroomsMax',bedroomsMax]])if(value!==null&&(!Number.isFinite(value)||value<0))return res.status(400).json({error:`${name} must be a non-negative number`});
   if(bedroomsMin!==null&&bedroomsMax!==null&&bedroomsMax<bedroomsMin)return res.status(400).json({error:'bedroomsMax cannot be below bedroomsMin'});
   const sizeValue=n=>b[n]===undefined||b[n]===null||String(b[n]).trim()===''?null:Number(b[n]),sizeSqftMin=sizeValue('sizeSqftMin'),sizeSqftMax=sizeValue('sizeSqftMax');
   for(const [name,value] of [['sizeSqftMin',sizeSqftMin],['sizeSqftMax',sizeSqftMax]])if(value!==null&&(!Number.isFinite(value)||value<0))return res.status(400).json({error:`${name} must be a non-negative number`});

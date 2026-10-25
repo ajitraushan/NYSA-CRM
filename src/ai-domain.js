@@ -2,7 +2,7 @@ import { fundingPaymentCompatibility } from './inventory-domain.js';
 
 const norm=value=>String(value??'').trim().toLowerCase();
 const has=value=>value!==null&&value!==undefined&&value!==''&&(!Array.isArray(value)||value.length>0);
-const bedroomNumber=value=>norm(value)==='studio'?0:Number.parseInt(value,10);
+const bedroomNumber=value=>norm(value)==='studio'?0:Number.parseFloat(value);
 
 export function buildMatchEvidence(requirement,listing){
   const matched=[],failed=[],notAssessed=[];

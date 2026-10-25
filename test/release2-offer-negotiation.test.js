@@ -53,7 +53,8 @@ test('R2.3A migration and API preserve immutable exact-document negotiation evid
   for(const marker of ["'/crm/opportunities/:id/offers'","'/crm/offers/:offerId/revisions'","'/crm/offers/:offerId/send'","'/crm/offers/:offerId/events'",'materialCorrectionReason','documentVersionId','accepted_revision_id','This revision has expired','counterpartyRole'])assert.match(routes,new RegExp(marker));
   assert.match(routes,/Only the current draft revision can be sent/);
   assert.match(routes,/exact generated document/);
-  assert.match(routes,/Complete the property viewing and record customer feedback/);
+  assert.match(routes,/if\(!readiness\.ready\)/);
+  assert.match(read('src/viewing-readiness.js'),/Complete the property viewing and record Customer feedback/);
   assert.match(routes,/v\.updated_at<=f\.created_at/);
   assert.match(routes,/viewing_feedback_recorded/);
   assert.match(routes,/ORDER BY e\.offer_id,e\.occurred_at DESC,e\.id DESC/);
@@ -71,7 +72,7 @@ test('Opportunity UI presents one clear immutable offer and negotiation flow',()
   assert.match(page,/const featureFiles=\[[^\]]*'offer-ui\.js','deal-ui\.js','inventory-workspace-ui\.js','dashboard-ui\.js'[^\]]*'document-compliance-ui\.js'[^\]]*\]/);
   assert.match(page,/await loadScript\('app\.js'\)/);
   assert.match(app,/bindOfferWorkspace/);
-  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','4. Negotiation','opportunity-flow-sequence',"flowButton('inventory'","flowButton('viewing'","flowButton('offer'","flowButton('negotiation'","flowButton('booking'",'showFlowStep','Viewing completed - customer feedback recorded','This property cannot proceed to Offer until customer feedback is saved'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ['1. Inventory selection','2. Viewing and customer feedback','3. Offer and commercial terms','4. Negotiation','opportunity-flow-sequence',"flowButton('inventory'","flowButton('viewing'","flowButton('offer'","flowButton('negotiation'","flowButton('booking'",'showFlowStep','Customer next decision:','The Customer next decision determines readiness for an Offer.'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['View or edit Opportunity reminder','Reminder only - not a workflow status','Governed customer action *','Update Opportunity action','Viewing status:','Scheduled - outcome pending','Record viewing outcome and feedback','Opportunity reminder updated; viewing status was not changed'])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['Open Viewing &amp; feedback',"showFlowStep('viewing')"])assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['data-flow-pane="offer negotiation"','flow-offer-only','flow-negotiation-only'])assert.match(ui,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));

@@ -125,7 +125,7 @@ test('OPP-INVENTORY-ELIGIBILITY-PARITY-72 keeps customer fit advisory and uses c
   assert.ok(canonicallyClosed.reasons.some(item=>item.code==='not_available'));
 });
 
-test('BOOKING-DEPOSIT-CARRYFORWARD-73 derives reservation value from the exact accepted deposit and evidence-gates blocking',()=>{
+test('BOOKING-DEPOSIT-CARRYFORWARD-73 derives reservation value from the exact accepted deposit without evidence-gating reservation',()=>{
   const route=read('src/routes/opportunities.js'),ui=read('public/offer-ui.js'),domain=read('src/booking-domain.js'),start=ui.indexOf('function bookingWorkspaceHTML'),end=ui.indexOf('function bindOfferWorkspace',start),bookingUi=ui.slice(start,end);
   assert.match(route,/SELECT id,deposit_amount,currency,validity_expires_at,document_version_id FROM offer_revisions WHERE id=\$1 AND offer_id=\$2/);
   assert.match(route,/Number\(acceptedRevision\.depositAmount\)/);
@@ -133,8 +133,8 @@ test('BOOKING-DEPOSIT-CARRYFORWARD-73 derives reservation value from the exact a
   assert.doesNotMatch(domain,/input\.bookingAmount|input\.currency/);
   assert.match(ui,/Reservation amount from accepted revision/);
   assert.match(ui,/This amount comes from the accepted Offer revision and cannot be changed here/);
-  assert.match(ui,/Evidence required before Inventory blocking/);
-  assert.match(ui,/button\.disabled=!\(file&&allowed&&withinLimit\)/);
+  assert.match(ui,/Confirm seven-day reservation/);
+  assert.doesNotMatch(bookingUi,/name="evidence"|data-reservation-evidence-ready/);
   assert.doesNotMatch(bookingUi,/name="bookingAmount"|name="currency"/);
 });
 

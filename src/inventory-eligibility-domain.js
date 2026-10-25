@@ -41,7 +41,7 @@ export function inventoryEvaluatorFacts(listing={}){
 const norm=value=>String(value??'').trim().toLocaleLowerCase();
 const has=value=>value!==null&&value!==undefined&&value!==''&&(!Array.isArray(value)||value.length>0);
 const number=value=>has(value)&&Number.isFinite(Number(value))?Number(value):null;
-const bedroomNumber=value=>norm(value)==='studio'?0:Number.parseInt(value,10);
+const bedroomNumber=value=>norm(value)==='studio'?0:Number.parseFloat(value);
 export const stableHash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 export function declarationHash(kind,index,text){return stableHash({kind,index,text:String(text||'').trim()});}

@@ -155,3 +155,7 @@ Release regression: 1,360 passed, 86 skipped, 0 failed; three additional restric
 - Preserve existing reservation evidence and audit history; no deletion or rewriting of prior records. Record the confirming Agent and reservation timestamps for new reservations.
 - Acceptance: an eligible Agent can confirm without an evidence file or Manager step; API and UI agree; successful reservation displays the correct Agent/date/expiry after reload; competing reservation remains blocked; release/cancellation/expiry removes stale active-reservation information and restores the correct current status.
 - Status: **Recorded — not implemented, tested or deployed.** Separate from DEF-136 and its acceptance PDF scope.
+
+## DEV229 enhancement implementation update — 26 October 2026
+
+ENH-004–008 are implemented and locally verified for the approved CRM Test release. ENH-003 remains withdrawn. The user extended ENH-005 to fractional Lead/Customer requirement capture and both Inventory matching calculations. For ENH-006, the user confirmed that existing completed viewings retain prior qualification; new completions require an explicit next decision. Earlier entries above remain the historical UAT record. See `DEV229_APPROVED_ENHANCEMENTS.md` for scope, migration, regression evidence and rollback; deployment confirmation is recorded separately after hosting verification.

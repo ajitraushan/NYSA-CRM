@@ -5,7 +5,7 @@ export function validateBookingCreate(input={},now=new Date()){
   const start=new Date(now),expiry=new Date(start.getTime()+7*DAY_MS),refundableState=input.refundableState,
     evidence=input.evidence||{};
   if(!['refundable','non_refundable','conditional'].includes(refundableState))return{error:'Select the refundable state'};
-  if(!evidence.fileName||!evidence.mediaType||!evidence.base64)return{error:'Reservation evidence document is required'};
+
   return{value:{refundableState,reservationStartsAt:start.toISOString(),expiresAt:expiry.toISOString(),evidence,notes:clean(input.notes)}};
 }
 export function validateBookingExtension(booking,input={},now=new Date()){

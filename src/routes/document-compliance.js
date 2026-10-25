@@ -19,9 +19,10 @@ const lock=(key,client)=>execute('SELECT pg_advisory_xact_lock(hashtextextended(
 
 async function dealContext(req,id,write=false,client){
   const deal=await one(`SELECT d.*,dc.id AS checklist_id,o.owner_id AS opportunity_owner_id,o.created_by AS opportunity_created_by,
-      o.assigned_team_id,o.lead_id,l.contact_id,c.full_name AS customer_name
+      o.assigned_team_id,o.lead_id,COALESCE(li.inventory_headline,li.project,ep.project_or_building,o.title) AS property_description,l.contact_id,c.full_name AS customer_name
     FROM deals d JOIN opportunities o ON o.id=d.opportunity_id JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id
-    JOIN deal_checklists dc ON dc.deal_id=d.id WHERE d.id=$1`,[id],client);
+    JOIN deal_checklists dc ON dc.deal_id=d.id LEFT JOIN listings li ON li.id=d.listing_id
+    LEFT JOIN provisional_external_properties ep ON ep.id=d.external_property_id WHERE d.id=$1`,[id],client);
   if(!deal)return null;
   const participants=await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active=TRUE',[deal.opportunityId],client),scope={id:deal.opportunityId,ownerId:deal.opportunityOwnerId,createdBy:deal.opportunityCreatedBy,assignedTeamId:deal.assignedTeamId,participantIds:participants.map(x=>x.brokerId)};
   return(write?canWriteOpportunity(req.broker,scope):canReadOpportunity(req.broker,scope))?deal:false;
@@ -41,7 +42,7 @@ async function readCompliance(req,dealId,client){
   const deal=await dealContext(req,dealId,false,client);if(deal===null)return{code:404,error:'Deal not found'};if(deal===false)return{code:403,error:'Deal is outside your permitted scope'};
   const closureReadiness=await requireDocumentComplianceGates({dealId:deal.id,gateCodes:['before_pending_approval','before_approval','before_close_won'],client});
   const parties=await partyRows(deal.id,client),snapshot=await one("SELECT * FROM deal_document_compliance_snapshots WHERE deal_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1",[deal.id],client);
-  if(!snapshot)return{deal:{id:deal.id,dealReference:deal.dealReference,dealType:deal.dealType,status:deal.status},parties,snapshot:null,requirements:[],unsupportedParties:parties.filter(x=>x.transactionCounterpartyId).map(x=>({dealPartyId:x.id,partyRole:x.partyRole,partyName:x.partyName,state:'governed_party_required'}))};
+  if(!snapshot)return{deal:{id:deal.id,dealReference:deal.dealReference,propertyDescription:deal.propertyDescription,customerName:deal.customerName,dealType:deal.dealType,status:deal.status},parties,snapshot:null,requirements:[],unsupportedParties:parties.filter(x=>x.transactionCounterpartyId).map(x=>({dealPartyId:x.id,partyRole:x.partyRole,partyName:x.partyName,state:'governed_party_required'}))};
   const rows=await many(`SELECT i.*,rv.review_required,rv.expiry_mode,rv.reminder_offsets_days,rv.document_type,
       rv.official_definition_id,rv.official_definition_version_id,dp.contact_id,dp.company_id,dp.transaction_counterparty_id,
       CASE WHEN i.party_role='transaction' THEN 'Transaction' ELSE COALESCE(c.full_name,co.name,'Transaction-only counterparty') END AS party_name,
@@ -64,7 +65,7 @@ async function readCompliance(req,dealId,client){
     const state=deriveComplianceState({instance:row,evidence:row.genericEvidenceId?{expiresAt:row.expiresAt}:null,review:row.genericReviewDecision?{decision:row.genericReviewDecision}:null,officialState,contextMatches});
     return{...row,state,satisfied:['accepted','expiring'].includes(state),blocking:row.requirementLevel==='required'&&!['accepted','expiring'].includes(state),contextMatches};
   });
-  return{deal:{id:deal.id,dealReference:deal.dealReference,dealType:deal.dealType,status:deal.status,version:deal.version},parties,snapshot,requirements,closureReadiness,unsupportedParties:parties.filter(x=>x.transactionCounterpartyId).map(x=>({dealPartyId:x.id,partyRole:x.partyRole,partyName:x.partyName,state:'governed_party_required'}))};
+  return{deal:{id:deal.id,dealReference:deal.dealReference,propertyDescription:deal.propertyDescription,customerName:deal.customerName,dealType:deal.dealType,status:deal.status,version:deal.version},parties,snapshot,requirements,closureReadiness,unsupportedParties:parties.filter(x=>x.transactionCounterpartyId).map(x=>({dealPartyId:x.id,partyRole:x.partyRole,partyName:x.partyName,state:'governed_party_required'}))};
 }
 
 r.get('/admin/document-compliance/requirements',async(req,res)=>{if(!configReader(req.broker))return res.status(403).json({error:'Admin access required'});res.json({requirements:await many(`SELECT v.*,r.requirement_code,od.stable_code AS official_definition_code,odv.label AS official_definition_label
