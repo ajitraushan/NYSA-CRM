@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8'),start=source.indexOf('async function renderCrmDashboard('),end=source.indexOf('\nasync function ',start+10),dashboardCode=source.slice(start,end);
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-const payload=label=>({calculationContext:label,dataAsOf:'2026-10-26',filters:{dateFrom:'2026-10-01',dateTo:'2026-10-26'},kpis:[],stages:[],sources:[],teams:[],agents:[],tasks:[],exceptions:{},proposals:{},qualification:{hot:0,warm:0},calls:{total:0,durationSeconds:0,followUpRequired:0},inventory:{available:0,stale:0,mediaNotReady:0},hierarchy:{company:'Synthetic company',businessLines:[]},recentActivities:[]});
+const payload=label=>({calculationContext:label,dataAsOf:'2026-10-26',filters:{dateFrom:'2026-10-01',dateTo:'2026-10-26'},kpis:[],stages:[],sources:[],teams:[],agents:[],tasks:{open:3,completed:7},exceptions:{},proposals:{},qualification:{hot:0,warm:0},calls:{total:0,durationSeconds:0,followUpRequired:0},inventory:{available:0,stale:0,mediaNotReady:0},hierarchy:{company:'Synthetic company',businessLines:[]},recentActivities:[]});
 function harness(){
  let nodes=new Map(),renders=0;const calls=[],bound=[];
  const node=selector=>({isConnected:true,innerHTML:'',textContent:'',addEventListener:event=>bound.push([renders,selector,event])});
@@ -42,4 +42,9 @@ test('DEV230 current dashboard still renders and binds filters, saved views and 
 test('DEV230 current dashboard errors remain visible and do not bind incomplete controls',async()=>{
  const h=harness(),run=h.render();await settleStaff(h);h.calls[2].reject(new Error('Synthetic service unavailable'));h.calls[3].resolve({views:[]});await run;
  assert.equal(h.get('#dashboard-kpis').textContent,'Synthetic service unavailable');assert.equal(h.bound.length,0);
+});
+
+for(const tasks of [{open:3,in_progress:2,completed:7},[{label:'open',value:3},{label:'completed',value:7}]])test('Dashboard task summary accepts existing API totals and historical row arrays without changing counts',async()=>{
+ const h=harness(),run=h.render();await settleStaff(h);h.calls[2].resolve({...payload('Task summary'),tasks});h.calls[3].resolve({views:[]});await run;
+ const html=h.get('#dashboard-body').innerHTML;assert.match(html,/<td>open<\/td><td>3<\/td>/);assert.match(html,/<td>completed<\/td><td>7<\/td>/);assert.ok(h.get('#dashboard-export').href);
 });
