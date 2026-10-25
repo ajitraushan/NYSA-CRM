@@ -276,6 +276,20 @@ input::placeholder,textarea::placeholder{color:#9a9488!important;opacity:1;font-
     .governed-prepare-form .property-share-choices span,.governed-prepare-form .property-share-choices b,.governed-prepare-form .property-share-choices small{display:block}
     .legacy-share-workspace>details>summary{font-weight:700;cursor:pointer}.legacy-share-workspace>details>h3{margin-top:14px}
     @media(max-width:720px){.governed-share-heading{display:grid}.governed-share-heading .pill{justify-self:start}.governed-share-card{grid-template-columns:1fr!important}.governed-share-card>strong{justify-self:start}}
+    /* Shared card/drill-down sizing: keep content in its intended column and
+       contain wide tables without changing their columns or record actions. */
+    .card,.dashboard-panel,.stat-card,.modal,.offer-card,.booking-card,.deal-workspace{min-width:0}
+    .activity-row{grid-template-columns:34px minmax(0,1fr) auto}
+    .activity-row>div{min-width:0}
+    .activity-row>:only-child{grid-column:1/-1}
+    .activity-row:not(:has(>.activity-marker)):has(>:nth-child(2):last-child){grid-template-columns:minmax(0,1fr) auto}
+    .card .specs{flex-wrap:wrap}
+    .form-grid>div,.kv-grid>div,.stat-grid>*{min-width:0}
+    .modal,.dashboard-panel{overflow-x:auto}
+    .pipeline-table-wrap{overflow-x:auto;max-inline-size:100%}
+    .modal table:has(tr>:nth-child(4)),.dashboard-panel table:has(tr>:nth-child(4)){min-width:40rem}
+    .modal table:has(tr>:nth-child(6)),.dashboard-panel table:has(tr>:nth-child(6)){min-width:56rem}
+    .modal :is(td,th),.dashboard-panel :is(td,th){word-break:normal}
   </style>
   <style>
     .official-document-workspace{margin:16px 0;padding:16px;border:1px solid var(--border);border-top:3px solid var(--gold);background:var(--panel)}
