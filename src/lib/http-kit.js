@@ -92,7 +92,8 @@ export function createApp() {
     req.on('data', (c) => {
       if (bodyTooLarge) return;
       bodySize += c.length;
-      const bodyLimit = rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
+      const metaIntake = req.method === 'POST' && /^\/api\/intake\/meta\/?$/.test(req.path);
+      const bodyLimit = metaIntake ? 256 * 1024 : rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
       if (bodySize > bodyLimit) {
         bodyTooLarge = true;
         chunks.length = 0;
