@@ -1,5 +1,15 @@
 # CRM Development Baseline
 
+## Current observed baselines — 26 October 2026
+
+- Production remains `2.1.0-dev.91`, with 61 migrations through `061_dev90_reference_and_status_governance.sql`. Actual 129-file runtime recovered read-only in GitHub commit `f32be47430c6869bec72e7c17e3f2f42d28c5f6b`, branch `codex/production-dev91-baseline-20261026`, observed tag `production/dev91-observed-20261026`. This is retrospective recovery, not original deployment provenance.
+- Production source-only archive SHA-256: `0ee1fd83d10a3ae2f0c1ea05983d2afc004b489931429678362d8b5c1c10b8bf`. This is not a database rollback backup. No production code/configuration/data was changed during reconciliation.
+- CRM Test remains `2.1.0-dev.239`, commit `5c0b31ec228679973494888ad166cb8a87c24849`, migration 140; origin package SHA-256 `cc3080c29f2ab8a379cc11d453d3522ad5b5a702f399b90c06db32dd3e8854a7`. Its verified predeployment paired backup is `/home/nysareal/crm-backups/consolidated-crm-test-dev239-20261025T224651Z`.
+- Production upgrade candidate preparation: `2.1.0-rc.1`; production deployment HOLD pending exact-version approval, main promotion, fresh paired backups and authorized data-bearing rehearsal. See `docs/PRODUCTION_RELEASE_PREPARATION_20261026.md` and `docs/production-baselines/20261026-dev91.json`.
+- The DEV208 reconciliation below is retained as historical evidence; it is not the current installed Test version.
+
+## Historical DEV208 development baseline
+
 Version: `NYSA-CRM-GOV-1.1`
 Effective date: 2026-09-20
 Status: DEV208 cumulative source recovery established in Git; CRM Test human UAT remains open.
