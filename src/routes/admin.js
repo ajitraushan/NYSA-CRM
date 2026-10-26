@@ -3,9 +3,11 @@ import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth, publicBroker,hashPassword } from '../auth.js';
 import { JOB_ROLES } from '../crm-domain.js';
+import { validateInvitationExpiry } from '../admin-governance.js';
+import { validateBrnDetails } from '../document-agent-domain.js';
 
 const r = Router();
-r.use(requireAuth,(req,res,next)=>(req.broker.role==='admin'||req.broker.jobRole==='admin_assistant')?next():res.status(403).json({error:'Administrator or Admin Assistant access required'}));
+r.use(requireAuth,(req,res,next)=>req.broker.role==='admin'?next():res.status(403).json({error:'Admin access required'}));
 const ROLES = ['admin','internal_broker','partner_broker','viewer'];
 const privileged=role=>['admin','director'].includes(role);
 const canMaintain=(req,jobRole)=>req.broker.role==='admin'||!privileged(jobRole);
@@ -15,6 +17,19 @@ async function syncManagerAssignment(teamId,brokerId,actorId,client){
   await execute("UPDATE team_memberships SET membership_role='member' WHERE team_id=$1 AND broker_id<>$2 AND membership_role='manager' AND ends_at IS NULL",[teamId,brokerId],client);
   await execute(`INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$4)
     ON CONFLICT (team_id,broker_id) WHERE ends_at IS NULL DO UPDATE SET membership_role='manager'`,[uuid(),teamId,brokerId,actorId],client);
+}
+
+async function operationalOwnershipImpact(brokerId,client){
+  const counts=await one(`SELECT
+    (SELECT COUNT(*)::int FROM leads WHERE assigned_to=$1 AND stage NOT IN('Won','Lost')) AS leads,
+    (SELECT COUNT(*)::int FROM opportunities WHERE owner_id=$1 AND stage NOT IN('Closed Won','Closed Lost')) AS opportunities,
+    (SELECT COUNT(*)::int FROM offers WHERE owner_id=$1 AND status NOT IN('rejected','expired','withdrawn')) AS offers,
+    (SELECT COUNT(*)::int FROM tasks WHERE assignee_id=$1 AND status IN('open','in_progress')) AS tasks,
+    (SELECT COUNT(*)::int FROM viewings WHERE organizer_id=$1 AND status IN('scheduled','rescheduled')) AS viewings,
+    (SELECT COUNT(*)::int FROM bookings WHERE owner_id=$1 AND status='reserved') AS bookings,
+    (SELECT COUNT(*)::int FROM deals WHERE owner_id=$1 AND status NOT IN('closed_won','closed_lost')) AS deals`,[brokerId],client);
+  const total=Object.values(counts||{}).reduce((sum,value)=>sum+Number(value||0),0);
+  return{...counts,total,clear:total===0};
 }
 
 r.get('/admin/invitations', async (req, res) => {
@@ -29,16 +44,18 @@ r.post('/admin/invitations', async (req, res) => {
   const resolvedJobRole = role === 'admin' ? 'admin' : role === 'internal_broker' ? (jobRole || 'sales_agent') : null;
   if (resolvedJobRole && !JOB_ROLES.includes(resolvedJobRole)) return res.status(400).json({ error:'Invalid jobRole' });
   if (!issuedToEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(issuedToEmail)) return res.status(400).json({ error:'A valid named user email is required' });
-  if(!canMaintain(req,resolvedJobRole))return res.status(403).json({error:'Admin Assistant cannot appoint Administrator or Director access'});
+  if(!canMaintain(req,resolvedJobRole))return res.status(403).json({error:'Only Admin can appoint Admin or Director access'});
   if(['sales_agent','listing_agent','manager'].includes(resolvedJobRole)&&!teamId)return res.status(400).json({error:'Team is required for this user role'});
   if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId])))return res.status(400).json({error:'Active team not found'});
   if(resolvedJobRole==='manager'){const team=await teamManager(teamId);if(team?.managerId)return res.status(409).json({error:`${team.name} is already managed by ${team.managerName}. Change its manager deliberately in Team maintenance.`});}
+  const checkedExpiry=validateInvitationExpiry(expiresAt);
+  if(checkedExpiry.error)return res.status(400).json({error:checkedExpiry.error});
   const id = uuid();
   const code = 'NYSA-' + crypto.randomBytes(8).toString('hex').toUpperCase();
   const invitation = await one(`INSERT INTO invitations
     (id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at,team_id) VALUES ($1,$2,$3,$4,$5,$6,1,$7,$8) RETURNING *`,
-    [id,code,req.broker.id,issuedToEmail.toLowerCase(),role,resolvedJobRole,expiresAt||null,teamId||null]);
-  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail,teamId:teamId||null });
+    [id,code,req.broker.id,issuedToEmail.toLowerCase(),role,resolvedJobRole,checkedExpiry.value,teamId||null]);
+  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail,teamId:teamId||null,expiresAt:checkedExpiry.value });
   res.status(201).json(invitation);
 });
 
@@ -57,21 +74,48 @@ r.get('/admin/brokers', async (req, res) => {
     (SELECT COALESCE(json_agg(json_build_object('id',mt.id,'name',mt.name) ORDER BY mt.name),'[]') FROM teams mt WHERE mt.manager_id=b.id AND mt.active=1) AS managed_teams,(SELECT COALESCE(json_agg(json_build_object(
     'id',r.id,'jobRole',r.job_role,'teamId',r.team_id,'isPrimary',r.is_primary=1,
     'status',r.status,'startsAt',r.starts_at,'endsAt',r.ends_at,'changeReason',r.change_reason
-  ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers d ON d.id=b.reports_to_id ORDER BY b.joined_at DESC`);
+  ) ORDER BY r.is_primary DESC,r.starts_at),'[]') FROM user_role_assignments r WHERE r.broker_id=b.id) AS role_assignments,
+    (SELECT COALESCE(json_agg(json_build_object('id',s.id,'status',s.status,'effectiveFrom',s.effective_from,
+      'effectiveTo',s.effective_to,'reason',s.reason,'evidenceReference',s.evidence_reference,'createdAt',s.created_at)
+      ORDER BY s.effective_from DESC,s.created_at DESC),'[]') FROM agent_social_media_payout_status_versions s WHERE s.agent_id=b.id) AS social_media_payout_status_versions
+    FROM brokers b LEFT JOIN teams t ON t.id=b.team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers d ON d.id=b.reports_to_id ORDER BY b.joined_at DESC`);
   res.json({ count:rows.length, brokers:rows.map(publicBroker) });
 });
 
+r.post('/admin/users/:id/social-media-payout-status',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  const target=await one("SELECT id,name,role,job_role FROM brokers WHERE id=$1",[req.params.id]);
+  if(!target)return res.status(404).json({error:'Agent not found'});
+  if(target.role!=='internal_broker'||!['sales_agent','listing_agent','manager'].includes(target.jobRole))return res.status(400).json({error:'Social-media payout eligibility applies only to an individual Agent'});
+  const status=String(req.body?.status||''),effectiveFrom=String(req.body?.effectiveFrom||'').slice(0,10),reason=String(req.body?.reason||'').trim(),evidenceReference=String(req.body?.evidenceReference||'').trim();
+  if(!['active','inactive'].includes(status)||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(effectiveFrom)||reason.length<10||evidenceReference.length<3)return res.status(400).json({error:'Status, effective date, meaningful reason and evidence reference are required'});
+  const result=await transaction(async client=>{
+    const covering=await one(`SELECT *,effective_from::text AS effective_from FROM agent_social_media_payout_status_versions WHERE agent_id=$1
+      AND effective_from<=$2 AND (effective_to IS NULL OR effective_to>$2) FOR UPDATE`,[target.id,effectiveFrom],client);
+    if(covering&&String(covering.effectiveFrom).slice(0,10)===effectiveFrom)return{code:409,error:'A social-media payout status already begins on this date'};
+    if(covering)await execute('UPDATE agent_social_media_payout_status_versions SET effective_to=$1 WHERE id=$2',[effectiveFrom,covering.id],client);
+    const next=await one(`SELECT effective_from::text AS effective_from FROM agent_social_media_payout_status_versions
+      WHERE agent_id=$1 AND effective_from>$2 ORDER BY effective_from LIMIT 1`,[target.id,effectiveFrom],client);
+    const id=uuid(),created=await one(`INSERT INTO agent_social_media_payout_status_versions(id,agent_id,status,effective_from,effective_to,reason,evidence_reference,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,[id,target.id,status,effectiveFrom,next?.effectiveFrom||null,reason,evidenceReference,req.broker.id],client);
+    await audit('AgentSocialMediaPayoutStatus',id,'status_recorded',req.broker.id,{agentId:target.id,status,effectiveFrom,reason,evidenceReference},client);
+    return{statusVersion:created};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  res.status(201).json(result);
+});
+
 r.get('/admin/password-reset-requests',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access required'});
   await execute("UPDATE password_reset_requests SET status='expired',code_hash=NULL WHERE status='issued' AND expires_at<=NOW()");
-  const requests=await many(`SELECT pr.id,pr.status,pr.requested_at,pr.issued_at,pr.expires_at,b.id AS broker_id,b.name,b.email,issuer.name AS issued_by_name
+  const requests=await many(`SELECT pr.id,pr.status,pr.requested_at,pr.issued_at,pr.expires_at,pr.delivery_recorded_at,b.id AS broker_id,b.name,b.email,issuer.name AS issued_by_name
     FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id LEFT JOIN brokers issuer ON issuer.id=pr.issued_by
     WHERE pr.status IN ('pending','issued') ORDER BY pr.requested_at DESC`);
   res.json({count:requests.length,requests});
 });
 
 r.post('/admin/password-reset-requests/:id/issue',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access required'});
   const code=`NYSA-RST-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,codeHash=crypto.createHash('sha256').update(code).digest('hex');
   const request=await transaction(async client=>{
     const row=await one(`SELECT pr.*,b.status AS broker_status FROM password_reset_requests pr JOIN brokers b ON b.id=pr.broker_id
@@ -82,11 +126,21 @@ r.post('/admin/password-reset-requests/:id/issue',async(req,res)=>{
     return row;
   });
   if(!request)return res.status(404).json({error:'Open password reset request not found'});
-  res.json({ok:true,code,expiresInMinutes:30});
+  res.json({ok:true,code,expiresInMinutes:30,requestId:request.id});
+});
+
+r.post('/admin/password-reset-requests/:id/delivery',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access required'});
+  if(req.body?.confirmed!==true)return res.status(400).json({error:'Confirm delivery through an approved private channel'});
+  const request=await one(`UPDATE password_reset_requests SET delivery_method='manual_approved_private_channel',delivery_recorded_at=NOW(),delivery_recorded_by=$1
+    WHERE id=$2 AND status='issued' AND expires_at>NOW() RETURNING *`,[req.broker.id,req.params.id]);
+  if(!request)return res.status(409).json({error:'Only a current issued reset code can be marked delivered'});
+  await audit('Broker',request.brokerId,'password_reset_code_delivery_recorded',req.broker.id,{resetRequestId:request.id,method:'manual_approved_private_channel'});
+  res.json({ok:true,deliveryRecordedAt:request.deliveryRecordedAt});
 });
 
 r.delete('/admin/password-reset-requests/:id',async(req,res)=>{
-  if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access required'});
   const request=await one("UPDATE password_reset_requests SET status='cancelled',code_hash=NULL WHERE id=$1 AND status IN ('pending','issued') RETURNING *",[req.params.id]);
   if(!request)return res.status(404).json({error:'Open password reset request not found'});
   await audit('Broker',request.brokerId,'password_reset_cancelled',req.broker.id,{resetRequestId:request.id});
@@ -128,7 +182,9 @@ r.post('/admin/users/:id/roles',async(req,res)=>{
   });
   res.status(201).json(row);
 });
-r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),action=req.body?.action,reason=String(req.body?.reason||'').trim();if(!target)return res.status(404).json({error:'User not found'});if(target.id===req.broker.id)return res.status(400).json({error:'You cannot change your own access state'});if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});if(!['suspend','reactivate','revoke'].includes(action)||!reason)return res.status(400).json({error:'Valid action and reason are required'});const status=action==='reactivate'?'active':action==='suspend'?'suspended':'revoked';await transaction(async client=>{await execute(`UPDATE brokers SET status=$1,suspended_at=CASE WHEN $1='suspended' THEN NOW() ELSE suspended_at END,revoked_at=CASE WHEN $1='revoked' THEN NOW() ELSE revoked_at END,access_change_reason=$2,updated_at=NOW() WHERE id=$3`,[status,reason,target.id],client);if(status!=='active')await execute('DELETE FROM sessions WHERE broker_id=$1',[target.id],client);await audit('Broker',target.id,action,req.broker.id,{reason},client);});res.json({ok:true,status});});
+r.get('/admin/users/:id/operational-impact',async(req,res)=>{const target=await one('SELECT id,name,job_role,status FROM brokers WHERE id=$1',[req.params.id]);if(!target)return res.status(404).json({error:'User not found'});if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});res.json({user:target,impact:await operationalOwnershipImpact(target.id)});});
+
+r.post('/admin/users/:id/access',async(req,res)=>{const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),action=req.body?.action,reason=String(req.body?.reason||'').trim();if(!target)return res.status(404).json({error:'User not found'});if(target.id===req.broker.id)return res.status(400).json({error:'You cannot change your own access state'});if(!canMaintain(req,target.jobRole))return res.status(403).json({error:'This user is outside your maintenance authority'});if(!['suspend','reactivate','revoke'].includes(action)||!reason)return res.status(400).json({error:'Valid action and reason are required'});const status=action==='reactivate'?'active':action==='suspend'?'suspended':'revoked';const result=await transaction(async client=>{if(status!=='active'){const impact=await operationalOwnershipImpact(target.id,client);if(!impact.clear)return{code:409,error:'Access cannot be removed while the user owns active operational work. Reassign and obtain receiving-user acceptance before retrying.',impact};}await execute(`UPDATE brokers SET status=$1,suspended_at=CASE WHEN $1='suspended' THEN NOW() ELSE suspended_at END,revoked_at=CASE WHEN $1='revoked' THEN NOW() ELSE revoked_at END,access_change_reason=$2,updated_at=NOW() WHERE id=$3`,[status,reason,target.id],client);if(status!=='active')await execute('DELETE FROM sessions WHERE broker_id=$1',[target.id],client);await audit('Broker',target.id,action,req.broker.id,{reason},client);return{ok:true,status};});if(result.error)return res.status(result.code).json(result);res.json(result);});
 
 r.put('/admin/users/:id/business-areas',async(req,res)=>{
   const target=await one('SELECT * FROM brokers WHERE id=$1',[req.params.id]),body=req.body||{};
@@ -165,7 +221,7 @@ r.put('/admin/users/:id/business-areas',async(req,res)=>{
 r.patch('/admin/brokers/:id', async (req, res) => {
   const broker = await one('SELECT * FROM brokers WHERE id=$1', [req.params.id]);
   if (!broker) return res.status(404).json({ error:'Broker not found' });
-  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId,name,email,phone } = req.body || {};
+  const { role, status, canPost, teamId, jobTitle, jobRole,reportsToId,name,email,phone,brn,brnIssuedOn } = req.body || {};
   if (role !== undefined && !ROLES.includes(role)) return res.status(400).json({ error:'Invalid role' });
   if (jobRole !== undefined && jobRole !== null && !JOB_ROLES.includes(jobRole)) return res.status(400).json({ error:'Invalid jobRole' });
   if (status !== undefined && !['pending_activation','active','suspended','revoked'].includes(status)) return res.status(400).json({ error:'Invalid status' });
@@ -173,7 +229,9 @@ r.patch('/admin/brokers/:id', async (req, res) => {
   if(email!==undefined&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))return res.status(400).json({error:'Enter a valid user email'});
   if(phone!==undefined&&phone!==null&&String(phone).trim()&&!/^\+?[0-9][0-9 ()-]{6,24}$/.test(String(phone).trim()))return res.status(400).json({error:'Enter a valid representative phone number'});
   if(email!==undefined&&await one('SELECT id FROM brokers WHERE LOWER(email)=LOWER($1) AND id<>$2',[String(email).trim(),broker.id]))return res.status(409).json({error:'A user with this email already exists'});
-  if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Admin Assistant cannot alter privileged roles or access status' });
+  const brnCheck=validateBrnDetails({brn:brn===undefined?broker.brn:brn,brnIssuedOn:brnIssuedOn===undefined?broker.brnIssuedOn:brnIssuedOn});
+  if(brnCheck.error)return res.status(400).json({error:brnCheck.error});
+  if (req.broker.role !== 'admin' && (!canMaintain(req,broker.jobRole) || (jobRole && !canMaintain(req,jobRole)) || role === 'admin' || status !== undefined)) return res.status(403).json({ error:'Only Admin can alter privileged roles or access status' });
   if (teamId && !(await one('SELECT id FROM teams WHERE id=$1 AND active=1', [teamId]))) return res.status(400).json({ error:'Invalid teamId' });
   const nextJobRole=jobRole===undefined?broker.jobRole:jobRole||null,nextTeamId=teamId===undefined?broker.teamId:teamId||null;
   if(reportsToId!==undefined&&nextJobRole!=='manager')return res.status(400).json({error:'Only a Manager can have a maintained Director reporting line'});
@@ -187,6 +245,13 @@ r.patch('/admin/brokers/:id', async (req, res) => {
     for(const [field,value,column] of [['name',name,'name'],['email',email,'email'],['phone',phone,'phone']]){
       if(value===undefined)continue;const normalized=field==='email'?String(value).trim().toLowerCase():String(value||'').trim()||null;
       if((broker[field]||null)!==normalized){changes[field]={from:broker[field]||null,to:normalized};await execute(`UPDATE brokers SET ${column}=$1,updated_at=NOW() WHERE id=$2`,[normalized,broker.id],client);}
+    }
+    if(brn!==undefined||brnIssuedOn!==undefined){
+      const next=brnCheck.value;
+      if((broker.brn||null)!==next.brn||(broker.brnIssuedOn?String(broker.brnIssuedOn).slice(0,10):null)!==next.brnIssuedOn){
+        changes.brn={from:broker.brn||null,to:next.brn};changes.brnIssuedOn={from:broker.brnIssuedOn||null,to:next.brnIssuedOn};
+        await execute('UPDATE brokers SET brn=$1,brn_issued_on=$2,updated_at=NOW() WHERE id=$3',[next.brn,next.brnIssuedOn,broker.id],client);
+      }
     }
     if (role !== undefined && role !== broker.role) {
       changes.role = { from:broker.role, to:role };

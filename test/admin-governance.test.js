@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stableCodeError,timeToMinutes,minutesToTime,DASHBOARD_METRICS,validateFeeItems,calculateFeeItems,validateProposalConfiguration,buildIndicativePurchaseTimeline } from '../src/admin-governance.js';
+import { stableCodeError,timeToMinutes,minutesToTime,validateInvitationExpiry,DASHBOARD_METRICS,validateFeeItems,calculateFeeItems,validateProposalConfiguration,buildIndicativePurchaseTimeline } from '../src/admin-governance.js';
 
 test('controlled-value stable codes enforce lowercase snake_case',()=>{
   assert.equal(stableCodeError('loss_reason'),null);
@@ -13,6 +13,16 @@ test('business time selectors convert exactly to stored SLA minutes',()=>{
   assert.equal(timeToMinutes('09:00'),540);assert.equal(timeToMinutes('18:30'),1110);
   assert.equal(minutesToTime(540),'09:00');assert.equal(minutesToTime(1110),'18:30');
   assert.equal(timeToMinutes('25:00'),null);
+});
+
+test('invitation expiry defaults to seven days and rejects expired Dubai dates',()=>{
+  const now=new Date('2026-07-31T07:07:10.730Z');
+  assert.equal(validateInvitationExpiry('',now).value,'2026-08-07T07:07:10.730Z');
+  assert.match(validateInvitationExpiry('2026-07-26',now).error,/today or a future Dubai date/);
+  assert.equal(validateInvitationExpiry('2026-07-31',now).value,'2026-07-31T19:59:59.999Z');
+  assert.equal(validateInvitationExpiry('2026-08-07',now).value,'2026-08-07T19:59:59.999Z');
+  assert.match(validateInvitationExpiry('2026-02-30',now).error,/valid date/);
+  assert.match(validateInvitationExpiry('31-07-2026',now).error,/valid date/);
 });
 
 test('structured percentage fixed and tiered fees calculate deterministically',()=>{
@@ -50,9 +60,10 @@ test('business fee rules support thresholds bases VAT composite charges quantiti
 
 test('proposal designer validates buyer booklet limits fields conditions and timeline',()=>{
   const sections=[{code:'customer_name',label:'Customer name',source:'system',field:'contact.full_name',mandatory:true},{code:'highlights',label:'Highlights',source:'agent_input',mandatory:true}];
-  const propertyFields=['price','location','developer','property_status','value_proposition','match_rationale'].map(code=>({code,mandatory:true,condition:'always'}));
+  const propertyFields=['inventory_id','price','location','developer','property_status','value_proposition','match_rationale'].map(code=>({code,mandatory:true,condition:'always'}));
   const buyerBooklet={maxProperties:3,maxMediaPerProperty:2,maxAmenities:5,requireAvailabilityCheck:true,propertyFields,timelineStages:[{code:'confirm_requirements',label:'Confirm requirements',condition:'always',guidance:'Subject to complete information.'}]};
   assert.equal(validateProposalConfiguration({sections,buyerBooklet}),null);
+  assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,propertyFields:propertyFields.filter(field=>field.code!=='inventory_id')}}),/Property field inventory_id is required/);
   assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxProperties:4}}),/between 1 and 3/);
   assert.match(validateProposalConfiguration({sections,buyerBooklet:{...buyerBooklet,maxMediaPerProperty:3}}),/between 0 and 2/);
   assert.match(validateProposalConfiguration({sections:[{code:'customer_name',label:'Customer',source:'system'}],buyerBooklet}),/mapping/);

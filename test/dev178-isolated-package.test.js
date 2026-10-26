@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import {unzipSync} from 'fflate';
+const dir=new URL('../release-artifacts/release-3/consolidated/',import.meta.url);
+const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+test('dev178 exact release includes approved fixes and immutable prior migrations, not deferred receivables',()=>{
+  const bytes=fs.readFileSync(new URL('nysa-core-consolidated-crm-test-dev178.zip',dir)),entries=unzipSync(bytes);
+  const manifest=JSON.parse(fs.readFileSync(new URL('nysa-core-consolidated-crm-test-dev178.manifest.json',dir)));
+  assert.equal(hash(bytes),'1a0fc76b30df333bcfc0121cb0dae1711e884b2fb65604bc7d847080f0cc5218');
+  assert.equal(manifest.packageSha256,hash(bytes));
+  assert.equal(manifest.version,'2.1.0-dev.178');
+  assert.equal(manifest.changedRuntimeFiles.length,16);
+  assert.equal(Object.keys(entries).length,297);
+  assert.equal(Object.keys(entries).filter(n=>n.startsWith('src/migrations/')).length,113);
+  const prior=unzipSync(fs.readFileSync(new URL('nysa-core-consolidated-crm-test-dev176.zip',dir)));
+  for(const [name,content] of Object.entries(prior))if(name.startsWith('src/migrations/'))assert.equal(hash(entries[name]),hash(content),name);
+  for(const record of manifest.files)assert.equal(hash(entries[record.path]),record.sha256,record.path);
+  for(const name of Object.keys(entries))assert.ok(!/receivables|113_dev|^storage\/|^node_modules\/|^\.env$|(^|\/)\.\.(\/|$)/.test(name),name);
+  assert.doesNotMatch(Buffer.from(entries['src/routes/opportunities.js']).toString(),/Confirmed actual commission receipt is required before Close Won/);
+  assert.match(Buffer.from(entries['src/migrations/114_commission_independent_transaction_closure.sql']).toString(),/DROP TRIGGER IF EXISTS deals_commission_receipt_close_gate ON deals/);
+  assert.doesNotMatch(Buffer.from(entries['public/bootstrap.js']).toString(),/receivables-ui/);
+  assert.doesNotMatch(Buffer.from(entries['src/routes/commission-payout.js']).toString(),/registerReceivableRoutes/);
+  assert.match(Buffer.from(entries['src/commission-payout-domain.js']).toString(),/mayViewPayoutWorkspace=broker=>broker\?\.jobRole==='director'/);
+});
+test('dev178 installer is Test/hash locked and verifies independent closure after recoverable backup',()=>{
+  const s=fs.readFileSync(new URL('deploy-crm-test-consolidated-dev178.sh',dir),'utf8');
+  for(const marker of ['EXPECTED_VERSION=2.1.0-dev.178','PREVIOUS_VERSION=2.1.0-dev.176','EXPECTED_DATABASE=nysareal_nysa_r2_rehearsal','EXPECTED_ROOT=/home/nysareal/nysa-core-dashboard-dd6262a-stage','112|$BASELINE_MIGRATION','113|$LATEST_MIGRATION','APPROVED_SHA256=1a0fc76b30df333bcfc0121cb0dae1711e884b2fb65604bc7d847080f0cc5218','APPLIED_MIGRATIONS.sha256','pg_restore --list','verify_worker_socket','verify_switches','verify_independent_closure','deals_commission_receipt_close_gate'])assert.ok(s.includes(marker),marker);
+  assert.ok(s.indexOf('pg_dump -h')<s.indexOf('install -m 0644'));
+  assert.ok(s.indexOf('tar -tzf')<s.indexOf('kill -KILL'));
+  assert.match(s,/"\$worker_count" -eq 1/);
+});

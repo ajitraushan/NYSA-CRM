@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { QUALIFICATION_GUIDANCE, JOB_ROLES, parseBusinessAmount, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,
+import { QUALIFICATION_GUIDANCE, JOB_ROLES, parseBusinessAmount, validateBudget, validateLeadStage, validateLeadTransition, addBusinessMinutes,qualificationFollowUpPlan,
   validateContactIdentity, calculateMortgage, calculateRoi, calculateInvestmentReturns, validateQualificationFactors, calculateQualification, applyQualificationOverride, isReassignmentDue,
   activityStageTransition } from '../src/crm-domain.js';
 import { normalizeDelimitedValues } from '../src/crm-domain.js';
@@ -43,7 +43,7 @@ test('Lost leads require a reason while Won leads do not', () => {
 });
 
 test('internal job roles cover the approved NYSA staff groups', () => {
-  assert.deepEqual(JOB_ROLES, ['admin','admin_assistant','sales_agent','listing_agent','manager','director','accountant']);
+  assert.deepEqual(JOB_ROLES, ['admin','sales_agent','listing_agent','manager','director','accountant']);
 });
 
 test('contact identity validates email and international phone formats', () => {
@@ -67,6 +67,23 @@ test('ROI and assignment deadline calculations are deterministic', () => {
   assert.equal(calculateRoi(2_000_000, 140_000, 20_000), 6);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'New' }, new Date('2026-01-02T00:00:00Z')), true);
   assert.equal(isReassignmentDue({ assignedTo:'u1', assignmentDueAt:'2026-01-01T00:00:00Z', stage:'Won' }, new Date('2026-01-02T00:00:00Z')), false);
+});
+
+test('qualification SLA makes Hot elapsed-time enforcement continue outside business hours',()=>{
+  const plan=qualificationFollowUpPlan({temperature:'Hot',assessedAt:new Date('2026-08-21T22:55:00Z'),policy:{workDays:[1,2,3,4,5],workStartMinute:540,workEndMinute:1080,utcOffsetMinutes:240,qualificationHotElapsedMinutes:15,qualificationWarmBusinessMinutes:240,qualificationColdBusinessDays:1,qualificationColdNurtureBusinessDays:5}});
+  assert.equal(plan.dueAt.toISOString(),'2026-08-21T23:10:00.000Z');
+  assert.equal(plan.timerBasis,'elapsed_minutes');
+  assert.equal(plan.priority,'urgent');
+});
+
+test('qualification SLA schedules Warm in business time and Cold with weekly nurture cadence',()=>{
+  const policy={workDays:[1,2,3,4,5],workStartMinute:540,workEndMinute:1080,utcOffsetMinutes:240,qualificationHotElapsedMinutes:15,qualificationWarmBusinessMinutes:240,qualificationColdBusinessDays:1,qualificationColdNurtureBusinessDays:5};
+  const warm=qualificationFollowUpPlan({temperature:'Warm',assessedAt:new Date('2026-08-21T16:00:00Z'),policy});
+  assert.equal(warm.dueAt.toISOString(),'2026-08-24T09:00:00.000Z');
+  assert.equal(warm.timerBasis,'business_minutes');
+  const cold=qualificationFollowUpPlan({temperature:'Cold',assessedAt:new Date('2026-08-21T16:00:00Z'),policy});
+  assert.equal(cold.dueAt.toISOString(),'2026-08-24T14:00:00.000Z');
+  assert.equal(cold.cadenceBusinessDays,5);
 });
 
 test('mortgage calculator classifies DBR and calculates debt reduction to prudent threshold',()=>{
@@ -120,12 +137,15 @@ test('new-customer lead capture is atomic and confirms only a committed lead',()
   assert.match(app,/both M and m are accepted/);
   assert.match(app,/type="submit" class="btn btn-primary">Create lead/);
   assert.match(app,/if\(!submit\)return toast\('Lead form is unavailable/);
-  assert.match(app,/Lead created successfully[\s\S]*assignment queue/);
+  assert.match(app,/creationOutcome=lead=>lead\?\.assignmentStatus==='assigned'&&lead\?\.assignedTo/);
+  assert.match(app,/The Lead is self-assigned to you/);
+  assert.match(app,/governed assignment queue/);
   assert.match(app,/Lead not created:/);
-  assert.match(app,/New customers require name, email, phone and preferred channel/);
+  assert.match(app,/Optional communication preference only/);
+  assert.match(crm,/New customers require email and phone/);
   assert.match(crm,/Budget from and Budget to are required/);
   assert.match(crm,/At least one preferred area is required/);
-  assert.match(crm,/Complete the existing customer email, phone and preferred channel/);
+  assert.match(crm,/Complete the existing customer email and phone/);
 });
 
 test('lead lifecycle rejects skipped and terminal transitions',()=>{

@@ -10,6 +10,12 @@ test('provider-neutral listing intake normalizes a governed draft payload',()=>{
   assert.equal(result.error,undefined);assert.equal(result.value.provider,'example_feed');assert.equal(result.value.listing.price,2500000);assert.equal(result.value.listing.handoverDate,'Ready');
 });
 
+test('provider-neutral intake preserves an optional governed Inventory-side owner',()=>{
+  const payload=valid();payload.listing.owner={partyRole:'seller',partyType:'person',displayName:'Owner Name',phone:'+971501234567',source:'Owner instruction',authorityEvidence:'Evidence REF-1'};
+  const result=validateListingIntakePayload(payload);assert.equal(result.error,undefined);assert.equal(result.value.listing.owner.displayName,'Owner Name');
+  payload.listing.owner.authorityEvidence='';assert.equal(validateListingIntakePayload(payload).code,'INVALID_OWNER');
+});
+
 test('listing intake rejects missing stable identifiers and unmapped controlled values',()=>{
   for(const [change,code] of [
     [x=>x.eventId='', 'INVALID_EVENT_ID'],[x=>x.provider='Example Feed','INVALID_PROVIDER'],[x=>x.externalRecordId='','INVALID_EXTERNAL_RECORD_ID'],[x=>x.mappingVersion='','INVALID_MAPPING_VERSION'],

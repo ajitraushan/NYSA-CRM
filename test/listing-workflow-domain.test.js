@@ -13,7 +13,7 @@ test('listing workflow allows only governed state transitions',()=>{
 test('listing workflow enforces ownership reviewer authority and reasons',()=>{
   assert.match(validateListingWorkflowAction({current:'draft',action:'submit'}),/Only the Listing Executive/);
   assert.equal(validateListingWorkflowAction({current:'draft',action:'submit',isOwner:true}),null);
-  assert.match(validateListingWorkflowAction({current:'in_review',action:'approve'}),/Manager or Administrator/);
+  assert.match(validateListingWorkflowAction({current:'in_review',action:'approve'}),/responsible Manager/);
   assert.match(validateListingWorkflowAction({current:'in_review',action:'request_changes',canReview:true}),/reason is required/);
   assert.equal(validateListingWorkflowAction({current:'in_review',action:'request_changes',canReview:true,reason:'Correct the price evidence'}),null);
 });
@@ -51,7 +51,8 @@ test('browser and routes expose the dedicated Listing Executive lifecycle',async
   assert.match(routes,/\/listings-workspace/);
   assert.match(routes,/Inventory approval was consolidated into mandatory Inventory verification/);
   assert.match(routes,/b\.team_id=ANY/);
-  assert.match(routes,/Manual listing drafts may be created by a Listing Executive/);
+  assert.match(routes,/hasCapability\(broker,CAPABILITY\.INVENTORY_CREATE\)/);
+  assert.match(routes,/centrally governed Inventory creation capability/);
   assert.match(routes,/q\.workspaceScope==='approved'/);
   assert.match(routes,/AS cover_media_id/);
   assert.match(routes,/m\.is_cover=TRUE/);

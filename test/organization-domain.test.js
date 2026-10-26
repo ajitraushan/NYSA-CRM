@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateOrganizationProfile,publicOrganization,formatOrganizationDate,organizationContactLines } from '../src/organization-domain.js';
 
-const valid={legalName:'NYSA Realty LLC',displayName:'NYSA Realty',defaultCurrency:'aed',timezone:'Asia/Dubai',locale:'en-AE',brandVersion:'NYSA-2026.1',primaryEmail:'INFO@NYSA.AE',websiteUrl:'https://nysa.ae'};
+const valid={legalName:'NYSA Realty LLC',displayName:'NYSA Realty',orn:' 56017 ',defaultCurrency:'aed',timezone:'Asia/Dubai',locale:'en-AE',brandVersion:'NYSA-2026.1',primaryEmail:'INFO@NYSA.AE',websiteUrl:'https://nysa.ae'};
 
 test('organization profile validates and normalizes document defaults',()=>{
   const result=validateOrganizationProfile(valid);
-  assert.equal(result.error,undefined);assert.equal(result.profile.defaultCurrency,'AED');assert.equal(result.profile.primaryEmail,'info@nysa.ae');
+  assert.equal(result.error,undefined);assert.equal(result.profile.defaultCurrency,'AED');assert.equal(result.profile.primaryEmail,'info@nysa.ae');assert.equal(result.profile.orn,'56017');
   assert.match(validateOrganizationProfile({...valid,timezone:'Mars/Olympus'}).error,/timezone/);
   assert.match(validateOrganizationProfile({...valid,defaultCurrency:'dirham'}).error,/three-letter/);
   assert.match(validateOrganizationProfile({...valid,brandVersion:''}).error,/brand version/);

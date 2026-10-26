@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYSA CORE - Listing Agreement Readiness</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header><span class="logo">N</span><strong>NYSA CORE</strong><span>Listing Agreement Readiness</span></header>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">RELEASE 4 · WITHDRAWN REVIEW ARTIFACT</p>
+        <h1>This readiness prototype duplicates existing functionality.</h1>
+        <p>Retained only as rejected design evidence. The replacement scope is governed standard-document assembly from immutable CRM snapshots and approved versioned templates.</p>
+      </div>
+      <div class="classification"><strong>WITHDRAWN — DO NOT INTEGRATE</strong><span>Not an approved Release 4 module</span></div>
+    </section>
+
+    <section class="review-control">
+      <label for="scenario">Review scenario</label>
+      <select id="scenario">
+        <option value="missing">Authority evidence missing</option>
+        <option value="ready">Inputs complete — draft can be prepared</option>
+        <option value="signature">Draft accepted — signature pending</option>
+        <option value="signedBlocked">Signed evidence accepted — publication readiness blocked</option>
+        <option value="eligible">All evidence valid — eligible, not published</option>
+      </select>
+      <p>Local test control only; not a final CRM field.</p>
+    </section>
+
+    <section id="summary" class="summary"></section>
+    <section class="workspace">
+      <div id="evidence" class="evidence"></div>
+      <aside id="gate"></aside>
+    </section>
+  </main>
+  <footer>NO DOCUMENT GENERATION · NO SIGNATURE · NO UPLOAD · NO PUBLICATION · NO CRM WRITE</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

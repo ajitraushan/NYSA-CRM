@@ -1,15 +1,18 @@
+import {VIEWING_NEXT_DECISIONS} from './viewing-readiness.js';
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 export const MATCH_FIT_STATUSES=['strong_fit','partial_fit','exception'];
 export const MATCH_DECISIONS=['considering','shortlisted','rejected'];
 export const VIEWING_STATUSES=['scheduled','completed','cancelled','no_show'];
+export const VIEWING_FEEDBACK_OUTCOMES=['selected_property','positive','maybe','not_interested','more_options'];
 
 export function validatePropertyMatch(body={}){
-  const listingId=clean(body.listingId),fitStatus=body.fitStatus,rationale=clean(body.rationale),exceptions=clean(body.exceptions);
+  const listingId=clean(body.listingId),fitStatus=body.fitStatus,rationale=clean(body.rationale),exceptions=clean(body.exceptions),availabilityLikelyConfirmed=body.availabilityLikelyConfirmed===true||body.availabilityLikelyConfirmed==='true'||body.availabilityLikelyConfirmed==='on';
   if(!listingId)return {error:'Select an approved property'};
   if(!MATCH_FIT_STATUSES.includes(fitStatus))return {error:'Select a valid fit status'};
   if(!rationale)return {error:'Explain why this property fits the current requirement'};
   if(fitStatus==='exception'&&!exceptions)return {error:'Describe the material fit exception'};
-  return {value:{listingId,fitStatus,rationale,exceptions,matchSource:'manual'}};
+  if(!availabilityLikelyConfirmed)return {error:'Confirm that this Inventory is likely to be available before assigning it'};
+  return {value:{listingId,fitStatus,rationale,exceptions,availabilityLikelyConfirmed,matchSource:'manual'}};
 }
 
 export function validateMatchDecision(body={}){
@@ -37,12 +40,14 @@ export function validateViewingOutcome(body={}){
   const attendance=Array.isArray(body.attendance)?body.attendance:[];
   const followUpDueAt=body.followUpDueAt?new Date(body.followUpDueAt):null;
   if(!['completed','cancelled','no_show'].includes(status))return {error:'Select a valid viewing outcome'};
+  if(status==='completed'&&!VIEWING_NEXT_DECISIONS.includes(body.customerNextDecision))return {error:'Select the Customer next decision'};
+  if(status!=='completed'&&!outcome)return {error:'Record the cancellation or no-show reason'};
   if(status==='completed'&&(!outcome||!feedback))return {error:'Completed viewings require an outcome and feedback'};
   if(status==='completed'&&(!followUpAction||!body.followUpDueAt))return {error:'Completed viewings require a follow-up action and due time'};
   if(attendance.some(x=>!clean(x.id)||!['attended','absent'].includes(x.attendanceStatus)))return {error:'Record a valid attendance status for every attendee'};
   if((followUpAction&&!followUpDueAt)||(!followUpAction&&followUpDueAt)||followUpDueAt&&Number.isNaN(followUpDueAt.valueOf()))return {error:'Follow-up action and valid due time must be provided together'};
   if(!Number.isInteger(expectedVersion)||expectedVersion<1)return {error:'The current viewing version is required'};
-  return {value:{status,outcome,feedback,followUpAction,followUpDueAt:followUpDueAt?.toISOString()||null,attendance,expectedVersion}};
+  return {value:{status,outcome,feedback,customerNextDecision:status==='completed'?body.customerNextDecision:null,followUpAction,followUpDueAt:followUpDueAt?.toISOString()||null,attendance,expectedVersion}};
 }
 
 const icsText=value=>String(value||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');

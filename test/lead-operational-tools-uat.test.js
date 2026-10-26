@@ -10,7 +10,7 @@ const read=path=>readFileSync(join(root,path),'utf8');
 test('lead tasks distinguish planned work from completed activities and expose ownership',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/lead-operations.js'),styles=read('public/index.html');
   for(const contract of ['Lead action plan','future actions with an owner and deadline','Assigned to','Add a planned action','Instructions','Start','Cancellation reason'])assert.match(ui,new RegExp(contract));
-  assert.match(routes,/Only a team lead or administrator can select another task owner/);
+  assert.match(routes,/Only the responsible Manager or Director can select another task owner/);
   assert.match(routes,/Completion outcome is required/);
   assert.match(routes,/Cancellation reason is required/);
   assert.match(styles,/\.task-card\{display:grid/);

@@ -23,7 +23,7 @@ export function validateListingWorkflowAction({current,action,reason,isOwner=fal
   const next=listingWorkflowTransition(current,action);
   if(!next)return `Cannot ${String(action||'').replaceAll('_',' ')} a listing while it is ${LISTING_WORKFLOW_LABELS[current]||current}`;
   if(action==='submit'&&!isOwner&&!canReview)return 'Only the Listing Executive who owns the record or an authorized reviewer can submit it';
-  if(['approve','request_changes','block','restore'].includes(action)&&!canReview)return 'Only the responsible Manager or Administrator can perform this review action';
+  if(['approve','request_changes','block','restore'].includes(action)&&!canReview)return 'Only the responsible Manager can perform this review action';
   if(['request_changes','block','restore'].includes(action)&&!String(reason||'').trim())return 'A review reason is required';
   return null;
 }

@@ -23,12 +23,12 @@ test('coordinated reassignment locks and validates the linked case then updates 
   assert.match(routes,/UPDATE opportunity_participants SET active=FALSE/);
   assert.match(routes,/ON CONFLICT\(opportunity_id,broker_id,participation_role\)/);
   assert.match(opportunities,/assignmentHistory/);
-  assert.match(opportunities,/Initial owner captured from the qualified lead/);
+  assert.match(opportunities,/Initial Opportunity owner captured from the qualified Lead assignment; Inventory maintenance remains with the Listing Executive/);
 });
 
 test('connected case and role dashboards guide users without hiding future release boundaries',()=>{
   const ui=read('public/app.js'),dashboard=read('public/dashboard-ui.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js'),dashboardRoutes=read('src/routes/dashboards.js');
-  for(const marker of ['GUIDED WORK','connected case','Review reassignment impact','Impact preview','Lead ownership will stay unchanged','Open connected Lead and full flow','Ownership history'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['GUIDED WORK','connected case','Review reassignment impact','Impact preview','Lead ownership will stay unchanged','View source Lead history','Ownership history'])assert.match(ui,new RegExp(marker));
   for(const marker of ['GUIDED SALES FLOW','My operating sequence','Team operating sequence','Every sequence count opens the exact contributing records','data-guided-step','data-guided-lead','data-guided-all','My priority cases','Open full Lead register'])assert.match(dashboard,new RegExp(marker));
   for(const marker of ['dashboard-connected-flow','flow-current','flow-ready','flow-blocked','flow-not_available','reassignment-preview','guided-work-layout','guided-next-scroll','max-height:360px'])assert.match(styles,new RegExp(marker));
   assert.match(routes,/\/crm\/operations\/guided-work/);
@@ -50,12 +50,13 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.match(dashboard,/class="dashboard-left-flow"/);
   assert.match(dashboard,/id="dashboard-priority-flow"/);
   assert.match(dashboard,/append\(priorityPanel\)/);
-  assert.match(styles,/#dashboard-priority-flow\{min-width:0;align-self:start\}/);
+  assert.match(styles,/#dashboard-priority-flow\{display:none\}/);
   assert.doesNotMatch(styles,/\.guided-next-cases\{grid-column:2;grid-row:1/);
   assert.match(routes,/nextCaseResponsibility/);
   assert.match(routes,/l\.assigned_to IS NULL AND l\.assignment_status IN \('unassigned','reassignment_due'\)/);
   assert.match(dashboard,/manager action required/);
-  assert.ok(dashboard.indexOf('id="dashboard-guided-flow"')<dashboard.indexOf('class="executive-tabs"'),'guided operating sequence must appear above workspace tabs');
+  assert.ok(dashboard.indexOf('${agentCommandBar}')<dashboard.indexOf('id="dashboard-guided-flow"'),'Agent workspace navigation must appear above the guided operating sequence');
+  assert.ok(dashboard.indexOf('id="dashboard-guided-flow"')<dashboard.indexOf("${likelyType==='agent'?'':tabsMarkup}"),'manager guided sequence must remain above manager workspace tabs');
   assert.match(dashboard,/likelyType==='manager'&&activeDashboardView==='Team performance'/);
   assert.match(dashboard,/showingProposalApprovals=defaults\.view==='Proposal approvals'/);
   assert.doesNotMatch(dashboard,/slice\(0,6\)/);

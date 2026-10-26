@@ -4,6 +4,25 @@ export function stableCodeError(value){const code=String(value||'').trim();if(!c
 export function timeToMinutes(value){const match=String(value||'').match(/^([01]\d|2[0-3]):([0-5]\d)$/);return match?Number(match[1])*60+Number(match[2]):null;}
 export function minutesToTime(value){const n=Number(value);return Number.isInteger(n)&&n>=0&&n<=1440?`${String(Math.floor(n/60)%24).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`:null;}
 
+export function validateInvitationExpiry(value,now=new Date()){
+  const current=now instanceof Date?new Date(now):new Date(now);
+  if(Number.isNaN(current.getTime()))return {error:'Current time is invalid'};
+  const text=String(value??'').trim();
+  if(!text){
+    const defaultExpiry=new Date(current);
+    defaultExpiry.setUTCDate(defaultExpiry.getUTCDate()+7);
+    return {value:defaultExpiry.toISOString()};
+  }
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(text))return {error:'Invitation expiry must be a valid date'};
+  const [year,month,day]=text.split('-').map(Number),calendarDate=new Date(Date.UTC(year,month-1,day));
+  if(calendarDate.getUTCFullYear()!==year||calendarDate.getUTCMonth()!==month-1||calendarDate.getUTCDate()!==day)return {error:'Invitation expiry must be a valid date'};
+  // The date control is a Dubai business date. Keep the invitation valid through
+  // the selected day (23:59:59.999 UTC+4), rather than expiring at its start.
+  const expiry=new Date(Date.UTC(year,month-1,day,19,59,59,999));
+  if(expiry<=current)return {error:'Invitation expiry must be today or a future Dubai date'};
+  return {value:expiry.toISOString()};
+}
+
 export const DASHBOARD_METRICS=Object.freeze({
   new_leads:{label:'New leads',unit:'leads',definition:'Leads received during the selected target period',direction:'low_bad'},
   won_leads:{label:'Won leads',unit:'leads',definition:'Leads moved to Won during the selected target period',direction:'low_bad'},
@@ -86,7 +105,7 @@ export function calculateFeeItems(items,input){
   return {context,values,details,total:feeRound(total),totalMinimum:feeRound(totalMinimum),totalMaximum:feeRound(totalMaximum)};
 }
 
-const proposalPropertyFields=new Set(['price','built_up_area','location','developer','property_status','building_age','rooms','bedrooms','bathrooms','parking','amenities','availability_date','value_proposition','match_rationale','trade_offs']);
+const proposalPropertyFields=new Set(['inventory_id','price','built_up_area','location','developer','property_status','building_age','rooms','bedrooms','bathrooms','parking','amenities','availability_date','value_proposition','match_rationale','trade_offs']);
 const proposalConditions=new Set(['always','ready_property','off_plan','cash_purchase','bank_finance']);
 export function validateProposalConfiguration(configuration={},templateType='Quick'){
   const sections=configuration.sections;
@@ -104,6 +123,7 @@ export function validateProposalConfiguration(configuration={},templateType='Qui
   const maxProperties=Number(booklet.maxProperties),maxMedia=Number(booklet.maxMediaPerProperty),maxAmenities=Number(booklet.maxAmenities);
   if(!Number.isInteger(maxProperties)||maxProperties<1||maxProperties>3)return 'Maximum matched properties must be between 1 and 3';
   if(templateType==='Comparison'&&maxProperties<2)return 'A Comparison template must allow at least 2 properties';
+  if(templateType==='Financial Illustration'&&maxProperties!==1)return 'A Financial Illustration must use exactly 1 selected property';
   if(!Number.isInteger(maxMedia)||maxMedia<0||maxMedia>2)return 'Approved media per property must be between 0 and 2';
   if(!Number.isInteger(maxAmenities)||maxAmenities<1||maxAmenities>8)return 'Maximum amenities must be between 1 and 8';
   if(!Array.isArray(booklet.propertyFields)||!booklet.propertyFields.length)return 'Select at least one property information field';
@@ -114,8 +134,9 @@ export function validateProposalConfiguration(configuration={},templateType='Qui
     fieldCodes.add(field.code);
     if(!proposalConditions.has(field.condition||'always'))return `Invalid display condition for ${field.code}`;
   }
-  for(const required of ['price','location','developer','property_status','value_proposition','match_rationale'])if(!fieldCodes.has(required))return `Property field ${required} is required for a buyer proposal`;
-  if(!Array.isArray(booklet.timelineStages)||!booklet.timelineStages.length)return 'Add at least one indicative purchase timeline stage';
+  const requiredPropertyFields=templateType==='Financial Illustration'?['inventory_id','price','location','property_status']:['inventory_id','price','location','developer','property_status','value_proposition','match_rationale'];
+  for(const required of requiredPropertyFields)if(!fieldCodes.has(required))return `Property field ${required} is required for a ${templateType==='Financial Illustration'?'Financial Illustration':'buyer proposal'}`;
+  if(!Array.isArray(booklet.timelineStages)||(templateType!=='Financial Illustration'&&!booklet.timelineStages.length))return 'Add at least one indicative purchase timeline stage';
   for(const stage of booklet.timelineStages){if(stableCodeError(stage?.code)||!String(stage?.label||'').trim()||!String(stage?.guidance||'').trim())return 'Every timeline stage needs a stable code, label and guidance';if(!proposalConditions.has(stage.condition||'always'))return `Invalid timeline condition for ${stage.code}`;}
   return null;
 }

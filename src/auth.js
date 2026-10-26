@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import { execute, one } from './db.js';
+import { accountantRequestAllowed } from './accountant-access.js';
+import { capabilitiesFor, governedAccessProfile, governedRoleRequestDecision } from './role-access.js';
 
-const SESSION_HOURS = 24 * 7;
+const DEFAULT_SESSION_HOURS = 24 * 7;
 
 function sessionHash(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -22,11 +24,13 @@ export function verifyPassword(password, stored) {
   return expectedBuffer.length === candidateBuffer.length && crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
 }
 
-export async function createSession(brokerId) {
+export async function createSession(brokerId,{hours=DEFAULT_SESSION_HOURS}={}) {
+  const duration=Number(hours);
+  if(!Number.isFinite(duration)||duration<1||duration>DEFAULT_SESSION_HOURS)throw new Error('Invalid session duration');
   const token = crypto.randomBytes(32).toString('hex');
   await execute('DELETE FROM sessions WHERE expires_at <= NOW()');
   await execute("INSERT INTO sessions (token, broker_id, expires_at) VALUES ($1,$2,NOW() + ($3 * INTERVAL '1 hour'))",
-    [sessionHash(token), brokerId, SESSION_HOURS]);
+    [sessionHash(token), brokerId, duration]);
   return token;
 }
 
@@ -49,6 +53,9 @@ export async function requireAuth(req, res, next) {
     WHERE s.token = $1 AND s.expires_at > NOW()`, [sessionHash(decodeURIComponent(presented))]);
   if (!row) return res.status(401).json({ error: 'Invalid or expired session' });
   if (row.status !== 'active') return res.status(403).json({ error: row.status==='suspended'?'Access is suspended':'Access is not active' });
+  if (!accountantRequestAllowed(row, req.method, req.path)) return res.status(403).json({ error: 'Accountant access is limited to Dashboard, read-only Opportunities, My Leave, Receivables and Commission Payments' });
+  const governedAccess=governedRoleRequestDecision(row,req.method,req.path);
+  if (!governedAccess.allowed) return res.status(403).json({ error: governedAccess.message });
   req.broker = row;
   req.token = decodeURIComponent(presented);
   next();
@@ -77,5 +84,7 @@ export function notViewer(req, res, next) {
 
 export function publicBroker(b) {
   const { passwordHash, ...rest } = b;
-  return rest;
+  const profile=governedAccessProfile(b);
+  const capabilities=[...capabilitiesFor(b)];
+  return profile?{...rest,capabilities,accessPolicy:{label:profile.label,capabilities,workspaceTabs:[...profile.workspaceTabs],dashboard:profile.dashboard}}:{...rest,capabilities};
 }

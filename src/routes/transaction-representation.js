@@ -43,11 +43,12 @@ r.post('/crm/external-properties',async(req,res)=>{
   const sequence=(await one("SELECT COUNT(*)::int+1 AS value FROM provisional_external_properties WHERE external_reference LIKE $1",[`${`NYSA-EXT-${period}`}-%`])).value;
   const id=uuid(),reference=`NYSA-EXT-${period}-${String(sequence).padStart(6,'0')}`;
   const row=await one(`INSERT INTO provisional_external_properties(id,external_reference,project_or_building,property_address,
-    asking_price,currency,property_type,permit_reference,source,source_evidence,owner_counterparty_id,
-    seller_agent_counterparty_id,seller_agency_counterparty_id,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-    [id,reference,v.projectOrBuilding,v.propertyAddress,v.askingPrice,v.currency,v.propertyType,v.permitReference,v.source,v.sourceEvidence,v.ownerCounterpartyId,v.sellerAgentCounterpartyId,v.sellerAgencyCounterpartyId,req.broker.id]);
-  await audit('ExternalProperty',id,'captured',req.broker.id,{reference,source:v.source,normalInventory:false,externalListing:false});
+    asking_price,currency,property_type,permit_reference,source,source_evidence,usage_kind,developer_name,community_or_area,
+    owner_counterparty_id,seller_agent_counterparty_id,seller_agency_counterparty_id,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [id,reference,v.projectOrBuilding,v.propertyAddress,v.askingPrice,v.currency,v.propertyType,v.permitReference,v.source,v.sourceEvidence,
+      v.usageKind,v.developerName,v.communityOrArea,v.ownerCounterpartyId,v.sellerAgentCounterpartyId,v.sellerAgencyCounterpartyId,req.broker.id]);
+  await audit('ExternalProperty',id,'captured',req.broker.id,{reference,source:v.source,usageKind:v.usageKind,normalInventory:false,externalListing:false});
   res.status(201).json(row);
 });
 
@@ -77,7 +78,7 @@ r.post('/crm/external-properties/:id/verification',async(req,res)=>{
     const updated=await one("UPDATE provisional_external_properties SET status='verification_pending',verification_notes=$1,updated_at=NOW() WHERE id=$2 RETURNING *",[notes,row.id]);
     await audit('ExternalProperty',row.id,'verification_submitted',req.broker.id,{notes});return res.json(updated);
   }
-  if(!isManager(req.broker))return res.status(403).json({error:'Manager or Administrator decision required'});
+  if(!isManager(req.broker))return res.status(403).json({error:'Manager decision required'});
   if(row.status!=='verification_pending'||!['approve','reject'].includes(action)||!notes)return res.status(409).json({error:'A pending external property, valid decision and reason are required'});
   const status=action==='approve'?'approved_for_opportunity':'rejected',updated=await one('UPDATE provisional_external_properties SET status=$1,verification_notes=$2,verified_by=$3,verified_at=NOW(),updated_at=NOW() WHERE id=$4 RETURNING *',[status,notes,req.broker.id,row.id]);
   await audit('ExternalProperty',row.id,action==='approve'?'approved_for_opportunity':'rejected',req.broker.id,{notes});res.json(updated);
@@ -142,12 +143,12 @@ r.post('/crm/opportunity-origins',async(req,res)=>{
       ON CONFLICT(period_code) DO UPDATE SET last_value=opportunity_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
     const reference=`NYSA-OP-${period}-${String(counter.lastValue).padStart(6,'0')}`,id=uuid(),ownerId=v.buyerSideAgentId||v.inventorySideAgentId||lead?.assignedTo||req.broker.id,teamId=lead?.assignedTeamId||req.broker.teamId||null;
     const opportunity=await one(`INSERT INTO opportunities(id,opportunity_reference,lead_id,contact_id,requirement_id,qualification_assessment_id,
-      listing_id,assigned_team_id,owner_id,title,transaction_type,priority,next_action,next_action_due_at,created_by,
+      listing_id,assigned_team_id,owner_id,title,transaction_type,priority,next_action_code,next_action,next_action_due_at,created_by,
       representation_path,property_source,buyer_source,external_property_id,buyer_side_agent_id,inventory_side_agent_id,
       buyer_counterparty_id,seller_counterparty_id,buyer_agency_counterparty_id,seller_agency_counterparty_id,
       buyer_side_commission,seller_side_commission,interagency_split,internal_agent_split,referral_fee,authority_evidence,
       disclosure_evidence,representation_locked_at,stage)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'normal',$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,NOW(),$32) RETURNING *`,
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'normal','controlled_exception',$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,NOW(),$32) RETURNING *`,
       [id,reference,lead?.id||null,lead?.contactId||null,requirement?.id||null,qualification?.id||null,listing?.id||null,teamId,ownerId,title,transactionType,nextAction,due.toISOString(),req.broker.id,v.representationPath,v.propertySource,v.buyerSource,external?.id||null,v.buyerSideAgentId,v.inventorySideAgentId,v.buyerCounterpartyId,v.sellerCounterpartyId,v.buyerAgencyCounterpartyId,v.sellerAgencyCounterpartyId,v.buyerSideCommission,v.sellerSideCommission,v.interagencySplit,v.internalAgentSplit,v.referralFee,v.authorityEvidence,v.disclosureEvidence,listing?'Matching':'Requirements'],client);
     const snapshot={...v,leadId:lead?.id||null,listingId:listing?.id||null,externalPropertyId:external?.id||null};
     if(listing||external){

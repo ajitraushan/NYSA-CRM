@@ -27,7 +27,7 @@ test('geographical assignments are multi-select and constrain area-specific rout
   assert.match(ui,/form\.getAll\('areaId'\)/);
   assert.match(ui,/Geographical areas/);
   assert.match(leads,/agent_area_assignments eligible_area/);
-  assert.match(leads,/eligible_area\.area_id=\$\{area\}/);
+  assert.match(leads,/eligible_area\.area_id=\(\$\{area\}\)::uuid/);
 });
 
 test('routing and self-claim eligibility includes every active team and geographical membership',()=>{
@@ -37,7 +37,7 @@ test('routing and self-claim eligibility includes every active team and geograph
 });
 
 test('structured requirement save uses explicit UUID typing and blocking errors stay in the active dialog',()=>{
-  assert.match(leads,/\$15::uuid/);
+  assert.match(leads,/\$23::uuid/);
   assert.match(ui,/showDialogError\(o,`Requirement not saved:/);
   assert.match(ui,/function showDialogError/);
 });

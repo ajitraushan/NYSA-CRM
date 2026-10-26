@@ -4,7 +4,7 @@ import { requireAuth } from '../auth.js';
 import { LISTING_MAPPING_FIELDS, validateMappingEntry, validateMappingTransition, validateMappingVersion } from '../listing-mapping-domain.js';
 
 const r=Router();
-r.use(requireAuth,(req,res,next)=>req.broker.role==='admin'?next():res.status(403).json({error:'Full Administrator access is required for provider mappings'}));
+r.use(requireAuth,(req,res,next)=>req.broker.role==='admin'?next():res.status(403).json({error:'Admin access is required for provider mappings'}));
 async function coreOptions(fieldCode,client){
   if(fieldCode==='areaCode')return (await many("SELECT stable_code AS value,business_label AS label FROM areas WHERE active=1 ORDER BY display_order,business_label",[],client));
   return (LISTING_MAPPING_FIELDS[fieldCode]?.values||[]).map(value=>({value,label:value}));

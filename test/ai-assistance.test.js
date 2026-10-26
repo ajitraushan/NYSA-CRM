@@ -26,16 +26,16 @@ test('AI input redaction removes direct contact and identity identifiers without
 });
 
 test('match explanation evidence is deterministic and exposes failures to the model',()=>{
-  const evidence=buildMatchEvidence({businessLine:'Sale',purpose:'own_use',areas:['Dubai Marina'],propertyTypes:['Apartment'],budgetMin:2000000,budgetMax:2400000,fundingMethod:'mortgage',bedroomsMin:2,bedroomsMax:2,timelineCode:'0_3_months'},{inventoryReference:'NYSA-INV-000001',project:'Test',developer:'Dev',area:'Dubai Marina',propertyType:'Apartment',bedrooms:'2',sizeSqft:1200,price:2500000,currency:'AED',status:'Available',availabilityConfirmedAt:null});
+  const evidence=buildMatchEvidence({businessLine:'Sale',purpose:'own_use',areas:['Dubai Marina'],propertyTypes:['Apartment'],budgetMin:2000000,budgetMax:2400000,fundingMethod:'mortgage',bedroomsMin:2,bedroomsMax:2,timelineCode:'0_3_months'},{inventoryReference:'NYSA-INV-000001',project:'Test',developer:'Dev',area:'Dubai Marina',propertyType:'Apartment',bedrooms:'2',sizeSqft:1200,price:2500000,currency:'AED',effectiveStatus:'Available',availabilityConfirmedAt:null});
   assert.ok(evidence.matched.some(x=>x.criterion==='Preferred area'));assert.ok(evidence.failed.some(x=>x.criterion==='Maximum budget'));assert.ok(evidence.failed.some(x=>x.criterion==='Availability confirmation'));
 });
 
 test('proposal shortlist ranking is deterministic transparent and excludes unavailable inventory',()=>{
   const requirement={areas:['Dubai Marina'],propertyTypes:['Apartment'],budgetMin:2000000,budgetMax:2500000,bedroomsMin:2,bedroomsMax:2};
   const ranked=rankInventoryMatches(requirement,[
-    {id:'best',status:'Available',area:'Dubai Marina',propertyType:'Apartment',price:2300000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'},
-    {id:'partial',status:'Available',area:'Downtown',propertyType:'Apartment',price:2400000,bedrooms:'2',availabilityConfirmedAt:null},
-    {id:'hidden',status:'Closed',area:'Dubai Marina',propertyType:'Apartment',price:2200000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'}
+    {id:'best',effectiveStatus:'Available',area:'Dubai Marina',propertyType:'Apartment',price:2300000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'},
+    {id:'partial',effectiveStatus:'Available',area:'Downtown',propertyType:'Apartment',price:2400000,bedrooms:'2',availabilityConfirmedAt:null},
+    {id:'hidden',effectiveStatus:'Closed',area:'Dubai Marina',propertyType:'Apartment',price:2200000,bedrooms:'2',availabilityConfirmedAt:'2026-07-18T00:00:00Z'}
   ]);
   assert.deepEqual(ranked.map(x=>x.listing.id),['best','partial']);assert.equal(ranked[0].score,100);assert.equal(ranked[0].fit,'Strong fit');assert.ok(ranked[1].criteria.some(x=>x.code==='area'&&!x.pass));
 });
@@ -56,4 +56,15 @@ test('AI browser assistance requires editable review and a separate apply action
   assert.match(app,/Draft match wording/);assert.match(app,/Apply reviewed wording to suitability/);assert.match(app,/Check missing information/);
   assert.match(app,/It does not select, rank or save properties/);assert.match(app,/Copy reviewed questions/);
   assert.match(html,/\.ai-review-box/);assert.match(html,/\.ai-advisory/);
+});
+
+test('requirement AI generation has one request handler, a bounded wait and safe cancellation',()=>{
+  const app=readFileSync(join(root,'public/app.js'),'utf8');
+  assert.equal((app.match(/generateButton\.addEventListener\('click'/g)||[]).length,1);
+  assert.doesNotMatch(app,/\$\('#ai-draft-requirement',box\)\.addEventListener/);
+  assert.match(app,/timeoutMs:35000/);
+  assert.match(app,/Cancel generation/);
+  assert.match(app,/nothing was saved/);
+  assert.doesNotMatch(app,/new MutationObserver\(\(\)=>installBusinessAmountInputs\(result\)\)/);
+  assert.match(app,/requirementOptions\.map\(renderOption\).*installBusinessAmountInputs\(result\)/s);
 });

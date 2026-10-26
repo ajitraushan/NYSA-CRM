@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {validateTarget,targetPeriod,expandTargetPeriods,periodsForTarget,dubaiToday} from '../src/dashboard-target-domain.js';
+const metrics={new_leads:{unit:'leads',definition:'Existing count',direction:'low_bad'}};
+const base={id:'synthetic',metricCode:'new_leads',scopeType:'company',cadence:'weekly',periodStart:'2026-11-02',periodEnd:null,targetValue:100,exceptionThreshold:80,unit:'leads'};
+for(const [cadence,date,valid] of [['weekly','2026-11-02',true],['weekly','2026-11-03',false],['monthly','2026-11-01',true],['monthly','2026-11-02',false],['daily','2026-11-03',true]])test(`target date alignment ${cadence} ${date}`,()=>assert.equal(!validateTarget({...base,cadence,periodStart:date},metrics).error,valid));
+test('Dubai day changes at UTC 20:00',()=>assert.equal(dubaiToday(new Date('2026-11-01T20:01:00Z')),'2026-11-02'));
+test('weekly boundaries include Sunday and use Monday',()=>assert.deepEqual(targetPeriod('2026-11-08','weekly'),{from:'2026-11-02',to:'2026-11-08'}));
+test('monthly boundaries handle leap years and December',()=>{assert.deepEqual(targetPeriod('2028-02-12','monthly'),{from:'2028-02-01',to:'2028-02-29'});assert.equal(targetPeriod('2026-12-31','monthly').to,'2026-12-31');});
+test('weekly 100 repeats without proration; partial week is labelled',()=>{const p=expandTargetPeriods(base,'2026-11-02','2026-11-22',{today:'2026-11-04'});assert.equal(p.length,3);assert.deepEqual(p.map(x=>x.targetValue),[100,100,100]);assert.equal(p[0].partial,true);assert.equal(p[0].actualTo,'2026-11-04');assert.equal(p[1].future,true);});
+test('weekly and monthly end dates must close the period',()=>{assert.match(validateTarget({...base,periodEnd:'2026-11-09'},metrics).error,/Sunday/);assert.match(validateTarget({...base,cadence:'monthly',periodStart:'2026-11-01',periodEnd:'2026-11-29'},metrics).error,/last day/);});
+test('one-off requires both dates and finite non-negative numbers',()=>{assert.ok(validateTarget({...base,cadence:'one_off'},metrics).error);for(const targetValue of ['',-1,Infinity,'bad'])assert.ok(validateTarget({...base,targetValue},metrics).error);});
+test('business line must come from maintained options',()=>{assert.ok(validateTarget({...base,scopeType:'business_line',scopeId:'invented'},metrics,{businessTypes:['Sale','Rental']}).error);assert.ok(validateTarget({...base,scopeType:'business_line',scopeId:'Rental'},metrics,{businessTypes:['Sale','Rental']}).value);});
+test('unsupported inherited metric names are rejected',()=>assert.ok(validateTarget({...base,metricCode:'constructor'},metrics).error));
+test('future edit preserves earlier weekly targets',()=>{const versions=[{...base,validFrom:'2026-11-02',validTo:'2026-11-15'},{...base,targetValue:120,validFrom:'2026-11-16'}];assert.deepEqual(periodsForTarget(base,versions,'2026-11-02','2026-11-22',{today:'2026-12-01'}).map(x=>x.targetValue),[100,100,120]);});
+test('daily range has bounded expansion',()=>assert.throws(()=>expandTargetPeriods({...base,cadence:'daily'},'2026-11-02','2028-11-02'),/shorter range/));
+test('approved target controls and comparison keep separate handlers',()=>{const source=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');for(const text of ['Schedule target change','Delete draft','Target history','Targets by period','Change effective from'])assert.ok(source.includes(text));assert.ok(source.includes("api('/admin/dashboard-metrics')"));assert.ok(source.includes("data-dashboard-segment"));assert.ok(!source.includes("BUSINESS_TYPES.map(x=>`<option>${esc(x)}</option>`).join(''):type==='team'?teams"));});

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>NYSA CORE · WhatsApp Integration Lab</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="monogram" aria-hidden="true">N</div>
+        <div>
+          <p class="eyebrow">NYSA CORE</p>
+          <h1>WhatsApp Integration Lab</h1>
+        </div>
+      </div>
+      <div class="safety-badges" aria-label="Environment safety status">
+        <span class="badge safe"><i></i>Local only</span>
+        <span class="badge"><i></i>Network disabled</span>
+        <span class="badge"><i></i>Synthetic data</span>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="eyebrow">CONTROLLED SIMULATION</p>
+        <h2>Test the complete communication lifecycle without sending anything.</h2>
+      </div>
+      <p>This console exercises CORE policy, dispatch, retry, provider-event and reconciliation rules using opaque local references. It accepts no contact details or communication content.</p>
+    </section>
+
+    <div class="workspace">
+      <aside class="control-panel card">
+        <div class="card-heading">
+          <div><p class="eyebrow">01 · SETUP</p><h3>Simulation controls</h3></div>
+          <span id="run-state" class="status-dot idle">Ready</span>
+        </div>
+
+        <label class="field" for="scenario">
+          <span>Provider scenario</span>
+          <select id="scenario">
+            <option value="happy">Accepted → delivered → read</option>
+            <option value="retry">Temporary failure → retry → delivered</option>
+            <option value="permanent">Permanent provider rejection</option>
+            <option value="unknown">Unknown outcome → manual reconciliation</option>
+            <option value="duplicate">Duplicate delivery event</option>
+            <option value="replay">Replay attack rejected</option>
+            <option value="policy">Policy decision blocks dispatch</option>
+          </select>
+        </label>
+
+        <fieldset>
+          <legend>Dispatch-time policy</legend>
+          <label class="switch-row"><span><b>Actor authorized</b><small>Role and scope permit action</small></span><input type="checkbox" data-policy="actorAuthorized" checked><i></i></label>
+          <label class="switch-row"><span><b>Channel eligible</b><small>Validated channel remains usable</small></span><input type="checkbox" data-policy="channelEligible" checked><i></i></label>
+          <label class="switch-row"><span><b>Consent permits</b><small>Purpose is allowed at dispatch</small></span><input type="checkbox" data-policy="consentPermits" checked><i></i></label>
+          <label class="switch-row"><span><b>Restriction clear</b><small>No active suppression applies</small></span><input type="checkbox" data-policy="restrictionClear" checked><i></i></label>
+          <label class="switch-row"><span><b>Subject eligible</b><small>Related business record is current</small></span><input type="checkbox" data-policy="subjectEligible" checked><i></i></label>
+        </fieldset>
+
+        <div class="actions">
+          <button id="run" class="primary" type="button">Run simulation</button>
+          <button id="reset" class="secondary" type="button">Reset</button>
+        </div>
+        <p class="guard-note"><span aria-hidden="true">◆</span> The console has no fields for phone numbers, credentials or message content.</p>
+      </aside>
+
+      <section class="results">
+        <div class="metrics" aria-label="Simulation summary">
+          <article class="metric card"><span>Dispatches</span><strong id="dispatch-count">0</strong><small>local attempts</small></article>
+          <article class="metric card"><span>Provider events</span><strong id="event-count">0</strong><small>normalized</small></article>
+          <article class="metric card"><span>Duplicates</span><strong id="duplicate-count">0</strong><small>safely ignored</small></article>
+          <article class="metric card"><span>Final state</span><strong id="final-state" class="text-metric">Not run</strong><small>CORE lifecycle</small></article>
+        </div>
+
+        <article class="card timeline-card">
+          <div class="card-heading"><div><p class="eyebrow">02 · LIFECYCLE</p><h3>State timeline</h3></div><span id="scenario-label" class="scenario-chip">Awaiting simulation</span></div>
+          <ol id="timeline" class="timeline" aria-live="polite">
+            <li class="empty-state"><span>◇</span><div><b>No simulation yet</b><small>Select a scenario and run it to inspect every decision.</small></div></li>
+          </ol>
+        </article>
+
+        <article class="card ledger-card">
+          <div class="card-heading"><div><p class="eyebrow">03 · EVIDENCE</p><h3>Privacy-safe event ledger</h3></div><span class="ledger-note">Opaque references only</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Sequence</th><th>Source</th><th>Event</th><th>Result</th><th>Reference</th></tr></thead>
+              <tbody id="ledger"><tr><td colspan="5" class="table-empty">No events recorded.</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

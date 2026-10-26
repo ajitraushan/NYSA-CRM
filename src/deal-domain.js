@@ -13,8 +13,8 @@ export const REQUIRED_PARTIES=Object.freeze({
 });
 
 export function dealTypeForOffer(offerType,commercialMode){
-  if(offerType==='purchase')return'sale';
-  if(offerType==='rental')return'rental';
+  if(['purchase','sale'].includes(offerType))return'sale';
+  if(['rent','rent_out','rental'].includes(offerType))return'rental';
   if(offerType==='off_plan')return'off_plan';
   if(offerType==='commercial'&&['sale','rental'].includes(commercialMode))return`commercial_${commercialMode}`;
   return null;
@@ -68,18 +68,26 @@ export function validateDealCloseLost(input={}){
   return{value:{reasonCode,reason,evidenceReference}};
 }
 
-export function dealClosureGates({deal,parties=[],items=[]}={}){
+const TERMINAL_INVENTORY_STATES=Object.freeze(['Closed','Sold','Rented']);
+const RELEASABLE_EXTERNAL_STATES=Object.freeze(['reserved','approved_for_opportunity','under_offer']);
+
+export function dealReservationReleaseAligned({bookingId,bookingStatus,listingId,listingStatus,currentLinkageKind}={}){
+  if(!bookingId)return['detached','developer_stock_attached'].includes(currentLinkageKind);
+  if(bookingStatus!=='reserved')return false;
+  if(listingId)return!TERMINAL_INVENTORY_STATES.includes(listingStatus);
+  return RELEASABLE_EXTERNAL_STATES.includes(listingStatus);
+}
+
+export function dealClosureGates({deal,parties=[],documentsComplete=false,documentBlockers=[]}={}){
   if(!deal)return[{code:'deal',label:'Create the governed Deal record',complete:false}];
   const roles=new Set(parties.filter(x=>!x.effectiveTo).map(x=>x.partyRole));
   const required=REQUIRED_PARTIES[deal.dealType]||[];
   const missing=required.filter(role=>!roles.has(role));
-  const incomplete=items.filter(item=>item.required&& !['completed','waived'].includes(item.status));
   return[
-    {code:'terms',label:'Exact accepted offer terms linked',complete:Boolean(deal.acceptedOfferRevisionId)},
-    {code:'reservation',label:'Governed reservation preserved',complete:['reserved','completed'].includes(deal.bookingStatus)},
-    {code:'parties',label:missing.length?`Add mandatory parties: ${missing.join(', ')}`:'Mandatory parties recorded',complete:missing.length===0},
-    {code:'checklist',label:incomplete.length?`Complete ${incomplete.length} required checklist item${incomplete.length===1?'':'s'}`:'Required checklist items complete',complete:incomplete.length===0},
-    {code:'approval',label:'Manager/Director closure approval recorded',complete:Boolean(deal.approvedAt)},
-    {code:'closure',label:'Authoritative Closed Won recorded',complete:deal.status==='closed_won'}
+    {code:'commercial',label:missing.length?`Commercial evidence: add ${missing.join(', ')}`:'Commercial evidence verified',
+      complete:Boolean(deal.acceptedOfferRevisionId)&&missing.length===0},
+    {code:'reservation',label:deal.dealType==='off_plan'&&!deal.bookingId?'Developer stock recorded without internal reservation':'Governed reservation preserved',complete:deal.dealType==='off_plan'&&!deal.bookingId||['reserved','completed'].includes(deal.bookingStatus)},
+    {code:'documents',label:documentsComplete?'Required signed documents verified':documentBlockers.length?`${documentBlockers.length} signed document requirement${documentBlockers.length===1?'':'s'} outstanding`:'Required signed documents verified',complete:documentsComplete},
+    {code:'approval',label:deal.status==='closed_won'?'Manager/Director approval recorded and Deal closed Won':'Manager/Director approval and closure',complete:deal.status==='closed_won'}
   ];
 }

@@ -1,0 +1,31 @@
+{
+  "brand": "NYSA Realty",
+  "sourcePackageSha256": "d4c5b2112834d703f70a9f97b75ba66cc39509563414b4f424df9e8f08cab369",
+  "minimumRenderedWidths": {
+    "horizontal": 140,
+    "stacked": 90,
+    "mark": 24
+  },
+  "contexts": {
+    "applicationHeaderDark": "vector/nysa-horizontal-dark.svg",
+    "applicationHeaderCompactDark": "vector/nysa-app-icon.svg",
+    "authenticationDark": "vector/nysa-stacked-dark.svg",
+    "applicationFooterDark": "vector/nysa-horizontal-dark.svg",
+    "favicon16": "raster/favicon-16.png",
+    "favicon32": "raster/favicon-32.png",
+    "favicon48": "raster/favicon-48.png",
+    "appleTouchIcon": "raster/apple-touch-icon.png",
+    "appIcon": "raster/nysa-app-icon-512.png",
+    "socialShare": "raster/nysa-social-share-1200x630.png",
+    "emailSignature2x": "raster/nysa-horizontal-light@2x.png",
+    "pdfAndLetterhead2x": "raster/nysa-horizontal-light@2x.png",
+    "lightBackgroundHorizontal": "vector/nysa-horizontal-light.svg",
+    "darkBackgroundHorizontal": "vector/nysa-horizontal-dark.svg",
+    "lightBackgroundStacked": "vector/nysa-stacked-light.svg",
+    "darkBackgroundStacked": "vector/nysa-stacked-dark.svg",
+    "lightBackgroundMark": "vector/nysa-mark-light.svg",
+    "darkBackgroundMark": "vector/nysa-mark-dark.svg",
+    "monoPositive": "vector/nysa-mono-positive.svg",
+    "monoReversed": "vector/nysa-mono-reversed.svg"
+  }
+}

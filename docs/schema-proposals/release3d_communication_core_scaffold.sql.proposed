@@ -1,0 +1,110 @@
+-- Local-only provider-neutral communication schema proposal.
+-- The .sql.proposed suffix and location outside src/migrations prevent automatic execution.
+-- Sensitive contact values, credentials, raw events, and communication payloads do not belong in
+-- these tables. Restricted storage is represented by opaque references and integrity digests only.
+
+CREATE TABLE communication_policy_decisions (
+  id UUID PRIMARY KEY,
+  subject_kind TEXT NOT NULL,
+  subject_id UUID NOT NULL,
+  scope_ref TEXT NOT NULL,
+  channel_ref TEXT NOT NULL,
+  actor_id UUID NOT NULL,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('transactional_share','service_follow_up')),
+  policy_version TEXT NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('allowed','denied')),
+  reason_codes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  evaluated_at TIMESTAMPTZ NOT NULL,
+  valid_until TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (valid_until > evaluated_at)
+);
+
+CREATE TABLE communication_attempts (
+  id UUID PRIMARY KEY,
+  subject_kind TEXT NOT NULL,
+  subject_id UUID NOT NULL,
+  scope_ref TEXT NOT NULL,
+  channel_ref TEXT NOT NULL,
+  actor_id UUID NOT NULL,
+  policy_decision_id UUID NOT NULL REFERENCES communication_policy_decisions(id),
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp')),
+  direction TEXT NOT NULL CHECK (direction IN ('outbound','inbound')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('transactional_share','service_follow_up')),
+  state TEXT NOT NULL CHECK (state IN (
+    'draft','policy_approved','queued','dispatching','accepted','delivered','read','retry_wait',
+    'failed_permanent','outcome_unknown','reconciled','cancelled'
+  )),
+  restricted_payload_ref TEXT NOT NULL,
+  payload_digest TEXT NOT NULL,
+  provider_key TEXT,
+  provider_correlation_ref TEXT,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  next_attempt_at TIMESTAMPTZ,
+  accepted_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE communication_outbox (
+  id UUID PRIMARY KEY,
+  communication_attempt_id UUID NOT NULL REFERENCES communication_attempts(id),
+  dispatch_generation INTEGER NOT NULL DEFAULT 1 CHECK (dispatch_generation > 0),
+  state TEXT NOT NULL DEFAULT 'pending' CHECK (state IN ('pending','claimed','completed','retry_wait','dead_letter','cancelled')),
+  available_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  claimed_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  last_reason_code TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (communication_attempt_id,dispatch_generation)
+);
+
+CREATE TABLE communication_provider_events (
+  id UUID PRIMARY KEY,
+  provider_key TEXT NOT NULL,
+  provider_event_ref TEXT NOT NULL,
+  provider_correlation_ref TEXT NOT NULL,
+  communication_attempt_id UUID REFERENCES communication_attempts(id),
+  event_type TEXT NOT NULL CHECK (event_type IN ('accepted','delivered','read','failed','inbound_received')),
+  occurred_at TIMESTAMPTZ NOT NULL,
+  received_at TIMESTAMPTZ NOT NULL,
+  signature_verified SMALLINT NOT NULL CHECK (signature_verified = 1),
+  replay_detected SMALLINT NOT NULL DEFAULT 0 CHECK (replay_detected = 0),
+  restricted_raw_event_ref TEXT,
+  processing_state TEXT NOT NULL DEFAULT 'received' CHECK (processing_state IN (
+    'received','deduplicated','correlated','projected','correlation_review','processing_failed','retry_wait'
+  )),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (provider_key,provider_event_ref)
+);
+
+CREATE TABLE communication_projections (
+  id UUID PRIMARY KEY,
+  provider_event_id UUID NOT NULL REFERENCES communication_provider_events(id),
+  projection_type TEXT NOT NULL,
+  projection_ref TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (provider_event_id,projection_type)
+);
+
+CREATE INDEX communication_attempts_subject_idx
+  ON communication_attempts(subject_kind,subject_id,created_at DESC);
+CREATE INDEX communication_attempts_dispatch_idx
+  ON communication_attempts(state,next_attempt_at) WHERE state IN ('queued','retry_wait');
+CREATE UNIQUE INDEX communication_attempts_provider_correlation_idx
+  ON communication_attempts(provider_key,provider_correlation_ref)
+  WHERE provider_key IS NOT NULL AND provider_correlation_ref IS NOT NULL;
+CREATE INDEX communication_outbox_ready_idx
+  ON communication_outbox(state,available_at) WHERE state IN ('pending','retry_wait');
+CREATE INDEX communication_provider_events_correlation_idx
+  ON communication_provider_events(provider_key,provider_correlation_ref,received_at DESC);
+
+-- No grants are included. Runtime access requires a separately reviewed deployment-stage decision.

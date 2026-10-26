@@ -11,22 +11,22 @@ test('R2.5 migration supports atomic governed closure and reconciliation',()=>{
     assert.match(sql,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
 
-test('R2.5 APIs separate approval from authoritative Closed Won and reconcile outcomes',()=>{
+test('R2.5 APIs retain legacy recovery while new approval closes atomically and reconciles outcomes',()=>{
   const routes=read('src/routes/opportunities.js');
   for(const marker of ["/crm/deals/:dealId/approval","/crm/deals/:dealId/close-won",
     "/crm/deals/:dealId/close-lost","inventory_status_before","status='cancelled'","stage='Closed Lost'",
-    'FOR UPDATE OF d,b,o',"status='completed'","stage='Closed Won'","status='Closed'",
+    'FOR UPDATE OF d,o',"status='completed'","stage='Closed Won'","'Rented':'Sold'",
     "'closed_from_deal'","/crm/release2/reconciliation",'sourceOutcomes','exceptionCount'])
     assert.match(routes,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
 
-test('R2.5 workspace makes approval, closure and reconciliation explicit',()=>{
+test('R2.5 workspace makes atomic approval, legacy recovery and reconciliation explicit',()=>{
   const dealUi=read('public/deal-ui.js'),app=read('public/app.js');
-  for(const marker of ['Approve Deal for authoritative closure','Close Deal as Won',
-    'Checklist review confirms the evidence','confirmAuthoritativeClosure','Deal authoritatively closed won',
-    'Transaction will not complete','Close Deal as Lost and release inventory'])
+  for(const marker of ['Approve and close Deal as Won','Complete previously approved Deal',
+    'Three evidence gates lead to one management decision','confirmAuthoritativeClosure','Deal closed as Won',
+    'Cancel this Deal','Submit cancellation for Manager approval','Approve cancellation and release Inventory'])
     assert.match(dealUi,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   for(const marker of ['R2.5 reconciliation','Release 2 reconciliation','Cross-module exceptions',
-    'Original source and campaign outcomes','The Deal, Opportunity, reservation and inventory are authoritatively closed.'])
+    'Original source and campaign outcomes','The Deal and Opportunity are authoritatively closed; the Inventory outcome is recorded.'])
     assert.match(app,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

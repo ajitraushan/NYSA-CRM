@@ -30,7 +30,7 @@ test('mapping lifecycle is sequential and requires reason and evidence',()=>{
 
 test('admin mapping API and UI govern versions while intake applies only active exact mappings',()=>{
   const route=readFileSync(new URL('../src/routes/listing-mappings.js',import.meta.url),'utf8'),intake=readFileSync(new URL('../src/routes/listing-intake.js',import.meta.url),'utf8'),migration=readFileSync(new URL('../src/migrations/037_listing_mapping_governance.sql',import.meta.url),'utf8'),ui=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-  assert.match(route,/Full Administrator access is required/);assert.match(route,/Only Draft mapping versions can be edited/);assert.match(route,/provider_code=\$3 AND status='active'/);
+  assert.match(route,/Admin access is required/);assert.match(route,/Only Draft mapping versions can be edited/);assert.match(route,/provider_code=\$3 AND status='active'/);
   assert.match(route,/pg_advisory_xact_lock/);assert.match(route,/status='retired'/);assert.match(route,/Add at least one mapping before testing/);
   assert.match(intake,/status='active'/);assert.match(intake,/UNMAPPED_MAPPING_VERSION/);assert.match(intake,/currentActive:true/);assert.match(intake,/applyListingMappings/);assert.match(intake,/source_mapping_version_id/);assert.match(intake,/received_mapping_version/);assert.match(intake,/received_payload_hash/);assert.match(intake,/mapping_version_id/);
   assert.match(migration,/listing_mapping_one_active_provider_uq/);assert.match(migration,/LOWER\(external_value\)/);assert.match(migration,/ListingMappingVersion/);

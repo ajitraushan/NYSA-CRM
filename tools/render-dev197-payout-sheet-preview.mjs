@@ -1,0 +1,11 @@
+import {mkdir,writeFile} from 'node:fs/promises';
+import {buildQuarterPayoutStatement} from '../src/commission-payout-domain.js';
+import {makeCommissionPayoutSheetPdf} from '../src/commission-payout-sheet-pdf.js';
+
+const rows=[
+  {receiptDate:'2026-09-05',quarterKey:'2026-Q3',currency:'AED',payoutReference:'PAY-1',tierAgentName:'Amina Noor',propertySold:'Marina Residence · Tower A · Unit 897',opportunityReference:'NYSA-OP-202608-000001',dealReference:'NYSA-DL-202608-000001',salePrice:2500000,grossCommissionReceivedExVat:50000,quarterGrossCumulative:50000,currentCreditedAmount:50000,agentCommissionSharePercent:100,achievedRate:55,quarterTrueUpAmount:0,agentPayoutAmount:27500,releasedAmount:27500,status:'released'},
+  {receiptDate:'2026-09-12',quarterKey:'2026-Q3',currency:'AED',payoutReference:'PAY-2',tierAgentName:'Amina Noor',propertySold:'Palm Views · Building B · Unit 1204',opportunityReference:'NYSA-OP-202609-000002',dealReference:'NYSA-DL-202609-000002',salePrice:3000000,grossCommissionReceivedExVat:60000,quarterGrossCumulative:110000,currentCreditedAmount:45000,agentCommissionSharePercent:75,achievedRate:60,quarterTrueUpAmount:2500,agentPayoutAmount:29500,releasedAmount:27000,status:'released'},
+  {receiptDate:'2026-09-18',quarterKey:'2026-Q3',currency:'AED',payoutReference:'PAY-3',tierAgentName:'Amina Noor',propertySold:'Marina Quays · Unit Q404',opportunityReference:'NYSA-OP-202609-000003',dealReference:'NYSA-DL-202609-000003',salePrice:2700000,grossCommissionReceivedExVat:54000,quarterGrossCumulative:164000,currentCreditedAmount:54000,agentCommissionSharePercent:100,achievedRate:60,quarterTrueUpAmount:0,agentPayoutAmount:32400,releasedAmount:0,status:'calculated'}
+];
+const statement=buildQuarterPayoutStatement(rows),pdf=makeCommissionPayoutSheetPdf({agent:'Amina Noor',quarter:'2026-Q3',currency:'AED',rows:statement.rows,summary:statement.summary,organization:{displayName:'NYSA Realty LLC',proposalFooter:'NYSA Realty LLC · Internal'},generatedDate:'2026-09-06'}),directory=new URL('../output/pdf/',import.meta.url),file=new URL('NYSA-Agent-Payout-Calculation-DEV197-preview.pdf',directory);
+await mkdir(directory,{recursive:true});await writeFile(file,pdf);console.log(file.pathname);

@@ -30,17 +30,17 @@ test('Release 2.6 persists multi-property WhatsApp sharing and customer response
 
 test('Release 2.6 separates Internal Inventory from optional external portal Listings',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/listings.js');
-  assert.match(ui,/Step 1: maintain Inventory/);
-  assert.match(ui,/external Listing and submit it to a portal/);
-  assert.match(ui,/External listing publications/);
+  assert.match(ui,/Maintain Inventory, complete its governed verification/);
+  assert.match(ui,/Create an external portal Listing draft/);
+  assert.match(ui,/External publication register/);
   assert.match(routes,/external_listing_publications/);
-  assert.match(routes,/workflow_auto_approved_by_policy/);
+  assert.match(routes,/noAutomaticPublication:true/);
   assert.match(routes,/External publication cannot move from/);
 });
 
 test('Release 2.6 repairs Customer selection and User record layout contracts',()=>{
   const ui=read('public/app.js'),styles=read('public/index.html');
-  for(const marker of ['customer-picker-results','data-customer-choice','Selected existing Customer','Create a new Customer instead'])
+  for(const marker of ['customer-picker-results','installCustomerLookup','Selected existing Customer','Create a new Customer instead'])
     assert.match(ui,new RegExp(marker));
   assert.match(styles,/#broker-table table\{min-width:1180px;table-layout:fixed\}/);
   assert.match(styles,/#broker-table td:first-child b,#broker-table td:first-child small\{display:block/);

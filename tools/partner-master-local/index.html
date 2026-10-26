@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYSA CORE — Company governance review</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="logo">N</span><div><strong>NYSA CORE</strong><small>Local functional review</small></div></div>
+    <nav aria-label="Prototype views"><a class="active" href="/">Company maintenance</a><a href="/inventory">Inventory provenance</a></nav>
+  </header>
+  <main>
+    <section class="hero compact">
+      <div><p class="eyebrow">RELEASE 4 · GATE 3 UX REVIEW</p><h1>Govern an existing Company.</h1><p>Verification adds an immutable evidence layer to the existing Company Master. It does not create another organization identity or expose Company contacts.</p></div>
+      <div class="status"><strong>LOCAL PROTOTYPE</strong><span>Memory-only · synthetic facts</span></div>
+    </section>
+    <div class="notice"><strong>Design boundary</strong><span>Company reference <b>NYSA-COMP-SYN-014</b> already exists. This screen maintains organization reference data only; it does not create a second Partner Master. Licence details are optional, while source evidence and independent review are required.</span></div>
+    <section class="controls">
+      <label>Governed classification<select id="partner-type"><option value="developer">Developer</option><option value="external_agency">External agency</option><option value="referral_partner">Referral partner</option><option value="service_provider">Service provider</option></select></label>
+      <label>Review scenario<select id="scenario"><option value="pending">Version 1 · pending verification</option><option value="duplicate">Possible duplicate</option><option value="verified">Verified and active</option><option value="expired">Expired licence</option><option value="revision">Version 2 · correction pending</option><option value="own_draft">Creator attempts own approval</option></select></label>
+      <p>Scenario controls change synthetic review evidence only. Nothing is saved.</p>
+    </section>
+    <section id="gate" aria-live="polite"></section>
+    <section class="workspace">
+      <div>
+        <p class="eyebrow">EXISTING COMPANY · GOVERNANCE SUMMARY</p>
+        <div id="identity"></div>
+        <p class="eyebrow section-label">REVIEW DECISION</p>
+        <div id="review"></div>
+      </div>
+      <aside>
+        <p class="eyebrow">IMMUTABLE VERSION HISTORY</p>
+        <div id="history"></div>
+        <article class="boundary-note"><strong>Used in the existing Inventory transaction</strong><p>The existing Inventory transaction may optionally reference a compatible active version as provenance. Inventory origin and individual owner selection do not belong on this Admin screen and remain outside Company maintenance.</p><a class="button-link" href="/inventory">Review Inventory placement</a></article>
+      </aside>
+    </section>
+  </main>
+  <footer>NO PRIVATE CONTACT · NO INVENTORY MUTATION · NO EXTERNAL REQUEST · NO CRM WRITE</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

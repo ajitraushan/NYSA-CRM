@@ -2,14 +2,20 @@ const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 
 export function validateOrganizationProfile(body={}){
   const profile={
-    legalName:clean(body.legalName),displayName:clean(body.displayName),tradeLicenseNumber:clean(body.tradeLicenseNumber),
+    legalName:clean(body.legalName),displayName:clean(body.displayName),tradeLicenseNumber:clean(body.tradeLicenseNumber),orn:clean(body.orn),
     registrationAuthority:clean(body.registrationAuthority),registeredAddress:clean(body.registeredAddress),primaryPhone:clean(body.primaryPhone),
     primaryEmail:clean(body.primaryEmail)?.toLowerCase()||null,websiteUrl:clean(body.websiteUrl),defaultCurrency:String(body.defaultCurrency||'AED').trim().toUpperCase(),
     timezone:clean(body.timezone)||'Asia/Dubai',locale:clean(body.locale)||'en-AE',brandVersion:clean(body.brandVersion),
-    proposalFooter:clean(body.proposalFooter),defaultDisclaimer:clean(body.defaultDisclaimer)
+    proposalFooter:clean(body.proposalFooter),defaultDisclaimer:clean(body.defaultDisclaimer),
+    vatRegistrationNumber:clean(body.vatRegistrationNumber),bankAccountName:clean(body.bankAccountName),bankName:clean(body.bankName),
+    bankAccountNumber:clean(body.bankAccountNumber),bankIban:clean(body.bankIban)?.replace(/\s+/g,'').toUpperCase()||null,
+    bankSwiftCode:clean(body.bankSwiftCode)?.replace(/\s+/g,'').toUpperCase()||null,
+    bankCurrency:String(body.bankCurrency||body.defaultCurrency||'AED').trim().toUpperCase(),bankBranch:clean(body.bankBranch),
+    defaultDocumentAgentId:clean(body.defaultDocumentAgentId)
   };
   if(!profile.legalName||!profile.displayName||!profile.brandVersion)return {error:'Legal name, display name and brand version are required'};
   if(!/^[A-Z]{3}$/.test(profile.defaultCurrency))return {error:'Default currency must be a three-letter ISO currency code'};
+  if(!/^[A-Z]{3}$/.test(profile.bankCurrency))return {error:'Bank currency must be a three-letter ISO currency code'};
   if(profile.primaryEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.primaryEmail))return {error:'Primary email is invalid'};
   if(profile.websiteUrl){try{const u=new URL(profile.websiteUrl);if(!['http:','https:'].includes(u.protocol))throw new Error();}catch{return {error:'Website must be a valid HTTP or HTTPS URL'};}}
   try{new Intl.DateTimeFormat(profile.locale,{timeZone:profile.timezone}).format(new Date());}catch{return {error:'Locale or timezone is invalid'};}
@@ -30,6 +36,7 @@ export function organizationContactLines(org){
   return [
     org.legalName&&org.legalName!==org.displayName?`Legal entity: ${org.legalName}`:null,
     org.tradeLicenseNumber?`Trade licence: ${org.tradeLicenseNumber}${org.registrationAuthority?` | ${org.registrationAuthority}`:''}`:null,
+    org.orn?`ORN: ${org.orn}`:null,
     org.registeredAddress?`Registered address: ${org.registeredAddress}`:null,
     [org.primaryPhone,org.primaryEmail,org.websiteUrl].filter(Boolean).join(' | ')||null
   ].filter(Boolean);
