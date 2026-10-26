@@ -64,11 +64,11 @@ r.get('/crm/dashboard',async(req,res)=>{
   f.broker=req.broker;proposalF.broker=req.broker;callF.broker=req.broker;
   const prior=priorWhere(f),priorProposal=priorWhere(proposalF,'l','p.updated_at'),priorCall=priorWhere(callF,'l','a.created_at'),type=dashboardTypeFor(req.broker),canSeeIntegration=isManager(req.broker)||isCompanyReader(req.broker);
   const [current,previous,stages,sources,priorSources,campaigns,teams,agents,trend,tasks,exceptions,previousExceptions,proposals,calls,priorProposals,priorCalls,priorAgents,inventory,targets,hierarchyRows,accountabilityRows,integrationFailures,previousIntegrationFailures]=await Promise.all([
-    one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
-      COUNT(*) FILTER(WHERE temperature='Warm' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS warm_converted,
-      COUNT(*) FILTER(WHERE temperature='Warm' AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id) AND stage NOT IN('Lost'))::int AS warm_pending,
-      COUNT(*) FILTER(WHERE temperature='Hot' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id))::int AS hot_converted,
-      COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
+    one(`SELECT COUNT(*)::int AS leads,COUNT(DISTINCT contact_id)::int AS customers,COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active')::int AS warm,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')))::int AS warm_converted,
+      COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active' AND NOT EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')) AND stage NOT IN('Lost'))::int AS warm_pending,
+      COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active' AND EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost')))::int AS hot_converted,
+      COUNT(*) FILTER(WHERE current_status='closed_won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND accepted_at IS NULL)::int AS awaiting_acceptance,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost') AND ((accepted_at IS NULL AND acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR
@@ -76,10 +76,10 @@ r.get('/crm/dashboard',async(req,res)=>{
       COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
       COUNT(*) FILTER(WHERE updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS stale_risk,
-      COUNT(*) FILTER(WHERE temperature IN('Hot','Warm') AND updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS hot_warm_aging,
+      COUNT(*) FILTER(WHERE temperature IN('Hot','Warm') AND current_status='active' AND updated_at<NOW()-INTERVAL '7 days' AND stage NOT IN('Won','Lost'))::int AS hot_warm_aging,
       COUNT(*) FILTER(WHERE stage NOT IN('Won','Lost'))::int AS open FROM leads l WHERE ${f.where}`,f.params),
-    one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm')::int AS warm,
-      COUNT(*) FILTER(WHERE stage='Won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
+    one(`SELECT COUNT(*)::int AS leads,COUNT(*) FILTER(WHERE temperature='Hot' AND current_status='active')::int AS hot,COUNT(*) FILTER(WHERE temperature='Warm' AND current_status='active')::int AS warm,
+      COUNT(*) FILTER(WHERE current_status='closed_won')::int AS won,COUNT(*) FILTER(WHERE accepted_at IS NULL AND acceptance_due_at<NOW())::int AS acceptance_breaches,
       COUNT(*) FILTER(WHERE accepted_at IS NOT NULL AND first_contact_at IS NULL AND first_contact_due_at<NOW())::int AS contact_breaches,
       COUNT(*) FILTER(WHERE next_follow_up_at IS NULL AND stage NOT IN('Won','Lost'))::int AS no_next_action,
       COUNT(*) FILTER(WHERE assigned_to IS NULL AND stage NOT IN('Won','Lost'))::int AS unassigned,
@@ -192,11 +192,11 @@ r.get('/crm/dashboard/records',async(req,res)=>{
   const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const segment=req.query.segment||'new_leads';
   const lifecycle=AGENT_LIFECYCLE_STAGES.find(item=>`lifecycle_${item.stage.toLowerCase()}`===segment);
   if(segment.startsWith('guided_')){
-    const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)'};
+    const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)',requirements:'EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL)'};
     let rows;
     if(Object.hasOwn(leadSteps,step)){
       const params=[],scope=agentWorkLeadScopeSql('l',req.broker,params),distinct=step==='customer'?'DISTINCT ON (l.contact_id)':'';
-      rows=await many(`SELECT ${distinct} l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+      rows=await many(`SELECT ${distinct} l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
         t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
         FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
         WHERE ${scope.clause} AND ${leadSteps[step]} ORDER BY ${step==='customer'?'l.contact_id,':''}l.created_at DESC`,params);
@@ -206,7 +206,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
         deal:'EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id)'};
       if(!conditions[step])return res.status(400).json({error:'Unknown operating-sequence step'});
       const params=[],scope=opportunityScopeSql('o',req.broker,params);
-      rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,
+      rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,o.opportunity_reference,o.stage AS opportunity_stage,o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,
         t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
         FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=o.assigned_team_id
         LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=o.owner_id
@@ -264,7 +264,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
     proposal_workload:"EXISTS(SELECT 1 FROM proposals dp WHERE dp.lead_id=l.id AND dp.status IN('draft','generated','reviewed'))",
     };
   const extra=lifecycle?`l.stage='${lifecycle.stage}'`:clauses[segment];
-  const rows=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+  const rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
     t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
     WHERE ${f.where}${extra?' AND '+extra:''} ORDER BY l.created_at DESC LIMIT 500`,f.params);
@@ -273,7 +273,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
 });
 
 const csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-r.get('/crm/dashboard/export',async(req,res)=>{const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT l.id,l.title,c.full_name AS contact_name,l.source,l.business_type,l.stage,l.temperature,t.name AS team_name,b.name AS agent_name,l.created_at,l.next_follow_up_at FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${f.where} ORDER BY l.created_at DESC`,f.params);const headers=['id','title','contactName','source','businessType','stage','temperature','teamName','agentName','createdAt','nextFollowUpAt'],csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');await audit('DashboardExport',uuid(),'exported',req.broker.id,{filters:f.selected,rowCount:rows.length,dashboardType:dashboardTypeFor(req.broker)});res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="nysa-dashboard-export.csv"');res.end(csv);});
+r.get('/crm/dashboard/export',async(req,res)=>{const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,c.full_name AS contact_name,l.source,l.business_type,l.stage,l.temperature,t.name AS team_name,b.name AS agent_name,l.created_at,l.next_follow_up_at FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${f.where} ORDER BY l.created_at DESC`,f.params);const headers=['id','leadReference','currentStatus','title','contactName','source','businessType','stage','temperature','teamName','agentName','createdAt','nextFollowUpAt'],csv=[headers.map(csvCell).join(','),...rows.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\r\n');await audit('DashboardExport',uuid(),'exported',req.broker.id,{filters:f.selected,rowCount:rows.length,dashboardType:dashboardTypeFor(req.broker)});res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="nysa-dashboard-export.csv"');res.end(csv);});
 
 r.get('/admin/dashboard-metrics',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});res.json({metrics:Object.entries(DASHBOARD_METRICS).map(([code,x])=>({code,...x}))});});
 r.get('/admin/dashboard-targets',async(req,res)=>{if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});res.json({targets:await many('SELECT d.*,b.name AS approved_by_name FROM dashboard_targets d LEFT JOIN brokers b ON b.id=d.approved_by ORDER BY d.created_at DESC')});});

@@ -49,7 +49,7 @@ let server;
 
 async function start() {
   await migrate();
-  server = app.listen(PORT, () => console.log(`NYSA CRM running at http://localhost:${PORT}`));
+  server = app.listen(PORT, () => console.log(`NYSA CORE running at http://localhost:${PORT}`));
 }
 
 async function shutdown() {

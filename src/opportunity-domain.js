@@ -78,6 +78,10 @@ export function validateOpportunityTransition(currentStage,toStage,{reasonCode,r
     if(!clean(reason))return {error:'A reason is required to return to Matching'};
     return {value:{toStage,reasonCode:'viewing_returned_to_matching',reason:clean(reason)}};
   }
+  if(['Offer','Negotiation'].includes(currentStage)&&toStage==='Matching'){
+    if(!clean(reason))return {error:'A reason is required to return to Matching after an Offer outcome'};
+    return {value:{toStage,reasonCode:'terminal_offer_return_to_matching',reason:clean(reason)}};
+  }
   if(['Requirements','Matching','Viewing','Offer','Negotiation'].includes(currentStage)&&toStage==='Closed Lost'){
     if(!OPPORTUNITY_LOST_REASONS.includes(reasonCode)||!clean(reason))return {error:'A controlled lost reason and explanation are required'};
     return {value:{toStage,reasonCode,reason:clean(reason)}};

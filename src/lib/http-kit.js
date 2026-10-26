@@ -133,7 +133,15 @@ export function createApp() {
   }
 
   function streamFile(file, res) {
-    res.setHeader('Content-Type', MIME[path.extname(file)] || 'application/octet-stream');
+    const extension=path.extname(file).toLowerCase();
+    res.setHeader('Content-Type', MIME[extension] || 'application/octet-stream');
+    if (['.html','.js','.css'].includes(extension)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+      res.setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
+    }
     fs.createReadStream(file).pipe(res);
   }
 

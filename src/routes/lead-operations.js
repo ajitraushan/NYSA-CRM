@@ -117,8 +117,8 @@ const eligibleSalesAgentTeamSql=(agent,team,area='NULL')=>`EXISTS(SELECT 1 FROM 
     OR EXISTS(SELECT 1 FROM team_memberships eligible_tm WHERE eligible_tm.broker_id=eligible_broker.id AND eligible_tm.team_id=${team} AND eligible_tm.ends_at IS NULL)
     OR EXISTS(SELECT 1 FROM user_role_assignments eligible_ur WHERE eligible_ur.broker_id=eligible_broker.id AND eligible_ur.team_id=${team}
       AND eligible_ur.job_role='sales_agent' AND eligible_ur.status='active' AND eligible_ur.ends_at IS NULL))
-  AND (${area} IS NULL OR NOT EXISTS(SELECT 1 FROM agent_area_assignments any_area WHERE any_area.broker_id=eligible_broker.id AND any_area.ends_at IS NULL)
-    OR EXISTS(SELECT 1 FROM agent_area_assignments eligible_area WHERE eligible_area.broker_id=eligible_broker.id AND eligible_area.area_id=${area} AND eligible_area.ends_at IS NULL)))`;
+  AND ((${area})::uuid IS NULL OR NOT EXISTS(SELECT 1 FROM agent_area_assignments any_area WHERE any_area.broker_id=eligible_broker.id AND any_area.ends_at IS NULL)
+    OR EXISTS(SELECT 1 FROM agent_area_assignments eligible_area WHERE eligible_area.broker_id=eligible_broker.id AND eligible_area.area_id=(${area})::uuid AND eligible_area.ends_at IS NULL)))`;
 
 r.get('/crm/assignment-queue',async(req,res)=>{
   await recycleBreachedAssignments(req.broker.id);

@@ -1,0 +1,5 @@
+src/** -text
+public/** -text
+app.cjs -text
+package.json -text
+package-lock.json -text

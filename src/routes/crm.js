@@ -38,6 +38,20 @@ async function staffMember(id) {
   return one("SELECT id, team_id, job_role FROM brokers WHERE id=$1 AND role IN ('admin','internal_broker') AND status='active'", [id]);
 }
 
+async function liveLeadInventory(listingId,client){
+  if(!listingId)return null;
+  return one(`SELECT l.id FROM listings l WHERE l.id=$1 AND l.deleted_at IS NULL
+    AND l.workflow_status='approved' AND l.verification_status IN ('verified','not_required') AND l.status='Available'
+    AND (l.verification_expires_at IS NULL OR l.verification_expires_at>NOW())
+    AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.listing_id=l.id AND b.status='reserved' AND b.expires_at>NOW())
+    FOR UPDATE OF l`,[listingId],client);
+}
+
+async function rejectUnavailableLeadInventory(listingId,client){
+  if(!listingId)return null;
+  return await liveLeadInventory(listingId,client)?null:'The selected Inventory is sold, closed, reserved, expired, unapproved or otherwise unavailable. It cannot be linked to a new Lead.';
+}
+
 async function eligibleTeamManager(id) {
   if (!id) return null;
   return one(`SELECT b.id,b.team_id,b.job_role FROM brokers b
@@ -232,7 +246,7 @@ r.get('/crm/customers/:id',async(req,res)=>{
     LEFT JOIN brokers creator ON creator.id=c.created_by
     WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
-  const allLeads=await many(`SELECT id,title,business_type,stage,temperature,assigned_to,assigned_team_id,created_by,created_at FROM leads WHERE contact_id=$1 ORDER BY created_at DESC`,[customer.id]);
+  const allLeads=await many(`SELECT id,lead_reference,current_status,title,business_type,stage,temperature,assigned_to,assigned_team_id,created_by,created_at FROM leads WHERE contact_id=$1 ORDER BY created_at DESC`,[customer.id]);
   const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker)&&(req.broker.role==='admin'||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id),canReviewKyc=isManager(req.broker);
   const [roles,channels,consent,documents]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
@@ -466,23 +480,26 @@ r.get('/crm/leads', async (req, res) => {
   if (req.query.assignedTo === 'me') add('l.assigned_to=?',req.broker.id);
   else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
-  if (req.query.q) { params.push(`%${String(req.query.q).replaceAll('*','%')}%`); where.push(`(l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
+  if (req.query.q) { params.push(`%${String(req.query.q).replaceAll('*','%')}%`); where.push(`(l.lead_reference ILIKE $${params.length} OR l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
   const pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||10));
   const total=Number((await one(`SELECT COUNT(*)::int AS count FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);
   const opportunityScope=opportunityScopeSql('o',req.broker,params);
   const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
-    b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,
+    b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,x.area AS listing_area,x.price AS listing_price,x.currency AS listing_currency,
     active_opportunity.id AS active_opportunity_id,active_opportunity.opportunity_reference AS active_opportunity_reference,
     active_opportunity.title AS active_opportunity_title,active_opportunity.stage AS active_opportunity_stage,
+    active_opportunity.listing_area AS active_opportunity_listing_area,active_opportunity.listing_price AS active_opportunity_listing_price,
+    active_opportunity.listing_currency AS active_opportunity_listing_currency,
     active_opportunity.next_action AS active_opportunity_next_action,active_opportunity.next_action_due_at AS active_opportunity_next_action_due_at,
     (SELECT COUNT(*)::int FROM activities a WHERE a.lead_id=l.id) AS activity_count
     FROM leads l JOIN contacts c ON c.id=l.contact_id
     LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN listings x ON x.id=l.listing_id
     LEFT JOIN LATERAL (
-      SELECT o.id,o.opportunity_reference,o.title,o.stage,o.next_action,o.next_action_due_at
-      FROM opportunities o
-      WHERE o.lead_id=l.id AND o.stage NOT IN ('Closed Won','Closed Lost') AND ${opportunityScope.clause}
-      ORDER BY o.updated_at DESC,o.created_at DESC LIMIT 1
+      SELECT o.id,o.opportunity_reference,o.title,o.stage,o.next_action,o.next_action_due_at,
+        opportunity_listing.area AS listing_area,opportunity_listing.price AS listing_price,opportunity_listing.currency AS listing_currency
+      FROM opportunities o LEFT JOIN listings opportunity_listing ON opportunity_listing.id=o.listing_id
+      WHERE o.lead_id=l.id AND ${opportunityScope.clause}
+      ORDER BY CASE WHEN o.stage NOT IN ('Closed Won','Closed Lost') THEN 0 ELSE 1 END,o.updated_at DESC,o.created_at DESC LIMIT 1
     ) active_opportunity ON TRUE
     WHERE ${where.join(' AND ')} ORDER BY
       CASE l.temperature WHEN 'Hot' THEN 1 WHEN 'Warm' THEN 2 ELSE 3 END,l.updated_at DESC LIMIT $${params.length+1}`,[...params,pageSize]);
@@ -512,6 +529,8 @@ r.get('/crm/leads/:id', async (req, res) => {
 
 async function insertCapturedLead(b, actorId, budget, client) {
   const id=uuid();
+  const inventoryError=await rejectUnavailableLeadInventory(b.listingId,client);
+  if(inventoryError)throw Object.assign(new Error(inventoryError),{statusCode:409});
   const primary=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.preferredAreas,client);if(primary.error)throw Object.assign(new Error(primary.error),{statusCode:400});
   const rule=await selectRoutingRule({source:b.source,businessType:b.businessType,primaryAreaId:primary.areaId},client);
   const teamId=rule?.teamId||null,receivedAt=new Date(),deadlines=await calculateDeadlines(receivedAt,client);
@@ -545,6 +564,7 @@ r.post('/crm/leads/capture', async (req,res)=>{
   if(b.temperature&&b.temperature!=='Unassessed')return res.status(400).json({error:'New leads begin Unassessed; use the approved qualification questions to calculate a result'});
   if(b.stage&&b.stage!=='New')return res.status(400).json({error:'New leads must start in the New stage'});
   if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
+  const inventoryError=await rejectUnavailableLeadInventory(b.listingId);if(inventoryError)return res.status(409).json({error:inventoryError});
   if(contactBody.companyId&&!(await one('SELECT id FROM companies WHERE id=$1 AND archived_at IS NULL',[contactBody.companyId])))return res.status(400).json({error:'Invalid companyId'});
   if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId])))return res.status(400).json({error:'Invalid listingId'});
   const budget=validateBudget(b.budgetMin,b.budgetMax);if(budget.error)return res.status(400).json({error:budget.error});
@@ -593,7 +613,7 @@ r.post('/crm/leads', async (req, res) => {
     return res.status(409).json({error:contact.duplicateReviewStatus==='rejected'?'This Customer was rejected during duplicate review and cannot be used to create a Lead. Use the approved existing Customer record instead.':'This Customer is inactive or awaiting duplicate resolution. A responsible Manager must approve it before a Lead can be created.'});
   if(!contact.email||!contact.phone||!contact.preferredChannel)return res.status(409).json({error:'Complete the existing customer email, phone and preferred channel before creating a lead'});
   if(b.assignedTo!==undefined||b.assignedTeamId!==undefined)return res.status(400).json({error:'New leads must enter an unassigned team queue; a team lead or Director assigns them after capture'});
-  if(b.listingId&&!(await one('SELECT id FROM listings WHERE id=$1 AND deleted_at IS NULL',[b.listingId]))) return res.status(400).json({error:'Invalid listingId'});
+  const inventoryError=await rejectUnavailableLeadInventory(b.listingId);if(inventoryError)return res.status(409).json({error:inventoryError});
   const budget = validateBudget(b.budgetMin,b.budgetMax);
   if (budget.error) return res.status(400).json({error:budget.error});
   if(budget.min===null||budget.max===null)return res.status(400).json({error:'Budget from and Budget to are required'});
@@ -651,6 +671,7 @@ r.patch('/crm/leads/:id', async (req,res)=>{
   if(b.stage!==undefined){
     sets.push(`won_at=CASE WHEN $${stageParam}='Won' THEN COALESCE(won_at,NOW()) ELSE NULL END`);
     sets.push(`closed_at=CASE WHEN $${stageParam} IN ('Won','Lost') THEN COALESCE(closed_at,NOW()) ELSE NULL END`);
+    sets.push(`current_status=CASE WHEN $${stageParam}='Won' THEN 'closed_won' WHEN $${stageParam}='Lost' THEN 'closed_lost' ELSE 'active' END`);
     if(b.stage!=='Lost') sets.push('lost_reason=NULL','resolution_code=NULL','resolution_reason_code=NULL');
     if(b.assignedTo===undefined) sets.push(`assignment_status=CASE WHEN $${stageParam} IN ('Won','Lost') THEN 'closed' WHEN assigned_to IS NULL THEN 'unassigned' ELSE 'assigned' END`);
   }
@@ -727,29 +748,34 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
     many(`SELECT o.id,o.opportunity_reference,o.title,o.stage,o.owner_id,o.assigned_team_id,o.next_action,o.next_action_due_at,o.version,
       (SELECT COUNT(*)::int FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted') AS accepted_offer_count,
       (SELECT COUNT(*)::int FROM bookings bk WHERE bk.opportunity_id=o.id AND bk.status='reserved') AS active_booking_count,
+      (SELECT COUNT(*)::int FROM deals d WHERE d.opportunity_id=o.id) AS deal_count,
+      (SELECT COUNT(*)::int FROM deals d WHERE d.opportunity_id=o.id AND d.status IN ('closed_won','closed_lost')) AS closed_deal_count,
       b.name AS owner_name,t.name AS team_name,li.project AS listing_project
       FROM opportunities o JOIN brokers b ON b.id=o.owner_id LEFT JOIN teams t ON t.id=o.assigned_team_id
       LEFT JOIN listings li ON li.id=o.listing_id WHERE o.lead_id=$1 AND ${opportunityScope.clause} ORDER BY o.created_at`,opportunityScope.params),
-    many(`SELECT s.*,l.inventory_reference,l.project,l.area,l.price,l.currency
+    many(`SELECT s.*,l.inventory_reference,l.project,l.area,l.price,l.currency,l.status,l.workflow_status,l.deleted_at,l.verification_expires_at,
+      (l.deleted_at IS NULL AND l.workflow_status='approved' AND l.verification_status IN ('verified','not_required') AND l.status='Available'
+       AND (l.verification_expires_at IS NULL OR l.verification_expires_at>NOW())
+       AND NOT EXISTS(SELECT 1 FROM bookings bk WHERE bk.listing_id=l.id AND bk.status='reserved' AND bk.expires_at>NOW())) AS currently_eligible
       FROM lead_inventory_selections s JOIN listings l ON l.id=s.listing_id
       WHERE s.lead_id=$1 ORDER BY s.selected_at`,[lead.id])
   ]);
   const active=opportunities.filter(x=>!['Closed Won','Closed Lost'].includes(x.stage));
   const opportunityReady=Boolean(lead.assignedTo&&requirement&&qualification&&['Qualified','Viewing','Negotiation','Won'].includes(lead.stage));
-  const currentOpportunity=active[0]||null;
-  const stageIndex=currentOpportunity?['Requirements','Matching','Viewing','Offer','Negotiation','Booking'].indexOf(currentOpportunity.stage):-1;
+  const currentOpportunity=active[0]||null,flowOpportunity=currentOpportunity||opportunities.at(-1)||null;
+  const stageIndex=flowOpportunity?['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Deal','Closed Won'].indexOf(flowOpportunity.stage):-1;
   const sequenceStatus=(targetIndex,readyIndex)=>stageIndex===targetIndex?'current':stageIndex>targetIndex?'completed':stageIndex===readyIndex?'ready':'blocked';
   const steps=[
     {code:'customer',label:'Customer',status:'completed',action:'Customer identity is reused from the Customer Master'},
     {code:'lead',label:'Lead',status:'completed',action:'Enquiry, source and responsible ownership are retained'},
-    {code:'qualification',label:'Qualification',status:qualification?'completed':'current',action:qualification?`${qualification.finalTemperature} qualification recorded`:'Complete the approved qualification'},
-    {code:'requirements',label:'Requirements',status:requirement?'completed':qualification?'current':'blocked',action:requirement?`Structured requirement version ${requirement.versionNo} recorded`:qualification?'Collect the customer property requirements':'Complete qualification first'},
-    {code:'opportunity',label:'Opportunity',status:currentOpportunity?'completed':opportunityReady?'ready':'blocked',action:currentOpportunity?currentOpportunity.opportunityReference:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and requirements are required'},
-    {code:'matching',label:'Match',status:currentOpportunity?sequenceStatus(1,0):'blocked',action:currentOpportunity?.stage==='Requirements'?'Review matching inventory':currentOpportunity?.stage==='Matching'?currentOpportunity.nextAction:'Create an Opportunity first'},
-    {code:'viewing',label:'Viewing',status:currentOpportunity?sequenceStatus(2,1):'blocked',action:stageIndex<2?'Shortlist inventory before scheduling':'Record attendance and customer feedback'},
-    {code:'offer',label:'Offer',status:currentOpportunity?.acceptedOfferCount?'completed':currentOpportunity&&[3,4].includes(stageIndex)?'current':stageIndex===2?'ready':'blocked',action:currentOpportunity?.acceptedOfferCount?'Accepted exact revision is ready for reservation':'Create and negotiate immutable offer revisions'},
-    {code:'booking',label:'Booking',status:currentOpportunity?.activeBookingCount?'current':currentOpportunity?.acceptedOfferCount?'ready':'blocked',action:currentOpportunity?.activeBookingCount?'Monitor reservation expiry and evidence':currentOpportunity?.acceptedOfferCount?'Create an explicit reservation':'An accepted exact offer revision is required'},
-    {code:'deal',label:'Deal',status:'not_available',action:'Available in a later Release 2 slice'}
+    {code:'qualification',label:'Qualification',status:qualification?'completed':'current',action:qualification?`${qualification.finalTemperature} qualification recorded`:'Complete the approved qualification; structured requirements may be recorded in parallel'},
+    {code:'requirements',label:'Requirements',status:requirement?'completed':'current',action:requirement?`Structured requirement version ${requirement.versionNo} recorded`:'Collect structured requirements now; assessment is not a prerequisite for recording them'},
+    {code:'opportunity',label:'Opportunity',status:flowOpportunity?'completed':opportunityReady?'ready':'blocked',action:flowOpportunity?`${flowOpportunity.opportunityReference} · ${flowOpportunity.stage}`:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and requirements are required'},
+    {code:'matching',label:'Match',status:flowOpportunity?sequenceStatus(1,0):'blocked',action:flowOpportunity?.stage==='Requirements'?'Review matching inventory':flowOpportunity?.stage==='Matching'?flowOpportunity.nextAction:'Create an Opportunity first'},
+    {code:'viewing',label:'Viewing',status:flowOpportunity?sequenceStatus(2,1):'blocked',action:stageIndex<2?'Shortlist inventory before scheduling':'Record attendance and customer feedback'},
+    {code:'offer',label:'Offer',status:flowOpportunity?.acceptedOfferCount?'completed':flowOpportunity&&[3,4].includes(stageIndex)?'current':stageIndex===2?'ready':'blocked',action:flowOpportunity?.acceptedOfferCount?'Accepted exact revision is ready for reservation':'Create and negotiate immutable offer revisions'},
+    {code:'booking',label:'Booking',status:flowOpportunity?.activeBookingCount?'current':flowOpportunity?.acceptedOfferCount?'ready':'blocked',action:flowOpportunity?.activeBookingCount?'Monitor reservation expiry and evidence':flowOpportunity?.acceptedOfferCount?'Create an explicit reservation':'An accepted exact offer revision is required'},
+    {code:'deal',label:'Deal',status:flowOpportunity?.closedDealCount?'completed':flowOpportunity?.dealCount?'current':flowOpportunity?.activeBookingCount?'ready':'blocked',action:flowOpportunity?.closedDealCount?'Deal authoritatively closed':flowOpportunity?.dealCount?'Complete parties, checklist and governed closure':flowOpportunity?.activeBookingCount?'Create the governed Deal':'An active governed reservation is required'}
   ];
   res.json({lead,requirement,qualification,opportunities,inventorySelections,steps,currentOpportunity,
     canCoordinateAssignment:canAssignLead(req.broker,lead),authoritativeSources:{customer:'Customer identity and contact details',lead:'Enquiry, source, campaign, requirement and qualification',opportunity:'Pursuit stage, owner and next action',listing:'Property facts and availability'}});

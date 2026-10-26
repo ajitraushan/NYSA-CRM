@@ -48,6 +48,59 @@ r.use(requireAuth,(req,res,next)=>{
 });
 
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
+async function releaseOfferOwnedReservation(offer,reason,actorId,client){
+  const booking=await one(`SELECT b.* FROM bookings b WHERE b.offer_id=$1 AND b.opportunity_id=$2
+    AND b.status='reserved' FOR UPDATE`,[offer.id,offer.opportunityId],client);
+  if(!booking)return null;
+  const safeStatus=booking.inventoryStatusBefore;
+  if(!safeStatus||['Reserved','Closed','Sold','Rented'].includes(safeStatus))return {blocked:true,booking};
+  const released=await one(`UPDATE bookings SET status='cancelled',cancelled_at=NOW(),release_reason=$1,
+    version=version+1,updated_at=NOW() WHERE id=$2 AND status='reserved' RETURNING *`,[reason,booking.id],client);
+  if(!released)return null;
+  await execute(`INSERT INTO booking_status_history(id,booking_id,from_status,to_status,reason,actor_id)
+    VALUES($1,$2,'reserved','cancelled',$3,$4)`,[uuid(),booking.id,reason,actorId],client);
+  if(booking.listingId)await execute(`UPDATE listings SET status=$1,updated_at=NOW()
+    WHERE id=$2 AND status='Reserved' AND EXISTS(SELECT 1 FROM bookings own WHERE own.id=$3 AND own.offer_id=$4 AND own.opportunity_id=$5)`,
+    [safeStatus,booking.listingId,booking.id,offer.id,offer.opportunityId],client);
+  else if(booking.externalPropertyId)await execute(`UPDATE provisional_external_properties SET status=$1,updated_at=NOW()
+    WHERE id=$2 AND status='reserved' AND EXISTS(SELECT 1 FROM bookings own WHERE own.id=$3 AND own.offer_id=$4 AND own.opportunity_id=$5)`,
+    [safeStatus,booking.externalPropertyId,booking.id,offer.id,offer.opportunityId],client);
+  await audit('BookingStatus',booking.id,'cancelled_from_terminal_offer',actorId,{offerId:offer.id,
+    opportunityId:offer.opportunityId,reason,inventoryStatusFrom:'Reserved',inventoryStatusTo:safeStatus},client);
+  return {released:true,bookingId:booking.id,restoredStatus:safeStatus};
+}
+// This predicate is deliberately reused at each transactional boundary.  A prior
+// match/Lead selection is evidence, never proof that inventory is live now.
+async function requireLiveInventory(listingId,opportunityId,client){
+  const listing=await one(`SELECT l.* FROM listings l WHERE l.id=$1 AND l.deleted_at IS NULL
+    AND l.workflow_status='approved' AND l.verification_status IN ('verified','not_required') AND l.status='Available'
+    AND (l.verification_expires_at IS NULL OR l.verification_expires_at>NOW())
+    AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.listing_id=l.id AND b.status='reserved'
+      AND b.expires_at>NOW() AND ($2::uuid IS NULL OR b.opportunity_id<>$2)) FOR UPDATE OF l`,[listingId,opportunityId||null],client);
+  return listing;
+}
+async function inheritInventoryOwner(listingId,transactionType,actorId,client){
+  if(!listingId)return null;
+  const roles=transactionType==='Rental'||transactionType==='rental'||transactionType==='commercial_rental'
+    ?['landlord','lessor']:['seller','developer','landlord','lessor'];
+  const inventoryParty=await one(`SELECT p.*,COALESCE(c.full_name,p.display_name) AS display_name,
+    COALESCE(c.phone,p.phone) AS phone,COALESCE(c.email,p.email) AS email
+    FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
+    WHERE p.listing_id=$1 AND p.party_role=ANY($2::text[])
+    ORDER BY CASE p.party_role WHEN 'seller' THEN 1 WHEN 'landlord' THEN 2 WHEN 'lessor' THEN 3 ELSE 4 END,p.created_at DESC LIMIT 1`,
+    [listingId,roles],client);
+  if(!inventoryParty)return null;
+  const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';
+  const counterparty=await one(`INSERT INTO transaction_counterparties
+    (id,display_name,party_type,role,phone,email,represented_party,source,evidence_reference,created_by,inventory_counterparty_id)
+    VALUES($1,$2,'inventory_owner',$3,$4,$5,$6,$7,$8,$9,$10)
+    ON CONFLICT(inventory_counterparty_id) DO UPDATE SET
+      display_name=EXCLUDED.display_name,role=EXCLUDED.role,phone=EXCLUDED.phone,email=EXCLUDED.email,
+      represented_party=EXCLUDED.represented_party,source=EXCLUDED.source,evidence_reference=EXCLUDED.evidence_reference,updated_at=NOW()
+    RETURNING *`,[uuid(),inventoryParty.displayName,role,inventoryParty.phone,inventoryParty.email,inventoryParty.representedParty,
+      inventoryParty.source,inventoryParty.authorityEvidence,actorId,inventoryParty.id],client);
+  return {inventoryParty,counterparty};
+}
 const SELECT_OPPORTUNITY=`SELECT o.*,COALESCE(c.full_name,buyer_cp.display_name,'External buyer') AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
   seller_cp.display_name AS seller_counterparty_name,seller_cp.role AS seller_counterparty_role,seller_cp.evidence_reference AS seller_counterparty_evidence,
   c.postal_address AS contact_address,l.title AS lead_title,l.stage AS lead_stage,
@@ -292,7 +345,7 @@ r.patch('/crm/opportunities/:id/property-shares/:shareId',async(req,res)=>{
 
 r.get('/crm/opportunities/:id/matching-inventory',async(req,res)=>{
   const {opportunity,error}=await scopedOpportunity(req,req.params.id);if(error)return res.status(error[0]).json({error:error[1]});
-  const q=clean(req.query.q),params=[opportunity.id],where=["li.deleted_at IS NULL","li.workflow_status='approved'","li.id NOT IN (SELECT listing_id FROM property_matches WHERE opportunity_id=$1)"];
+  const q=clean(req.query.q),params=[opportunity.id],where=["li.deleted_at IS NULL","li.workflow_status='approved'","li.verification_status IN ('verified','not_required')","li.status='Available'","(li.verification_expires_at IS NULL OR li.verification_expires_at>NOW())","NOT EXISTS(SELECT 1 FROM bookings b WHERE b.listing_id=li.id AND b.status='reserved' AND b.expires_at>NOW() AND b.opportunity_id<>$1)","li.id NOT IN (SELECT listing_id FROM property_matches WHERE opportunity_id=$1)"];
   if(q){params.push(`%${q}%`);where.push(`(li.project ILIKE $${params.length} OR li.area ILIKE $${params.length} OR li.inventory_reference ILIKE $${params.length})`);}
   const listings=await many(`SELECT li.id,li.inventory_reference,li.project,li.area,li.property_type,li.price,li.currency
     FROM listings li WHERE ${where.join(' AND ')} ORDER BY li.project,li.area LIMIT 50`,params);
@@ -305,7 +358,7 @@ r.post('/crm/opportunities/:id/matches',async(req,res)=>{
     const {opportunity,error}=await scopedOpportunity(req,req.params.id,client);if(error)return {code:error[0],error:error[1]};
     if(!canWriteOpportunity(req.broker,opportunity))return {code:403,error:'Opportunity is outside your writable scope'};
     if(!['Requirements','Matching'].includes(opportunity.stage))return {code:409,error:'Property matching is available only before viewing starts'};
-    const listing=await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[checked.value.listingId],client);
+    const listing=await requireLiveInventory(checked.value.listingId,opportunity.id,client);
     if(!listing)return {code:409,error:'Select approved active inventory'};
     const id=uuid(),v=checked.value;
     const match=await one(`INSERT INTO property_matches(id,opportunity_id,requirement_id,listing_id,match_source,fit_status,rationale,exceptions,created_by,updated_by)
@@ -350,6 +403,7 @@ r.post('/crm/opportunities/:id/viewings',async(req,res)=>{
       LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
       WHERE pm.id=$1 AND pm.opportunity_id=$2 FOR UPDATE OF pm`,[v.propertyMatchId,opportunity.id],client);
     if(!match||match.shortlistStatus==='rejected')return {code:409,error:'Select a considered or shortlisted property for the viewing'};
+    if(match.listingId&&!await requireLiveInventory(match.listingId,opportunity.id,client))return {code:409,error:'This Inventory is no longer live and cannot be scheduled for viewing. Its prior match remains historical evidence; return to Matching and select a live property.'};
     let rescheduledFrom=null;
     if(v.rescheduledFromViewingId){
       rescheduledFrom=await one('SELECT * FROM viewings WHERE id=$1 AND opportunity_id=$2 FOR UPDATE',[v.rescheduledFromViewingId,opportunity.id],client);
@@ -497,9 +551,15 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
         LEFT JOIN provisional_external_properties ep ON ep.id=pm.external_property_id
         WHERE pm.id=$1 AND pm.opportunity_id=$2 AND pm.shortlist_status<>'rejected' LIMIT 1`,
         [req.body?.propertyMatchId,opportunity.id],client);
-      if(!match||match.listingId&&(!match.workflowStatus||match.workflowStatus!=='approved'||match.deletedAt)||
+      if(!match||match.listingId&&!await requireLiveInventory(match.listingId,opportunity.id,client)||
         match.externalPropertyId&&match.externalStatus!=='approved_for_opportunity')
         return {code:409,error:'Select an approved considered or shortlisted property from this Opportunity'};
+      let predecessor=null;
+      if(req.body?.predecessorOfferId){
+        predecessor=await one(`SELECT * FROM offers WHERE id=$1 AND opportunity_id=$2 FOR UPDATE`,[req.body.predecessorOfferId,opportunity.id],client);
+        if(!predecessor||!['rejected','expired','withdrawn'].includes(predecessor.status))return {code:409,error:'Renegotiation must reference a terminal rejected, expired or NYSA-withdrawn Offer'};
+        if(predecessor.listingId!==match.listingId||predecessor.externalPropertyId!==match.externalPropertyId)return {code:409,error:'Renegotiation must use the same property as its terminal predecessor Offer'};
+      }
       const completedViewing=await one(`SELECT id FROM viewings WHERE opportunity_id=$1 AND property_match_id=$2
         AND status='completed' AND NULLIF(BTRIM(feedback),'') IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
         [opportunity.id,match.id],client);
@@ -510,19 +570,19 @@ r.post('/crm/opportunities/:id/offers',async(req,res)=>{
         counter=await one(`INSERT INTO offer_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
           DO UPDATE SET last_value=offer_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client),
         offerReference=`NYSA-OF-${period}-${String(counter.lastValue).padStart(6,'0')}`,offerId=uuid(),
-        offer=await one(`INSERT INTO offers(id,offer_reference,opportunity_id,listing_id,external_property_id,offer_type,currency,owner_id,created_by)
-          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-          [offerId,offerReference,opportunity.id,match.listingId,match.externalPropertyId,checked.value.offerType,checked.value.currency,opportunity.ownerId,req.broker.id],client);
+        offer=await one(`INSERT INTO offers(id,offer_reference,opportunity_id,listing_id,external_property_id,offer_type,currency,owner_id,created_by,predecessor_offer_id)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          [offerId,offerReference,opportunity.id,match.listingId,match.externalPropertyId,checked.value.offerType,checked.value.currency,opportunity.ownerId,req.broker.id,predecessor?.id||null],client);
       const revision=await createOfferRevisionRecords({client,req,offer,opportunity,listing:{...match,id:match.listingId},customer,input:checked.value,revisionNumber:1,supersedesRevisionId:null});storageKey=revision.storageKey;
       await execute('UPDATE offers SET current_revision_id=$1,updated_at=NOW() WHERE id=$2',[revision.id,offer.id],client);
       await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,actor_id)
         VALUES($1,$2,$3,$4,'created','internal',$5,$6,$7)`,
         [uuid(),offer.id,revision.id,revision.documentVersionId,checked.value.proposerRole,'Offer created with immutable Revision 1 and exact generated document',req.broker.id],client);
       await execute(`UPDATE opportunities SET stage='Offer',listing_id=$1,next_action='Review and send the exact offer revision',
-        next_action_due_at=LEAST(next_action_due_at,NOW()+INTERVAL '1 day'),version=version+1,updated_at=NOW() WHERE id=$2`,[match.listingId,opportunity.id],client);
+        recovery_state=NULL,next_action_due_at=LEAST(next_action_due_at,NOW()+INTERVAL '1 day'),version=version+1,updated_at=NOW() WHERE id=$2`,[match.listingId,opportunity.id],client);
       if(opportunity.stage!=='Offer')await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
         VALUES($1,$2,$3,'Offer','offer_created',$4,$5)`,[uuid(),opportunity.id,opportunity.stage,`Offer ${offerReference} created for ${match.project}`,req.broker.id],client);
-      await audit('Offer',offer.id,'created',req.broker.id,{opportunityId:opportunity.id,listingId:match.listingId,
+      await audit('Offer',offer.id,predecessor?'recovery_offer_created':'created',req.broker.id,{opportunityId:opportunity.id,listingId:match.listingId,
         externalPropertyId:match.externalPropertyId,offerReference,revisionId:revision.id,documentVersionId:revision.documentVersionId,fileHash:revision.fileHash},client);
       return {...offer,currentRevisionId:revision.id,revision};
     });
@@ -569,7 +629,7 @@ r.post('/crm/offers/:offerId/send',async(req,res)=>{
     recipientPhone=clean(req.body?.recipientPhone),legacyRecipient=clean(req.body?.recipient),
     recipient=[recipientName,recipientEmail,recipientPhone].filter(Boolean).join(' | ')||legacyRecipient,
     deliveryChannel=clean(req.body?.deliveryChannel),
-    counterpartyRole=req.body?.counterpartyRole,expectedVersion=Number(req.body?.expectedVersion);
+    counterpartyRole=['buyer','tenant'].includes(req.body?.counterpartyRole)?'customer':req.body?.counterpartyRole,expectedVersion=Number(req.body?.expectedVersion);
   if(!recipientName&&!legacyRecipient)return res.status(400).json({error:'Recipient name is required'});
   if(!recipientEmail&&!recipientPhone&&!legacyRecipient)return res.status(400).json({error:'Recipient email or phone is required'});
   if(/^email$/i.test(deliveryChannel)&&!recipientEmail&&!legacyRecipient)return res.status(400).json({error:'Recipient email is required for Email delivery'});
@@ -620,12 +680,20 @@ r.post('/crm/offers/:offerId/events',async(req,res)=>{
     await execute(`INSERT INTO negotiation_events(id,offer_id,offer_revision_id,document_version_id,event_type,direction,counterparty_role,summary,reason,actor_id)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [uuid(),offer.id,revision.id,revision.documentVersionId,v.eventType,v.direction,v.counterpartyRole,v.summary,v.reason,req.broker.id],client);
-    const nextAction=v.eventType==='accepted'?'Begin booking and reservation only after R2.3B is enabled':
-      ['rejected','expired','withdrawn'].includes(v.eventType)?'Review outcome and decide whether to create a new offer':'Continue negotiation and record the next exact revision';
-    await execute('UPDATE opportunities SET next_action=$1,next_action_due_at=NOW()+INTERVAL \'1 day\',version=version+1,updated_at=NOW() WHERE id=$2',[nextAction,offer.opportunityId],client);
+    const recovered=['rejected','expired','withdrawn'].includes(v.eventType),nextAction=v.eventType==='accepted'?'Begin booking and reservation only after R2.3B is enabled':
+      recovered?'Offer outcome recorded: renegotiate, create a new offer, return to Matching, or close as Lost':'Continue negotiation and record the next exact revision';
+    if(recovered){
+      const reservationRelease=await releaseOfferOwnedReservation(offer,`${v.eventType} offer: ${v.reason||v.summary}`,req.broker.id,client);
+      if(reservationRelease?.blocked)return {code:409,error:'The Offer-owned reservation has an unsafe prior Inventory status and must be reconciled before recording this terminal outcome'};
+      await execute("UPDATE offers SET recovery_checkpoint='terminal_offer' WHERE id=$1",[offer.id],client);
+      await execute("UPDATE opportunities SET stage='Offer',recovery_state='offer_recovery',next_action=$1,next_action_due_at=NOW()+INTERVAL '1 day',version=version+1,updated_at=NOW() WHERE id=$2",[nextAction,offer.opportunityId],client);
+      await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
+        VALUES($1,$2,$3,'Offer','terminal_offer_recovery',$4,$5)`,[uuid(),offer.opportunityId,offer.opportunityStage,`${v.eventType} offer retained immutably; recovery checkpoint opened`,req.broker.id],client);
+    }else await execute('UPDATE opportunities SET next_action=$1,next_action_due_at=NOW()+INTERVAL \'1 day\',version=version+1,updated_at=NOW() WHERE id=$2',[nextAction,offer.opportunityId],client);
     if(v.eventType==='accepted'&&offer.externalPropertyId)await execute(`UPDATE provisional_external_properties
       SET status='under_offer',updated_at=NOW() WHERE id=$1 AND status='approved_for_opportunity'`,[offer.externalPropertyId],client);
-    await audit('NegotiationEvent',offer.id,v.eventType,req.broker.id,{offerRevisionId:revision.id,documentVersionId:revision.documentVersionId,reason:v.reason,counterpartyRole:v.counterpartyRole},client);
+    await audit('NegotiationEvent',offer.id,v.eventType,req.broker.id,{offerRevisionId:revision.id,documentVersionId:revision.documentVersionId,reason:v.reason,counterpartyRole:v.counterpartyRole,
+      inventoryReleasePolicy:'only reservation owned by this Offer and Opportunity; restore recorded pre-block status only'},client);
     return updated;
   });if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
 });
@@ -643,11 +711,11 @@ r.post('/crm/offers/:offerId/bookings',async(req,res)=>{
       if(!canWriteOpportunity(req.broker,{...offer,ownerId:offer.opportunityOwnerId,createdBy:offer.opportunityCreatedBy}))return {code:403,error:'Offer is outside your writable scope'};
       const lockedOffer=await one('SELECT * FROM offers WHERE id=$1 FOR UPDATE',[offer.id],client);
       if(lockedOffer.status!=='accepted'||!lockedOffer.acceptedRevisionId)return {code:409,error:'Only an accepted offer with its exact accepted revision can create a reservation'};
-      const listing=offer.listingId?await one('SELECT * FROM listings WHERE id=$1 FOR UPDATE',[offer.listingId],client):
+      const listing=offer.listingId?await requireLiveInventory(offer.listingId,offer.opportunityId,client):
         await one(`SELECT id,external_reference AS inventory_reference,project_or_building AS project,status,
           'approved_for_opportunity'::text AS inventory_status_before FROM provisional_external_properties
           WHERE id=$1 FOR UPDATE`,[offer.externalPropertyId],client);
-      if(!listing)return {code:409,error:'The governed property record is unavailable'};
+      if(!listing)return {code:409,error:'The governed property record is unavailable, closed, reserved by another Opportunity, or no longer live'};
       const activeBooking=await one(`SELECT b.booking_reference,o.opportunity_reference,b.expires_at FROM bookings b
         JOIN opportunities o ON o.id=b.opportunity_id WHERE
         (b.listing_id=$1 OR b.external_property_id=$2) AND b.status='reserved'
@@ -808,6 +876,16 @@ r.post('/crm/bookings/:bookingId/deal',async(req,res)=>{
     const counter=await one(`INSERT INTO deal_number_counters(period_code,last_value) VALUES($1,1) ON CONFLICT(period_code)
       DO UPDATE SET last_value=deal_number_counters.last_value+1,updated_at=NOW() RETURNING last_value`,[period],client);
     const dealId=uuid(),dealReference=`NYSA-DL-${period}-${String(counter.lastValue).padStart(6,'0')}`,v=checked.value;
+    if(!booking.sellerCounterpartyId&&booking.listingId){
+      const inherited=await inheritInventoryOwner(booking.listingId,v.dealType,req.broker.id,client);
+      if(inherited){
+        booking.sellerCounterpartyId=inherited.counterparty.id;booking.sellerName=inherited.counterparty.displayName;
+        booking.sellerRole=inherited.counterparty.role;booking.sellerSource=inherited.counterparty.source;
+        booking.sellerEvidence=inherited.counterparty.evidenceReference;
+        await execute('UPDATE opportunities SET seller_counterparty_id=$1,version=version+1,updated_at=NOW() WHERE id=$2',
+          [booking.sellerCounterpartyId,booking.opportunityId],client);
+      }
+    }
     const deal=await one(`INSERT INTO deals(id,deal_reference,opportunity_id,booking_id,listing_id,external_property_id,offer_id,accepted_offer_revision_id,
       deal_type,agreed_value,currency,target_completion_at,owner_id,created_by)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
@@ -901,7 +979,7 @@ r.patch('/crm/deals/:dealId/checklist-items/:itemId',async(req,res)=>{
 
 r.post('/crm/deals/:dealId/approval',async(req,res)=>{
   const expectedVersion=Number(req.body?.expectedVersion),decision=clean(req.body?.decision)||'approved',checked=validateDealApproval(req.body||{});
-  if(!['approved','returned','rejected'].includes(decision))return res.status(400).json({error:'Select approve, return for correction, or reject'});
+  if(!['approved','returned'].includes(decision))return res.status(400).json({error:'Select approve or return for correction'});
   if(!Number.isInteger(expectedVersion)||expectedVersion<1)return res.status(400).json({error:'The current Deal version is required'});
   if(checked.error)return res.status(400).json({error:checked.error});
   const result=await transaction(async client=>{
@@ -921,7 +999,7 @@ r.post('/crm/deals/:dealId/approval',async(req,res)=>{
       if(!updated)return{code:409,error:'This completion record changed after it was opened; reload before deciding'};
       await execute(`INSERT INTO deal_status_history(id,deal_id,from_status,to_status,reason,actor_id)
         VALUES($1,$2,$3,'completion_in_progress',$4,$5)`,[uuid(),deal.id,deal.status,`${decision}: ${checked.value.reason}`,req.broker.id],client);
-      await audit('DealStatus',deal.id,decision==='returned'?'closure_returned':'closure_rejected',req.broker.id,
+      await audit('DealStatus',deal.id,'closure_returned',req.broker.id,
         {opportunityId:deal.opportunityId,evidenceReference:checked.value.evidenceReference,reason:checked.value.reason,version:updated.version},client);
       return updated;
     }
@@ -1082,13 +1160,13 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
         selectedListingId=selectedListingIds[0]||null;
       const selectedListings=[];
       for(const listingId of selectedListingIds){
-        const selected=await one("SELECT * FROM listings WHERE id=$1 AND deleted_at IS NULL AND workflow_status='approved'",[listingId],client);
+        const selected=await requireLiveInventory(listingId,null,client);
         if(!selected)return {code:409,error:'Inventory carried from this Lead is no longer approved and active; deliberately remove or replace it before continuing'};
         selectedListings.push(selected);
       }
       const representationListing=selectedListings[0]||null;
       let sellerCounterpartyId=null,authorityEvidence=null;
-      if(['inventory','dual'].includes(input.representationPath)){
+      if(representationListing){
         const inventoryParty=await one(`SELECT p.*,COALESCE(c.full_name,p.display_name) AS display_name,
           COALESCE(c.phone,p.phone) AS phone,COALESCE(c.email,p.email) AS email
           FROM inventory_counterparties p LEFT JOIN contacts c ON c.id=p.contact_id
@@ -1110,15 +1188,8 @@ r.post('/crm/leads/:id/opportunities',async(req,res)=>{
           ORDER BY created_at DESC LIMIT 1`,[representationListing.id],client);
         if(!agreement)return {code:409,error:'The selected Inventory must have an active mandate or authority agreement'};
         const role=['landlord','lessor'].includes(inventoryParty.partyRole)?'landlord':'seller';
-        const inherited=await one(`INSERT INTO transaction_counterparties
-          (id,display_name,party_type,role,phone,email,represented_party,source,evidence_reference,created_by,inventory_counterparty_id)
-          VALUES($1,$2,'inventory_owner',$3,$4,$5,$6,$7,$8,$9,$10)
-          ON CONFLICT(inventory_counterparty_id) DO UPDATE SET
-            display_name=EXCLUDED.display_name,role=EXCLUDED.role,phone=EXCLUDED.phone,email=EXCLUDED.email,
-            represented_party=EXCLUDED.represented_party,source=EXCLUDED.source,evidence_reference=EXCLUDED.evidence_reference,updated_at=NOW()
-          RETURNING *`,[uuid(),inventoryParty.displayName,role,inventoryParty.phone,inventoryParty.email,inventoryParty.representedParty,
-            inventoryParty.source,inventoryParty.authorityEvidence,req.broker.id,inventoryParty.id],client);
-        sellerCounterpartyId=inherited.id;
+        const inherited=await inheritInventoryOwner(representationListing.id,input.transactionType,req.broker.id,client);
+        sellerCounterpartyId=inherited.counterparty.id;
         authorityEvidence=agreement.evidenceReference;
       }
       if(selectionSpecified){
@@ -1215,12 +1286,16 @@ r.post('/crm/opportunities/:id/stage',async(req,res)=>{
     const checked=validateOpportunityTransition(opportunity.stage,req.body?.toStage,{reasonCode:req.body?.reasonCode,reason:req.body?.reason});
     if(checked.error)return {code:409,error:checked.error};
     const next=checked.value,closed=next.toStage==='Closed Lost';
+    const recoveryState=closed?'closed_lost':next.reasonCode==='terminal_offer_return_to_matching'?'matching':null;
     const updated=await one(`UPDATE opportunities SET stage=$1,lost_reason_code=$2,lost_reason=$3,closed_at=CASE WHEN $4 THEN NOW() ELSE NULL END,
-      version=version+1,updated_at=NOW() WHERE id=$5 AND version=$6 RETURNING *`,[next.toStage,next.reasonCode,next.reason,closed,opportunity.id,expectedVersion],client);
+      recovery_state=$5,next_action=CASE WHEN $5='matching' THEN 'Select another eligible property or create a new governed match' ELSE next_action END,
+      version=version+1,updated_at=NOW() WHERE id=$6 AND version=$7 RETURNING *`,[next.toStage,next.reasonCode,next.reason,closed,recoveryState,opportunity.id,expectedVersion],client);
     if(!updated)return {code:409,error:'This opportunity changed after it was opened; reload before updating it'};
     const historyId=uuid();await execute(`INSERT INTO opportunity_stage_history(id,opportunity_id,from_stage,to_stage,reason_code,reason,changed_by)
       VALUES($1,$2,$3,$4,$5,$6,$7)`,[historyId,opportunity.id,opportunity.stage,next.toStage,next.reasonCode,next.reason,req.broker.id],client);
     await audit('OpportunityStage',historyId,'changed',req.broker.id,{opportunityId:opportunity.id,from:opportunity.stage,to:next.toStage,reasonCode:next.reasonCode,reason:next.reason},client);
+    if(next.toStage==='Closed Lost')await execute(`UPDATE leads SET current_status='closed_lost',updated_at=NOW() WHERE id=$1
+      AND NOT EXISTS(SELECT 1 FROM opportunities WHERE lead_id=$1 AND stage NOT IN ('Closed Won','Closed Lost'))`,[opportunity.leadId],client);
     return updated;
   });
   if(result.error)return res.status(result.code).json({error:result.error});res.json(result);
@@ -1246,7 +1321,7 @@ r.get('/crm/release2/reconciliation',async(req,res)=>{
   if(req.broker.role!=='admin'&&!['manager','director'].includes(req.broker.jobRole))
     return res.status(403).json({error:'Release-candidate reconciliation requires Manager, Director or Administrator access'});
   const params=[],scope=opportunityScopeSql('o',req.broker,params);
-  const [opportunityStages,dealStatuses,sourceOutcomes,exceptions]=await Promise.all([
+  const [opportunityStages,dealStatuses,sourceOutcomes,exceptions,offerRecovery]=await Promise.all([
     many(`SELECT o.stage,COUNT(*)::int AS count FROM opportunities o WHERE ${scope.clause}
       GROUP BY o.stage ORDER BY o.stage`,params),
     many(`SELECT d.status,COUNT(*)::int AS count,COALESCE(SUM(d.agreed_value) FILTER(WHERE d.status='closed_won'),0) AS closed_won_value
@@ -1267,10 +1342,19 @@ r.get('/crm/release2/reconciliation',async(req,res)=>{
         OR (b.status='completed' AND li.status<>'Closed'))::int AS booking_inventory_mismatch
       FROM opportunities o LEFT JOIN opportunity_attribution a ON a.opportunity_id=o.id
       LEFT JOIN deals d ON d.opportunity_id=o.id LEFT JOIN bookings b ON b.id=d.booking_id
-      LEFT JOIN listings li ON li.id=d.listing_id WHERE ${scope.clause}`,params)
+      LEFT JOIN listings li ON li.id=d.listing_id WHERE ${scope.clause}`,params),
+    one(`SELECT COUNT(*) FILTER(WHERE f.status IN ('rejected','expired','withdrawn'))::int AS terminal_offers,
+      COUNT(DISTINCT o.id) FILTER(WHERE o.recovery_state='offer_recovery')::int AS awaiting_recovery,
+      COUNT(*) FILTER(WHERE f.predecessor_offer_id IS NOT NULL)::int AS recovery_offers,
+      COUNT(DISTINCT o.id) FILTER(WHERE o.recovery_state='matching')::int AS returned_to_matching,
+      COUNT(DISTINCT o.id) FILTER(WHERE o.recovery_state='closed_lost')::int AS recovery_closed_lost,
+      COUNT(*) FILTER(WHERE f.predecessor_offer_id IS NOT NULL AND f.status='accepted')::int AS recovered_acceptances,
+      COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (NOW()-f.updated_at))/86400) FILTER(WHERE o.recovery_state='offer_recovery'),1),0) AS average_recovery_age_days,
+      COUNT(*) FILTER(WHERE o.recovery_state='offer_recovery' AND f.updated_at<NOW()-INTERVAL '3 days')::int AS recovery_aging_over_3_days
+      FROM opportunities o LEFT JOIN offers f ON f.opportunity_id=o.id WHERE ${scope.clause}`,params)
   ]);
   const exceptionCount=Object.values(exceptions||{}).reduce((sum,value)=>sum+Number(value||0),0);
-  res.json({opportunityStages,dealStatuses,sourceOutcomes,exceptions,exceptionCount,dataAsOf:new Date(),
+  res.json({opportunityStages,dealStatuses,sourceOutcomes,offerRecovery,exceptions,exceptionCount,dataAsOf:new Date(),
     releaseCandidate:'R2.5',migrationBaseline:'050_release2_customer_kyc_uat_corrections.sql'});
 });
 
@@ -1289,7 +1373,8 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
   const nextCaseResponsibility=req.broker.jobRole==='manager'?"AND l.assigned_to IS NULL AND l.assignment_status IN ('unassigned','reassignment_due')":'';
   const leadParams=[],leadScope=agentWorkLeadScopeSql('l',req.broker,leadParams),opportunityParams=[],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams),
     nextParams=[],nextLeadScope=agentWorkLeadScopeSql('l',req.broker,nextParams),nextOpportunityScope=opportunityScopeSql('x',req.broker,nextParams);
-  const [leadCounts,opportunityCounts,nextCases]=await Promise.all([
+  const dealParams=[],dealScope=opportunityScopeSql('o',req.broker,dealParams);
+  const [leadCounts,opportunityCounts,nextCases,dealApprovalCases]=await Promise.all([
     one(`SELECT COUNT(DISTINCT l.contact_id)::int AS customers,COUNT(*)::int AS leads,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL))::int AS requirements,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id))::int AS qualified,
@@ -1307,6 +1392,8 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM offers f WHERE f.opportunity_id=o.id AND f.status='accepted'))::int AS accepted_offers,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM bookings b WHERE b.opportunity_id=o.id AND b.status='reserved'))::int AS bookings,
       COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id))::int AS deals,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id AND d.status NOT IN ('closed_won','closed_lost')))::int AS active_deals,
+      COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM deals d WHERE d.opportunity_id=o.id AND d.status IN ('closed_won','closed_lost')))::int AS closed_deals,
       COUNT(*) FILTER(WHERE o.stage NOT IN ('Closed Won','Closed Lost') AND o.next_action_due_at<NOW())::int AS overdue
       FROM opportunities o WHERE ${opportunityScope.clause}`,opportunityScope.params),
     many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,l.stage AS lead_stage,l.assigned_to,l.accepted_at,
@@ -1327,24 +1414,33 @@ r.get('/crm/operations/guided-work',async(req,res)=>{
       WHERE ${nextLeadScope.clause} AND l.stage NOT IN ('Won','Lost') ${nextCaseResponsibility}
       ORDER BY CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN 0 ELSE 1 END,
         CASE WHEN l.assigned_to IS NOT NULL AND l.accepted_at IS NULL THEN COALESCE(assignment_offer.acceptance_due_at,l.acceptance_due_at) ELSE COALESCE(o.next_action_due_at,l.next_follow_up_at,l.assignment_due_at) END NULLS LAST,
-        l.updated_at DESC LIMIT 8`,nextLeadScope.params)
+        l.updated_at DESC LIMIT 8`,nextLeadScope.params),
+    req.broker.role==='admin'||['manager','director'].includes(req.broker.jobRole)?many(`SELECT l.id AS lead_id,l.title,c.full_name AS customer_name,
+      l.stage AS lead_stage,l.assigned_to,l.accepted_at,owner.name AS owner_name,o.id AS opportunity_id,o.opportunity_reference,
+      o.stage AS opportunity_stage,'Review Deal closure approval' AS next_action,d.updated_at AS due_at,d.id AS deal_id
+      FROM deals d JOIN opportunities o ON o.id=d.opportunity_id JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id
+      LEFT JOIN brokers owner ON owner.id=o.owner_id WHERE ${dealScope.clause} AND d.status IN ('draft','completion_in_progress')
+      AND NOT EXISTS(SELECT 1 FROM deal_checklist_items i JOIN deal_checklists dc ON dc.id=i.deal_checklist_id
+        WHERE dc.deal_id=d.id AND i.required AND i.status<>'completed')
+      ORDER BY d.updated_at LIMIT 8`,dealScope.params):Promise.resolve([])
   ]);
-  const guidedCases=nextCases.map(item=>item.assignedTo?{...item,responsibility:'agent',actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
+  const guidedCases=[...dealApprovalCases.map(item=>({...item,responsibility:'manager',actionHint:'Open connected Lead and Opportunity to decide'})),...nextCases.map(item=>item.assignedTo?{...item,responsibility:'agent',actionHint:item.acceptedAt?'Open connected case':'Open Lead to accept or reject'}:{
     ...item,
     responsibility:'manager',
     nextAction:canCoordinateAssignment?'Assign a responsible agent':`Await assignment by ${item.responsibleManagerName||'your manager'}`,
     actionHint:canCoordinateAssignment?'Open Lead and review reassignment':'Manager-controlled; open Lead context only'
-  });
+  })].slice(0,8);
   const steps=[
     {code:'customer',label:'Customer',status:'completed',count:leadCounts.customers,action:'Open the linked customer record'},
     {code:'lead',label:'Lead',status:leadCounts.unassigned?'blocked':'current',count:leadCounts.leads,action:leadCounts.unassigned?(canCoordinateAssignment?`${leadCounts.unassigned} need assignment`:`${leadCounts.unassigned} awaiting manager assignment`):'Continue customer follow-up'},
-    {code:'qualification',label:'Qualification',status:leadCounts.qualified?'current':'ready',count:leadCounts.qualified,action:'Complete requirements and approved qualification'},
+    {code:'qualification',label:'Qualification',status:leadCounts.qualified?'completed':'ready',count:leadCounts.qualified,action:'Complete the approved assessment; requirements may be recorded before or in parallel'},
+    {code:'requirements',label:'Requirements',status:leadCounts.requirements?'completed':'ready',count:leadCounts.requirements,action:'Record structured requirements independently; Opportunity readiness still requires both prerequisites'},
     {code:'opportunity',label:'Opportunity',status:leadCounts.readyOpportunities?'ready':opportunityCounts.active?'current':'blocked',count:opportunityCounts.active,action:leadCounts.readyOpportunities?`${leadCounts.readyOpportunities} qualified lead${leadCounts.readyOpportunities===1?' is':'s are'} ready`:opportunityCounts.overdue?`${opportunityCounts.overdue} next action${opportunityCounts.overdue===1?' is':'s are'} overdue`:'Create from a qualified lead'},
     {code:'matching',label:'Match',status:opportunityCounts.matching?'current':opportunityCounts.viewing?'completed':opportunityCounts.requirements?'ready':'blocked',count:opportunityCounts.matching,action:opportunityCounts.requirements?`${opportunityCounts.requirements} ready for matching`:'Review explainable property matches'},
     {code:'viewing',label:'Viewing',status:opportunityCounts.viewing?'current':opportunityCounts.matching?'ready':'blocked',count:opportunityCounts.viewing,action:opportunityCounts.matching?'Shortlist a property and schedule a viewing':'Record attendance, feedback and follow-up'},
     {code:'offer',label:'Offer',status:opportunityCounts.acceptedOffers?'completed':opportunityCounts.offers?'current':opportunityCounts.viewing?'ready':'blocked',count:opportunityCounts.offers,action:opportunityCounts.acceptedOffers?'Accepted offer is ready for explicit reservation':opportunityCounts.offers?'Review exact revision and negotiation timeline':'Create immutable terms from an active Opportunity'},
     {code:'booking',label:'Booking',status:opportunityCounts.deals?'completed':opportunityCounts.bookings?'current':opportunityCounts.acceptedOffers?'ready':'blocked',count:opportunityCounts.bookings,action:opportunityCounts.deals?'Governed Deal created':opportunityCounts.bookings?'Create the governed Deal and monitor reservation expiry':opportunityCounts.acceptedOffers?'Create an explicit reservation with evidence':'An accepted exact offer revision is required'},
-    {code:'deal',label:'Deal',status:opportunityCounts.deals?'current':opportunityCounts.bookings?'ready':'blocked',count:opportunityCounts.deals,action:opportunityCounts.deals?'Complete mandatory parties and the exact approved checklist':'Create only from an active governed reservation'}
+    {code:'deal',label:'Deal',status:opportunityCounts.activeDeals?'current':opportunityCounts.closedDeals?'completed':opportunityCounts.bookings?'ready':'blocked',count:opportunityCounts.deals,action:opportunityCounts.activeDeals?'Complete mandatory parties and the exact approved checklist':opportunityCounts.closedDeals?'Authoritative Deal closure recorded':opportunityCounts.bookings?'Create only from an active governed reservation':'An active governed reservation is required'}
   ];
   res.json({role:req.broker.jobRole,steps,nextCases:guidedCases,dataAsOf:new Date(),releaseBoundary:'R2.5 reconciles the accepted Release 2 flow through governed approval and authoritative closure; Production remains separately gated'});
 });

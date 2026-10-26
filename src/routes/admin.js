@@ -3,6 +3,7 @@ import { Router } from '../lib/http-kit.js';
 import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth, publicBroker,hashPassword } from '../auth.js';
 import { JOB_ROLES } from '../crm-domain.js';
+import { validateInvitationExpiry } from '../admin-governance.js';
 
 const r = Router();
 r.use(requireAuth,(req,res,next)=>(req.broker.role==='admin'||req.broker.jobRole==='admin_assistant')?next():res.status(403).json({error:'Administrator or Admin Assistant access required'}));
@@ -33,12 +34,14 @@ r.post('/admin/invitations', async (req, res) => {
   if(['sales_agent','listing_agent','manager'].includes(resolvedJobRole)&&!teamId)return res.status(400).json({error:'Team is required for this user role'});
   if(teamId&&!(await one('SELECT id FROM teams WHERE id=$1 AND active=1',[teamId])))return res.status(400).json({error:'Active team not found'});
   if(resolvedJobRole==='manager'){const team=await teamManager(teamId);if(team?.managerId)return res.status(409).json({error:`${team.name} is already managed by ${team.managerName}. Change its manager deliberately in Team maintenance.`});}
+  const checkedExpiry=validateInvitationExpiry(expiresAt);
+  if(checkedExpiry.error)return res.status(400).json({error:checkedExpiry.error});
   const id = uuid();
   const code = 'NYSA-' + crypto.randomBytes(8).toString('hex').toUpperCase();
   const invitation = await one(`INSERT INTO invitations
     (id,code,issued_by,issued_to_email,role,job_role,max_uses,expires_at,team_id) VALUES ($1,$2,$3,$4,$5,$6,1,$7,$8) RETURNING *`,
-    [id,code,req.broker.id,issuedToEmail.toLowerCase(),role,resolvedJobRole,expiresAt||null,teamId||null]);
-  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail,teamId:teamId||null });
+    [id,code,req.broker.id,issuedToEmail.toLowerCase(),role,resolvedJobRole,checkedExpiry.value,teamId||null]);
+  await audit('Invitation', id, 'created', req.broker.id, { role, jobRole:resolvedJobRole, issuedToEmail,teamId:teamId||null,expiresAt:checkedExpiry.value });
   res.status(201).json(invitation);
 });
 

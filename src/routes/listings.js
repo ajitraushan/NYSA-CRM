@@ -470,7 +470,7 @@ r.post('/listings', requirePostRights, async (req, res) => {
       if(!String(b.ownerName||'').trim())return {ownerError:'Select an existing Customer or enter a new owner name'};
       const identity=validateContactIdentity(b.ownerEmail,b.ownerPhone);
       if(identity.error)return {ownerError:identity.error};
-      const duplicates=await many(`SELECT DISTINCT c.id,c.full_name FROM contacts c LEFT JOIN contact_channels cc ON cc.contact_id=c.id
+      const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,c.email,c.phone,c.postal_address,c.kyc_status FROM contacts c LEFT JOIN contact_channels cc ON cc.contact_id=c.id
         WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
         ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2)
           OR LOWER(c.email)=$1 OR c.phone=$2)`,
