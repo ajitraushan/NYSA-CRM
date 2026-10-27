@@ -13,7 +13,7 @@ export async function runNonvoiceCycle({transaction,env=process.env,fetchImpl=fe
  const setup=await transaction(async c=>(await c.query('SELECT draft FROM lead_integration_setup WHERE singleton=TRUE')).rows[0]?.draft);
  if(!setup?.fallbackOwnerId||!env.LEAD_INTAKE_ACTOR_ID||!env.LEAD_EVIDENCE_KEY)return {recovery,intake:'setup_required'};
  await transaction(c=>c.query("UPDATE lead_source_inbox SET review_owner_id=$1,review_due_at=COALESCE(review_due_at,received_at+INTERVAL '2 minutes') WHERE state IN ('pending_retrieval','needs_review') AND review_owner_id IS NULL",[setup.fallbackOwnerId]));
- const events=await transaction(async c=>(await c.query("SELECT * FROM lead_source_inbox WHERE state='pending_retrieval' AND next_attempt_at<=NOW() ORDER BY next_attempt_at,received_at LIMIT 5")).rows);
+ const events=await transaction(async c=>(await c.query("SELECT * FROM lead_source_inbox WHERE source_system='meta' AND state='pending_retrieval' AND next_attempt_at<=NOW() ORDER BY next_attempt_at,received_at LIMIT 5")).rows);
  let accepted=0,review=0;
  for(const event of events){
   try{

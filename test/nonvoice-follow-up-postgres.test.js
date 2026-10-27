@@ -71,7 +71,7 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
  });
  await t.test('all migrations apply and additive schema starts empty',async()=>{
   const result=await tx(c=>c.query('SELECT COUNT(*)::int AS n FROM schema_migrations'));
-  assert.equal(result.rows[0].n,154);assert.equal(baselinePreserved,true);assert.ok(Object.keys(baselineSnapshots).length>100);
+  assert.equal(result.rows[0].n,155);assert.equal(baselinePreserved,true);assert.ok(Object.keys(baselineSnapshots).length>100);
  });
  await t.test('case and six nonvoice jobs are atomic/idempotent, lead ownership unchanged',async()=>{
   const f=await fixture();assert.equal(f.case.state,'ready');
