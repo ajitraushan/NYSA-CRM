@@ -50,7 +50,7 @@ export function createNativeLeadWhatsAppRoutes({transaction,env:baseEnv=process.
     const inserted=await c.query(`INSERT INTO lead_response_provider_inbox(id,provider,event_ref,connection_ref,event_digest,encrypted_payload,expires_at)
       VALUES($1,'whatsapp',$2,$3,$4,$5,NOW()+INTERVAL '12 months') ON CONFLICT(provider,connection_ref,event_ref) DO NOTHING RETURNING id`,
       [crypto.randomUUID(),event.eventRef,event.connectionRef,digest,sealLeadEvidence(event,env.LEAD_EVIDENCE_KEY)]);
-    if(!inserted.rows.length){const old=(await c.query("SELECT event_digest FROM lead_response_provider_inbox WHERE provider='whatsapp' AND connection_ref=$1 AND event_ref=$2",[event.connectionRef,event.eventRef])).rows[0];if(old?.event_digest!==digest)throw Object.assign(new Error('EVENT_CONFLICT'),{statusCode:409});} 
+    if(!inserted.rows.length){const old=(await c.query("SELECT event_digest FROM lead_response_provider_inbox WHERE provider='whatsapp' AND connection_ref=$1 AND event_ref=$2",[event.connectionRef,event.eventRef])).rows[0];if(old?.event_digest!==digest)throw Object.assign(new Error('EVENT_CONFLICT'),{statusCode:409});}
    }
   });res.json({status:'durably_received'});}catch(error){res.status(error.statusCode===409?409:503).json({error:error.statusCode===409?'WHATSAPP_EVENT_CONFLICT':'WHATSAPP_RECEIPT_UNAVAILABLE'});}
  });return r;

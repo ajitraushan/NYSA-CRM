@@ -80,6 +80,3 @@ export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,own
  await client.query('UPDATE lead_follow_up_cases SET declared_requirements=$2::jsonb WHERE id=$1',[responseCase.id,JSON.stringify(normalized.requirements)]);
  return {leadId,caseId:responseCase.id,status:responseCase.state};
 }
-
-
-
