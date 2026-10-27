@@ -12,16 +12,17 @@ export const CAPABILITY=frozen({
   CONFIGURATION_REFERENCE_READ:'configuration.reference.read', TEAM_CONFIGURATION:'configuration.teams',
   STAFF_CONFIGURATION_REFERENCE_READ:'configuration.staff.read', LEAVE_SELF:'leave.self',
   LEAVE_ADMINISTER:'leave.administer', LEAVE_DECIDE:'leave.decide', PERSONAL_TASKS:'tasks.personal',
-  PURCHASED_DATA_IMPORT:'purchased_data.import', INVENTORY_CREATE:'inventory.create'
+  PURCHASED_DATA_IMPORT:'purchased_data.import', INVENTORY_CREATE:'inventory.create',
+  LEAD_RESPONSE_UNASSIGNED:'lead_response.unassigned.manage'
 });
 
 export const ROLE_ACCESS_POLICY=frozen({
   admin:frozen({label:'Admin',accountRole:'admin',jobRole:JOB_ROLE.ADMINISTRATOR,capabilities:frozen([
     CAPABILITY.SESSION_SELF,CAPABILITY.SYSTEM_CONFIGURATION,CAPABILITY.CONFIGURATION_REFERENCE_READ,
     CAPABILITY.TEAM_CONFIGURATION,CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ,CAPABILITY.LEAVE_SELF,
-    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,
+    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,CAPABILITY.LEAD_RESPONSE_UNASSIGNED,
     CAPABILITY.PURCHASED_DATA_IMPORT
-  ]),workspaceTabs:frozen(['admin','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, purchased-data intake and leave administration'})
+  ]),workspaceTabs:frozen(['admin','leadResponse','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, unassigned lead response, purchased-data intake and leave administration'})
 });
 
 // Operational role permissions live beside the governed Admin profile so the
@@ -49,6 +50,8 @@ export const GOVERNED_API_POLICY=frozen([
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/my-(?:employment|leave-balances|leave-applications)(?:\/.*)?$/,capability:CAPABILITY.LEAVE_SELF}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/leave-applications\/[a-f0-9-]{36}\/(?:review|decision)$/,capability:CAPABILITY.LEAVE_DECIDE}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/purchased-data-import(?:\/.*)?$/,capability:CAPABILITY.PURCHASED_DATA_IMPORT}),
+  frozen({methods:frozen(['GET']),pattern:/^\/crm\/lead-response(?:\/[a-f0-9-]{36})?$/,capability:CAPABILITY.LEAD_RESPONSE_UNASSIGNED}),
+  frozen({methods:frozen(['POST']),pattern:/^\/crm\/lead-response\/[a-f0-9-]{36}\/assign-owner$/,capability:CAPABILITY.LEAD_RESPONSE_UNASSIGNED}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/tasks$/,capability:CAPABILITY.PERSONAL_TASKS}),
   frozen({methods:frozen(['PATCH']),pattern:/^\/crm\/tasks\/[a-f0-9-]{36}$/,capability:CAPABILITY.PERSONAL_TASKS})
 ]);

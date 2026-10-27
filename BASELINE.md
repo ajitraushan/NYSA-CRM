@@ -1,5 +1,17 @@
 # CRM Development Baseline
 
+## CRM Test observation and DEV244 source baseline — 27/28 October 2026
+
+- CRM Test serves `2.1.0-dev.243`, commit `31778b9b248690239e492c1c110d2aef53c5c8e0`, through migration 155. Its verified GitHub-origin archive SHA-256 is `74e3b24d5a1b92dbec636d854bc8005ba8925606f86e0138d0f4c5c7fe3a8f07`.
+- The current recoverable server rollback point is `/home/nysareal/crm-backups/crm-test-dev243-pre-20261027T193434Z`; its verified encrypted private local copy is `crm-test-dev243-20261027T193434Z/recovery.nyback`, encrypted SHA-256 `bee74240b3253cc6049a6b268c7f13760fa3460185fbf05578fbb4761c92694d`.
+- Staging WordPress uses the governed CORE bridge 1.0.1 and the active NIA route. Live WhatsApp, email, Meta and voice sending remain disabled.
+- DEV244 development starts from that exact commit. Target is CRM Test and the staging-to-CRM-Test test path only; production remains unchanged. DEV244 adds migration 156 and the owner-free Lead Response queue described in `docs/change-requests/NYSA-CRM-20261027-LEAD-001-DEV244-UNASSIGNED-QUEUE.md`.
+- A new paired CRM Test/staging backup and encrypted verified off-server copy are required immediately before any DEV244 deployment. The DEV243 rollback evidence above remains the source-development rollback point, not a substitute for that predeployment refresh.
+
+## CRM Test observation - 27 October 2026
+
+CRM Test now serves 2.1.0-dev.241, commit a375e86156150be257f913a392b60e8f6a701227, migrations154. Origin archive SHA256 c46f36da50ef6b3e03f30d3ffc0fbadde708a52343cc6eeb94fd8b0f67f4fa11. Fresh paired rollback point /home/nysareal/crm-backups/crm-test-dev241-20261027T072707Z; encrypted private local copy verified by isolated restore and all257 original table digests. Encrypted SHA256 51fc763a6eeb268f10728f4dca95e9b8baf785fb02177203401c9cbb116cbfed. Health/readiness200, all10 PDF formats passed. Live integrations disabled; production not targeted. Historical observations below are retained. See docs/change-requests/NYSA-CRM-20261026-LEAD-001-DEV241-DEPLOYMENT.md.
+
 ## Current observed baselines — 26 October 2026
 
 - Production remains `2.1.0-dev.91`, with 61 migrations through `061_dev90_reference_and_status_governance.sql`. Actual 129-file runtime recovered read-only in GitHub commit `f32be47430c6869bec72e7c17e3f2f42d28c5f6b`, branch `codex/production-dev91-baseline-20261026`, observed tag `production/dev91-observed-20261026`. This is retrospective recovery, not original deployment provenance.

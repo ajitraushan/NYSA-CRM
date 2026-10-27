@@ -9,6 +9,7 @@ import { resolvePrimaryRoutingArea,selectRoutingRule } from '../routing-service.
 import { checkEmailCredibility } from '../email-credibility-domain.js';
 import { routingReason,websiteAiRoutingDecision } from '../website-ai-routing.js';
 import { detectWebsiteRequirementConflicts } from '../requirement-confirmation-domain.js';
+import { openWebsiteFollowUp } from '../website-follow-up-intake.js';
 
 const r=Router();
 const MAX_CLOCK_SKEW_MS=5*60*1000;
@@ -38,9 +39,11 @@ function validatePayload(b){
   if(!clean(b?.eventId)||!clean(b?.contact?.fullName)||identity.error)return {error:identity.error||'eventId and contact.fullName are required'};
   if(clean(b?.journeyKey)&&(!/^[A-Za-z0-9_-]{16,120}$/.test(b.journeyKey)))return {error:'journeyKey must be a bounded opaque website identifier'};
   if(b.contact.preferredChannel&&!['Phone','Email','WhatsApp','SMS'].includes(b.contact.preferredChannel))return {error:'Invalid preferred contact channel'};
+  const partial=b.intakeCompleteness==='partial';
+  if(b.intakeCompleteness!==undefined&&!['partial','complete'].includes(b.intakeCompleteness))return {error:'Invalid intake completeness'};
   if((b.source||'Website')!=='Website'||!SOURCES.includes(b.source||'Website')||!BUSINESS_TYPES.includes(b.businessType))return {error:'Invalid source or businessType'};
-  if(!['own_use','investment','business','other'].includes(b?.requirement?.purpose)||!['cash','mortgage','mixed','unknown'].includes(b?.requirement?.fundingMethod||'unknown')||
-    !clean(b?.requirement?.timelineCode)||typeof b?.consent?.marketing!=='boolean'||!clean(b?.consent?.statementVersion))
+  if((!partial&&!['own_use','investment','business','other'].includes(b?.requirement?.purpose))||!['cash','mortgage','mixed','unknown'].includes(b?.requirement?.fundingMethod||'unknown')||
+    (!partial&&!clean(b?.requirement?.timelineCode))||typeof b?.consent?.marketing!=='boolean'||!clean(b?.consent?.statementVersion))
     return {error:'requirement purpose/timeline and explicit consent evidence are required'};
   const budget=validateBudget(b.requirement.budgetMin,b.requirement.budgetMax);if(budget.error)return {error:budget.error};
   if(b.profile){
@@ -48,7 +51,13 @@ function validatePayload(b){
     if(Number.isNaN(new Date(b.profile.completedAt).valueOf()))return {error:'Website profile completedAt is invalid'};
     for(const field of ['declaredPriorities','mustHaves','preferences','exclusions','acceptableTradeOffs'])if(b.profile[field]!==undefined&&(!Array.isArray(b.profile[field])||b.profile[field].length>20||b.profile[field].some(value=>!clean(value)||String(value).length>240)))return {error:`Website profile ${field} must contain no more than 20 concise values`};
   }
-  return {identity};
+  return {identity,partial};
+}
+
+function normalizeIntakePayload(body,checked){
+  if(!checked.partial)return body;
+  return {...body,businessType:'Unconfirmed',requirement:{...(body.requirement||{}),purpose:'other',timelineCode:'to_be_confirmed',fundingMethod:body.requirement?.fundingMethod||'unknown'},
+    sourceEvidence:{...(body.sourceEvidence||{}),sourceSpecific:{...(body.sourceEvidence?.sourceSpecific||{}),partialIntake:true}}};
 }
 async function intakeActor(){
   const id=process.env.WEBSITE_INTAKE_ACTOR_ID;
@@ -246,9 +255,11 @@ async function processEvent(event,b,identity,actor,{forcedContactId=null,forceDi
       review_reason='Email was retained on the Intake Event but was not promoted to an active Customer contact channel'
       WHERE intake_event_id=$1 AND fact_code='submitted_email'`,[event.id],client);
     await execute("UPDATE website_intake_events SET status='accepted',contact_id=$1,lead_id=$2,processed_at=NOW(),error_code=NULL WHERE id=$3",[contact.id,lead.id,event.id],client);
+    const followUp=await openWebsiteFollowUp({event,lead,payload:b,actorId:actor.id},client);
     await audit('WebsiteIntake',event.id,'accepted',actor.id,{leadId:lead.id,eventId:event.eventId,rawCampaign,campaignId,campaignMappingStatus},client);
     return {eventId:event.eventId,contactId:contact.id,leadId:lead.id,status:'accepted',routingStatus:aiRouting?.status||'not_applicable',routedBusinessType:routeBusinessType,
-      routedTeamId:rule?.teamId||null,campaignMappingStatus,governedCampaignCode:campaignMapping?.campaignCode||null};
+      routedTeamId:rule?.teamId||null,campaignMappingStatus,governedCampaignCode:campaignMapping?.campaignCode||null,
+      followUpCaseId:followUp.caseId||null,followUpStatus:followUp.status};
   });
 }
 
@@ -299,19 +310,19 @@ function recommendationEvidenceFacts(b){
 }
 
 function intakeEvidenceFacts(b,identity){
-  const profile=b.profile||{},requirement=b.requirement||{},sourceEvidence=b.sourceEvidence||{},attribution=sourceEvidence.attribution||{},facts=[
+  const profile=b.profile||{},requirement=b.requirement||{},sourceEvidence=b.sourceEvidence||{},attribution=sourceEvidence.attribution||{},partial=b.intakeCompleteness==='partial',facts=[
     ['identity','submitted_name',clean(b.contact?.fullName),'declared'],
     ['identity','submitted_mobile',identity.phone,'system_observed'],
     ['identity','submitted_email',identity.email,'system_observed'],
     ['enquiry','business_type',clean(b.businessType),'declared'],
     ['enquiry','ai_routing_decision',sourceEvidence.sourceSpecific?.aiRoutingDecision||null,'system_observed'],
     ['enquiry','message',clean(requirement.notes),'declared'],
-    ['requirement','purpose',clean(requirement.purpose),'declared'],
+    ['requirement','purpose',partial?null:clean(requirement.purpose),'declared'],
     ['requirement','property_types',normalizeDelimitedValues(requirement.propertyTypes),'declared'],
     ['requirement','areas',normalizeDelimitedValues(requirement.areas),'declared'],
     ['requirement','budget',{min:requirement.budgetMin??null,max:requirement.budgetMax??null},'declared'],
     ['requirement','funding_method',clean(requirement.fundingMethod),'declared'],
-    ['requirement','timeline',clean(requirement.timelineCode),'declared'],
+    ['requirement','timeline',partial?null:clean(requirement.timelineCode),'declared'],
     ['profile','declared_priorities',normalizeDelimitedValues(profile.declaredPriorities),'declared'],
     ['profile','must_haves',normalizeDelimitedValues(profile.mustHaves),'declared'],
     ['profile','preferences',normalizeDelimitedValues(profile.preferences),'declared'],
@@ -329,6 +340,7 @@ function intakeEvidenceFacts(b,identity){
     ['attribution','utm_term',clean(attribution.utmTerm),'system_observed'],
     ['attribution','property_reference',clean(b.property?.externalId||b.propertyId||b.listingId),'system_observed'],
     ['consent','marketing',{granted:Boolean(b.consent?.marketing),statementVersion:clean(b.consent?.statementVersion)},'system_observed'],
+    ['consent','ai_assisted_response',{whatsapp:Boolean(b.consent?.aiWhatsapp),email:Boolean(b.consent?.aiEmail),statementVersion:clean(b.consent?.statementVersion)},'system_observed'],
     ...advisoryEvidenceFacts(b),...recommendationEvidenceFacts(b)
   ];
   return facts.filter(([,code,value])=>value!==null&&value!==undefined&&value!==''&&(!Array.isArray(value)||value.length)&&
@@ -346,7 +358,8 @@ async function retainIntakeEvidence(event,b,identity,client=undefined){
 r.post('/intake/website',async(req,res)=>{
   if(Buffer.byteLength(req.rawBody||'')>262144)return res.status(413).json({error:'Website intake body is too large'});
   const auth=authenticate(req);if(auth)return res.status(auth.status).json({error:auth.error});
-  const b=req.body||{},checked=validatePayload(b);if(checked.error)return res.status(400).json({error:checked.error});
+  const received=req.body||{},checked=validatePayload(received);if(checked.error)return res.status(400).json({error:checked.error});
+  const b=normalizeIntakePayload(received,checked);
   const aiRouting=websiteAiRoutingDecision(b);
   const actor=await intakeActor();if(!actor)return res.status(503).json({error:'Website intake is not configured'});
   const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.requirement.areas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});
@@ -354,13 +367,20 @@ r.post('/intake/website',async(req,res)=>{
   const existing=await one('SELECT * FROM website_intake_events WHERE event_id=$1',[b.eventId]);
   if(existing){
     if(existing.payloadHash!==payloadHash)return res.status(409).json({error:'Event identifier was already used with different data'});
-    if(existing.status==='accepted')return res.json({eventId:existing.eventId,contactId:existing.contactId,leadId:existing.leadId,status:'accepted',idempotent:true});
+    if(existing.status==='accepted'){
+      const followUp=await transaction(async client=>{
+        const lead=await one('SELECT * FROM leads WHERE id=$1',[existing.leadId],client);
+        return lead?openWebsiteFollowUp({event:existing,lead,payload:b,actorId:actor.id},client):{status:'not_opened'};
+      });
+      return res.json({eventId:existing.eventId,contactId:existing.contactId,leadId:existing.leadId,status:'accepted',idempotent:true,
+        followUpCaseId:followUp.caseId||null,followUpStatus:followUp.status});
+    }
     return res.status(409).json({error:'Event requires authorized support replay'});
   }
   const emailCredibility=checked.identity.email?await checkEmailCredibility(checked.identity.email):null;
   const event=await one(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload,source_code,campaign_code,source_page,source_form,email_credibility,profile_source_code,profile_source_version,journey_key,
     ai_routing_status,ai_routing_business_type,ai_routing_reason,ai_routing_decision)
-    VALUES($1,$2,$3,'processing',$4::jsonb,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::jsonb) RETURNING *`,[uuid(),b.eventId,payloadHash,JSON.stringify(b),b.source||'Website',clean(b.campaign),clean(b.page),clean(b.form),emailCredibility?JSON.stringify(emailCredibility):null,clean(b.profile?.sourceCode),clean(b.profile?.sourceVersion),clean(b.journeyKey),
+    VALUES($1,$2,$3,'processing',$4::jsonb,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::jsonb) RETURNING *`,[uuid(),b.eventId,payloadHash,JSON.stringify(received),b.source||'Website',clean(b.campaign),clean(b.page),clean(b.form),emailCredibility?JSON.stringify(emailCredibility):null,clean(b.profile?.sourceCode),clean(b.profile?.sourceVersion),clean(b.journeyKey),
     aiRouting?.status||null,aiRouting?.businessType||null,aiRouting?.reason||null,aiRouting?JSON.stringify(aiRouting.raw||aiRouting):null]);
   try{
     await retainIntakeEvidence(event,b,checked.identity);
@@ -416,7 +436,7 @@ r.post('/admin/website-intake/:eventId/resolve-email',requireAuth,supportOnly,as
   const claimed=await one(`UPDATE website_intake_events SET status='processing',resolution=$1,resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),
     attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='email_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);
   if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,b,checked.identity,actor);await audit('WebsiteIntake',current.id,'email_only_approved',req.broker.id,{eventId:current.eventId,reason});res.json(result);}
+  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor);await audit('WebsiteIntake',current.id,'email_only_approved',req.broker.id,{eventId:current.eventId,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='EMAIL_RESOLUTION_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 r.post('/admin/website-intake/:eventId/replay',requireAuth,supportOnly,async(req,res)=>{
@@ -436,7 +456,7 @@ r.post('/admin/website-intake/:eventId/replay',requireAuth,supportOnly,async(req
   const emailCredibility=checked.identity.email?await checkEmailCredibility(checked.identity.email):null;
   await execute('UPDATE website_intake_events SET received_payload=$1::jsonb,email_credibility=$2::jsonb WHERE id=$3',[JSON.stringify(replayPayload),emailCredibility?JSON.stringify(emailCredibility):null,event.id]);
   event.emailCredibility=emailCredibility;
-  try{const result=await processEvent(event,replayPayload,checked.identity,actor);await audit('WebsiteIntake',event.id,'replayed',req.broker.id);res.json(result);}
+  try{const result=await processEvent(event,normalizeIntakePayload(replayPayload,checked),checked.identity,actor);await audit('WebsiteIntake',event.id,'replayed',req.broker.id);res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='PROCESSING_FAILED' WHERE id=$1",[event.id]);throw error;}
 });
 
@@ -459,7 +479,7 @@ r.post('/admin/website-intake/:eventId/resolve-identity',requireAuth,supportOnly
   const claimed=await one(`UPDATE website_intake_events SET status='processing',resolution=$1,resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),
     attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='identity_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);
   if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,b,checked.identity,actor,{forcedContactId:selected.id});await audit('WebsiteIntake',current.id,'identity_conflict_resolved',req.broker.id,{eventId:current.eventId,resolution,selectedContactId:selected.id,reason});res.json(result);}
+  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:selected.id});await audit('WebsiteIntake',current.id,'identity_conflict_resolved',req.broker.id,{eventId:current.eventId,resolution,selectedContactId:selected.id,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='RESOLUTION_PROCESSING_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 
@@ -486,7 +506,7 @@ r.post('/admin/website-intake/:eventId/resolve-lead-duplicate',requireAuth,suppo
   }
   const actor=await intakeActor();if(!actor)return res.status(503).json({error:'Website intake is not configured'});const claimed=await one(`UPDATE website_intake_events SET status='processing',duplicate_resolution=$1,
     duplicate_resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='duplicate_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,b,checked.identity,actor,{forcedContactId:candidate.contactId,forceDistinctLead:true});await audit('WebsiteIntake',current.id,'distinct_lead_approved',req.broker.id,{eventId:current.eventId,newLeadId:result.leadId,candidateLeadId:candidate.id,reason});res.json(result);}
+  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:candidate.contactId,forceDistinctLead:true});await audit('WebsiteIntake',current.id,'distinct_lead_approved',req.broker.id,{eventId:current.eventId,newLeadId:result.leadId,candidateLeadId:candidate.id,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='DUPLICATE_RESOLUTION_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 

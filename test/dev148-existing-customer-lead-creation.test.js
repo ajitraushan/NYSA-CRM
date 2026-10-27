@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8').replaceAll('\r\n','\n');
 const crm=read('src/routes/crm.js');
 const website=read('src/routes/website-intake.js');
 const operations=read('src/routes/lead-operations.js');
