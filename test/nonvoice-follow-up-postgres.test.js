@@ -14,7 +14,8 @@ import {prepareAiReply,draftAiBookingResponse} from '../src/nonvoice-ai-chat.js'
 import {reserveMessageBudget,recordMessageSubmission} from '../src/nonvoice-message-dispatch.js';
 import {createLeadChannelInboxRoutes,processLeadChannelInbox} from '../src/routes/lead-channel-inbox.js';
 import crypto from 'node:crypto';
-import {listResponseCases,scopedResponseCase,decideResponseTier,takeOverResponseCase,bookResponseCallback,releaseDependentMessages,responseMetrics} from '../src/nonvoice-response-workflow.js';
+import {listResponseCases,scopedResponseCase,decideResponseTier,takeOverResponseCase,bookResponseCallback,releaseDependentMessages,responseMetrics,
+ listUnassignedResponseCases,assignUnassignedResponseOwner} from '../src/nonvoice-response-workflow.js';
 import {escalateOverdueHotResponses} from '../src/nonvoice-recovery.js';
 import {recoverWebsiteFollowUpCases} from '../src/website-follow-up-intake.js';
 const enabled=process.env.NYSA_FOLLOWUP_DB_TEST==='local-synthetic';
@@ -52,9 +53,9 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
   }
   assert.deepEqual(await snapshot(c,Object.keys(baselineSnapshots)),baselineSnapshots);baselinePreserved=true;
  });
- const ids={actor:randomUUID(),owner:randomUUID(),admin:randomUUID()};
+ const ids={actor:randomUUID(),owner:randomUUID(),admin:randomUUID(),manager:randomUUID()};
  await tx(async c=>{
-  for(const [key,role,job] of [['actor','admin','admin'],['owner','internal_broker','sales_agent'],['admin','admin','admin']])
+  for(const [key,role,job] of [['actor','admin','admin'],['owner','internal_broker','sales_agent'],['admin','admin','admin'],['manager','internal_broker','manager']])
    await c.query(`INSERT INTO brokers(id,name,email,role,job_role,password_hash) VALUES($1,$2,$3,$4,$5,'synthetic-not-a-password')`,
     [ids[key],'Synthetic '+key,`${key}@example.invalid`,role,job]);
  });
@@ -72,7 +73,7 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
  });
  await t.test('all migrations apply and additive schema starts empty',async()=>{
   const result=await tx(c=>c.query('SELECT COUNT(*)::int AS n FROM schema_migrations'));
-  assert.equal(result.rows[0].n,155);assert.equal(baselinePreserved,true);assert.ok(Object.keys(baselineSnapshots).length>100);
+  assert.equal(result.rows[0].n,156);assert.equal(baselinePreserved,true);assert.ok(Object.keys(baselineSnapshots).length>100);
  });
  await t.test('case and six nonvoice jobs are atomic/idempotent, lead ownership unchanged',async()=>{
   const f=await fixture();assert.equal(f.case.state,'ready');
@@ -90,6 +91,29 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
  });
  await t.test('Admin cannot be the operational fallback',async()=>{
   await assert.rejects(()=>fixture({fallbackOwnerId:ids.admin}),/OPERATIONAL_OWNER_REQUIRED/);
+ });
+ await t.test('owner-free case is visible only in the managed queue and creates no Task or send job before assignment',async()=>{
+  const f=await fixture({fallbackOwnerId:null}),manager={id:ids.manager,role:'internal_broker',jobRole:'manager',managedTeamIds:[]};
+  assert.equal(f.case.fallback_owner_id,null);assert.equal(f.case.next_action_task_id,null);
+  const before=await tx(async c=>({tasks:(await c.query('SELECT COUNT(*)::int AS n FROM tasks WHERE lead_id=$1',[f.leadId])).rows[0].n,
+   jobs:(await c.query('SELECT COUNT(*)::int AS n FROM lead_follow_up_jobs WHERE case_id=$1',[f.case.id])).rows[0].n,
+   lead:(await c.query('SELECT assigned_to,assigned_team_id FROM leads WHERE id=$1',[f.leadId])).rows[0]}));
+  assert.equal(before.tasks,0);assert.equal(before.jobs,0);assert.deepEqual(before.lead,{assigned_to:null,assigned_team_id:null});
+  assert.ok((await tx(c=>listUnassignedResponseCases(manager,c))).some(row=>row.id===f.case.id));
+  await assert.rejects(()=>tx(c=>listUnassignedResponseCases({id:ids.owner,role:'internal_broker',jobRole:'sales_agent'},c)),/Admin or Manager/);
+  const attempts=await Promise.allSettled([
+   tx(c=>assignUnassignedResponseOwner(f.case.id,ids.owner,{id:ids.admin,role:'admin',jobRole:'admin'},c)),
+   tx(c=>assignUnassignedResponseOwner(f.case.id,ids.owner,{id:ids.admin,role:'admin',jobRole:'admin'},c))
+  ]);
+  assert.equal(attempts.filter(item=>item.status==='fulfilled').length,1);assert.equal(attempts.filter(item=>item.status==='rejected').length,1);
+  const after=await tx(async c=>({caseRow:(await c.query('SELECT fallback_owner_id,next_action_task_id,response_owner_assigned_by FROM lead_follow_up_cases WHERE id=$1',[f.case.id])).rows[0],
+   tasks:(await c.query('SELECT COUNT(*)::int AS n FROM tasks WHERE lead_id=$1',[f.leadId])).rows[0].n,
+   jobs:(await c.query('SELECT COUNT(*)::int AS n FROM lead_follow_up_jobs WHERE case_id=$1',[f.case.id])).rows[0].n,
+   audit:(await c.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE entity_id=$1 AND action='response_owner_assigned'",[f.leadId])).rows[0].n,
+   lead:(await c.query('SELECT assigned_to,assigned_team_id FROM leads WHERE id=$1',[f.leadId])).rows[0]}));
+  assert.equal(after.caseRow.fallback_owner_id,ids.owner);assert.equal(after.caseRow.response_owner_assigned_by,ids.admin);
+  assert.equal(after.tasks,1);assert.equal(after.jobs,6);assert.equal(after.audit,1);assert.deepEqual(after.lead,before.lead);
+  assert.ok(!(await tx(c=>listUnassignedResponseCases(manager,c))).some(row=>row.id===f.case.id));
  });
  await t.test('reply deduplicates, cancels work and altered event conflicts',async()=>{
   const f=await fixture(),event={caseId:f.case.id,connectionRef:'whatsapp:pilot',eventRef:randomUUID(),type:'reply',generation:1};
@@ -137,13 +161,13 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
    const audit=await tx(c=>c.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE entity_type='LeadIntegrationSetup'"));assert.equal(audit.rows[0].n,1);
   }finally{await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}
  });
- await t.test('accepted website intake without an earlier case is repaired after fallback setup',async()=>{
+ await t.test('accepted website intake without an earlier case is repaired into Unassigned without fallback setup',async()=>{
   const eventId=randomUUID(),contactId=randomUUID(),leadId=randomUUID(),sourceId=randomUUID(),websiteEventId=randomUUID();
   const payload={eventId:`wp-contact-${eventId}`,sourceWebsite:'staging.nysarealty.com',form:'contact_enquiry_v2',intakeCompleteness:'complete',
    location:{country:'AE',timeZone:'Asia/Dubai',confirmed:true},consent:{statementVersion:'response-v1',aiWhatsapp:true,aiEmail:true},
    requirement:{purpose:'investment',timelineCode:'within_3_months',fundingMethod:'cash',areas:[],propertyTypes:[]}};
   await tx(async c=>{
-   await c.query("UPDATE lead_integration_setup SET draft=jsonb_set(COALESCE(draft,'{}'::jsonb),'{fallbackOwnerId}',to_jsonb($1::text),true)",[ids.owner]);
+   await c.query("UPDATE lead_integration_setup SET draft=COALESCE(draft,'{}'::jsonb)-'fallbackOwnerId'");
    await c.query("INSERT INTO contacts(id,full_name,email,phone,created_by) VALUES($1,'Synthetic website repair','website-repair@example.invalid','+971500000010',$2)",[contactId,ids.actor]);
    await c.query("INSERT INTO leads(id,contact_id,title,source,business_type,created_by,created_at) VALUES($1,$2,'Synthetic website repair','Website','Unconfirmed',$3,NOW())",[leadId,contactId,ids.actor]);
    await c.query(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload,contact_id,lead_id,received_at,processed_at)
@@ -154,8 +178,9 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
   });
   const repaired=await tx(c=>recoverWebsiteFollowUpCases({actorId:ids.actor},c));
   assert.equal(repaired.opened,1);assert.equal(repaired.status,'ok');
-  const record=await tx(c=>c.query('SELECT state,lead_id FROM lead_follow_up_cases WHERE source_inbox_id=$1',[sourceId]));
-  assert.deepEqual(record.rows[0],{state:'ready',lead_id:leadId});
+  const record=await tx(c=>c.query('SELECT state,lead_id,fallback_owner_id,next_action_task_id FROM lead_follow_up_cases WHERE source_inbox_id=$1',[sourceId]));
+  assert.deepEqual(record.rows[0],{state:'ready',lead_id:leadId,fallback_owner_id:null,next_action_task_id:null});
+  assert.equal((await tx(c=>c.query('SELECT COUNT(*)::int AS n FROM lead_follow_up_jobs WHERE case_id=(SELECT id FROM lead_follow_up_cases WHERE source_inbox_id=$1)',[sourceId]))).rows[0].n,0);
   assert.equal((await tx(c=>recoverWebsiteFollowUpCases({actorId:ids.actor},c))).scanned,0);
  });
  await t.test('Meta retrieval output atomically links CRM records and encrypted evidence without guessed classification',async()=>{
@@ -277,7 +302,7 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
  await t.test('overdue Hot alerts the existing manager once, preserves ownership and flags missing setup',async()=>{
   const f=await fixture(),manager=randomUUID(),team=randomUUID(),at=new Date('2026-10-27T06:00:00Z');
   await tx(async c=>{
-   await c.query("INSERT INTO brokers(id,name,email,role,job_role,password_hash) VALUES($1,'Synthetic manager','manager@example.invalid','internal_broker','manager','synthetic')",[manager]);
+   await c.query("INSERT INTO brokers(id,name,email,role,job_role,password_hash) VALUES($1,'Synthetic manager',$2,'internal_broker','manager','synthetic')",[manager,manager+'@example.invalid']);
    await c.query("INSERT INTO teams(id,name,manager_id) VALUES($1,'Synthetic escalation team',$2)",[team,manager]);
    await c.query('UPDATE leads SET assigned_team_id=$2 WHERE id=$1',[f.leadId,team]);
    await c.query("UPDATE lead_follow_up_cases SET accepted_tier='Hot',handoff_requested_at=$2 WHERE id=$1",[f.case.id,at]);

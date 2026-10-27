@@ -136,7 +136,7 @@ const ACTIVITY_NEXT_ACTIONS=[['confirm_requirements','Confirm or clarify require
 const OPPORTUNITY_STAGES = ['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Deal','Closed Won','Closed Lost'];
 const OPPORTUNITY_LOST_REASONS = {customer_withdrew:'Customer withdrew',no_suitable_property:'No suitable property',budget_or_finance:'Budget or finance',timing_changed:'Timing changed',competitor:'Completed elsewhere',duplicate_pursuit:'Duplicate pursuit',other:'Other'};
 const JOB_ROLES = { admin:'Admin', sales_agent:'Sales Agent', listing_agent:'Listing Executive', manager:'Manager', director:'Director', accountant:'Accountant' };
-const WORKSPACE_TABS={dashboard:'Dashboard',tasks:'My Tasks',admin:'Administration',myLeave:'My Leave',leaveAdministration:'Leave Administration',purchasedDataImport:'Bulk Upload'};
+const WORKSPACE_TABS={dashboard:'Dashboard',tasks:'My Tasks',admin:'Administration',leadResponse:'Lead response',myLeave:'My Leave',leaveAdministration:'Leave Administration',purchasedDataImport:'Bulk Upload'};
 window.NYSA_ROLE_POLICY=Object.freeze({labels:Object.freeze({...JOB_ROLES}),leaveApproverLabel:'Line Manager'});
 function openCrmPdfTab(url){const tab=window.open('about:blank',`nysa-pdf-${Date.now()}`);if(!tab){toast('The PDF tab was blocked. Allow pop-ups for CORE and try again.',8000);return false;}tab.opener=null;tab.document.title='Opening NYSA PDF…';tab.location.replace(new URL(url,window.location.origin).href);return true;}
 window.openCrmPdfTab=openCrmPdfTab;

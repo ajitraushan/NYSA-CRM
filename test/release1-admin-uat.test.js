@@ -93,10 +93,11 @@ test('proposal creation consumes administrator-defined prompts and snapshots the
   assert.match(api,/makeProposalPdf/);
 });
 
-test('Admin combines configuration and governed leave administration',()=>{
+test('Admin combines configuration, unassigned response intake and governed leave administration',()=>{
   const roleAccess=read('src/role-access.js'),crm=read('src/routes/crm.js');
-  assert.match(roleAccess,/workspaceTabs:frozen\(\['admin','purchasedDataImport','myLeave','leaveAdministration'\]\)/);
-  assert.match(roleAccess,/Admin access is limited to configuration, purchased-data intake and leave administration/);
+  assert.match(roleAccess,/workspaceTabs:frozen\(\['admin','leadResponse','purchasedDataImport','myLeave','leaveAdministration'\]\)/);
+  assert.match(roleAccess,/LEAD_RESPONSE_UNASSIGNED:'lead_response\.unassigned\.manage'/);
+  assert.match(roleAccess,/Admin access is limited to configuration, unassigned lead response, purchased-data intake and leave administration/);
   assert.match(roleAccess,/approverJobRoles:frozen\(\[JOB_ROLE\.MANAGER,JOB_ROLE\.DIRECTOR\]\)/);
   assert.match(roleAccess,/routingReason:'leave_to_line_manager'/);
   assert.doesNotMatch(roleAccess,/approverAccountRole:'admin'/);

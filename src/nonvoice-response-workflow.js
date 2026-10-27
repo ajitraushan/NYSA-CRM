@@ -1,10 +1,78 @@
 import {randomUUID} from 'node:crypto';
-import {applyNonvoiceEvent} from './nonvoice-follow-up-store.js';
+import {applyNonvoiceEvent,scheduleNonvoiceJobs} from './nonvoice-follow-up-store.js';
 import {suggestLeadTier,nextMessageWindow} from './lead-follow-up-domain.js';
 import {addBusinessMinutes} from './crm-domain.js';
 export function hotResponseDeadlines(at){const start=new Date(at),calendar={workDays:[0,1,2,3,4,5,6],startMinute:600,endMinute:1200,utcOffsetMinutes:240};return {acceptanceDueAt:addBusinessMinutes(start,10,calendar),escalationDueAt:addBusinessMinutes(start,30,calendar)};}
 const get=async(c,s,p)=>(await c.query(s,p)).rows[0];
 function reject(code){throw Object.assign(new Error(code),{statusCode:409});}
+const isAdmin=broker=>broker?.role==='admin';
+const isManager=broker=>broker?.role==='internal_broker'&&broker?.jobRole==='manager';
+export const canManageUnassignedResponses=broker=>isAdmin(broker)||isManager(broker);
+const managerTeams=broker=>broker?.managedTeamIds?.length?broker.managedTeamIds:[broker?.teamId].filter(Boolean);
+
+export async function listUnassignedResponseOwners(broker,client){
+ if(!canManageUnassignedResponses(broker))throw Object.assign(new Error('Admin or Manager access required'),{statusCode:403});
+ const teams=isManager(broker)?managerTeams(broker):[];
+ return (await client.query(`SELECT DISTINCT b.id,b.name,b.job_role,b.team_id
+  FROM brokers b
+  LEFT JOIN team_memberships tm ON tm.broker_id=b.id AND tm.ends_at IS NULL
+  LEFT JOIN user_role_assignments ur ON ur.broker_id=b.id AND ur.status='active' AND ur.ends_at IS NULL
+  WHERE b.status='active' AND b.role='internal_broker' AND b.job_role IN ('sales_agent','manager')
+    AND ($1::boolean OR b.id=$2 OR b.team_id=ANY($3::uuid[]) OR tm.team_id=ANY($3::uuid[]) OR ur.team_id=ANY($3::uuid[]))
+  ORDER BY b.name,b.id`,[isAdmin(broker),broker.id,teams])).rows;
+}
+
+export async function listUnassignedResponseCases(broker,client,{offset=0}={}){
+ if(!Number.isInteger(offset)||offset<0||offset>1000000)throw Object.assign(new Error('Invalid response page'),{statusCode:400});
+ if(!canManageUnassignedResponses(broker))throw Object.assign(new Error('Admin or Manager access required'),{statusCode:403});
+ const teams=isManager(broker)?managerTeams(broker):[];
+ return (await client.query(`SELECT COUNT(*) OVER()::int AS total_count,c.id,c.lead_id,c.state,c.country,c.time_zone,c.created_at,
+  c.assignment_due_at,c.declared_requirements,c.tier_suggestion,c.accepted_tier,ct.full_name,l.lead_reference,l.assigned_team_id,
+  s.source_system,'Assign response owner'::text AS next_action,c.assignment_due_at AS due_at,NULL::text AS task_status,0::int AS waiting_steps
+  FROM lead_follow_up_cases c JOIN lead_source_inbox s ON s.id=c.source_inbox_id JOIN leads l ON l.id=c.lead_id
+  JOIN contacts ct ON ct.id=l.contact_id
+  WHERE c.fallback_owner_id IS NULL AND c.next_action_task_id IS NULL AND l.assigned_to IS NULL
+    AND ($1::boolean OR l.assigned_team_id IS NULL OR l.assigned_team_id=ANY($2::uuid[]))
+  ORDER BY c.assignment_due_at,c.created_at,c.id LIMIT 100 OFFSET $3`,[isAdmin(broker),teams,offset])).rows;
+}
+
+export async function scopedUnassignedResponseCase(caseId,broker,client,lock=false){
+ if(!canManageUnassignedResponses(broker))throw Object.assign(new Error('Admin or Manager access required'),{statusCode:403});
+ const row=await get(client,`SELECT c.*,s.source_system,l.contact_id,l.assigned_team_id,l.assigned_to,ct.full_name,l.lead_reference
+  FROM lead_follow_up_cases c JOIN lead_source_inbox s ON s.id=c.source_inbox_id JOIN leads l ON l.id=c.lead_id
+  JOIN contacts ct ON ct.id=l.contact_id WHERE c.id=$1 ${lock?'FOR UPDATE OF c,l':''}`,[caseId]);
+ if(!row)throw Object.assign(new Error('Lead response case not found'),{statusCode:404});
+ if(row.fallback_owner_id||row.next_action_task_id)reject('Lead response case is already assigned');
+ const teams=isManager(broker)?managerTeams(broker):[];
+ if(isManager(broker)&&row.assigned_team_id&&!teams.includes(row.assigned_team_id))throw Object.assign(new Error('Lead response is outside your managed teams'),{statusCode:403});
+ return row;
+}
+
+export async function assignUnassignedResponseOwner(caseId,ownerId,broker,client){
+ if(typeof ownerId!=='string'||!/^[a-f0-9-]{36}$/i.test(ownerId))throw Object.assign(new Error('Choose an eligible response owner'),{statusCode:400});
+ const row=await scopedUnassignedResponseCase(caseId,broker,client,true);
+ if(row.assigned_to&&row.assigned_to!==ownerId)reject('Existing Lead owner must be preserved');
+ const owner=await get(client,`SELECT b.id,b.name,b.job_role,b.team_id,
+   ARRAY(SELECT team_id::text FROM (SELECT b.team_id WHERE b.team_id IS NOT NULL UNION SELECT tm.team_id FROM team_memberships tm WHERE tm.broker_id=b.id AND tm.ends_at IS NULL UNION SELECT ur.team_id FROM user_role_assignments ur WHERE ur.broker_id=b.id AND ur.status='active' AND ur.ends_at IS NULL) scoped_teams) AS team_ids
+   FROM brokers b WHERE b.id=$1 AND b.status='active' AND b.role='internal_broker' AND b.job_role IN ('sales_agent','manager')`,[ownerId]);
+ if(!owner)reject('Choose an active Sales Agent or Manager');
+ const teams=isManager(broker)?managerTeams(broker):[];
+ const ownerTeams=owner.team_ids||[];
+ if(isManager(broker)&&owner.id!==broker.id&&!ownerTeams.some(team=>teams.includes(team)))throw Object.assign(new Error('Choose yourself or an owner in your managed teams'),{statusCode:403});
+ if(row.assigned_team_id&&owner.job_role==='sales_agent'&&!ownerTeams.includes(row.assigned_team_id))reject('Response owner must be eligible for the routed team');
+ const taskId=randomUUID(),subject=row.state==='ready'?'Monitor AI lead response':'Review lead contact eligibility';
+ await client.query(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,status,due_at,created_by)
+  VALUES($1,$2,$3,$4,'Reference-only response task; no customer content.',$5,$6,'open',$7,$8)`,[taskId,row.lead_id,row.contact_id,subject,owner.id,
+   new Date(row.assignment_due_at)<=new Date()?'urgent':'normal',row.assignment_due_at,broker.id]);
+ await client.query(`UPDATE lead_follow_up_cases SET fallback_owner_id=$2,next_action_task_id=$3,response_owner_assigned_at=NOW(),
+  response_owner_assigned_by=$4,updated_at=NOW() WHERE id=$1`,[row.id,owner.id,taskId,broker.id]);
+ if(row.state==='ready')await scheduleNonvoiceJobs({caseId:row.id,generation:row.generation},client);
+ await client.query(`INSERT INTO audit_log(id,entity_type,entity_id,action,performed_by,details)
+  VALUES($1,'Lead',$2,'response_owner_assigned',$3,$4)`,[randomUUID(),row.lead_id,broker.id,JSON.stringify({caseRef:row.id,responseOwnerId:owner.id,
+   responseOwnerRole:owner.job_role,assignmentDueAt:row.assignment_due_at,canonicalLeadOwnerChanged:false,canonicalLeadTeamChanged:false})]);
+ await client.query('UPDATE leads SET next_follow_up_at=(SELECT due_at FROM tasks WHERE id=$2) WHERE id=$1',[row.lead_id,taskId]);
+ return {caseId:row.id,responseOwner:{id:owner.id,name:owner.name,jobRole:owner.job_role},taskId,state:row.state};
+}
 export async function scopedResponseCase(caseId,broker,client,lock=false){
  if(broker?.role!=='internal_broker'||!['sales_agent','manager'].includes(broker.jobRole))throw Object.assign(new Error('Operational lead access required'),{statusCode:403});
  const row=await get(client,`SELECT c.*,s.source_system,l.contact_id,l.assigned_team_id,l.assigned_to,ct.full_name,(SELECT assignee_id FROM tasks WHERE id=c.manager_alert_task_id AND status IN ('open','in_progress')) AS alert_assignee_id FROM lead_follow_up_cases c

@@ -40,7 +40,7 @@ export async function retrieveMetaLead(reference,{accessToken,graphVersion,fetch
  return data;
 }
 // A caller transaction makes customer/lead linking, source evidence and outbox atomic.
-export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,ownerId,evidenceKey},client){
+export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,ownerId=null,evidenceKey},client){
  const source=await get(client,'SELECT * FROM lead_source_inbox WHERE id=$1 FOR UPDATE',[sourceId]);if(!source)problem('SOURCE_NOT_FOUND');
  if(source.state==='accepted')return {leadId:source.lead_id,duplicate:true};
  if(String(data.id)!==source.source_event_id||String(data.form_id)!==source.source_form_id||!mapping.pageIds?.includes(source.source_account_id))problem('META_LEAD_BINDING_FAILED');

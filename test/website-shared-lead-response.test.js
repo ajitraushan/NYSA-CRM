@@ -56,7 +56,7 @@ test('WordPress bridge signs one CORE endpoint and durably captures both contact
   assert.match(contact,/CRM Test only/);
 });
 
-test('website follow-up worker repairs accepted website Leads that were received before fallback setup',()=>{
+test('website follow-up worker repairs accepted website Leads without requiring fallback-owner setup',()=>{
   const intake=read('src/website-follow-up-intake.js');
   const worker=read('src/nonvoice-worker.js');
   assert.match(intake,/export async function recoverWebsiteFollowUpCases/);
@@ -66,7 +66,18 @@ test('website follow-up worker repairs accepted website Leads that were received
   assert.match(worker,/recoverWebsiteFollowUpCases/);
   assert.match(worker,/websiteRecovery/);
   assert.match(worker,/WEBSITE_INTAKE_ACTOR_ID\|\|env\.LEAD_INTAKE_ACTOR_ID/);
+  assert.doesNotMatch(worker,/setup\?\.fallbackOwnerId&&websiteActorId/);
   assert.match(worker,/websiteRecovery,intake:'setup_required'/);
+});
+
+test('DEV244 migration and store keep owner-free cases non-sending until assignment',()=>{
+  const migration=read('src/migrations/156_nonvoice_unassigned_response_queue.sql');
+  const store=read('src/nonvoice-follow-up-store.js');
+  assert.match(migration,/fallback_owner_id DROP NOT NULL/);
+  assert.match(migration,/next_action_task_id DROP NOT NULL/);
+  assert.match(migration,/assignment_due_at/);
+  assert.match(store,/if\(owner&&ready\)await scheduleNonvoiceJobs/);
+  assert.match(store,/c\.fallback_owner_id IS NOT NULL AND c\.next_action_task_id IS NOT NULL/);
 });
 
 test('origin package scope includes the governed WordPress bridge artifacts',()=>{

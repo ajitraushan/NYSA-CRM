@@ -5,6 +5,15 @@ const fail=code=>{throw Object.assign(new Error(code),{statusCode:409});};
 const boundedRef=value=>typeof value==='string' && /^[A-Za-z0-9_.:-]{1,160}$/.test(value);
 const one=async(client,sql,params)=>(await client.query(sql,params)).rows[0];
 
+export async function scheduleNonvoiceJobs({caseId,generation=1},client) {
+  for(const [step,channel,prerequisite] of [[0,'whatsapp',null],[2,'whatsapp','first_missed_call'],[3,'email','first_call_ended'],
+    [5,'whatsapp','second_missed_call'],[6,'email','first_call_day3'],[7,'handoff','first_call_day3']]) {
+    await client.query(`INSERT INTO lead_follow_up_jobs(id,case_id,generation,step,channel,prerequisite,state,due_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,CASE WHEN $4=0 THEN NOW() ELSE NULL END)
+      ON CONFLICT(case_id,generation,step) DO NOTHING`,[id(),caseId,generation,step,channel,prerequisite,step===0?'queued':'waiting']);
+  }
+}
+
 // Internal transaction-scoped commands. No public arbitrary-lead update endpoint.
 // Caller must supply the existing governed CRM authentication/scope checks before invoking.
 export async function openNonvoiceCase(input,client) {
@@ -14,33 +23,34 @@ export async function openNonvoiceCase(input,client) {
   if(existing) return {...existing,duplicate:true};
   const lead=await one(client,`SELECT l.*,c.do_not_contact,c.phone AS contact_phone,c.email AS contact_email FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE l.id=$1 FOR UPDATE OF l,c`,[input.leadId]);
   if(!lead || lead.assigned_to || new Date(lead.created_at)<new Date(source.received_at)) fail('EXISTING_HUMAN_LEAD');
-  const owner=await one(client,"SELECT id,role,job_role FROM brokers WHERE id=$1 AND status='active'",[input.fallbackOwnerId]);
-  if(!owner || owner.role!=='internal_broker' || !['sales_agent','manager'].includes(owner.job_role)) fail('OPERATIONAL_OWNER_REQUIRED');
   const actor=await one(client,"SELECT id FROM brokers WHERE id=$1 AND status='active'",[input.actorId]);
   if(!actor) fail('ACTIVE_ACTOR_REQUIRED');
+  let owner=null;
+  if(input.fallbackOwnerId){
+    owner=await one(client,"SELECT id,role,job_role FROM brokers WHERE id=$1 AND status='active'",[input.fallbackOwnerId]);
+    if(!owner || owner.role!=='internal_broker' || !['sales_agent','manager'].includes(owner.job_role)) fail('OPERATIONAL_OWNER_REQUIRED');
+  }
   const consent=input.consent||{},evidenced=boundedRef(consent.statementVersion)&&boundedRef(consent.evidenceRef);
   const eligible=input.locationConfirmed===true && ((input.country==='AE'&&input.timeZone==='Asia/Dubai')||
     (input.country==='IN'&&input.timeZone==='Asia/Kolkata')) && evidenced && !lead.do_not_contact;
   const whatsapp=eligible&&consent.whatsapp===true&&Boolean(lead.contact_phone),email=eligible&&consent.email===true&&Boolean(lead.contact_email);
   const ready=whatsapp&&email; // Incomplete multichannel permission requires deliberate human review.
-  const caseId=id(),taskId=id();
-  await client.query(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,status,due_at,created_by)
-    VALUES($1,$2,$3,$4,$5,$6,'normal','open',NOW(),$7)`,[taskId,lead.id,lead.contact_id,
-    ready?'Monitor AI lead response':'Review lead contact eligibility','Reference-only automation recovery task; no customer content.',owner.id,actor.id]);
+  const caseId=id(),taskId=owner?id():null;
+  if(owner)await client.query(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,status,due_at,created_by)
+    VALUES($1,$2,$3,$4,$5,$6,'normal','open',$7::timestamptz+INTERVAL '2 minutes',$8)`,[taskId,lead.id,lead.contact_id,
+    ready?'Monitor AI lead response':'Review lead contact eligibility','Reference-only automation recovery task; no customer content.',owner.id,source.received_at,actor.id]);
   const created=await one(client,`INSERT INTO lead_follow_up_cases(id,source_inbox_id,lead_id,fallback_owner_id,created_by,policy_version,
-    country,time_zone,location_confirmed,consent_statement_version,consent_evidence_ref,whatsapp_permitted,email_permitted,state,next_action_task_id)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-    [caseId,source.id,lead.id,owner.id,actor.id,FOLLOW_UP_POLICY_VERSION,input.country||null,input.timeZone||null,
+    country,time_zone,location_confirmed,consent_statement_version,consent_evidence_ref,whatsapp_permitted,email_permitted,state,next_action_task_id,
+    assignment_due_at,response_owner_assigned_at,response_owner_assigned_by)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::timestamptz+INTERVAL '2 minutes',$17,$18) RETURNING *`,
+    [caseId,source.id,lead.id,owner?.id||null,actor.id,FOLLOW_UP_POLICY_VERSION,input.country||null,input.timeZone||null,
       input.locationConfirmed===true,evidenced?consent.statementVersion:null,evidenced?consent.evidenceRef:null,
-      whatsapp,email,ready?'ready':'needs_review',taskId]);
-  if(ready) for(const [step,channel,prerequisite] of [[0,'whatsapp',null],[2,'whatsapp','first_missed_call'],[3,'email','first_call_ended'],
-    [5,'whatsapp','second_missed_call'],[6,'email','first_call_day3'],[7,'handoff','first_call_day3']]) {
-    await client.query(`INSERT INTO lead_follow_up_jobs(id,case_id,generation,step,channel,prerequisite,state,due_at)
-      VALUES($1,$2,1,$3,$4,$5,$6,CASE WHEN $3=0 THEN NOW() ELSE NULL END)`,[id(),caseId,step,channel,prerequisite,step===0?'queued':'waiting']);
-  }
+      whatsapp,email,ready?'ready':'needs_review',taskId,source.received_at,owner?new Date():null,owner?actor.id:null]);
+  if(owner&&ready)await scheduleNonvoiceJobs({caseId,generation:1},client);
   await client.query(`INSERT INTO audit_log(id,entity_type,entity_id,action,performed_by,details)
-    VALUES($1,'Lead',$2,'nonvoice_case_opened',$3,$4)`,[id(),lead.id,actor.id,JSON.stringify({caseRef:caseId,state:created.state,policyVersion:FOLLOW_UP_POLICY_VERSION})]);
-  await client.query('UPDATE leads SET next_follow_up_at=(SELECT due_at FROM tasks WHERE id=$2) WHERE id=$1',[lead.id,taskId]);
+    VALUES($1,'Lead',$2,'nonvoice_case_opened',$3,$4)`,[id(),lead.id,actor.id,JSON.stringify({caseRef:caseId,state:created.state,
+      policyVersion:FOLLOW_UP_POLICY_VERSION,responseOwnerId:owner?.id||null,assignmentDueAt:created.assignment_due_at})]);
+  if(taskId)await client.query('UPDATE leads SET next_follow_up_at=(SELECT due_at FROM tasks WHERE id=$2) WHERE id=$1',[lead.id,taskId]);
   return created;
 }
 
@@ -85,6 +95,7 @@ export async function claimNonvoiceJobs({limit=10,liveEnabled=false},client) {
     SELECT j.id FROM lead_follow_up_jobs j JOIN lead_follow_up_cases c ON c.id=j.case_id
     JOIN leads l ON l.id=c.lead_id JOIN contacts ct ON ct.id=l.contact_id
     WHERE j.state='queued' AND j.due_at<=NOW() AND c.state='ready' AND j.generation=c.generation
+      AND c.fallback_owner_id IS NOT NULL AND c.next_action_task_id IS NOT NULL
       AND ct.do_not_contact=0 AND l.assigned_to IS NULL
       AND c.location_confirmed=TRUE AND ((c.country='AE' AND c.time_zone='Asia/Dubai') OR (c.country='IN' AND c.time_zone='Asia/Kolkata'))
       AND ((j.channel='whatsapp' AND c.whatsapp_permitted) OR (j.channel='email' AND c.email_permitted) OR j.channel='handoff')
