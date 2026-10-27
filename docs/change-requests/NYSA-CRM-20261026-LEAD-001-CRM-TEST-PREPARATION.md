@@ -1,6 +1,6 @@
 # LEAD-001: disabled-feature CRM Test preparation
 
-Date: 27 October 2026, Asia/Dubai. Candidate: 2.1.0-dev.240. Draft PR: https://github.com/ajitraushan/NYSA-CRM/pull/4.
+Date: 27 October 2026, Asia/Dubai. Candidate: 2.1.0-dev.241. Draft PR: https://github.com/ajitraushan/NYSA-CRM/pull/4.
 
 ## Baseline and scope
 
@@ -34,3 +34,5 @@ Confirm Sunita's existing operating identity/team and active manager. After 30 s
 Real provider connectivity, internal WhatsApp handoff notification, external calendar free/busy/two-slot booking/invitations, exception resolution actions, two-minute load acceptance and authenticated Test UAT remain open. CORE customer-confirmed callback fallback works and explicitly says calendar not connected. Contextless WhatsApp replies matching multiple outbound messages are safely held for review. Website follows approved Meta canary and is not yet connected. UAT owner/canary size require confirmation before live activation.
 
 No production or Test deployment, remote migration, provider signup, mailbox read or external traffic was performed. Exact packaged commit, archive hashes, migration count and isolated test receipt are supplied by the origin manifest and verification record. This candidate is for disabled-feature review and cannot start a live canary.
+
+DEV241 supersedes DEV240: manager-owned Hot leads use only a distinct active reporting manager derived from the owner primary team. Self/missing/inactive reporting manager results in owned urgent manual review. No new migration, reassignment or hierarchy changes. See MANAGER-OWNER-ADJUSTMENT.md for baseline, privacy/scope and synthetic test evidence.

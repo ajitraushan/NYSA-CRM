@@ -80,3 +80,7 @@ Dependency audit: npm reports 9 high and 1 moderate findings in the existing Pup
 Release metadata assertions in historical feature tests now expect DEV240; behavior assertions are unchanged. The first final regression correctly rejected the old RC1 expectations after the version bump; the refreshed run and isolated package receipt follow.
 
 Final working-tree release regression: 1,545 tests; 1,454 passed; 91 skipped; zero failures. All changed JavaScript syntax and Git whitespace checks pass. The 61 opt-in targeted tests were run separately against the dedicated synthetic PostgreSQL fixture.
+
+## DEV241 manager-owned escalation correction - 27 October 2026
+
+User-approved follow-up to DEV240: prevent manager self-escalation; use a distinct active reporting manager from CORE primary-team reporting line, otherwise owned overdue/manual-review task. No ownership/password/team/configuration changes. Recipient gets case-scoped read access for the alert lifetime, not new write authority. 62 targeted tests passed including all 154 migrations, manager routing edge cases and concurrent duplicate suppression. Migration count unchanged; no new migration. Production and installed Test unchanged. Origin package receipt records final regression.

@@ -14,7 +14,7 @@ import {prepareAiReply,draftAiBookingResponse} from '../src/nonvoice-ai-chat.js'
 import {reserveMessageBudget,recordMessageSubmission} from '../src/nonvoice-message-dispatch.js';
 import {createLeadChannelInboxRoutes,processLeadChannelInbox} from '../src/routes/lead-channel-inbox.js';
 import crypto from 'node:crypto';
-import {listResponseCases,scopedResponseCase,decideResponseTier,takeOverResponseCase,bookResponseCallback,releaseDependentMessages} from '../src/nonvoice-response-workflow.js';
+import {listResponseCases,scopedResponseCase,decideResponseTier,takeOverResponseCase,bookResponseCallback,releaseDependentMessages,responseMetrics} from '../src/nonvoice-response-workflow.js';
 import {escalateOverdueHotResponses} from '../src/nonvoice-recovery.js';
 const enabled=process.env.NYSA_FOLLOWUP_DB_TEST==='local-synthetic';
 
@@ -230,7 +230,7 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
   }finally{await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}
   await tx(c=>c.query('UPDATE lead_integration_setup SET paused=FALSE')); // Restore synthetic test-only dispatch control.
  });
- await t.test('nonvoice journey: reply → bounded AI response → human callback booking',async()=>{
+ await t.test('nonvoice journey: reply -> bounded AI response -> human callback booking',async()=>{
   const f=await fixture(),attemptId=randomUUID(),messageRef='synthetic:journey:'+randomUUID(),inboxId=randomUUID();
   await tx(async c=>{
    const day=(await c.query("SELECT (NOW() AT TIME ZONE 'Asia/Dubai')::date AS day")).rows[0].day;
@@ -266,6 +266,38 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
   assert.equal(row.assignee_id,manager);assert.equal(row.assigned_to,null);assert.equal(row.fallback_owner_id,ids.owner);
   const missing=await fixture();await tx(c=>c.query("UPDATE lead_follow_up_cases SET accepted_tier='Hot',handoff_requested_at=$2 WHERE id=$1",[missing.case.id,at]));
   const result=await tx(c=>escalateOverdueHotResponses(c,{now:new Date('2026-10-27T07:00:00Z')}));assert.equal(result.missingManager,1);
+ });
+
+ await t.test('manager-owned Hot escalates only to a distinct active reporting manager, never self or guessed managers',async()=>{
+  for(const mode of ['reporting','self','missing','inactive','admin']){
+   const f=await fixture(),owner=randomUUID(),superior=randomUUID(),primaryTeam=randomUUID(),leadTeam=randomUUID();
+   const at=new Date('2026-10-27T06:00:00Z');
+   await tx(async c=>{
+    await c.query("INSERT INTO brokers(id,name,email,role,job_role,password_hash) VALUES($1,'Synthetic owner manager',$2,'internal_broker','manager','synthetic-owner-marker')",[owner,owner+'@example.invalid']);
+    await c.query("INSERT INTO brokers(id,name,email,role,job_role,status,password_hash) VALUES($1,'Synthetic reporting manager',$2,$3,'manager',$4,'synthetic-report-marker')",[superior,superior+'@example.invalid',mode==='admin'?'admin':'internal_broker',mode==='inactive'?'revoked':'active']);
+    await c.query("INSERT INTO teams(id,name,manager_id) VALUES($1,$2,$3),($4,$5,$6)",[primaryTeam,'Synthetic primary '+primaryTeam,mode==='missing'?null:mode==='self'?owner:superior,leadTeam,'Synthetic lead '+leadTeam,owner]);
+    await c.query('UPDATE brokers SET team_id=$2 WHERE id=$1',[owner,primaryTeam]);
+    await c.query('UPDATE leads SET assigned_to=$2,assigned_team_id=$3 WHERE id=$1',[f.leadId,mode==='reporting'?owner:null,leadTeam]);
+    await c.query("UPDATE lead_follow_up_cases SET fallback_owner_id=$2,accepted_tier='Hot',handoff_requested_at=$3 WHERE id=$1",[f.case.id,owner,at]);
+   });
+   const before=await tx(c=>c.query('SELECT assigned_to,assigned_team_id FROM leads WHERE id=$1',[f.leadId]));
+   const runs=await Promise.all([tx(c=>escalateOverdueHotResponses(c,{now:new Date('2026-10-27T06:30:00Z')})),tx(c=>escalateOverdueHotResponses(c,{now:new Date('2026-10-27T06:30:00Z')}))]);
+   assert.equal(runs.reduce((n,r)=>n+r.alerted,0),1);
+   const row=(await tx(c=>c.query('SELECT c.*,t.assignee_id,t.priority,t.subject FROM lead_follow_up_cases c JOIN tasks t ON t.id=c.manager_alert_task_id WHERE c.id=$1',[f.case.id]))).rows[0];
+   assert.equal(row.assignee_id,mode==='reporting'?superior:owner);assert.equal(row.manager_alert_setup_missing,mode!=='reporting');assert.equal(row.priority,'urgent');assert.match(row.subject,/Overdue Hot lead/);assert.equal(row.fallback_owner_id,owner);
+   assert.deepEqual((await tx(c=>c.query('SELECT assigned_to,assigned_team_id FROM leads WHERE id=$1',[f.leadId]))).rows,before.rows);
+   assert.equal((await tx(c=>c.query('SELECT password_hash FROM brokers WHERE id=$1',[owner]))).rows[0].password_hash,'synthetic-owner-marker');
+   if(mode==='reporting'){
+    const broker={id:superior,role:'internal_broker',jobRole:'manager',managedTeamIds:[]};
+    assert.equal((await tx(c=>scopedResponseCase(f.case.id,broker,c))).id,f.case.id);
+    await assert.rejects(()=>tx(c=>scopedResponseCase(f.case.id,broker,c,true)),/review only/);
+    assert.ok((await tx(c=>listResponseCases(broker,c))).some(r=>r.id===f.case.id));assert.equal((await tx(c=>responseMetrics(broker,c))).leads,1);
+    const unrelated=await fixture();await assert.rejects(()=>tx(c=>scopedResponseCase(unrelated.case.id,broker,c)),/outside your scope/);
+    await tx(c=>c.query("UPDATE tasks SET status='completed' WHERE id=$1",[row.manager_alert_task_id]));
+    await assert.rejects(()=>tx(c=>scopedResponseCase(f.case.id,broker,c)),/outside your scope/);
+   }
+   assert.equal((await tx(c=>escalateOverdueHotResponses(c,{now:new Date('2026-10-27T07:00:00Z')}))).alerted,0);
+  }
  });
 
 });

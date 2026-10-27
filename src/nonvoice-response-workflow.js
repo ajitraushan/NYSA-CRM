@@ -7,12 +7,14 @@ const get=async(c,s,p)=>(await c.query(s,p)).rows[0];
 function reject(code){throw Object.assign(new Error(code),{statusCode:409});}
 export async function scopedResponseCase(caseId,broker,client,lock=false){
  if(broker?.role!=='internal_broker'||!['sales_agent','manager'].includes(broker.jobRole))throw Object.assign(new Error('Operational lead access required'),{statusCode:403});
- const row=await get(client,`SELECT c.*,l.contact_id,l.assigned_team_id,l.assigned_to,ct.full_name FROM lead_follow_up_cases c
+ const row=await get(client,`SELECT c.*,l.contact_id,l.assigned_team_id,l.assigned_to,ct.full_name,(SELECT assignee_id FROM tasks WHERE id=c.manager_alert_task_id AND status IN ('open','in_progress')) AS alert_assignee_id FROM lead_follow_up_cases c
   JOIN leads l ON l.id=c.lead_id JOIN contacts ct ON ct.id=l.contact_id WHERE c.id=$1 ${lock?'FOR UPDATE OF c,l':''}`,[caseId]);
  if(!row)throw Object.assign(new Error('Lead response case not found'),{statusCode:404});
  const teams=broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean);
- if(row.fallback_owner_id!==broker.id&&row.assigned_to!==broker.id&&!(broker.jobRole==='manager'&&teams.includes(row.assigned_team_id)))
+ if(row.fallback_owner_id!==broker.id&&row.assigned_to!==broker.id&&!(broker.jobRole==='manager'&&(teams.includes(row.assigned_team_id)||row.alert_assignee_id===broker.id)))
   throw Object.assign(new Error('Lead response is outside your scope'),{statusCode:403});
+ const normalScope=row.fallback_owner_id===broker.id||row.assigned_to===broker.id||(broker.jobRole==='manager'&&teams.includes(row.assigned_team_id));
+ if(lock&&!normalScope)throw Object.assign(new Error('Manager alert permits review only; use existing governed reassignment'),{statusCode:403});
  return row;
 }
 export async function listResponseCases(broker,client,{offset=0,filter='all'}={}){
@@ -24,9 +26,9 @@ export async function listResponseCases(broker,client,{offset=0,filter='all'}={}
  t.due_at,t.subject AS next_action,t.status AS task_status,
  (SELECT COUNT(*)::int FROM lead_follow_up_jobs j WHERE j.case_id=c.id AND j.state='waiting') AS waiting_steps
  FROM lead_follow_up_cases c JOIN leads l ON l.id=c.lead_id JOIN contacts ct ON ct.id=l.contact_id
- JOIN tasks t ON t.id=c.next_action_task_id WHERE (c.fallback_owner_id=$1 OR l.assigned_to=$1 OR l.assigned_team_id=ANY($2::uuid[]))
+ JOIN tasks t ON t.id=c.next_action_task_id WHERE (c.fallback_owner_id=$1 OR l.assigned_to=$1 OR l.assigned_team_id=ANY($2::uuid[]) OR ($5::boolean AND EXISTS(SELECT 1 FROM tasks alert WHERE alert.id=c.manager_alert_task_id AND alert.assignee_id=$1 AND alert.status IN ('open','in_progress'))))
  AND ($3='all' OR ($3='digest' AND c.accepted_tier IN ('Cold','Unreached')) OR c.state=$3)
- ORDER BY t.due_at,c.created_at,c.id LIMIT 100 OFFSET $4`,[broker.id,teams,filter,offset])).rows;
+ ORDER BY t.due_at,c.created_at,c.id LIMIT 100 OFFSET $4`,[broker.id,teams,filter,offset,broker.jobRole==='manager'])).rows;
 }
 export async function decideResponseTier(input,broker,client){
  const row=await scopedResponseCase(input.caseId,broker,client,true);
@@ -105,7 +107,7 @@ export async function responseMetrics(broker,client){
  if(broker?.role!=='internal_broker'||!['sales_agent','manager'].includes(broker.jobRole))throw Object.assign(new Error('Operational lead access required'),{statusCode:403});
  const teams=broker.jobRole==='manager'?(broker.managedTeamIds?.length?broker.managedTeamIds:[broker.teamId].filter(Boolean)):[];
  return (await client.query(`WITH scoped AS (SELECT c.* FROM lead_follow_up_cases c JOIN leads l ON l.id=c.lead_id
- WHERE (c.fallback_owner_id=$1 OR l.assigned_to=$1 OR l.assigned_team_id=ANY($2::uuid[])) AND c.created_at>=NOW()-INTERVAL '30 days')
+ WHERE (c.fallback_owner_id=$1 OR l.assigned_to=$1 OR l.assigned_team_id=ANY($2::uuid[]) OR ($3::boolean AND EXISTS(SELECT 1 FROM tasks alert WHERE alert.id=c.manager_alert_task_id AND alert.assignee_id=$1 AND alert.status IN ('open','in_progress')))) AND c.created_at>=NOW()-INTERVAL '30 days')
  SELECT COUNT(*)::int AS leads,
  COUNT(*) FILTER(WHERE EXISTS(SELECT 1 FROM lead_follow_up_events e WHERE e.case_id=scoped.id AND e.applied AND e.event_type IN ('reply','opt_out','wrong_person')))::int AS contacted,
  COUNT(*) FILTER(WHERE declared_requirements->>'enquiryConfirmed'='true')::int AS enquiry_confirmed,
@@ -113,5 +115,5 @@ export async function responseMetrics(broker,client){
  COUNT(*) FILTER(WHERE state='opted_out')::int AS opted_out,
  COUNT(*) FILTER(WHERE handoff_requested_at IS NOT NULL AND handoff_accepted_at IS NULL)::int AS unaccepted,
  AVG(EXTRACT(EPOCH FROM(handoff_accepted_at-handoff_requested_at))/60) FILTER(WHERE handoff_accepted_at>=handoff_requested_at) AS acceptance_elapsed_minutes
- FROM scoped`,[broker.id,teams])).rows[0];
+ FROM scoped`,[broker.id,teams,broker.jobRole==='manager'])).rows[0];
 }
