@@ -2,7 +2,7 @@
 /**
  * Plugin Name: NYSA CORE Lead Bridge
  * Description: Durable signed delivery of NIA and contact-form enquiries into NYSA CORE.
- * Version: 1.0.0
+ * Version: 1.0.1
  */
 
 if (!defined('ABSPATH')) exit;
@@ -168,8 +168,13 @@ final class NYSA_Core_Lead_Bridge {
         if (!$phone && $contact && !is_email($contact)) $phone = $contact;
         if ($name === '' || (!$email && !$phone)) return null;
         $answers = is_array($raw['answers'] ?? null) ? $raw['answers'] : [];
+        if (!$answers && is_array($raw['answers_json'] ?? null)) $answers = $raw['answers_json'];
+        if (!$answers && is_string($raw['answers_json'] ?? null)) {
+            $decoded_answers = json_decode((string) $raw['answers_json'], true);
+            if (is_array($decoded_answers)) $answers = $decoded_answers;
+        }
         $status = sanitize_key($raw['status'] ?? 'partial');
-        $lead_key = sanitize_text_field($raw['lead_key'] ?? hash('sha256', strtolower($name . '|' . $email . '|' . $phone)));
+        $lead_key = sanitize_text_field($raw['lead_key'] ?? $raw['assessment_id'] ?? hash('sha256', strtolower($name . '|' . $email . '|' . $phone)));
         $event_hash = hash('sha256', wp_json_encode([$lead_key, $status, $answers]));
         $completed = in_array($status, ['advisory_completed', 'property_shortlist_completed', 'completed'], true);
         return [
@@ -192,7 +197,7 @@ final class NYSA_Core_Lead_Bridge {
     }
 
     public static function capture_nia($response, $handler, WP_REST_Request $request) {
-        if ($request->get_route() !== '/nysa-ai/v1/leads') return $response;
+        if ($request->get_route() !== '/nysa/v2/advisory-assessments') return $response;
         $status = method_exists($response, 'get_status') ? (int) $response->get_status() : 500;
         if ($status < 200 || $status >= 300) return $response;
         $payload = self::nia_payload($request);
@@ -236,13 +241,20 @@ final class NYSA_Core_Lead_Bridge {
         }
         $code = (int) wp_remote_retrieve_response_code($result);
         $response = json_decode((string) wp_remote_retrieve_body($result), true);
-        if ($code >= 200 && $code < 300 && is_array($response) && !empty($response['leadId'])) {
+        if ($code >= 200 && $code < 300 && is_array($response) && !empty($response['leadId']) && !empty($response['followUpCaseId'])) {
             $wpdb->update($table, [
                 'state' => 'accepted', 'attempts' => $attempts, 'response_code' => $code, 'payload' => '{}',
                 'core_lead_id' => sanitize_text_field($response['leadId']),
                 'core_case_id' => sanitize_text_field($response['followUpCaseId'] ?? ''),
                 'safe_error' => null, 'updated_at' => current_time('mysql', true),
             ], ['id' => $id]);
+            return;
+        }
+        if ($code >= 200 && $code < 300 && is_array($response) && !empty($response['leadId'])
+            && ($response['followUpStatus'] ?? '') === 'setup_required') {
+            $wpdb->query($wpdb->prepare("UPDATE {$table} SET state=%s,attempts=%d,response_code=%d,safe_error=%s,
+                next_attempt_at=DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE),updated_at=UTC_TIMESTAMP() WHERE id=%d",
+                $attempts >= 10 ? 'needs_review' : 'needs_setup', $attempts, $code, 'CORE_CASE_SETUP_REQUIRED', $id));
             return;
         }
         if ($code >= 400 && $code < 500 && $code !== 409 && $code !== 429) {
@@ -262,7 +274,7 @@ final class NYSA_Core_Lead_Bridge {
 
     public static function retry_due(): void {
         global $wpdb;
-        $ids = $wpdb->get_col("SELECT id FROM " . self::table() . " WHERE state='queued' AND next_attempt_at<=UTC_TIMESTAMP() ORDER BY next_attempt_at,id LIMIT 20");
+        $ids = $wpdb->get_col("SELECT id FROM " . self::table() . " WHERE state IN ('queued','needs_setup') AND next_attempt_at<=UTC_TIMESTAMP() ORDER BY next_attempt_at,id LIMIT 20");
         foreach ($ids as $id) self::deliver((int) $id);
     }
 }

@@ -34,6 +34,21 @@ export function websiteFollowUpInput(payload={}) {
   };
 }
 
+async function openWebsiteCaseForSource({source,event,lead,payload,actorId},client) {
+  const existing=await one(client,'SELECT * FROM lead_follow_up_cases WHERE source_inbox_id=$1 OR lead_id=$2 ORDER BY created_at LIMIT 1',[source.id,lead.id]);
+  if(existing)return {status:existing.state,caseId:existing.id,duplicate:true,sourceInboxId:source.id};
+  const setup=await one(client,'SELECT draft FROM lead_integration_setup WHERE singleton=TRUE',[]),ownerId=text(setup?.draft?.fallbackOwnerId);
+  if(!ownerId)return {status:'setup_required',sourceInboxId:source.id};
+  const owner=await one(client,"SELECT id FROM brokers WHERE id=$1 AND status='active' AND role='internal_broker' AND job_role IN ('sales_agent','manager')",[ownerId]);
+  if(!owner)return {status:'setup_required',sourceInboxId:source.id};
+  const input=websiteFollowUpInput(payload);
+  const responseCase=await openNonvoiceCase({sourceInboxId:source.id,leadId:lead.id,fallbackOwnerId:owner.id,actorId,
+    country:input.country,timeZone:input.timeZone,locationConfirmed:input.locationConfirmed,
+    consent:{...input.consent,evidenceRef:`website:${event.id}`}},client);
+  await client.query('UPDATE lead_follow_up_cases SET declared_requirements=$2::jsonb WHERE id=$1',[responseCase.id,JSON.stringify(input.declaredRequirements)]);
+  return {status:responseCase.state,caseId:responseCase.id,sourceInboxId:source.id};
+}
+
 export async function openWebsiteFollowUp({event,lead,payload,actorId},client) {
   const sourceEventId=text(payload.eventId),sourceForm=text(payload.form)||'website_intake';
   if(!event?.id||!lead?.id||!sourceEventId)return {status:'not_opened'};
@@ -49,16 +64,29 @@ export async function openWebsiteFollowUp({event,lead,payload,actorId},client) {
     source=await one(client,"SELECT * FROM lead_source_inbox WHERE source_system='website' AND source_account_id=$1 AND source_event_id=$2",[text(payload.sourceWebsite)||'nysarealty.com',sourceEventId]);
     if(!source||source.reference_digest!==referenceDigest||source.lead_id!==lead.id)throw Object.assign(new Error('ALTERED_WEBSITE_EVENT'),{statusCode:409});
   }
-  const existing=await one(client,'SELECT * FROM lead_follow_up_cases WHERE source_inbox_id=$1 OR lead_id=$2 ORDER BY created_at LIMIT 1',[source.id,lead.id]);
-  if(existing)return {status:existing.state,caseId:existing.id,duplicate:true,sourceInboxId:source.id};
-  const setup=await one(client,'SELECT draft FROM lead_integration_setup WHERE singleton=TRUE',[]),ownerId=text(setup?.draft?.fallbackOwnerId);
-  if(!ownerId)return {status:'setup_required',sourceInboxId:source.id};
-  const owner=await one(client,"SELECT id FROM brokers WHERE id=$1 AND status='active' AND role='internal_broker' AND job_role IN ('sales_agent','manager')",[ownerId]);
-  if(!owner)return {status:'setup_required',sourceInboxId:source.id};
-  const input=websiteFollowUpInput(payload);
-  const responseCase=await openNonvoiceCase({sourceInboxId:source.id,leadId:lead.id,fallbackOwnerId:owner.id,actorId,
-    country:input.country,timeZone:input.timeZone,locationConfirmed:input.locationConfirmed,
-    consent:{...input.consent,evidenceRef:`website:${event.id}`}},client);
-  await client.query('UPDATE lead_follow_up_cases SET declared_requirements=$2::jsonb WHERE id=$1',[responseCase.id,JSON.stringify(input.declaredRequirements)]);
-  return {status:responseCase.state,caseId:responseCase.id,sourceInboxId:source.id};
+  return openWebsiteCaseForSource({source,event,lead,payload,actorId},client);
+}
+
+export async function recoverWebsiteFollowUpCases({actorId,limit=20}={},client) {
+  if(!text(actorId))return {status:'setup_required',opened:0,existing:0,invalid:0};
+  const boundedLimit=Math.max(1,Math.min(Number(limit)||20,100));
+  const rows=(await client.query(`SELECT s.*,w.id AS website_event_record_id,w.received_payload,l.id AS recovery_lead_id
+    FROM lead_source_inbox s
+    JOIN website_intake_events w ON w.id=s.website_intake_event_id
+    JOIN leads l ON l.id=s.lead_id
+    WHERE s.source_system='website' AND s.state='accepted'
+      AND NOT EXISTS(SELECT 1 FROM lead_follow_up_cases f WHERE f.source_inbox_id=s.id OR f.lead_id=s.lead_id)
+    ORDER BY s.received_at,s.id LIMIT $1`,[boundedLimit])).rows;
+  let opened=0,existing=0,invalid=0,setupRequired=0;
+  for(const row of rows){
+    let payload=row.received_payload;
+    if(typeof payload==='string'){try{payload=JSON.parse(payload);}catch{payload=null;}}
+    if(!payload||typeof payload!=='object'||Array.isArray(payload)){invalid++;continue;}
+    const result=await openWebsiteCaseForSource({source:row,event:{id:row.website_event_record_id},lead:{id:row.recovery_lead_id},payload,actorId},client);
+    if(result.caseId&&result.duplicate)existing++;
+    else if(result.caseId)opened++;
+    else if(result.status==='setup_required')setupRequired++;
+    else invalid++;
+  }
+  return {status:setupRequired?'setup_required':'ok',opened,existing,invalid,setupRequired,scanned:rows.length};
 }

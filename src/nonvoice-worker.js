@@ -3,6 +3,7 @@ import {expireNonvoiceClaims} from './nonvoice-follow-up-store.js';
 import {processLeadChannelInbox} from './routes/lead-channel-inbox.js';
 import {prepareAiReply} from './nonvoice-ai-chat.js';
 import {ensureResponseNextActions,purgeExpiredResponseEvidence,escalateOverdueHotResponses} from './nonvoice-recovery.js';
+import {recoverWebsiteFollowUpCases} from './website-follow-up-intake.js';
 export async function runNonvoiceCycle({transaction,env=process.env,fetchImpl=fetch}){
  const recovery=await transaction(c=>expireNonvoiceClaims(c));
  if(env.LEAD_RESPONSE_WORKER_ENABLED!=='true')return {recovery,intake:'disabled'};
@@ -11,7 +12,11 @@ export async function runNonvoiceCycle({transaction,env=process.env,fetchImpl=fe
  await transaction(c=>escalateOverdueHotResponses(c));
  await transaction(c=>purgeExpiredResponseEvidence(c));
  const setup=await transaction(async c=>(await c.query('SELECT draft FROM lead_integration_setup WHERE singleton=TRUE')).rows[0]?.draft);
- if(!setup?.fallbackOwnerId||!env.LEAD_INTAKE_ACTOR_ID||!env.LEAD_EVIDENCE_KEY)return {recovery,intake:'setup_required'};
+ const websiteActorId=env.WEBSITE_INTAKE_ACTOR_ID||env.LEAD_INTAKE_ACTOR_ID;
+ const websiteRecovery=setup?.fallbackOwnerId&&websiteActorId
+  ?await transaction(c=>recoverWebsiteFollowUpCases({actorId:websiteActorId},c))
+  :{status:'setup_required',opened:0,existing:0,invalid:0};
+ if(!setup?.fallbackOwnerId||!env.LEAD_INTAKE_ACTOR_ID||!env.LEAD_EVIDENCE_KEY)return {recovery,websiteRecovery,intake:'setup_required'};
  await transaction(c=>c.query("UPDATE lead_source_inbox SET review_owner_id=$1,review_due_at=COALESCE(review_due_at,received_at+INTERVAL '2 minutes') WHERE state IN ('pending_retrieval','needs_review') AND review_owner_id IS NULL",[setup.fallbackOwnerId]));
  const events=await transaction(async c=>(await c.query("SELECT * FROM lead_source_inbox WHERE source_system='meta' AND state='pending_retrieval' AND next_attempt_at<=NOW() ORDER BY next_attempt_at,received_at LIMIT 5")).rows);
  let accepted=0,review=0;
@@ -32,5 +37,5 @@ export async function runNonvoiceCycle({transaction,env=process.env,fetchImpl=fe
   await transaction(c=>processLeadChannelInbox({id:event.id,evidenceKey:env.LEAD_EVIDENCE_KEY},c));
   await prepareAiReply({inboxId:event.id,evidenceKey:env.LEAD_EVIDENCE_KEY,aiEnabled:env.LEAD_AI_CHAT_ENABLED==='true',maxCostUsd:Number(env.LEAD_AI_REPLY_MAX_COST_USD),transaction});
  }
- return {recovery,accepted,review,inboundProcessed:inbox.length,liveSendingEnabled:false};
+ return {recovery,websiteRecovery,accepted,review,inboundProcessed:inbox.length,liveSendingEnabled:false};
 }

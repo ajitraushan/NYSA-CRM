@@ -16,6 +16,7 @@ import {createLeadChannelInboxRoutes,processLeadChannelInbox} from '../src/route
 import crypto from 'node:crypto';
 import {listResponseCases,scopedResponseCase,decideResponseTier,takeOverResponseCase,bookResponseCallback,releaseDependentMessages,responseMetrics} from '../src/nonvoice-response-workflow.js';
 import {escalateOverdueHotResponses} from '../src/nonvoice-recovery.js';
+import {recoverWebsiteFollowUpCases} from '../src/website-follow-up-intake.js';
 const enabled=process.env.NYSA_FOLLOWUP_DB_TEST==='local-synthetic';
 
 test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabled}, async t=>{
@@ -135,7 +136,29 @@ test('durable nonvoice workflow on dedicated synthetic PostgreSQL', {skip:!enabl
    assert.equal((await fetch(url,{...options,body:JSON.stringify({...body,revision:1,apiKey:'must-not-be-stored'})})).status,400);
    const audit=await tx(c=>c.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE entity_type='LeadIntegrationSetup'"));assert.equal(audit.rows[0].n,1);
   }finally{await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}
- }); await t.test('Meta retrieval output atomically links CRM records and encrypted evidence without guessed classification',async()=>{
+ });
+ await t.test('accepted website intake without an earlier case is repaired after fallback setup',async()=>{
+  const eventId=randomUUID(),contactId=randomUUID(),leadId=randomUUID(),sourceId=randomUUID(),websiteEventId=randomUUID();
+  const payload={eventId:`wp-contact-${eventId}`,sourceWebsite:'staging.nysarealty.com',form:'contact_enquiry_v2',intakeCompleteness:'complete',
+   location:{country:'AE',timeZone:'Asia/Dubai',confirmed:true},consent:{statementVersion:'response-v1',aiWhatsapp:true,aiEmail:true},
+   requirement:{purpose:'investment',timelineCode:'within_3_months',fundingMethod:'cash',areas:[],propertyTypes:[]}};
+  await tx(async c=>{
+   await c.query("UPDATE lead_integration_setup SET draft=jsonb_set(COALESCE(draft,'{}'::jsonb),'{fallbackOwnerId}',to_jsonb($1::text),true)",[ids.owner]);
+   await c.query("INSERT INTO contacts(id,full_name,email,phone,created_by) VALUES($1,'Synthetic website repair','website-repair@example.invalid','+971500000010',$2)",[contactId,ids.actor]);
+   await c.query("INSERT INTO leads(id,contact_id,title,source,business_type,created_by,created_at) VALUES($1,$2,'Synthetic website repair','Website','Unconfirmed',$3,NOW())",[leadId,contactId,ids.actor]);
+   await c.query(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload,contact_id,lead_id,received_at,processed_at)
+    VALUES($1,$2,$3,'accepted',$4::jsonb,$5,$6,NOW()-INTERVAL '1 minute',NOW())`,[websiteEventId,payload.eventId,'b'.repeat(64),JSON.stringify(payload),contactId,leadId]);
+   await c.query(`INSERT INTO lead_source_inbox(id,source_system,source_account_id,source_event_id,source_form_id,reference_digest,source_created_at,received_at,state,lead_id,processed_at,website_intake_event_id)
+    VALUES($1,'website','staging.nysarealty.com',$2,'contact_enquiry_v2',$3,NOW()-INTERVAL '1 minute',NOW()-INTERVAL '1 minute','accepted',$4,NOW(),$5)`,
+    [sourceId,payload.eventId,'c'.repeat(64),leadId,websiteEventId]);
+  });
+  const repaired=await tx(c=>recoverWebsiteFollowUpCases({actorId:ids.actor},c));
+  assert.equal(repaired.opened,1);assert.equal(repaired.status,'ok');
+  const record=await tx(c=>c.query('SELECT state,lead_id FROM lead_follow_up_cases WHERE source_inbox_id=$1',[sourceId]));
+  assert.deepEqual(record.rows[0],{state:'ready',lead_id:leadId});
+  assert.equal((await tx(c=>recoverWebsiteFollowUpCases({actorId:ids.actor},c))).scanned,0);
+ });
+ await t.test('Meta retrieval output atomically links CRM records and encrypted evidence without guessed classification',async()=>{
   const source=await tx(async c=>{const ref={pageId:'100',eventId:'900000000000001',formId:'300',sourceCreatedAt:'2026-10-27T06:00:00Z'};return (await persistMetaReferences([ref],c))[0];});
   const mapping={pageIds:['100'],formIds:['300'],statementVersion:'consent-v2',consentField:'permission',consentAcceptedValue:'yes',countryField:'country',timeZoneField:'timezone',budgetField:'budget'};
   const data={id:'900000000000001',form_id:'300',field_data:[{name:'full_name',values:['Synthetic Meta Enquiry']},{name:'phone_number',values:['+919900000001']},{name:'email',values:['meta@example.invalid']},{name:'country',values:['IN']},{name:'timezone',values:['Asia/Kolkata']},{name:'permission',values:['yes']},{name:'budget',values:['Not yet decided']}]};

@@ -39,6 +39,12 @@ test('WordPress bridge signs one CORE endpoint and durably captures both contact
   const themePatch=read('integrations/wordpress/staging-overrides/apply-functions-contact-core-hook.mjs');
   for(const marker of ['nysa_core_lead_outbox','X-NYSA-Timestamp','X-NYSA-Signature','hash_hmac','capture_contact_saved','capture_nia','retry_due','NYSA_CORE_INTAKE_URL','NYSA_CORE_INTAKE_SECRET'])assert.match(plugin,new RegExp(marker));
   assert.match(plugin,/add_action\('nysa_contact_lead_saved'/);
+  assert.match(plugin,/\/nysa\/v2\/advisory-assessments/);
+  assert.doesNotMatch(plugin,/\/nysa-ai\/v1\/leads/);
+  assert.match(plugin,/assessment_id/);
+  assert.match(plugin,/CORE_CASE_SETUP_REQUIRED/);
+  assert.match(plugin,/state IN \('queued','needs_setup'\)/);
+  assert.match(plugin,/!empty\(\$response\['followUpCaseId'\]\)/);
   assert.doesNotMatch(plugin,/admin_post_nopriv_nysa_contact_enquiry.*capture_contact/);
   assert.doesNotMatch(plugin,/my\.remapp\.ae|rem_token|send_to_rem/);
   assert.match(themePatch,/660cd1b1f407676924c4b783b56c1c208080d83e549f952a5cc73bbf21daa719/);
@@ -48,6 +54,19 @@ test('WordPress bridge signs one CORE endpoint and durably captures both contact
   assert.match(contact,/name="timeline"/);
   assert.match(contact,/name="ai_assisted_contact"/);
   assert.match(contact,/CRM Test only/);
+});
+
+test('website follow-up worker repairs accepted website Leads that were received before fallback setup',()=>{
+  const intake=read('src/website-follow-up-intake.js');
+  const worker=read('src/nonvoice-worker.js');
+  assert.match(intake,/export async function recoverWebsiteFollowUpCases/);
+  assert.match(intake,/source_system='website' AND s\.state='accepted'/);
+  assert.match(intake,/NOT EXISTS\(SELECT 1 FROM lead_follow_up_cases/);
+  assert.match(intake,/received_payload/);
+  assert.match(worker,/recoverWebsiteFollowUpCases/);
+  assert.match(worker,/websiteRecovery/);
+  assert.match(worker,/WEBSITE_INTAKE_ACTOR_ID\|\|env\.LEAD_INTAKE_ACTOR_ID/);
+  assert.match(worker,/websiteRecovery,intake:'setup_required'/);
 });
 
 test('origin package scope includes the governed WordPress bridge artifacts',()=>{
