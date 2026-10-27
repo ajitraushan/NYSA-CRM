@@ -44,7 +44,7 @@ const candidate=path.join(backupDir,'candidate-dev242');let stopped=false,mutate
 try{
   await db.connect();
   assert(JSON.parse(fs.readFileSync(path.join(root,'package.json'))).version==='2.1.0-dev.241','BASELINE_VERSION');
-  const baseline=await ledger();assert(baseline.count===154&&baseline.latest==='154_nonvoice_manager_owned_recovery.sql','BASELINE_LEDGER');
+  const baseline=await ledger();assert(baseline.count===154&&baseline.latest==='154_nonvoice_manager_escalation.sql','BASELINE_LEDGER');
   tables=(await db.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename NOT IN ('schema_migrations','lead_source_inbox') ORDER BY tablename")).rows.map(row=>row.tablename);
   before=await rowsSnapshot(tables);sourceBefore=await sourceSnapshot();productionHash=hash(fs.readFileSync(path.join(home,'nysa-crm','package.json')));
   assert(!fs.existsSync(candidate),'CANDIDATE_EXISTS');fs.mkdirSync(candidate,{mode:0o700});run('unzip',['-q',zip,'-d',candidate]);verifyFiles(candidate);
