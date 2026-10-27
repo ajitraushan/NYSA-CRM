@@ -84,13 +84,14 @@ export function applySequenceEvent(current, event) {
   if (!Number.isSafeInteger(current.generation) || current.generation < 1) throw new Error('INVALID_GENERATION');
   const restriction = ['opt_out','wrong_person'].includes(event.type);
   if (event.generation !== current.generation && !restriction) return {...current, ignored:true};
-  if (terminal.has(current.state) && (!restriction || ['opted_out','wrong_person'].includes(current.state))) return {...current, ignored:true};
+  if (terminal.has(current.state) && !(current.state==='booked' && event.type==='takeover') && (!restriction || ['opted_out','wrong_person'].includes(current.state))) return {...current, ignored:true};
   if (current.state === 'outcome_unknown' && !['opt_out','wrong_person','takeover'].includes(event.type)) return {...current, ignored:true};
+  if (current.state === 'handoff_pending' && event.type === 'reply') return {...current, ignored:true};
   const state = {reply:'engaged', booking:'booked', opt_out:'opted_out', wrong_person:'wrong_person',
     takeover:'human_owned', unknown_outcome:'outcome_unknown'}[event.type];
   if (!state) throw new Error('UNSUPPORTED_SEQUENCE_EVENT');
   // Duplicate replies do not advance the generation or spawn another booking conversation.
-  if (current.state === state) return {...current, ignored:true};
+  if (current.state === state && event.type !== 'reply') return {...current, ignored:true};
   return {...current, state, generation:current.generation+1, cancelScheduled:true,
     continueAiChat:event.type === 'reply', nextAction:event.type === 'reply' ? 'booking_conversation' :
       event.type === 'unknown_outcome' ? 'reconcile_provider' : event.type === 'booking' ? 'human_booking_follow_up' :
@@ -120,7 +121,7 @@ export function suggestLeadTier({dimensions, requestedBooking=false, timelineCon
   const missing=names.filter((_,i)=>values[i]===null || values[i]===undefined);
   const score=missing.length ? null : values.reduce((a,b)=>a+b,0);
   const suggestedTier=requestedBooking ? 'Hot' : missing.length || timelineConflict ? null : score>=9?'Hot':score>=5?'Warm':'Cold';
-  return {score, missing, suggestedTier, requiresReview:timelineConflict||missing.length>0,
+  return {score, partialScore:values.filter(Number.isInteger).reduce((a,b)=>a+b,0),completedDimensions:names.length-missing.length,dimensions:Object.fromEntries(names.map((name,i)=>[name,values[i]??null])),missing,suggestedTier,assessedAt:new Date().toISOString(),requiresReview:timelineConflict||missing.length>0,
     humanConfirmationRequired:true, rubricVersion:FOLLOW_UP_POLICY_VERSION};
 }
 

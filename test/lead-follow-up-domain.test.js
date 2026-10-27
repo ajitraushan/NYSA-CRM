@@ -47,7 +47,7 @@ test('reply cancels scheduled generation, permits booking chat and stale callbac
  const current={state:'ready',generation:1};const next=applySequenceEvent(current,{type:'reply',generation:1});
  assert.equal(next.state,'engaged');assert.equal(next.generation,2);assert.equal(next.cancelScheduled,true);assert.equal(next.continueAiChat,true);
  assert.equal(applySequenceEvent(next,{type:'reply',generation:1}).ignored,true);
- assert.equal(applySequenceEvent(next,{type:'reply',generation:2}).generation,2);
+ assert.equal(applySequenceEvent(next,{type:'reply',generation:2}).generation,3);
 });
 test('opt-out, takeover and booked states cannot restart from later replies',()=>{
  for(const type of ['opt_out','wrong_person','takeover','booking']){

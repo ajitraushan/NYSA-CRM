@@ -12,7 +12,7 @@ export async function openNonvoiceCase(input,client) {
   if(!source || source.lead_id!==input.leadId || source.state!=='accepted') fail('SOURCE_NOT_LINKED');
   const existing=await one(client,'SELECT * FROM lead_follow_up_cases WHERE source_inbox_id=$1',[source.id]);
   if(existing) return {...existing,duplicate:true};
-  const lead=await one(client,`SELECT l.*,c.do_not_contact FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE l.id=$1 FOR UPDATE OF l,c`,[input.leadId]);
+  const lead=await one(client,`SELECT l.*,c.do_not_contact,c.phone AS contact_phone,c.email AS contact_email FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE l.id=$1 FOR UPDATE OF l,c`,[input.leadId]);
   if(!lead || lead.assigned_to || new Date(lead.created_at)<new Date(source.received_at)) fail('EXISTING_HUMAN_LEAD');
   const owner=await one(client,"SELECT id,role,job_role FROM brokers WHERE id=$1 AND status='active'",[input.fallbackOwnerId]);
   if(!owner || owner.role!=='internal_broker' || !['sales_agent','manager'].includes(owner.job_role)) fail('OPERATIONAL_OWNER_REQUIRED');
@@ -21,7 +21,7 @@ export async function openNonvoiceCase(input,client) {
   const consent=input.consent||{},evidenced=boundedRef(consent.statementVersion)&&boundedRef(consent.evidenceRef);
   const eligible=input.locationConfirmed===true && ((input.country==='AE'&&input.timeZone==='Asia/Dubai')||
     (input.country==='IN'&&input.timeZone==='Asia/Kolkata')) && evidenced && !lead.do_not_contact;
-  const whatsapp=eligible&&consent.whatsapp===true,email=eligible&&consent.email===true;
+  const whatsapp=eligible&&consent.whatsapp===true&&Boolean(lead.contact_phone),email=eligible&&consent.email===true&&Boolean(lead.contact_email);
   const ready=whatsapp&&email; // Incomplete multichannel permission requires deliberate human review.
   const caseId=id(),taskId=id();
   await client.query(`INSERT INTO tasks(id,lead_id,contact_id,subject,details,assignee_id,priority,status,due_at,created_by)
@@ -40,6 +40,7 @@ export async function openNonvoiceCase(input,client) {
   }
   await client.query(`INSERT INTO audit_log(id,entity_type,entity_id,action,performed_by,details)
     VALUES($1,'Lead',$2,'nonvoice_case_opened',$3,$4)`,[id(),lead.id,actor.id,JSON.stringify({caseRef:caseId,state:created.state,policyVersion:FOLLOW_UP_POLICY_VERSION})]);
+  await client.query('UPDATE leads SET next_follow_up_at=(SELECT due_at FROM tasks WHERE id=$2) WHERE id=$1',[lead.id,taskId]);
   return created;
 }
 
@@ -55,6 +56,7 @@ export async function applyNonvoiceEvent(input,client) {
   await client.query(`INSERT INTO lead_follow_up_events(id,case_id,provider_connection_ref,provider_event_ref,event_type,event_digest,generation,applied)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[id(),current.id,input.connectionRef,input.eventRef,input.type,digest,input.generation,!next.ignored]);
   if(next.ignored) return {applied:false};
+  await client.query("UPDATE lead_response_chat_drafts SET state='cancelled' WHERE case_id=$1 AND state IN ('preparing','ready')",[current.id]);
   const affected=await client.query(`UPDATE lead_follow_up_jobs SET state=CASE WHEN state='claimed' THEN 'outcome_unknown' ELSE 'cancelled' END
     WHERE case_id=$1 AND state IN ('waiting','queued','claimed') RETURNING state`,[current.id]);
   await client.query(`UPDATE lead_follow_up_cases SET state=$2,generation=$3,updated_at=NOW() WHERE id=$1`,[current.id,next.state,next.generation]);
@@ -62,6 +64,9 @@ export async function applyNonvoiceEvent(input,client) {
     WHERE id=$1 AND status IN ('open','in_progress')`,[current.next_action_task_id,
       input.type==='reply'?'Supervise AI booking conversation':input.type==='opt_out'?'Review recorded contact restriction':
       input.type==='booking'?'Follow up confirmed booking':'Resolve lead follow-up outcome',input.type==='unknown_outcome']);
+  if(input.type==='opt_out'||input.type==='wrong_person'){await client.query("UPDATE tasks SET status='cancelled',outcome='Stopped by verified contact restriction',updated_at=NOW() WHERE id=$1 AND status IN ('open','in_progress')",[current.next_action_task_id]);
+   await client.query("UPDATE lead_response_callbacks SET status='cancelled' WHERE case_id=$1 AND status='confirmed_callback'",[current.id]);
+  }
   if(input.type==='opt_out'||input.type==='wrong_person') await client.query(`UPDATE contacts SET do_not_contact=1,
     contact_restriction_reason=$2,updated_at=NOW() WHERE id=(SELECT contact_id FROM leads WHERE id=$1)`,
     [current.lead_id,input.type==='opt_out'?'Customer opted out through verified integration':'Wrong person reported through verified integration']);
