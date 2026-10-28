@@ -21,15 +21,14 @@ test('R3A-WEBSITE-INTAKE-RUNTIME-52 uses the database pool when evidence retenti
   assert.match(route,/await retainIntakeEvidence\(event,b,checked\.identity\)/);
 });
 
-test('R3A-INTAKE-EMAIL-42 archives an unusable email instead of promoting it when mobile is usable',()=>{
+test('R3A-INTAKE-EMAIL-42 promotes format-valid email and retains its credibility status',()=>{
   const route=read('src/routes/website-intake.js');
-  assert.match(route,/const trustedEmail=/);
-  assert.match(route,/event\.emailCredibility\?\.status==='credible_domain'/);
-  assert.match(route,/event\.resolution==='approve_email_only'/);
+  assert.match(route,/const trustedEmail=identity\.email\|\|null/);
   assert.match(route,/phoneContact\|\|emailContact/);
   assert.match(route,/preferredChannel=!trustedEmail/);
-  assert.match(route,/fact_code='submitted_email'/);
-  assert.match(route,/not promoted to an active Customer contact channel/);
+  assert.match(route,/email_credibility_status=\$1/);
+  assert.match(route,/email_credibility_evidence=\$4::jsonb/);
+  assert.doesNotMatch(route,/not promoted to an active Customer contact channel/);
 });
 
 test('R3A-PROFILE-46 integrates accepted intake into Customer 360 and connected Lead screens',()=>{

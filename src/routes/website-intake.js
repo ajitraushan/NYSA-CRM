@@ -59,9 +59,11 @@ function normalizeIntakePayload(body,checked){
   return {...body,businessType:'Unconfirmed',requirement:{...(body.requirement||{}),purpose:'other',timelineCode:'to_be_confirmed',fundingMethod:body.requirement?.fundingMethod||'unknown'},
     sourceEvidence:{...(body.sourceEvidence||{}),sourceSpecific:{...(body.sourceEvidence?.sourceSpecific||{}),partialIntake:true}}};
 }
-async function intakeActor(){
-  const id=process.env.WEBSITE_INTAKE_ACTOR_ID;
-  return id?one("SELECT id FROM brokers WHERE id=$1 AND status='active' AND role IN ('admin','internal_broker')",[id]):null;
+async function intakeActor(form){
+  const nia=['ai_advisory_v1','ai_property_selection_v1'].includes(form),id=nia?process.env.NIA_INTAKE_ACTOR_ID:process.env.WEBSITE_INTAKE_ACTOR_ID;
+  return id?one(`SELECT id,name FROM brokers WHERE id=$1 AND status='active' AND
+    (($2::text IS NULL AND role IN ('admin','internal_broker')) OR
+     ($2::text IS NOT NULL AND name=$2 AND role='viewer' AND can_post=0))`,[id,nia?'System – NIA Intake':null]):null;
 }
 
 async function persistAiRouting(event,decision,status=decision?.status,client=undefined){
@@ -114,7 +116,7 @@ async function processEvent(event,b,identity,actor,{forcedContactId=null,forceDi
   return transaction(async client=>{
     const budget=validateBudget(b.requirement.budgetMin,b.requirement.budgetMax),aiRouting=websiteAiRoutingDecision(b);
     const journeyKey=clean(b.journeyKey);
-    const trustedEmail=identity.email&&(event.emailCredibility?.status==='credible_domain'||event.resolution==='approve_email_only')?identity.email:null,
+    const trustedEmail=identity.email||null,
       customerRoles=b.businessType==='Rental'?['tenant']:b.requirement?.purpose==='investment'?['buyer','investor']:['buyer'],
       preferredChannel=!trustedEmail&&identity.phone&&b.contact.preferredChannel==='Email'?'Phone':b.contact.preferredChannel||null,
       emailContact=trustedEmail?await one('SELECT c.* FROM contacts c JOIN contact_channels ch ON ch.contact_id=c.id WHERE ch.channel_kind=\'Email\' AND ch.normalized_value=$1 AND c.lifecycle_status=\'active\' ORDER BY c.created_at LIMIT 1',[trustedEmail],client):null,
@@ -251,9 +253,6 @@ async function processEvent(event,b,identity,actor,{forcedContactId=null,forceDi
       VALUES($1,$2,'website_form',$3,$4,$5,$6,$7)`,[uuid(),contact.id,b.consent.marketing?'granted':'denied',b.consent.statementVersion,event.id,receivedAt,hash(JSON.stringify(b.consent))],client);
     await execute(`UPDATE customer_evidence_facts SET contact_id=$1,lead_id=$2,review_status='active',reviewed_at=NOW(),review_reason='Accepted website intake'
       WHERE intake_event_id=$3 AND review_status='pending_review'`,[contact.id,lead.id,event.id],client);
-    if(identity.email&&!trustedEmail)await execute(`UPDATE customer_evidence_facts SET review_status='rejected',reviewed_at=NOW(),
-      review_reason='Email was retained on the Intake Event but was not promoted to an active Customer contact channel'
-      WHERE intake_event_id=$1 AND fact_code='submitted_email'`,[event.id],client);
     await execute("UPDATE website_intake_events SET status='accepted',contact_id=$1,lead_id=$2,processed_at=NOW(),error_code=NULL WHERE id=$3",[contact.id,lead.id,event.id],client);
     const followUp=await openWebsiteFollowUp({event,lead,payload:b,actorId:actor.id},client);
     await audit('WebsiteIntake',event.id,'accepted',actor.id,{leadId:lead.id,eventId:event.eventId,rawCampaign,campaignId,campaignMappingStatus},client);
@@ -265,8 +264,8 @@ async function processEvent(event,b,identity,actor,{forcedContactId=null,forceDi
 
 function emailOnlyGate(identity,emailCredibility){
   if(identity.phone||!identity.email)return null;
-  if(emailCredibility?.status==='credible_domain')return null;
-  return {status:'email_review',reviewRequired:true,reason:emailCredibility?.reason||'The email-only enquiry could not pass the free credibility checks.'};
+  if(emailCredibility?.status!=='invalid_format')return null;
+  return {status:'email_review',reviewRequired:true,reason:emailCredibility.reason||'The email format is invalid.'};
 }
 
 const ADVISORY_QUESTION_LABELS=new Map([
@@ -361,7 +360,7 @@ r.post('/intake/website',async(req,res)=>{
   const received=req.body||{},checked=validatePayload(received);if(checked.error)return res.status(400).json({error:checked.error});
   const b=normalizeIntakePayload(received,checked);
   const aiRouting=websiteAiRoutingDecision(b);
-  const actor=await intakeActor();if(!actor)return res.status(503).json({error:'Website intake is not configured'});
+  const actor=await intakeActor(b.form);if(!actor)return res.status(503).json({error:'Website intake is not configured'});
   const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.requirement.areas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});
   const payloadHash=hash(req.rawBody||'');
   const existing=await one('SELECT * FROM website_intake_events WHERE event_id=$1',[b.eventId]);
