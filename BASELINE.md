@@ -1,5 +1,14 @@
 # CRM Development Baseline
 
+## CRM Test/staging DEV245 NIA correction candidate — 28 October 2026
+
+- Target: CRM Test and `staging.nysarealty.com` only. Production code, data, configuration, assignments and the production NIA journey remain unchanged.
+- Installed baseline remains CRM Test `2.1.0-dev.243`, commit `31778b9b248690239e492c1c110d2aef53c5c8e0`, through migration 155, with staging bridge 1.0.1.
+- Source baseline is the undeployed DEV244 candidate at commit `f9ba9759bc180f154748e7aecf17392d9e33c0db`. DEV245 retains migration 156 and adds no migration.
+- Existing recoverable development rollback evidence is `/home/nysareal/crm-backups/crm-test-dev243-pre-20261027T193434Z` plus the verified encrypted local copy `crm-test-dev243-20261027T193434Z/recovery.nyback`. A new paired CRM Test/staging backup and verified encrypted off-server copy are mandatory immediately before DEV245 deployment.
+- DEV245 corrects NIA structured mapping, preserves raw evidence, retains format-valid email with separate advisory credibility status, requires the exact dedicated `System – NIA Intake` actor, and leaves canonical Lead ownership unassigned.
+- Live WhatsApp, email, Meta and voice delivery remain disabled. See `docs/change-requests/NYSA-CRM-20261028-NIA-001-DEV245-MAPPING.md`.
+
 ## CRM Test observation and DEV244 source baseline — 27/28 October 2026
 
 - CRM Test serves `2.1.0-dev.243`, commit `31778b9b248690239e492c1c110d2aef53c5c8e0`, through migration 155. Its verified GitHub-origin archive SHA-256 is `74e3b24d5a1b92dbec636d854bc8005ba8925606f86e0138d0f4c5c7fe3a8f07`.
