@@ -1,5 +1,13 @@
 # CRM Development Baseline
 
+## CRM Test DEV246 Incoming Leads candidate — 28 October 2026
+
+- Target: CRM Test only. Production code, data, schema, configuration and assignments remain unchanged; live Meta, WhatsApp, email and voice delivery remain disabled.
+- Installed baseline: CRM Test `2.1.0-dev.245`, Git commit `ac9bdd1ab28a7ac6a1fdeaffdcce3973e7fc334b`, through migration 156; staging bridge remains 1.1.0.
+- Verified pre-implementation recovery evidence: `/home/nysareal/crm-backups/crm-test-dev243-pre-20261028T054325Z`, bundle SHA-256 `054bc6fc720530e61fad649350b11383156987f2aa80dac39c87fde955be63c3`, and encrypted local copy `C:\NYSA-Recovery\crm-test-dev243-pre-20261028T054325Z\crm-test-dev243-pre-20261028T054325Z.nyback`, encrypted SHA-256 `4e6048309e8824087084a317dc74aec68284966bf67bee6067bdb32c704de8d7`.
+- DEV246 adds the Admin/Manager Incoming Leads arrival, validation and response-assignment workspace plus migration 157 for non-customer Meta campaign/ad metadata and governed campaign reconciliation. Existing Lead ownership/team assignment is preserved.
+- A fresh paired CRM Test backup and verified encrypted private off-server copy are mandatory immediately before deployment. See `docs/change-requests/NYSA-CRM-20261028-LEAD-002-DEV246-INCOMING-LEADS.md`.
+
 ## CRM Test/staging DEV245 NIA correction candidate — 28 October 2026
 
 - Target: CRM Test and `staging.nysarealty.com` only. Production code, data, configuration, assignments and the production NIA journey remain unchanged.
