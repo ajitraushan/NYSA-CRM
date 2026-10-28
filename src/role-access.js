@@ -13,16 +13,17 @@ export const CAPABILITY=frozen({
   STAFF_CONFIGURATION_REFERENCE_READ:'configuration.staff.read', LEAVE_SELF:'leave.self',
   LEAVE_ADMINISTER:'leave.administer', LEAVE_DECIDE:'leave.decide', PERSONAL_TASKS:'tasks.personal',
   PURCHASED_DATA_IMPORT:'purchased_data.import', INVENTORY_CREATE:'inventory.create',
-  LEAD_RESPONSE_UNASSIGNED:'lead_response.unassigned.manage'
+  LEAD_RESPONSE_UNASSIGNED:'lead_response.unassigned.manage',
+  INCOMING_LEADS_TRIAGE:'incoming_leads.triage'
 });
 
 export const ROLE_ACCESS_POLICY=frozen({
   admin:frozen({label:'Admin',accountRole:'admin',jobRole:JOB_ROLE.ADMINISTRATOR,capabilities:frozen([
     CAPABILITY.SESSION_SELF,CAPABILITY.SYSTEM_CONFIGURATION,CAPABILITY.CONFIGURATION_REFERENCE_READ,
     CAPABILITY.TEAM_CONFIGURATION,CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ,CAPABILITY.LEAVE_SELF,
-    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,CAPABILITY.LEAD_RESPONSE_UNASSIGNED,
+    CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,CAPABILITY.LEAD_RESPONSE_UNASSIGNED,CAPABILITY.INCOMING_LEADS_TRIAGE,
     CAPABILITY.PURCHASED_DATA_IMPORT
-  ]),workspaceTabs:frozen(['admin','leadResponse','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, unassigned lead response, purchased-data intake and leave administration'})
+  ]),workspaceTabs:frozen(['admin','incomingLeads','leadResponse','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, incoming and unassigned lead response, purchased-data intake and leave administration'})
 });
 
 // Operational role permissions live beside the governed Admin profile so the
@@ -50,6 +51,7 @@ export const GOVERNED_API_POLICY=frozen([
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/my-(?:employment|leave-balances|leave-applications)(?:\/.*)?$/,capability:CAPABILITY.LEAVE_SELF}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/leave-applications\/[a-f0-9-]{36}\/(?:review|decision)$/,capability:CAPABILITY.LEAVE_DECIDE}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/purchased-data-import(?:\/.*)?$/,capability:CAPABILITY.PURCHASED_DATA_IMPORT}),
+  frozen({methods:frozen(['GET']),pattern:/^\/crm\/incoming-leads$/,capability:CAPABILITY.INCOMING_LEADS_TRIAGE}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/lead-response(?:\/[a-f0-9-]{36})?$/,capability:CAPABILITY.LEAD_RESPONSE_UNASSIGNED}),
   frozen({methods:frozen(['POST']),pattern:/^\/crm\/lead-response\/[a-f0-9-]{36}\/assign-owner$/,capability:CAPABILITY.LEAD_RESPONSE_UNASSIGNED}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/tasks$/,capability:CAPABILITY.PERSONAL_TASKS}),

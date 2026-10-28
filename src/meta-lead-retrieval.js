@@ -31,7 +31,7 @@ export function mapMetaLead(data,mapping){
 export async function retrieveMetaLead(reference,{accessToken,graphVersion,fetchImpl=fetch}){
  if(!accessToken||!/^v\d+\.\d+$/.test(graphVersion||''))problem('META_RETRIEVAL_NOT_CONFIGURED');
  if(!/^\d{1,100}$/.test(reference.eventId))problem('INVALID_META_REFERENCE');
- let response;try{response=await fetchImpl(`https://graph.facebook.com/${graphVersion}/${reference.eventId}?fields=id,form_id,created_time,field_data,ad_id`,
+ let response;try{response=await fetchImpl(`https://graph.facebook.com/${graphVersion}/${reference.eventId}?fields=id,form_id,created_time,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name`,
   {headers:{Authorization:`Bearer ${accessToken}`},signal:AbortSignal.timeout(10000)});}catch{problem('META_RETRIEVAL_UNAVAILABLE');}
  if(!response.ok)problem('META_RETRIEVAL_UNAVAILABLE');
  const raw=await response.text();if(Buffer.byteLength(raw)>256*1024)problem('META_LEAD_TOO_LARGE');
@@ -47,6 +47,15 @@ export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,own
  const sealed=sealLeadEvidence(data,evidenceKey),digest=crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
  await client.query(`INSERT INTO lead_response_evidence(id,source_inbox_id,encrypted_payload,payload_digest,expires_at)
   VALUES($1,$2,$3,$4,NOW()+INTERVAL '12 months') ON CONFLICT(source_inbox_id) DO NOTHING`,[uuid(),source.id,sealed,digest]);
+ const externalCampaignCode=data.campaign_id?String(data.campaign_id):null;
+ const campaignMapping=externalCampaignCode?await get(client,`SELECT m.campaign_id FROM campaign_external_mappings m
+  JOIN marketing_campaigns c ON c.id=m.campaign_id
+  WHERE m.status='active' AND c.status<>'retired' AND LOWER(m.source_code)='meta' AND LOWER(m.external_campaign_code)=LOWER($1)`,[externalCampaignCode]):null;
+ await client.query(`UPDATE lead_source_inbox SET external_campaign_code=$2,external_campaign_name=$3,external_adset_code=$4,
+  external_adset_name=$5,external_ad_code=$6,external_ad_name=$7,campaign_id=$8,campaign_mapping_status=$9 WHERE id=$1`,[
+   source.id,externalCampaignCode,data.campaign_name?String(data.campaign_name):null,data.adset_id?String(data.adset_id):null,
+   data.adset_name?String(data.adset_name):null,data.ad_id?String(data.ad_id):null,data.ad_name?String(data.ad_name):null,
+   campaignMapping?.campaign_id||null,externalCampaignCode?(campaignMapping?'mapped':'unmapped'):'not_supplied']);
  let normalized;try{normalized=mapMetaLead(data,mapping);}catch{
   await client.query("UPDATE lead_source_inbox SET state='needs_review',error_code='FORM_OR_CONTACT_REVIEW_REQUIRED' WHERE id=$1",[source.id]);return {status:'mapping_review'};
  }
@@ -70,9 +79,9 @@ export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,own
  const rule=await get(client,`SELECT r.* FROM routing_rules r WHERE r.active=1 AND (r.source IS NULL OR r.source='Social media') AND (r.business_type IS NULL OR r.business_type='Unconfirmed') AND r.area_id IS NULL ORDER BY r.priority,r.id LIMIT 1`,[]);
  const routedTeam=rule?.team_id?(await get(client,'SELECT id FROM teams WHERE id=$1 AND active=1',[rule.team_id]))?.id:null;
  const leadId=uuid();await client.query(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,assigned_to,assignment_status,
-   received_at,external_source_id,source_page,source_form,created_by,assigned_team_id,routing_reason)
-   VALUES($1,$2,'Meta Instant Form enquiry','Social media','Unconfirmed','Unassessed',NULL,'unassigned',$3,$4,$5,$6,$7,$8,$9)`,
-   [leadId,contactId,source.source_created_at,'meta:'+source.source_account_id+':'+source.source_event_id,source.source_account_id,source.source_form_id,actorId,routedTeam,routedTeam?'Existing source routing rule':'Routing setup requires review; designated fallback retained']);
+   received_at,external_source_id,source_page,source_form,created_by,assigned_team_id,routing_reason,campaign_id)
+   VALUES($1,$2,'Meta Instant Form enquiry','Social media','Unconfirmed','Unassessed',NULL,'unassigned',$3,$4,$5,$6,$7,$8,$9,$10)`,
+   [leadId,contactId,source.source_created_at,'meta:'+source.source_account_id+':'+source.source_event_id,source.source_account_id,source.source_form_id,actorId,routedTeam,routedTeam?'Existing source routing rule':'Routing setup requires review; designated fallback retained',campaignMapping?.campaign_id||null]);
  await client.query(`INSERT INTO lead_assignments(id,lead_id,sequence_no,status,assigned_by,team_id) VALUES($1,$2,1,'queued',$3,$4)`,[uuid(),leadId,actorId,routedTeam]);
  await client.query("UPDATE lead_source_inbox SET state='accepted',lead_id=$2,processed_at=NOW(),error_code=NULL WHERE id=$1",[source.id,leadId]);
  const responseCase=await openNonvoiceCase({sourceInboxId:source.id,leadId,fallbackOwnerId:ownerId,actorId,country:normalized.country,
