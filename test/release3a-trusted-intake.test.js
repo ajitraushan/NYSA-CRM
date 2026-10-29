@@ -29,8 +29,8 @@ test('R3A-INTAKE-EMAIL-42 retains format-valid email and records credibility sep
   assert.match(route,/identity\.phone\|\|!identity\.email/);
   assert.match(route,/emailCredibility\?\.status!=='invalid_format'/);
   assert.match(route,/const trustedEmail=identity\.email\|\|null/);
-  assert.match(route,/EMAIL_ONLY_CREDIBILITY_REVIEW/);
-  assert.match(route,/email_only_review_required/);
+  assert.match(route,/recordWebIntakeJourney/);
+  assert.doesNotMatch(route.slice(route.indexOf("r.post('/intake/website'"),route.indexOf('function supportOnly')),/EMAIL_ONLY_CREDIBILITY_REVIEW/);
   assert.match(route,/resolve-email/);
   assert.match(route,/approve_email_only/);
   assert.match(route,/email_only_rejected/);

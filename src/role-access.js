@@ -23,7 +23,7 @@ export const ROLE_ACCESS_POLICY=frozen({
     CAPABILITY.TEAM_CONFIGURATION,CAPABILITY.STAFF_CONFIGURATION_REFERENCE_READ,CAPABILITY.LEAVE_SELF,
     CAPABILITY.LEAVE_ADMINISTER,CAPABILITY.PERSONAL_TASKS,CAPABILITY.LEAD_RESPONSE_UNASSIGNED,CAPABILITY.INCOMING_LEADS_TRIAGE,
     CAPABILITY.PURCHASED_DATA_IMPORT
-  ]),workspaceTabs:frozen(['admin','incomingLeads','leadResponse','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, incoming and unassigned lead response, purchased-data intake and leave administration'})
+  ]),workspaceTabs:frozen(['admin','incomingLeads','purchasedDataImport','myLeave','leaveAdministration']),dashboard:'admin',deniedMessage:'Admin access is limited to configuration, WEB intake audit, purchased-data intake and leave administration'})
 });
 
 // Operational role permissions live beside the governed Admin profile so the

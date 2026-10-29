@@ -10,6 +10,7 @@ import { checkEmailCredibility } from '../email-credibility-domain.js';
 import { routingReason,websiteAiRoutingDecision } from '../website-ai-routing.js';
 import { detectWebsiteRequirementConflicts } from '../requirement-confirmation-domain.js';
 import { openWebsiteFollowUp } from '../website-follow-up-intake.js';
+import {recordWebIntakeJourney} from '../web-intake-workflow.js';
 
 const r=Router();
 const MAX_CLOCK_SKEW_MS=5*60*1000;
@@ -262,6 +263,10 @@ async function processEvent(event,b,identity,actor,{forcedContactId=null,forceDi
   });
 }
 
+async function processPhase1ReviewedEvent(event,payload,identity,actor,{forcedContactId=null}={}){
+  return transaction(client=>recordWebIntakeJourney({event,payload,identity,actorId:actor.id,forcedContactId},client));
+}
+
 function emailOnlyGate(identity,emailCredibility){
   if(identity.phone||!identity.email)return null;
   if(emailCredibility?.status!=='invalid_format')return null;
@@ -361,12 +366,17 @@ r.post('/intake/website',async(req,res)=>{
   const b=normalizeIntakePayload(received,checked);
   const aiRouting=websiteAiRoutingDecision(b);
   const actor=await intakeActor(b.form);if(!actor)return res.status(503).json({error:'Website intake is not configured'});
-  const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.requirement.areas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});
   const payloadHash=hash(req.rawBody||'');
   const existing=await one('SELECT * FROM website_intake_events WHERE event_id=$1',[b.eventId]);
   if(existing){
     if(existing.payloadHash!==payloadHash)return res.status(409).json({error:'Event identifier was already used with different data'});
     if(existing.status==='accepted'){
+      if(existing.webIntakeJourneyId){
+        const journey=await one(`SELECT j.*,c.id AS case_id,c.state AS case_state FROM web_intake_journeys j
+          LEFT JOIN lead_follow_up_cases c ON c.id=j.follow_up_case_id WHERE j.id=$1`,[existing.webIntakeJourneyId]);
+        return res.json({eventId:existing.eventId,journeyId:journey?.id,caseId:journey?.caseId||null,contactId:journey?.contactId||null,
+          leadId:null,status:journey?.state==='completed'?(journey?.caseState==='needs_attention'?'needs_attention':'completed_unassigned'):'in_progress',idempotent:true});
+      }
       const followUp=await transaction(async client=>{
         const lead=await one('SELECT * FROM leads WHERE id=$1',[existing.leadId],client);
         return lead?openWebsiteFollowUp({event:existing,lead,payload:b,actorId:actor.id},client):{status:'not_opened'};
@@ -382,15 +392,11 @@ r.post('/intake/website',async(req,res)=>{
     VALUES($1,$2,$3,'processing',$4::jsonb,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::jsonb) RETURNING *`,[uuid(),b.eventId,payloadHash,JSON.stringify(received),b.source||'Website',clean(b.campaign),clean(b.page),clean(b.form),emailCredibility?JSON.stringify(emailCredibility):null,clean(b.profile?.sourceCode),clean(b.profile?.sourceVersion),clean(b.journeyKey),
     aiRouting?.status||null,aiRouting?.businessType||null,aiRouting?.reason||null,aiRouting?JSON.stringify(aiRouting.raw||aiRouting):null]);
   try{
-    await retainIntakeEvidence(event,b,checked.identity);
-    const emailGate=emailOnlyGate(checked.identity,emailCredibility);
-    if(emailGate){
-      const reviewDueAt=new Date(Date.now()+4*60*60*1000);
-      await execute(`UPDATE website_intake_events SET status='email_review',review_due_at=$1,processed_at=NOW(),error_code='EMAIL_ONLY_CREDIBILITY_REVIEW' WHERE id=$2`,[reviewDueAt,event.id]);
-      await audit('WebsiteIntake',event.id,'email_only_review_required',actor.id,{eventId:event.eventId,emailCredibilityStatus:emailCredibility?.status,reviewDueAt});
-      return res.status(202).json({eventId:event.eventId,status:'email_review',reviewRequired:true,reviewDueAt,reason:emailGate.reason});
-    }
-    const result=await processEvent(event,b,checked.identity,actor);return res.status(['identity_review','duplicate_review'].includes(result.status)?202:201).json(result);
+    const result=await transaction(async client=>{
+      await retainIntakeEvidence(event,b,checked.identity,client);
+      return recordWebIntakeJourney({event,payload:b,identity:checked.identity,actorId:actor.id},client);
+    });
+    return res.status(result.status==='needs_attention'?202:201).json(result);
   }
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='PROCESSING_FAILED' WHERE id=$1",[event.id]);throw error;}
 });
@@ -435,7 +441,7 @@ r.post('/admin/website-intake/:eventId/resolve-email',requireAuth,supportOnly,as
   const claimed=await one(`UPDATE website_intake_events SET status='processing',resolution=$1,resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),
     attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='email_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);
   if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor);await audit('WebsiteIntake',current.id,'email_only_approved',req.broker.id,{eventId:current.eventId,reason});res.json(result);}
+  try{const result=await processPhase1ReviewedEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor);await audit('WebsiteIntake',current.id,'email_only_approved',req.broker.id,{eventId:current.eventId,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='EMAIL_RESOLUTION_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 r.post('/admin/website-intake/:eventId/replay',requireAuth,supportOnly,async(req,res)=>{
@@ -455,7 +461,7 @@ r.post('/admin/website-intake/:eventId/replay',requireAuth,supportOnly,async(req
   const emailCredibility=checked.identity.email?await checkEmailCredibility(checked.identity.email):null;
   await execute('UPDATE website_intake_events SET received_payload=$1::jsonb,email_credibility=$2::jsonb WHERE id=$3',[JSON.stringify(replayPayload),emailCredibility?JSON.stringify(emailCredibility):null,event.id]);
   event.emailCredibility=emailCredibility;
-  try{const result=await processEvent(event,normalizeIntakePayload(replayPayload,checked),checked.identity,actor);await audit('WebsiteIntake',event.id,'replayed',req.broker.id);res.json(result);}
+  try{const result=await processPhase1ReviewedEvent(event,normalizeIntakePayload(replayPayload,checked),checked.identity,actor);await audit('WebsiteIntake',event.id,'replayed',req.broker.id);res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='PROCESSING_FAILED' WHERE id=$1",[event.id]);throw error;}
 });
 
@@ -478,7 +484,7 @@ r.post('/admin/website-intake/:eventId/resolve-identity',requireAuth,supportOnly
   const claimed=await one(`UPDATE website_intake_events SET status='processing',resolution=$1,resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),
     attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='identity_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);
   if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:selected.id});await audit('WebsiteIntake',current.id,'identity_conflict_resolved',req.broker.id,{eventId:current.eventId,resolution,selectedContactId:selected.id,reason});res.json(result);}
+  try{const result=await processPhase1ReviewedEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:selected.id});await audit('WebsiteIntake',current.id,'identity_conflict_resolved',req.broker.id,{eventId:current.eventId,resolution,selectedContactId:selected.id,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='RESOLUTION_PROCESSING_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 
@@ -505,7 +511,7 @@ r.post('/admin/website-intake/:eventId/resolve-lead-duplicate',requireAuth,suppo
   }
   const actor=await intakeActor();if(!actor)return res.status(503).json({error:'Website intake is not configured'});const claimed=await one(`UPDATE website_intake_events SET status='processing',duplicate_resolution=$1,
     duplicate_resolution_reason=$2,resolved_by=$3,resolved_at=NOW(),attempt_count=attempt_count+1,error_code=NULL WHERE id=$4 AND status='duplicate_review' RETURNING *`,[resolution,reason,req.broker.id,current.id]);if(!claimed)return res.status(409).json({error:'The event was already resolved'});claimed.emailCredibility=current.emailCredibility;
-  try{const result=await processEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:candidate.contactId,forceDistinctLead:true});await audit('WebsiteIntake',current.id,'distinct_lead_approved',req.broker.id,{eventId:current.eventId,newLeadId:result.leadId,candidateLeadId:candidate.id,reason});res.json(result);}
+  try{const result=await processPhase1ReviewedEvent(claimed,normalizeIntakePayload(b,checked),checked.identity,actor,{forcedContactId:candidate.contactId});await audit('WebsiteIntake',current.id,'distinct_lead_approved',req.broker.id,{eventId:current.eventId,newLeadId:null,candidateLeadId:candidate.id,reason});res.json(result);}
   catch(error){await execute("UPDATE website_intake_events SET status='failed',processed_at=NOW(),error_code='DUPLICATE_RESOLUTION_FAILED' WHERE id=$1",[current.id]);throw error;}
 });
 

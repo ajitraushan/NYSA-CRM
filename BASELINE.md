@@ -1,5 +1,15 @@
 # CRM Development Baseline
 
+## DEV247 WEB Intake Phase 1 source candidate — 29 October 2026
+
+- Scope: source build and isolated synthetic validation only. CRM Test remains `2.1.0-dev.246`; staging remains healthy on its existing bridge; production, CRM Test and staging code, data, schema, configuration, users, passwords and assignments were not changed.
+- Reproducible source baseline: GitHub-advertised commit `73be0189df51858831b32e178163fbc1a7258779`, developed on branch `codex/web-intake-phase1`. The rollback point for this development step is that exact origin commit; no deployment package has been built.
+- Candidate: `2.1.0-dev.247`, migration `158_web_intake_phase1_foundation.sql`. The sole approved design input is `docs/change-requests/NYSA-CRM-20261029-LEAD-003-WEB-INTAKE-DETAILED-DESIGN-v1.3-developer.md`; it supersedes earlier review documents.
+- Phase 1 provides the shared **WEB Intake Leads** desk, explicit single/multi-step journeys, encrypted provisional identity with keyed deterministic matching, 30-minute incomplete-journey recovery, atomic Sales Agent/Manager pickup, **My Lead Queue**, governed Lead/Requirement creation only at pickup or confirmed recovery promotion, one primary next task, owner/manager stale warnings, release back to the desk and an audit trail.
+- WhatsApp, email, AI conversation, Meta live retrieval and voice delivery are not part of this activation. The reconciliation worker is disabled by default and all customer outreach remains off.
+- Verification: all 158 migrations rebuilt successfully on the restricted `nysa_test_fixture`; synthetic PostgreSQL lifecycle tests passed for dropped recovery and completed pickup; governed release selection passed 1,571 tests (1,479 passed, 92 skipped, zero failures). Ninety-two historical local-artifact tests are deliberately excluded by the governed selector in a clean origin worktree.
+- Required before any CRM Test deployment: peer/UAT review, committed and GitHub-advertised SHA, mandatory origin-only package and provenance verification, fresh paired CRM Test/staging backups plus verified encrypted private off-server copy, and exact DEV247 deployment approval. Production remains out of scope.
+
 ## CRM Test DEV246 Incoming Leads candidate — 28 October 2026
 
 - Target: CRM Test only. Production code, data, schema, configuration and assignments remain unchanged; live Meta, WhatsApp, email and voice delivery remain disabled.

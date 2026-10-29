@@ -18,7 +18,7 @@ test('R3A-WEBSITE-INTAKE-RUNTIME-52 uses the database pool when evidence retenti
   const route=read('src/routes/website-intake.js');
   assert.match(route,/async function retainIntakeEvidence\(event,b,identity,client=undefined\)/);
   assert.doesNotMatch(route,/retainIntakeEvidence\(event,b,identity,client=null\)/);
-  assert.match(route,/await retainIntakeEvidence\(event,b,checked\.identity\)/);
+  assert.match(route,/await retainIntakeEvidence\(event,b,checked\.identity,client\)/);
 });
 
 test('R3A-INTAKE-EMAIL-42 promotes format-valid email and retains its credibility status',()=>{

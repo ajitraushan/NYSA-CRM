@@ -136,7 +136,7 @@ const ACTIVITY_NEXT_ACTIONS=[['confirm_requirements','Confirm or clarify require
 const OPPORTUNITY_STAGES = ['Requirements','Matching','Viewing','Offer','Negotiation','Booking','Deal','Closed Won','Closed Lost'];
 const OPPORTUNITY_LOST_REASONS = {customer_withdrew:'Customer withdrew',no_suitable_property:'No suitable property',budget_or_finance:'Budget or finance',timing_changed:'Timing changed',competitor:'Completed elsewhere',duplicate_pursuit:'Duplicate pursuit',other:'Other'};
 const JOB_ROLES = { admin:'Admin', sales_agent:'Sales Agent', listing_agent:'Listing Executive', manager:'Manager', director:'Director', accountant:'Accountant' };
-const WORKSPACE_TABS={dashboard:'Dashboard',tasks:'My Tasks',admin:'Administration',incomingLeads:'Incoming Leads',leadResponse:'Lead response',myLeave:'My Leave',leaveAdministration:'Leave Administration',purchasedDataImport:'Bulk Upload'};
+const WORKSPACE_TABS={dashboard:'Dashboard',tasks:'My Tasks',admin:'Administration',incomingLeads:'WEB Intake Leads',leadResponse:'My Lead Queue',myLeave:'My Leave',leaveAdministration:'Leave Administration',purchasedDataImport:'Bulk Upload'};
 window.NYSA_ROLE_POLICY=Object.freeze({labels:Object.freeze({...JOB_ROLES}),leaveApproverLabel:'Line Manager'});
 function openCrmPdfTab(url){const tab=window.open('about:blank',`nysa-pdf-${Date.now()}`);if(!tab){toast('The PDF tab was blocked. Allow pop-ups for CORE and try again.',8000);return false;}tab.opener=null;tab.document.title='Opening NYSA PDF…';tab.location.replace(new URL(url,window.location.origin).href);return true;}
 window.openCrmPdfTab=openCrmPdfTab;
@@ -408,8 +408,8 @@ async function renderShell() {
     ${hasCrmAccess() ? '<button data-tab="tasks">My Tasks</button>' : ''}
     ${hasCrmAccess() ? '<button data-tab="customers">Customers</button>' : ''}
     ${hasCrmAccess()&&ME.jobRole!=='listing_agent' ? '<button data-tab="crm">Leads</button>' : ''}
-    ${ME.role==='internal_broker'&&ME.jobRole==='manager' ? '<button data-tab="incomingLeads">Incoming Leads</button>' : ''}
-    ${ME.role==='internal_broker'&&['sales_agent','manager'].includes(ME.jobRole) ? '<button data-tab="leadResponse">Lead response</button>' : ''}
+    ${(ME.role==='admin'||(ME.role==='internal_broker'&&['sales_agent','manager'].includes(ME.jobRole))) ? '<button data-tab="incomingLeads">WEB Intake Leads</button>' : ''}
+    ${ME.role==='internal_broker'&&['sales_agent','manager'].includes(ME.jobRole) ? '<button data-tab="leadResponse">My Lead Queue</button>' : ''}
     <button data-tab="listings">Inventory</button>
     <button data-tab="externalListings">External Portal Listings</button>
     ${hasCrmAccess()&&!['listing_agent','accountant'].includes(ME.jobRole) ? '<button data-tab="opportunities">Opportunities</button>' : ''}

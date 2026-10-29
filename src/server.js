@@ -1,4 +1,5 @@
 import {startAdviceWorker} from './payout-advice.js';
+import {startWebIntakeWorker} from './web-intake-worker.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './lib/http-kit.js';
@@ -41,7 +42,7 @@ import { migrate, closeDatabase, transaction } from './db.js';
 import { createMetaIntakeRoutes } from './routes/meta-intake.js';
 import { createLeadIntegrationSetupRoutes } from './routes/lead-integration-setup.js';
 import { createLeadResponseRoutes } from './routes/lead-response.js';
-import { createIncomingLeadsRoutes } from './routes/incoming-leads.js';
+import { createWebIntakePhase1Routes } from './routes/web-intake-phase1.js';
 import { createLeadChannelInboxRoutes } from './routes/lead-channel-inbox.js';
 import { createNativeLeadWhatsAppRoutes } from './lead-whatsapp.js';
 import { leadConnectionEnvironment } from './lead-integration-connections.js';
@@ -65,7 +66,7 @@ app.mount('/api', websiteIntakeRoutes);
 app.mount('/api', createMetaIntakeRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
 app.mount('/api', createLeadIntegrationSetupRoutes({requireAuth,transaction}));
 app.mount('/api', createLeadResponseRoutes({requireAuth,transaction}));
-app.mount('/api', createIncomingLeadsRoutes({requireAuth,transaction}));
+app.mount('/api', createWebIntakePhase1Routes({requireAuth,transaction}));
 app.mount('/api', createLeadChannelInboxRoutes({transaction}));
 app.mount('/api', createNativeLeadWhatsAppRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
 app.mount('/api', listingIntakeRoutes);
@@ -112,6 +113,7 @@ async function start() {
   writeRuntimeEvent('starting');
   await migrate();
   startAdviceWorker();
+  startWebIntakeWorker({transaction});
   await new Promise((resolve, reject) => {
     server = app.listen(PORT, () => {
       server.off('error', reject);

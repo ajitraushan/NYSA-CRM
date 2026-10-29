@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import {validateContactIdentity} from './crm-domain.js';
-import {openNonvoiceCase} from './nonvoice-follow-up-store.js';
+import {recordWebIntakeJourney} from './web-intake-workflow.js';
 const uuid=()=>crypto.randomUUID();
 const get=async(c,s,p)=>(await c.query(s,p)).rows[0];
 function problem(code){throw Object.assign(new Error(code),{statusCode:409});}
@@ -42,7 +42,7 @@ export async function retrieveMetaLead(reference,{accessToken,graphVersion,fetch
 // A caller transaction makes customer/lead linking, source evidence and outbox atomic.
 export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,ownerId=null,evidenceKey},client){
  const source=await get(client,'SELECT * FROM lead_source_inbox WHERE id=$1 FOR UPDATE',[sourceId]);if(!source)problem('SOURCE_NOT_FOUND');
- if(source.state==='accepted')return {leadId:source.lead_id,duplicate:true};
+ if(source.state==='accepted')return {leadId:source.lead_id||null,journeyId:source.web_intake_journey_id||null,duplicate:true};
  if(String(data.id)!==source.source_event_id||String(data.form_id)!==source.source_form_id||!mapping.pageIds?.includes(source.source_account_id))problem('META_LEAD_BINDING_FAILED');
  const sealed=sealLeadEvidence(data,evidenceKey),digest=crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
  await client.query(`INSERT INTO lead_response_evidence(id,source_inbox_id,encrypted_payload,payload_digest,expires_at)
@@ -59,33 +59,20 @@ export async function acceptRetrievedMetaLead({sourceId,data,mapping,actorId,own
  let normalized;try{normalized=mapMetaLead(data,mapping);}catch{
   await client.query("UPDATE lead_source_inbox SET state='needs_review',error_code='FORM_OR_CONTACT_REVIEW_REQUIRED' WHERE id=$1",[source.id]);return {status:'mapping_review'};
  }
- for(const value of [normalized.email,normalized.phone].filter(Boolean).sort())await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',['lead-contact:'+value]);
- const matches=await client.query(`SELECT DISTINCT c.id FROM contacts c LEFT JOIN contact_channels ch ON ch.contact_id=c.id
-   WHERE c.lifecycle_status='active' AND (($1::text IS NOT NULL AND (LOWER(c.email)=$1 OR (ch.channel_kind='Email' AND ch.normalized_value=$1)))
-   OR ($2::text IS NOT NULL AND (c.phone=$2 OR (ch.channel_kind='Phone' AND ch.normalized_value=$2))))`,[normalized.email,normalized.phone]);
- if(matches.rows.length>1){await client.query("UPDATE lead_source_inbox SET state='needs_review',error_code='IDENTITY_CONFLICT' WHERE id=$1",[source.id]);return {status:'identity_review'};}
- const contactId=matches.rows[0]?.id||uuid();
- if(!matches.rows.length){await client.query(`INSERT INTO contacts(id,full_name,email,phone,contact_type,created_by,email_status,phone_status,source_first_seen)
-  VALUES($1,$2,$3,$4,'buyer',$5,$6,$7,'Social media')`,[contactId,normalized.fullName,normalized.email,normalized.phone,actorId,normalized.emailStatus,normalized.phoneStatus]);
-  await client.query("INSERT INTO contact_roles(id,contact_id,role_code,created_by) VALUES($1,$2,'buyer',$3)",[uuid(),contactId,actorId]);
-  for(const [kind,value]of [['Email',normalized.email],['Phone',normalized.phone]])if(value)await client.query(`INSERT INTO contact_channels(id,contact_id,channel_kind,raw_value,normalized_value,verification_status,is_primary,created_by)
-   VALUES($1,$2,$3,$4,$4,'format_valid',1,$5)`,[uuid(),contactId,kind,value,actorId]);
- }
  const requirementDigest=crypto.createHash('sha256').update(JSON.stringify({formId:source.source_form_id,adId:data.ad_id||null,requirements:normalized.requirements})).digest('hex');
- const duplicate=await get(client,`SELECT e.lead_id FROM lead_source_inbox e JOIN leads l ON l.id=e.lead_id
-  WHERE e.state='accepted' AND e.requirement_digest=$1 AND l.contact_id=$2 AND e.received_at>=NOW()-INTERVAL '30 days' AND e.id<>$3 LIMIT 1`,[requirementDigest,contactId,source.id]);
- if(duplicate){await client.query("UPDATE lead_source_inbox SET state='needs_review',error_code='POSSIBLE_DUPLICATE_ENQUIRY' WHERE id=$1",[source.id]);return {status:'duplicate_review'};}
  await client.query('UPDATE lead_source_inbox SET requirement_digest=$2 WHERE id=$1',[source.id,requirementDigest]);
- const rule=await get(client,`SELECT r.* FROM routing_rules r WHERE r.active=1 AND (r.source IS NULL OR r.source='Social media') AND (r.business_type IS NULL OR r.business_type='Unconfirmed') AND r.area_id IS NULL ORDER BY r.priority,r.id LIMIT 1`,[]);
- const routedTeam=rule?.team_id?(await get(client,'SELECT id FROM teams WHERE id=$1 AND active=1',[rule.team_id]))?.id:null;
- const leadId=uuid();await client.query(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,assigned_to,assignment_status,
-   received_at,external_source_id,source_page,source_form,created_by,assigned_team_id,routing_reason,campaign_id)
-   VALUES($1,$2,'Meta Instant Form enquiry','Social media','Unconfirmed','Unassessed',NULL,'unassigned',$3,$4,$5,$6,$7,$8,$9,$10)`,
-   [leadId,contactId,source.source_created_at,'meta:'+source.source_account_id+':'+source.source_event_id,source.source_account_id,source.source_form_id,actorId,routedTeam,routedTeam?'Existing source routing rule':'Routing setup requires review; designated fallback retained',campaignMapping?.campaign_id||null]);
- await client.query(`INSERT INTO lead_assignments(id,lead_id,sequence_no,status,assigned_by,team_id) VALUES($1,$2,1,'queued',$3,$4)`,[uuid(),leadId,actorId,routedTeam]);
- await client.query("UPDATE lead_source_inbox SET state='accepted',lead_id=$2,processed_at=NOW(),error_code=NULL WHERE id=$1",[source.id,leadId]);
- const responseCase=await openNonvoiceCase({sourceInboxId:source.id,leadId,fallbackOwnerId:ownerId,actorId,country:normalized.country,
-  timeZone:normalized.timeZone,locationConfirmed:normalized.locationConfirmed,consent:{...normalized.permission,evidenceRef:'source:'+source.id}},client);
- await client.query('UPDATE lead_follow_up_cases SET declared_requirements=$2::jsonb WHERE id=$1',[responseCase.id,JSON.stringify(normalized.requirements)]);
- return {leadId,caseId:responseCase.id,status:responseCase.state};
+ const purpose=['own_use','investment','business','other'].includes(normalized.requirements.purpose)?normalized.requirements.purpose:null;
+ const payload={eventId:source.source_event_id,source:'Social media',sourceWebsite:source.source_account_id,form:'meta_instant_form',
+  intakeMode:'single_step',intakeCompleteness:'complete',journeyKey:`meta_${source.source_account_id}_${source.source_event_id}`,
+  campaign:externalCampaignCode,title:'Meta Instant Form enquiry',businessType:'Unconfirmed',
+  contact:{fullName:normalized.fullName,email:normalized.email,phone:normalized.phone,preferredChannel:normalized.phone?'WhatsApp':'Email'},
+  requirement:{purpose,propertyTypes:[],areas:normalized.requirements.area?[normalized.requirements.area]:[],budgetMin:null,budgetMax:null,
+   fundingMethod:'unknown',timelineCode:normalized.requirements.timeline||null,notes:null},
+  consent:{marketing:Boolean(normalized.permission.whatsapp||normalized.permission.email),aiWhatsapp:normalized.permission.whatsapp,
+   aiEmail:normalized.permission.email,statementVersion:normalized.permission.statementVersion},
+  location:{country:normalized.country,timeZone:normalized.timeZone,confirmed:normalized.locationConfirmed}};
+ const result=await recordWebIntakeJourney({event:{id:source.id,eventId:source.source_event_id,receivedAt:source.received_at,
+   external_campaign_code:externalCampaignCode,campaign_id:campaignMapping?.campaign_id||null},payload,identity:normalized,actorId,sourceSystem:'meta'},client);
+ await client.query("UPDATE lead_source_inbox SET state='accepted',lead_id=NULL,processed_at=NOW(),error_code=NULL WHERE id=$1",[source.id]);
+ return {...result,leadId:null};
 }
