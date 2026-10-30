@@ -29,16 +29,17 @@ function outputText(response){
   throw new AiServiceError('The AI service returned no structured output',{code:'ai_empty_output'});
 }
 
-export async function requestStructuredOutput({name,instructions,input,schema,fetchImpl=globalThis.fetch}){
+export async function requestStructuredOutput({name,instructions,input,schema,maxOutputTokens,fetchImpl=globalThis.fetch}){
   const config=aiConfiguration();
   if(!config.configured)throw new AiServiceError('AI assistance is not configured',{code:'ai_not_configured',status:503});
+  if(maxOutputTokens!==undefined&&(!Number.isInteger(maxOutputTokens)||maxOutputTokens<16||maxOutputTokens>2048))throw new AiServiceError('Invalid AI response limit',{code:'ai_output_limit_invalid',status:400});
   const serialized=JSON.stringify(input);
   if(serialized.length>config.maxInputChars)throw new AiServiceError(`AI input exceeds the ${config.maxInputChars}-character limit`,{code:'ai_input_too_large',status:413});
   if(typeof fetchImpl!=='function')throw new AiServiceError('Server fetch capability is unavailable',{code:'ai_transport_unavailable',status:503});
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),config.timeoutMs);
   let response,data;
   try{
-    response=await fetchImpl(config.endpoint,{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({model:config.model,store:false,instructions,input:serialized,text:{format:{type:'json_schema',name,strict:true,schema}}})});
+    response=await fetchImpl(config.endpoint,{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({model:config.model,store:false,...(maxOutputTokens!==undefined?{max_output_tokens:maxOutputTokens}:{}),instructions,input:serialized,text:{format:{type:'json_schema',name,strict:true,schema}}})});
     data=await response.json().catch(()=>({}));
   }catch(error){
     if(error?.name==='AbortError')throw new AiServiceError('AI request timed out',{code:'ai_timeout',status:504});
