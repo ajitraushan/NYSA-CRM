@@ -1,5 +1,14 @@
 # CRM Development Baseline
 
+## DEV248 approved intake-correction development baseline - 30 October 2026
+
+- Approved scope: CRM Test and the staging website test path under `NYSA-CRM-20261028-NIA-001`, `NYSA-CRM-20261029-LEAD-004` through `LEAD-007`, and `NYSA-CRM-20261030-LEAD-008`. Email verification (`LEAD-009`) and the UI makeover (`UI-001`) are reserved for later approved candidates DEV249-DEV251.
+- Reproducible source and rollback point: application `2.1.0-dev.247`, Git commit `72f88565be43e76254f022b426531864a269763a`, branch `codex/web-intake-phase1`. At observation, the only working-tree additions were the approved documentation files for `LEAD-009` and `UI-001`; no runtime file was modified.
+- Target of this step: isolated DEV248 source implementation and synthetic/restricted-fixture testing only. CRM Test currently serves DEV247 and the staging bridge remains at its installed version until a separately packaged, provenance-verified DEV248 deployment is ready.
+- Data/role boundary: preserve existing customers, users, passwords, teams, manager relationships, assignments and integration configuration. Use synthetic or explicitly approved CRM Test evidence only.
+- Deployment boundary: production, WhatsApp OTP, SMS OTP, voice and all production integrations remain out of scope. Before any DEV248 deployment, refresh and verify paired CRM Test/staging backups and the encrypted private off-server copy, advertise the exact commit through GitHub origin, build only with the mandatory origin package command, verify provenance, and confirm exactly one hosted CRM worker after readiness.
+- Source verification completed before commit: the guarded fixture rebuilt through all 159 migrations; the DEV248 PostgreSQL lifecycle passed; the focused intake/bridge contract passed; and the governed release selection passed 1,483 tests with 92 intentional skips and zero failures. No CRM Test, staging or production mutation occurred during these source checks.
+
 ## DEV247 WEB Intake Phase 1 source candidate — 29 October 2026
 
 - Scope: source build and isolated synthetic validation only. CRM Test remains `2.1.0-dev.246`; staging remains healthy on its existing bridge; production, CRM Test and staging code, data, schema, configuration, users, passwords and assignments were not changed.

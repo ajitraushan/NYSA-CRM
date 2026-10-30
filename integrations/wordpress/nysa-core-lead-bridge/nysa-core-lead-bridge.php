@@ -2,7 +2,7 @@
 /**
  * Plugin Name: NYSA CORE Lead Bridge
  * Description: Durable signed delivery of NIA and contact-form enquiries into NYSA CORE.
- * Version: 1.1.0
+ * Version: 1.2.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -99,21 +99,42 @@ final class NYSA_Core_Lead_Bridge {
         return ['country' => null, 'timeZone' => null, 'confirmed' => false];
     }
 
+    private static function normalize_phone(string $phone, string $country): ?string {
+        $raw = trim($phone);
+        $digits = preg_replace('/\D+/', '', $raw);
+        if ($country === 'AE') {
+            if (preg_match('/^05\d{8}$/', $digits)) return '+971' . substr($digits, 1);
+            if (preg_match('/^9715\d{8}$/', $digits)) return '+' . $digits;
+        }
+        if ($country === 'IN') {
+            if (preg_match('/^[6-9]\d{9}$/', $digits)) return '+91' . $digits;
+            if (preg_match('/^91[6-9]\d{9}$/', $digits)) return '+' . $digits;
+        }
+        if ($country === 'OTHER' && str_starts_with($raw, '+') && preg_match('/^[1-9]\d{7,14}$/', $digits)) return '+' . $digits;
+        return null;
+    }
+
     private static function contact_payload(array $raw): ?array {
         $name = trim(sanitize_text_field($raw['name'] ?? ''));
         $email = trim(sanitize_email($raw['email'] ?? ''));
-        $phone = trim(sanitize_text_field($raw['phone'] ?? ''));
+        $phone_raw = trim(sanitize_text_field($raw['phone'] ?? ''));
         $interest = sanitize_key($raw['interest'] ?? '');
+        $property_type = sanitize_key($raw['property_type'] ?? '');
         $purpose = sanitize_key($raw['purpose'] ?? '');
         $timeline = sanitize_key($raw['timeline'] ?? '');
         $country = strtoupper(sanitize_text_field($raw['country'] ?? ''));
-        if ($name === '' || !is_email($email) || $phone === ''
+        $phone = self::normalize_phone($phone_raw, $country);
+        if ($name === '' || !is_email($email) || !$phone
             || !in_array($purpose, ['own_use', 'investment', 'business', 'other'], true)
             || !in_array($timeline, ['within_3_months', '3_to_6_months', '6_to_12_months', 'over_12_months', 'not_sure'], true)
-            || !in_array($country, ['AE', 'IN', 'OTHER'], true)) return null;
+            || !in_array($country, ['AE', 'IN', 'OTHER'], true)
+            || !in_array($interest, ['off-plan', 'ready', 'portfolio', 'unsure'], true)
+            || !in_array($property_type, ['apartment', 'villa', 'townhouse', 'land', 'commercial', 'unsure'], true)) return null;
         $budget = self::parse_budget(sanitize_text_field($raw['budget'] ?? ''));
-        $business_types = ['off-plan' => 'Off-plan', 'ready' => 'Sale', 'portfolio' => 'Sale', 'unsure' => 'Unconfirmed'];
-        $property_types = $interest && $interest !== 'unsure' ? [$interest] : [];
+        $market_stages = ['off-plan' => 'off_plan', 'ready' => 'ready_secondary', 'portfolio' => 'either', 'unsure' => 'not_confirmed'];
+        $property_segments = ['apartment' => 'residential', 'villa' => 'residential', 'townhouse' => 'residential', 'land' => 'land', 'commercial' => 'commercial', 'unsure' => 'not_confirmed'];
+        $property_labels = ['apartment' => 'Apartment', 'villa' => 'Villa', 'townhouse' => 'Townhouse', 'land' => 'Land', 'commercial' => 'Commercial'];
+        $property_types = isset($property_labels[$property_type]) ? [$property_labels[$property_type]] : [];
         $lead_id = absint($raw['lead_id'] ?? 0);
         $event_hash = hash('sha256', implode('|', [$lead_id, strtolower($email), preg_replace('/\D+/', '', $phone)]));
         $ai_consent = !empty($raw['ai_assisted_contact']);
@@ -124,10 +145,13 @@ final class NYSA_Core_Lead_Bridge {
             'sourceWebsite' => strtolower((string) ($raw['source_host'] ?? ($_SERVER['HTTP_HOST'] ?? 'nysarealty.com'))),
             'page' => home_url('/contact-us/'),
             'form' => 'contact_enquiry_v2',
-            'formVersion' => '2.0.0',
+            'formVersion' => '2.1.0',
             'intakeCompleteness' => 'complete',
             'title' => 'Website contact enquiry',
-            'businessType' => $business_types[$interest] ?? 'Unconfirmed',
+            'businessType' => 'Sale',
+            'customerObjective' => 'buy',
+            'marketStageRequirement' => $market_stages[$interest] ?? 'not_confirmed',
+            'propertySegmentRequirement' => $property_segments[$property_type] ?? 'not_confirmed',
             'contact' => ['fullName' => $name, 'email' => $email, 'phone' => $phone, 'preferredChannel' => 'WhatsApp'],
             'location' => self::location($country),
             'requirement' => [
@@ -138,6 +162,8 @@ final class NYSA_Core_Lead_Bridge {
                 'budgetMax' => $budget['max'],
                 'propertyTypes' => $property_types,
                 'areas' => [],
+                'readiness' => $market_stages[$interest] ?? 'not_confirmed',
+                'declaredLocation' => $country,
                 'notes' => sanitize_textarea_field($raw['message'] ?? ''),
             ],
             'consent' => [
@@ -146,13 +172,17 @@ final class NYSA_Core_Lead_Bridge {
                 'aiWhatsapp' => $ai_consent,
                 'aiEmail' => $ai_consent,
             ],
-            'sourceEvidence' => ['formVersion' => '2.0.0', 'sourceSpecific' => ['entryRoute' => 'contact_form']],
+            'sourceEvidence' => ['formVersion' => '2.1.0', 'sourceSpecific' => ['entryRoute' => 'contact_form',
+                'emailVerificationStatus' => 'format_valid', 'phoneNormalizationCountry' => $country]],
         ];
     }
 
     public static function capture_contact_saved($lead_id, $submitted): void {
         if (!is_array($submitted)) return;
         $submitted['lead_id'] = absint($lead_id);
+        if (empty($submitted['property_type']) && isset($_POST['property_type'])) {
+            $submitted['property_type'] = sanitize_key(wp_unslash($_POST['property_type']));
+        }
         $payload = self::contact_payload($submitted);
         if ($payload) self::enqueue('contact_form', $payload);
     }
@@ -189,10 +219,15 @@ final class NYSA_Core_Lead_Bridge {
         $name = trim(sanitize_text_field($raw['name'] ?? ''));
         $email = sanitize_email($raw['email'] ?? '');
         $phone = sanitize_text_field($raw['phone'] ?? '');
+        $nia_country = strtoupper(sanitize_text_field($raw['country'] ?? $raw['country_code'] ?? ''));
         $contact = sanitize_text_field($raw['contact'] ?? '');
         if (!$email && is_email($contact)) $email = $contact;
         if (!$phone && $contact && !is_email($contact)) $phone = $contact;
         if ($email && !is_email($email)) $email = '';
+        if ($phone) {
+            $normalized_phone = self::normalize_phone($phone, in_array($nia_country, ['AE', 'IN'], true) ? $nia_country : 'OTHER');
+            $phone = $normalized_phone ?: '';
+        }
         if ($name === '' || (!$email && !$phone)) return null;
         $answers = is_array($raw['answers'] ?? null) ? $raw['answers'] : [];
         if (!$answers && is_array($raw['answers_json'] ?? null)) $answers = $raw['answers_json'];
@@ -251,8 +286,12 @@ final class NYSA_Core_Lead_Bridge {
             '4' => 'Four or more bedrooms', 'land' => 'Land for a future home or development', 'open' => 'Space guidance requested',
         ]);
         $preferences = array_values(array_unique(array_merge($usage_preferences, $readiness_preferences, $land_preferences, $space_preferences)));
-        $business_type = $readiness_code === 'offplan' ? 'Off-plan' : ($readiness_code === 'ready' ? 'Sale' : 'Unconfirmed');
+        $business_type = 'Sale';
+        $market_stage = $readiness_code === 'offplan' ? 'off_plan' : ($readiness_code === 'ready' ? 'ready_secondary' : ($readiness_code === 'compare' ? 'either' : 'not_confirmed'));
+        $property_segment = $property_code === 'land' ? 'land' : (in_array($property_code, ['apartment', 'villa', 'townhouse'], true) ? 'residential' : 'not_confirmed');
         $preferred_channel = sanitize_key($raw['contact_method'] ?? '') === 'email' && $email ? 'Email' : ($phone ? 'WhatsApp' : 'Email');
+        $country = $nia_country;
+        $location = in_array($country, ['AE', 'IN'], true) ? self::location($country) : ['country' => $country ?: null, 'timeZone' => sanitize_text_field($raw['time_zone'] ?? ''), 'confirmed' => $country !== ''];
         $normalization = [
             'propertyCode' => $property_code, 'timingCode' => $timing_code, 'outcomeCode' => $outcome_code,
             'bedroomCode' => $bedroom_code, 'readinessCode' => $readiness_code,
@@ -268,8 +307,11 @@ final class NYSA_Core_Lead_Bridge {
             'intakeCompleteness' => $completed ? 'complete' : 'partial',
             'title' => 'NIA website enquiry',
             'businessType' => $business_type,
+            'customerObjective' => 'buy',
+            'marketStageRequirement' => $market_stage,
+            'propertySegmentRequirement' => $property_segment,
             'contact' => ['fullName' => $name, 'email' => $email ?: null, 'phone' => $phone ?: null, 'preferredChannel' => $preferred_channel],
-            'location' => ['country' => null, 'timeZone' => null, 'confirmed' => false],
+            'location' => $location,
             'requirement' => [
                 'purpose' => $purpose,
                 'timelineCode' => $timeline_codes[$timing_code] ?? 'to_be_confirmed',
@@ -278,6 +320,8 @@ final class NYSA_Core_Lead_Bridge {
                 'areas' => [],
                 'bedroomsMin' => $bedrooms_min,
                 'bedroomsMax' => $bedrooms_max,
+                'readiness' => $market_stage,
+                'declaredLocation' => $location['country'],
                 'notes' => sanitize_textarea_field($raw['message'] ?? ''),
             ],
             'consent' => ['marketing' => false, 'statementVersion' => self::NIA_STATEMENT, 'aiWhatsapp' => false, 'aiEmail' => false],
@@ -286,6 +330,7 @@ final class NYSA_Core_Lead_Bridge {
                 'profile' => is_array($raw['profile'] ?? null) ? $raw['profile'] : [],
                 'requirement' => is_array($raw['requirement'] ?? null) ? $raw['requirement'] : [],
                 'normalization' => $normalization,
+                'emailVerificationStatus' => $email ? 'format_valid' : 'not_supplied',
             ]],
         ];
         if ($completed) {
@@ -348,11 +393,11 @@ final class NYSA_Core_Lead_Bridge {
         }
         $code = (int) wp_remote_retrieve_response_code($result);
         $response = json_decode((string) wp_remote_retrieve_body($result), true);
-        if ($code >= 200 && $code < 300 && is_array($response) && !empty($response['leadId']) && !empty($response['followUpCaseId'])) {
+        if ($code >= 200 && $code < 300 && is_array($response) && !empty($response['journeyId']) && !empty($response['caseId'])) {
             $wpdb->update($table, [
                 'state' => 'accepted', 'attempts' => $attempts, 'response_code' => $code, 'payload' => '{}',
-                'core_lead_id' => sanitize_text_field($response['leadId']),
-                'core_case_id' => sanitize_text_field($response['followUpCaseId'] ?? ''),
+                'core_lead_id' => sanitize_text_field($response['leadId'] ?? ''),
+                'core_case_id' => sanitize_text_field($response['caseId']),
                 'safe_error' => null, 'updated_at' => current_time('mysql', true),
             ], ['id' => $id]);
             return;

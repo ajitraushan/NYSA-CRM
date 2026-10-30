@@ -6,7 +6,7 @@ const read=file=>readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('DEV245 NIA bridge maps the approved structured requirement fields',()=>{
   const plugin=read('integrations/wordpress/nysa-core-lead-bridge/nysa-core-lead-bridge.php');
-  assert.match(plugin,/Version: 1\.1\.0/);
+  assert.match(plugin,/Version: 1\.2\.0/);
   assert.match(plugin,/nia-core-bridge-1\.1\.0/);
   for(const value of ["'apartment' => 'Apartment'","'villa' => 'Villa'","'townhouse' => 'Townhouse'","'land' => 'Land'"])assert.ok(plugin.includes(value));
   for(const field of ["'purpose' => $purpose","'timelineCode' => $timeline_codes[$timing_code]","'bedroomsMin' => $bedrooms_min","'bedroomsMax' => $bedrooms_max"])assert.ok(plugin.includes(field));

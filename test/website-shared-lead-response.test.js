@@ -44,7 +44,7 @@ test('WordPress bridge signs one CORE endpoint and durably captures both contact
   assert.match(plugin,/assessment_id/);
   assert.match(plugin,/CORE_CASE_SETUP_REQUIRED/);
   assert.match(plugin,/state IN \('queued','needs_setup'\)/);
-  assert.match(plugin,/!empty\(\$response\['followUpCaseId'\]\)/);
+  assert.match(plugin,/!empty\(\$response\['journeyId'\]\) && !empty\(\$response\['caseId'\]\)/);
   assert.doesNotMatch(plugin,/admin_post_nopriv_nysa_contact_enquiry.*capture_contact/);
   assert.doesNotMatch(plugin,/my\.remapp\.ae|rem_token|send_to_rem/);
   assert.match(themePatch,/660cd1b1f407676924c4b783b56c1c208080d83e549f952a5cc73bbf21daa719/);

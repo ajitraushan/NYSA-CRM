@@ -5,7 +5,7 @@ $is_staging = str_starts_with(strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''))
 $submission_status = isset($_GET['enquiry']) ? sanitize_key(wp_unslash($_GET['enquiry'])) : '';
 $submitted = in_array($submission_status, ['received', 'staging'], true);
 $submission_message = $submission_status === 'staging'
-    ? 'The enquiry was stored securely and accepted for delivery to CRM Test. Live outreach remains disabled.'
+    ? 'The enquiry was stored securely and queued for CRM Test. Live outreach remains disabled.'
     : 'Thank you. Your enquiry has been received and an advisor will review it.';
 $errors = [];
 if ($submission_status === 'invalid') $errors[] = 'Please complete all required fields with valid details.';
@@ -24,7 +24,7 @@ require get_template_directory() . '/header.php';
     </div>
     <div class="contact-form-panel">
       <p class="contact-faq-link">Quick question? <a href="<?php echo esc_url(home_url('/faq/')); ?>">Check our FAQ first.</a></p>
-      <div class="contact-confirmation" id="contact-preview-confirmation" role="status" <?php echo $submitted ? '' : 'hidden'; ?>><strong><?php echo $is_staging ? 'Your test enquiry was accepted.' : 'Thank you for contacting NYSA.'; ?></strong><p><?php echo esc_html($submission_message); ?></p></div>
+      <div class="contact-confirmation" id="contact-preview-confirmation" role="status" <?php echo $submitted ? '' : 'hidden'; ?>><strong><?php echo $is_staging ? 'Your test enquiry was saved.' : 'Thank you for contacting NYSA.'; ?></strong><p><?php echo esc_html($submission_message); ?></p></div>
       <?php if ($errors) : ?><div class="contact-errors" role="alert"><strong>Please check the following:</strong><ul><?php foreach ($errors as $error) : ?><li><?php echo esc_html($error); ?></li><?php endforeach; ?></ul></div><?php endif; ?>
       <form class="nysa-contact-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <?php wp_nonce_field('nysa_contact_form', 'nysa_contact_nonce'); ?><input type="hidden" name="action" value="nysa_contact_enquiry">
@@ -33,9 +33,10 @@ require get_template_directory() . '/header.php';
         <div class="form-grid">
           <label><span>Name *</span><input type="text" name="name" autocomplete="name" required></label>
           <label><span>Email *</span><input type="email" name="email" autocomplete="email" required></label>
-          <label><span>Phone / WhatsApp *</span><input type="tel" name="phone" autocomplete="tel" required></label>
+          <label><span>Phone / WhatsApp *</span><input type="tel" name="phone" autocomplete="tel" inputmode="tel" required aria-describedby="nysa-phone-hint"><small id="nysa-phone-hint" data-phone-hint>Select the country, then enter a valid mobile number.</small></label>
           <label><span>Country *</span><select name="country" required><option value="">Select one</option><option value="AE">UAE</option><option value="IN">India</option><option value="OTHER">Other country</option></select></label>
-          <label><span>I’m interested in</span><select name="interest"><option value="">Select one</option><option value="off-plan">Off-plan property</option><option value="ready">Ready property</option><option value="portfolio">Portfolio review</option><option value="unsure">Not sure yet</option></select></label>
+          <label><span>Market stage *</span><select name="interest" required><option value="">Select one</option><option value="off-plan">Off-plan</option><option value="ready">Ready / secondary</option><option value="portfolio">Either ready or off-plan</option><option value="unsure">Not sure yet</option></select></label>
+          <label><span>Property type *</span><select name="property_type" required><option value="">Select one</option><option value="apartment">Apartment</option><option value="villa">Villa</option><option value="townhouse">Townhouse</option><option value="land">Land</option><option value="commercial">Commercial</option><option value="unsure">Not sure yet</option></select></label>
           <label><span>Purpose *</span><select name="purpose" required><option value="">Select one</option><option value="own_use">A home for my own use</option><option value="investment">Investment</option><option value="business">Business use</option><option value="other">Other</option></select></label>
           <label><span>Preferred timeline *</span><select name="timeline" required><option value="">Select one</option><option value="within_3_months">Within 3 months</option><option value="3_to_6_months">3–6 months</option><option value="6_to_12_months">6–12 months</option><option value="over_12_months">More than 12 months</option><option value="not_sure">Not sure yet</option></select></label>
           <label class="form-wide"><span>Approximate budget</span><input type="text" name="budget" placeholder="For example, AED 1.5M–2M"></label>
@@ -49,4 +50,17 @@ require get_template_directory() . '/header.php';
     </div>
   </section>
 </main>
+<script>
+(()=>{
+  const form=document.querySelector('.nysa-contact-form');if(!form)return;
+  const country=form.elements.country,phone=form.elements.phone,hint=form.querySelector('[data-phone-hint]');
+  const valid=()=>{const raw=phone.value.trim(),digits=raw.replace(/\D/g,'');let ok=false,message='';
+    if(country.value==='AE'){ok=/^(?:05\d{8}|9715\d{8})$/.test(digits);message='Use a UAE mobile such as 05XXXXXXXX or +9715XXXXXXXX.';}
+    else if(country.value==='IN'){ok=/^(?:[6-9]\d{9}|91[6-9]\d{9})$/.test(digits);message='Use a 10-digit Indian mobile or +91 followed by 10 digits.';}
+    else if(country.value==='OTHER'){ok=/^\+[1-9]\d{7,14}$/.test(raw.replace(/[\s()-]/g,''));message='Use the full international number beginning with + and country code.';}
+    else message='Select the country first.';
+    phone.setCustomValidity(ok?'':message);hint.textContent=ok?'Number format is valid.':message;return ok;};
+  country.addEventListener('change',valid);phone.addEventListener('input',valid);form.addEventListener('submit',event=>{if(!valid()){event.preventDefault();phone.reportValidity();}});
+})();
+</script>
 <?php require get_template_directory() . '/footer.php'; ?>

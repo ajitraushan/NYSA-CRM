@@ -1,15 +1,30 @@
 import crypto from 'node:crypto';
 import {validateBudget,normalizeDelimitedValues} from './crm-domain.js';
 
-const SINGLE_STEP_FORMS=new Set(['contact_form','contact_us','speak_to_advisor_v2','brochure_download_v2','meta_instant_form']);
+const SINGLE_STEP_FORMS=new Set(['contact_form','contact_us','contact_enquiry_v2','speak_to_advisor_v2','brochure_download_v2','meta_instant_form']);
 const OPEN_CASE_STATES=['unassigned','ai_handling','awaiting_pickup_urgent','human_owned','promoted','released','needs_attention','no_response'];
-const TERMINAL_OUTCOMES=new Set(['wrong_number','opted_out','meeting_confirmed','not_interested']);
+const TERMINAL_OUTCOMES=new Set(['wrong_number','opted_out','meeting_confirmed','not_interested','not_genuine','duplicate','spam','invalid']);
 const clean=value=>typeof value==='string'&&value.trim()?value.trim():null;
 const row=async(client,sql,params=[])=>(await client.query(sql,params)).rows[0];
 const rows=async(client,sql,params=[])=>(await client.query(sql,params)).rows;
 const uuid=()=>crypto.randomUUID();
 const problem=(message,statusCode=409,responseBody)=>{throw Object.assign(new Error(message),{statusCode,responseBody});};
 const digest=value=>crypto.createHash('sha256').update(typeof value==='string'?value:JSON.stringify(value)).digest('hex');
+
+async function validateWebIntakeClassification(selection,client){
+  const version=await row(client,`SELECT * FROM classification_catalogue_versions
+    WHERE status='active' AND effective_from<=NOW() AND (effective_to IS NULL OR effective_to>NOW())`);
+  if(!version)problem('The approved business-classification catalogue is unavailable; this write cannot continue',503);
+  const values=await rows(client,`SELECT d.dimension_code,v.stable_code FROM classification_dimensions d
+    JOIN classification_values v ON v.dimension_id=d.id WHERE d.catalogue_version_id=$1 AND v.active`,[version.id]);
+  for(const [dimensionCode,valueCode] of Object.entries({customer_objective:selection.customerObjective,market_stage:selection.marketStageRequirement,property_segment:selection.propertySegmentRequirement}))
+    if(!values.some(value=>value.dimension_code===dimensionCode&&value.stable_code===valueCode))problem(`${dimensionCode} value '${valueCode||''}' is not active in classification catalogue ${version.version_code}`,409);
+  const mapping=await row(client,`SELECT target_value_code,reason_code FROM classification_mappings
+    WHERE catalogue_version_id=$1 AND source_dimension_code='customer_objective' AND source_value_code=$2 AND target_context='derived_transaction'`,[version.id,selection.customerObjective]);
+  if(!mapping)problem(`Customer objective '${selection.customerObjective}' has no approved transaction mapping in ${version.version_code}`,409);
+  return {catalogueVersionId:version.id,classificationVersion:version.version_code,derivedTransaction:mapping.target_value_code,
+    mappingEvidence:{catalogueVersion:version.version_code,objective:selection.customerObjective,derivedTransaction:mapping.target_value_code,reasonCode:mapping.reason_code}};
+}
 
 export function webIntakeMode(sourceSystem,formId,declaredMode){
   if(declaredMode&& !['single_step','multi_step'].includes(declaredMode))problem('Invalid intake mode',400);
@@ -62,10 +77,14 @@ export function structuredIntakeSummary(payload={}){
   const propertyTypes=normalizeDelimitedValues(requirement.propertyTypes),areas=normalizeDelimitedValues(requirement.areas);
   return {
     title:clean(payload.title),businessType:clean(payload.businessType),purpose:clean(requirement.purpose),
+    customerObjective:clean(payload.customerObjective||requirement.customerObjective),
+    marketStageRequirement:clean(payload.marketStageRequirement||requirement.marketStageRequirement),
+    propertySegmentRequirement:clean(payload.propertySegmentRequirement||requirement.propertySegmentRequirement),
     propertyTypes,areas,budgetMin:budget.error?null:budget.min,budgetMax:budget.error?null:budget.max,
+    budgetBand:clean(requirement.budgetBand),
     fundingMethod:clean(requirement.fundingMethod),timelineCode:clean(requirement.timelineCode),
     bedroomsMin:requirement.bedroomsMin??null,bedroomsMax:requirement.bedroomsMax??null,
-    readiness:clean(requirement.readiness),declaredLocation:clean(requirement.declaredLocation),notes:clean(requirement.notes),
+    readiness:clean(requirement.readiness),declaredLocation:clean(requirement.declaredLocation||payload.location?.country),notes:clean(requirement.notes),
     declaredPriorities:normalizeDelimitedValues(profile.declaredPriorities),preferences:normalizeDelimitedValues(profile.preferences),
     preferredChannel:clean(payload.contact?.preferredChannel),customerTimezone:clean(payload.location?.timeZone),
     requestedCallbackAt:clean(payload.requestedCallbackAt),requestedMeetingAt:clean(payload.requestedMeetingAt),
@@ -357,23 +376,31 @@ async function createLeadAndRequirement(caseRow,journey,owner,actorId,summary,cl
   if(!journey.contact_id)problem('Resolve the customer identity before creating the Lead',409);
   const purpose=clean(summary.purpose),timeline=clean(summary.timelineCode);
   if(!['own_use','investment','business','other'].includes(purpose)||!timeline)
-    problem('The completed intake is missing a governed purpose or timing; resolve it before pickup',409,{error:'Completed intake needs attention',missingFields:intakeMissingFields(summary)});
-  const businessType=['Sale','Rental','Off-plan','Commercial','Unconfirmed'].includes(summary.businessType)?summary.businessType:'Unconfirmed';
+    problem('The intake is missing a governed purpose or timing; resolve it before confirmation',409,{error:'Intake needs attention',missingFields:intakeMissingFields(summary)});
+  const selection={customerObjective:clean(summary.customerObjective)||'not_confirmed',marketStageRequirement:clean(summary.marketStageRequirement)||'not_confirmed',
+    propertySegmentRequirement:clean(summary.propertySegmentRequirement)||'not_confirmed'};
+  const classification=await validateWebIntakeClassification(selection,client);
+  const businessType=classification.derivedTransaction==='sale'?'Sale':classification.derivedTransaction==='rental'?'Rental':'Unconfirmed';
   const budget=validateBudget(summary.budgetMin,summary.budgetMax);if(budget.error)problem(budget.error,409);
+  const classificationEvidence={...classification.mappingEvidence,source:'confirmed_web_intake',journeyId:journey.id};
   const leadId=uuid(),receivedAt=journey.completed_at||journey.last_activity_at;
-  await client.query(`INSERT INTO leads(id,contact_id,title,source,business_type,temperature,budget_min,budget_max,preferred_areas,property_requirements,
+  await client.query(`INSERT INTO leads(id,contact_id,title,source,business_type,customer_objective,market_stage_requirement,property_segment_requirement,
+    classification_version,classification_catalogue_version_id,classification_mapping_evidence,temperature,budget_min,budget_max,preferred_areas,property_requirements,
     assigned_team_id,assigned_to,assignment_status,received_at,external_source_id,campaign_code,source_page,source_form,accepted_at,created_by,campaign_id,routing_reason)
-    VALUES($1,$2,$3,$4,$5,'Unassessed',$6,$7,$8,$9,$10,$11,'assigned',$12,$13,$14,$15,$16,NOW(),$17,$18,'Picked up from WEB Intake Leads')`,[
-      leadId,journey.contact_id,summary.title||`${businessType} web enquiry`,journey.source_system==='meta'?'Social media':'Website',businessType,budget.min,budget.max,
-      summary.areas?.join(', ')||null,summary.notes||null,owner.team_id||null,owner.id,receivedAt,`web-intake:${journey.id}`,journey.source_campaign_code,
-      journey.source_account_id,journey.source_form_id,actorId,journey.campaign_id
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,'Unassessed',$12,$13,$14,$15,$16,$17,'assigned',$18,$19,$20,$21,$22,NOW(),$23,$24,'Confirmed from My Lead Queue')`,[
+      leadId,journey.contact_id,summary.title||`${businessType} web enquiry`,journey.source_system==='meta'?'Social media':'Website',businessType,
+      selection.customerObjective,selection.marketStageRequirement,selection.propertySegmentRequirement,classification.classificationVersion,
+      classification.catalogueVersionId,JSON.stringify(classificationEvidence),budget.min,budget.max,summary.areas?.join(', ')||null,summary.notes||null,
+      owner.team_id||null,owner.id,receivedAt,`web-intake:${journey.id}`,journey.source_campaign_code,journey.source_account_id,journey.source_form_id,actorId,journey.campaign_id
     ]);
   await client.query(`INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,responded_at,assigned_by)
     VALUES($1,$2,1,$3,$4,'accepted',NOW(),$5)`,[uuid(),leadId,owner.team_id||null,owner.id,actorId]);
-  await client.query(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,purpose,property_types,areas,budget_min,budget_max,
+  await client.query(`INSERT INTO lead_requirements(id,lead_id,version_no,business_line,customer_objective,market_stage_requirement,property_segment_requirement,
+    classification_version,classification_catalogue_version_id,classification_mapping_evidence,purpose,property_types,areas,budget_min,budget_max,
     funding_method,bedrooms_min,bedrooms_max,timeline_code,notes,created_by,declared_priorities,preferences,source_kind,source_event_id,requirement_fingerprint)
-    VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'website_profile',$17,$18)`,[
-      uuid(),leadId,businessType,purpose,summary.propertyTypes||[],summary.areas||[],budget.min,budget.max,
+    VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'website_profile',$23,$24)`,[
+      uuid(),leadId,businessType,selection.customerObjective,selection.marketStageRequirement,selection.propertySegmentRequirement,
+      classification.classificationVersion,classification.catalogueVersionId,JSON.stringify(classificationEvidence),purpose,summary.propertyTypes||[],summary.areas||[],budget.min,budget.max,
       ['cash','mortgage','mixed','unknown'].includes(summary.fundingMethod)?summary.fundingMethod:'unknown',summary.bedroomsMin,summary.bedroomsMax,
       timeline,summary.notes,actorId,summary.declaredPriorities||[],summary.preferences||[],journey.final_event_id,digest(summary)
     ]);
@@ -417,38 +444,36 @@ export async function pickupWebIntake(caseId,broker,client,env=process.env){
     contactId=resolved.contactId;await client.query('UPDATE web_intake_journeys SET contact_id=$2,updated_at=NOW() WHERE id=$1',[journey.id,contactId]);
     journey.contact_id=contactId;
   }
-  let lead=null,taskKind,subject,details,priority,dueInfo;
+  let taskKind,subject,details,priority,dueInfo;
   if(journey.state==='completed'){
-    lead=await createLeadAndRequirement(caseRow,journey,owner,broker.id,journey.structured_summary,client);
-    taskKind='first_contact';subject='First contact';details='Completed WEB intake. Review the structured summary and make the first personal contact.';priority=5;
+    taskKind='confirm_intake';subject='Confirm web enquiry';details='Review the completed intake, confirm it is genuine and confirm the minimum facts before creating a governed Lead.';priority=5;
     dueInfo=addLandingDelay(new Date(),15,journey.structured_summary?.customerTimezone,config);
   }else if(journey.state==='dropped_incomplete'){
     taskKind='recovery_contact';subject='Recover incomplete enquiry';details=`Continue from the saved answers. Missing: ${(journey.missing_fields||[]).join(', ')||'confirm minimum facts'}.`;priority=6;
     dueInfo=nextCustomerWindow(new Date(),journey.structured_summary?.customerTimezone||'Asia/Dubai',config.outbound_start_minute,config.outbound_end_minute);
   }else problem('In-progress journeys cannot be picked up before the 30-minute window closes',409);
   await client.query(`UPDATE lead_follow_up_cases SET fallback_owner_id=$2,picked_up_by=$2,picked_up_at=NOW(),response_owner_assigned_at=NOW(),
-    response_owner_assigned_by=$2,generation=generation+1,state='human_owned',lead_id=$3,case_kind=$4,stale_notice_due_at=$5::timestamptz+($6::int * INTERVAL '1 minute'),
-    stale_release_due_at=$5::timestamptz+(($6::int+$7::int) * INTERVAL '1 minute'),previous_owner_id=NULL,released_reason=NULL,updated_at=NOW() WHERE id=$1`,[
-      caseRow.id,owner.id,lead?.id||null,journey.state==='completed'?'completed_intake':'incomplete_recovery',dueInfo.dueAt,
+    response_owner_assigned_by=$2,generation=generation+1,state='human_owned',lead_id=NULL,case_kind=$3,stale_notice_due_at=$4::timestamptz+($5::int * INTERVAL '1 minute'),
+    stale_release_due_at=$4::timestamptz+(($5::int+$6::int) * INTERVAL '1 minute'),previous_owner_id=NULL,released_reason=NULL,updated_at=NOW() WHERE id=$1`,[
+      caseRow.id,owner.id,journey.state==='completed'?'completed_intake':'incomplete_recovery',dueInfo.dueAt,
       config.stale_notice_minutes,config.stale_release_minutes
     ]);
   await client.query("UPDATE lead_follow_up_jobs SET state='cancelled' WHERE case_id=$1 AND state IN ('waiting','queued')",[caseRow.id]);
-  const updated={...caseRow,lead_id:lead?.id||null};
+  const updated={...caseRow,lead_id:null};
   const taskId=await createPrimaryTask({caseRow:updated,ownerId:owner.id,actorId:broker.id,kind:taskKind,priority,dueAt:dueInfo.dueAt,dueBasis:'pickup',dueAtOpen:dueInfo.dueAtOpen,
-    subject,details,leadId:lead?.id||null,contactId,timeZone:journey.structured_summary?.customerTimezone},client);
-  if(lead)await client.query('UPDATE leads SET next_follow_up_at=$2 WHERE id=$1',[lead.id,dueInfo.dueAt]);
-  await writeAudit(client,'WebIntakeCase',caseRow.id,'intake_picked_up',broker.id,{journeyId:journey.id,ownerId:owner.id,leadId:lead?.id||null,taskId,generation:caseRow.generation+1});
-  return {caseId:caseRow.id,journeyId:journey.id,leadId:lead?.id||null,contactId,ownerId:owner.id,ownerName:owner.name,taskId,state:'human_owned'};
+    subject,details,leadId:null,contactId,timeZone:journey.structured_summary?.customerTimezone},client);
+  await writeAudit(client,'WebIntakeCase',caseRow.id,'intake_picked_up',broker.id,{journeyId:journey.id,ownerId:owner.id,leadId:null,taskId,generation:caseRow.generation+1});
+  return {caseId:caseRow.id,journeyId:journey.id,leadId:null,contactId,ownerId:owner.id,ownerName:owner.name,taskId,state:'human_owned'};
 }
 
-export async function promoteRecoveryCase(caseId,input,broker,client){
+export async function promoteIntakeCase(caseId,input,broker,client){
   const caseRow=await row(client,'SELECT * FROM lead_follow_up_cases WHERE id=$1 FOR UPDATE',[caseId]);
-  if(!caseRow||caseRow.case_kind!=='incomplete_recovery'||caseRow.state!=='human_owned')problem('Active recovery case not found',404);
-  if(caseRow.fallback_owner_id!==broker.id)problem('Only the recovery owner can promote this intake',403);
+  if(!caseRow||!['completed_intake','incomplete_recovery'].includes(caseRow.case_kind)||caseRow.state!=='human_owned')problem('Active intake case not found',404);
+  if(caseRow.fallback_owner_id!==broker.id)problem('Only the intake owner can confirm this intake',403);
   if(input.customerConfirmed!==true)problem('Customer confirmation is required before promotion',409);
   const journey=await row(client,'SELECT * FROM web_intake_journeys WHERE id=$1 FOR UPDATE',[caseRow.journey_id]);
   const summary={...journey.structured_summary,...input.requirement,budgetBand:clean(input.requirement?.budgetBand)};
-  const missing=intakeMissingFields(summary,'promotion');if(missing.length)problem('Minimum recovery facts are missing',409,{error:'Minimum recovery facts are missing',missingFields:missing});
+  const missing=intakeMissingFields(summary,'promotion');if(missing.length)problem('Minimum intake facts are missing',409,{error:'Minimum intake facts are missing',missingFields:missing});
   const owner=await pickupOwner(broker.id,client),lead=await createLeadAndRequirement(caseRow,journey,owner,broker.id,summary,client);
   const current=await row(client,`UPDATE tasks SET status='completed',outcome='promoted',outcome_at=NOW(),completed_at=NOW(),updated_at=NOW()
     WHERE follow_up_case_id=$1 AND is_primary_next_action AND status IN ('open','in_progress') RETURNING id`,[caseRow.id]);
@@ -457,27 +482,30 @@ export async function promoteRecoveryCase(caseId,input,broker,client){
   await client.query(`UPDATE lead_follow_up_cases SET lead_id=$2,state='promoted',promoted_at=NOW(),last_contact_attempt_at=NOW(),updated_at=NOW() WHERE id=$1`,[caseRow.id,lead.id]);
   const config=await currentConfiguration(client),dueInfo=addLandingDelay(new Date(),24*60,summary.customerTimezone,config),updated={...caseRow,lead_id:lead.id};
   const taskId=await createPrimaryTask({caseRow:updated,ownerId:broker.id,actorId:broker.id,kind:'qualify_lead',priority:8,dueAt:dueInfo.dueAt,dueBasis:'promotion',dueAtOpen:dueInfo.dueAtOpen,
-    subject:'Qualify Lead',details:'Recovery confirmed and promoted. Review Requirement Version 1 and confirm any remaining unknown facts.',leadId:lead.id,contactId:journey.contact_id,
+    subject:'Qualify Lead',details:'The intake was confirmed and promoted. Review Requirement Version 1 and confirm any remaining unknown facts.',leadId:lead.id,contactId:journey.contact_id,
     timeZone:summary.customerTimezone},client);
-  await writeAudit(client,'WebIntakeCase',caseRow.id,'recovery_promoted',broker.id,{journeyId:journey.id,leadId:lead.id,taskId});
+  await writeAudit(client,'WebIntakeCase',caseRow.id,'intake_confirmed_and_promoted',broker.id,{journeyId:journey.id,leadId:lead.id,taskId});
   return {caseId:caseRow.id,leadId:lead.id,taskId,state:'promoted'};
 }
+
+export const promoteRecoveryCase=promoteIntakeCase;
 
 export async function recordWebIntakeTaskOutcome(taskId,input,broker,client){
   const task=await row(client,`SELECT t.*,c.fallback_owner_id,c.state AS case_state,c.generation,c.lead_id AS case_lead_id,c.journey_id
     FROM tasks t JOIN lead_follow_up_cases c ON c.id=t.follow_up_case_id WHERE t.id=$1 FOR UPDATE OF t,c`,[taskId]);
   if(!task||!task.is_primary_next_action||!['open','in_progress'].includes(task.status))problem('Open WEB intake task not found',404);
   if(task.fallback_owner_id!==broker.id)problem('Only the assigned owner can record this outcome',403);
-  const allowed=['contacted','no_answer','left_message','wrong_number','opted_out','meeting_confirmed','callback_rescheduled','not_interested'];
+  const allowed=['contacted','no_answer','left_message','wrong_number','opted_out','meeting_confirmed','callback_rescheduled','not_interested','not_genuine','duplicate','spam','invalid'];
   if(!allowed.includes(input.outcome))problem('Choose a governed contact outcome',400);
   await client.query(`UPDATE tasks SET status='completed',outcome=$2,outcome_at=NOW(),completed_at=NOW(),updated_at=NOW() WHERE id=$1`,[task.id,input.outcome]);
   const attemptId=uuid();await client.query(`INSERT INTO web_intake_contact_attempts(id,case_id,task_id,actor_id,outcome,notes)
     VALUES($1,$2,$3,$4,$5,$6)`,[attemptId,task.follow_up_case_id,task.id,broker.id,input.outcome,clean(input.notes)]);
   await client.query('UPDATE lead_follow_up_cases SET last_contact_attempt_at=NOW(),stale_notice_due_at=NULL,stale_notified_at=NULL,stale_release_due_at=NULL,updated_at=NOW() WHERE id=$1',[task.follow_up_case_id]);
   let successorTaskId=null,nextState=task.case_state;
-  if(['wrong_number','opted_out','not_interested'].includes(input.outcome)){
-    nextState='closed';await client.query(`UPDATE lead_follow_up_cases SET state='closed',close_outcome=$2,updated_at=NOW() WHERE id=$1`,[
-      task.follow_up_case_id,input.outcome==='wrong_number'?'wrong_person':input.outcome]);
+  if(['wrong_number','opted_out','not_interested','not_genuine','duplicate','spam','invalid'].includes(input.outcome)){
+    const closeOutcome=input.outcome==='wrong_number'?'wrong_person':input.outcome;
+    nextState='closed';await client.query(`UPDATE lead_follow_up_cases SET state='closed',close_outcome=$2,closed_at=NOW(),closed_by=$3,updated_at=NOW() WHERE id=$1`,[
+      task.follow_up_case_id,closeOutcome,broker.id]);
   }else if(input.outcome==='meeting_confirmed'){
     nextState='human_owned';
   }else{
@@ -574,22 +602,23 @@ export async function listWebIntakeDesk(broker,filters,client){
   const role=broker?.role==='admin'?'admin':broker?.role==='internal_broker'?broker.jobRole:null;
   if(!['admin','sales_agent','manager'].includes(role))problem('WEB Intake Leads access required',403);
   const view=clean(filters.view)||'all',source=clean(filters.source)||'all',campaign=clean(filters.campaign)||'all';
-  const allowedViews=['all','in_progress','dropped','completed','assigned','needs_attention','escalated','released'];
+  const allowedViews=['all','in_progress','dropped','completed','assigned','needs_attention','escalated','released','closed'];
   if(!allowedViews.includes(view)||!['all','contact_form','nia','meta','other'].includes(source))problem('Invalid WEB intake filter',400);
   const data=await rows(client,`WITH latest AS (
     SELECT DISTINCT ON (j.chain_root_journey_id) j.*,c.state AS case_state,c.case_kind,c.fallback_owner_id,c.escalation_due_at,c.escalated_at,c.lead_id,
-      c.requested_callback_at,c.requested_meeting_at,
+      c.requested_callback_at,c.requested_meeting_at,c.close_outcome,c.closed_at,c.closed_by,
       c.previous_owner_id,c.next_action_task_id,p.masked_name,p.masked_email,p.masked_phone,p.match_confidence,b.name AS owner_name,t.subject AS next_action,t.due_at
     FROM web_intake_journeys j JOIN web_intake_provisional_identities p ON p.id=j.provisional_identity_id
     LEFT JOIN lead_follow_up_cases c ON c.id=j.follow_up_case_id LEFT JOIN brokers b ON b.id=c.fallback_owner_id LEFT JOIN tasks t ON t.id=c.next_action_task_id
     ORDER BY j.chain_root_journey_id,j.started_at DESC,j.id
   ) SELECT * FROM latest WHERE
-    ($1='all' OR ($1='in_progress' AND state='in_progress') OR ($1='dropped' AND state='dropped_incomplete') OR
+    (($1='all' AND fallback_owner_id IS NULL AND COALESCE(case_state,'unassigned') NOT IN ('closed','complete','promoted','no_response')) OR ($1='in_progress' AND state='in_progress') OR ($1='dropped' AND state='dropped_incomplete') OR
      ($1='completed' AND state='completed' AND case_state='unassigned') OR ($1='assigned' AND fallback_owner_id IS NOT NULL) OR
-     ($1='needs_attention' AND case_state='needs_attention') OR ($1='escalated' AND escalated_at IS NOT NULL) OR ($1='released' AND case_state='released'))
+     ($1='needs_attention' AND case_state='needs_attention') OR ($1='escalated' AND escalated_at IS NOT NULL) OR ($1='released' AND case_state='released') OR
+     ($1='closed' AND case_state IN ('closed','complete','no_response')))
     AND ($2='all' OR ($2='meta' AND source_system='meta') OR ($2='nia' AND source_form_id LIKE 'ai_%') OR
-      ($2='contact_form' AND source_form_id IN ('contact_form','contact_us','speak_to_advisor_v2','brochure_download_v2')) OR
-      ($2='other' AND source_system<>'meta' AND source_form_id NOT LIKE 'ai_%' AND source_form_id NOT IN ('contact_form','contact_us','speak_to_advisor_v2','brochure_download_v2')))
+      ($2='contact_form' AND source_form_id IN ('contact_form','contact_us','contact_enquiry_v2','speak_to_advisor_v2','brochure_download_v2')) OR
+      ($2='other' AND source_system<>'meta' AND source_form_id NOT LIKE 'ai_%' AND source_form_id NOT IN ('contact_form','contact_us','contact_enquiry_v2','speak_to_advisor_v2','brochure_download_v2')))
     AND ($3='all' OR ($3='none' AND source_campaign_code IS NULL) OR ($3='unmapped' AND campaign_mapping_status='unmapped') OR campaign_id::text=$3)
     ORDER BY CASE WHEN requested_meeting_at IS NOT NULL THEN 1 WHEN requested_callback_at IS NOT NULL THEN 2 WHEN escalated_at IS NOT NULL THEN 3 ELSE 4 END,
       COALESCE(due_at,escalation_due_at,last_activity_at),id LIMIT 200`,[view,source,campaign]);
@@ -601,7 +630,7 @@ export async function listMyWebIntakeQueue(broker,filter,client){
   const view=clean(filter)||'active';if(!['active','due_today','overdue','recovery','no_response','closed'].includes(view))problem('Invalid queue filter',400);
   return rows(client,`SELECT c.id AS case_id,c.case_kind,c.state,c.lead_id,c.journey_id,j.source_system,j.source_form_id,j.source_campaign_code,
     j.structured_summary,j.missing_fields,p.masked_name,p.masked_email,p.masked_phone,t.id AS task_id,t.subject AS next_action,t.due_at,t.status AS task_status,
-    t.landing_priority,t.attempt_number,c.last_contact_attempt_at
+    t.landing_priority,t.attempt_number,c.last_contact_attempt_at,c.close_outcome,c.closed_at,c.closed_by
     FROM lead_follow_up_cases c JOIN web_intake_journeys j ON j.id=c.journey_id JOIN web_intake_provisional_identities p ON p.id=j.provisional_identity_id
     LEFT JOIN tasks t ON t.id=c.next_action_task_id WHERE c.fallback_owner_id=$1 AND
       ($2='active' AND c.state NOT IN ('closed','complete') OR $2='due_today' AND t.due_at::date=(NOW() AT TIME ZONE 'Asia/Dubai')::date OR

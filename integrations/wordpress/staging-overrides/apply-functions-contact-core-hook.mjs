@@ -17,27 +17,27 @@ const replaceOnce=(pattern,replacement,label)=>{
 
 replaceOnce(
   /(\s*\$interest = sanitize_key\(wp_unslash\(\$_POST\['interest'\] \?\? ''\)\);\r?\n\s*\$budget = trim\(sanitize_text_field\(wp_unslash\(\$_POST\['budget'\] \?\? ''\)\)\);)/,
-  `$1\n    $country = strtoupper(trim(sanitize_text_field(wp_unslash($_POST['country'] ?? ''))));\n    $purpose = sanitize_key(wp_unslash($_POST['purpose'] ?? ''));\n    $timeline = sanitize_key(wp_unslash($_POST['timeline'] ?? ''));`,
+  `$1\n    $country = strtoupper(trim(sanitize_text_field(wp_unslash($_POST['country'] ?? ''))));\n    $property_type = sanitize_key(wp_unslash($_POST['property_type'] ?? ''));\n    $purpose = sanitize_key(wp_unslash($_POST['purpose'] ?? ''));\n    $timeline = sanitize_key(wp_unslash($_POST['timeline'] ?? ''));`,
   'guard fields'
 );
 replaceOnce(
   /(\s*&& in_array\(\$interest, \['', 'off-plan', 'ready', 'portfolio', 'unsure'\], true\))/,
-  `$1\n        && in_array($country, ['AE', 'IN', 'OTHER'], true)\n        && in_array($purpose, ['own_use', 'investment', 'business', 'other'], true)\n        && in_array($timeline, ['within_3_months', '3_to_6_months', '6_to_12_months', 'over_12_months', 'not_sure'], true)`,
+  `\n        && in_array($interest, ['off-plan', 'ready', 'portfolio', 'unsure'], true)\n        && in_array($property_type, ['apartment', 'villa', 'townhouse', 'land', 'commercial', 'unsure'], true)\n        && in_array($country, ['AE', 'IN', 'OTHER'], true)\n        && in_array($purpose, ['own_use', 'investment', 'business', 'other'], true)\n        && in_array($timeline, ['within_3_months', '3_to_6_months', '6_to_12_months', 'over_12_months', 'not_sure'], true)`,
   'guard allowlists'
 );
 replaceOnce(
   /(\s*\$interest = sanitize_key\(wp_unslash\(\$_POST\['interest'\] \?\? ''\)\);\r?\n\s*\$budget = sanitize_text_field\(wp_unslash\(\$_POST\['budget'\] \?\? ''\)\);)/,
-  `$1\n    $country = strtoupper(sanitize_text_field(wp_unslash($_POST['country'] ?? '')));\n    $purpose = sanitize_key(wp_unslash($_POST['purpose'] ?? ''));\n    $timeline = sanitize_key(wp_unslash($_POST['timeline'] ?? ''));\n    $ai_assisted_contact = !empty($_POST['ai_assisted_contact']);`,
+  `$1\n    $country = strtoupper(sanitize_text_field(wp_unslash($_POST['country'] ?? '')));\n    $property_type = sanitize_key(wp_unslash($_POST['property_type'] ?? ''));\n    $purpose = sanitize_key(wp_unslash($_POST['purpose'] ?? ''));\n    $timeline = sanitize_key(wp_unslash($_POST['timeline'] ?? ''));\n    $ai_assisted_contact = !empty($_POST['ai_assisted_contact']);`,
   'handler fields'
 );
 replaceOnce(
   /(\s*update_post_meta\(\$lead_id, '_nysa_budget', \$budget\);)/,
-  `$1\n    update_post_meta($lead_id, '_nysa_country', $country);\n    update_post_meta($lead_id, '_nysa_purpose', $purpose);\n    update_post_meta($lead_id, '_nysa_timeline', $timeline);\n    update_post_meta($lead_id, '_nysa_ai_assisted_contact', $ai_assisted_contact ? '1' : '0');`,
+  `$1\n    update_post_meta($lead_id, '_nysa_country', $country);\n    update_post_meta($lead_id, '_nysa_property_type', $property_type);\n    update_post_meta($lead_id, '_nysa_purpose', $purpose);\n    update_post_meta($lead_id, '_nysa_timeline', $timeline);\n    update_post_meta($lead_id, '_nysa_ai_assisted_contact', $ai_assisted_contact ? '1' : '0');`,
   'contact metadata'
 );
 replaceOnce(
   /(\s*update_post_meta\(\$lead_id, '_nysa_source_host', sanitize_text_field\(\$host\)\);)/,
-  `$1\n\n    do_action('nysa_contact_lead_saved', $lead_id, [\n        'name' => $name, 'email' => $email, 'phone' => $phone, 'interest' => $interest,\n        'budget' => $budget, 'message' => $message, 'country' => $country,\n        'purpose' => $purpose, 'timeline' => $timeline,\n        'ai_assisted_contact' => $ai_assisted_contact, 'source_host' => $host,\n    ]);`,
+  `$1\n\n    do_action('nysa_contact_lead_saved', $lead_id, [\n        'name' => $name, 'email' => $email, 'phone' => $phone, 'interest' => $interest,\n        'property_type' => $property_type, 'budget' => $budget, 'message' => $message, 'country' => $country,\n        'purpose' => $purpose, 'timeline' => $timeline,\n        'ai_assisted_contact' => $ai_assisted_contact, 'source_host' => $host,\n    ]);`,
   'post-save CORE hook'
 );
 

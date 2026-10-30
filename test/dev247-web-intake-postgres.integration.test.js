@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
 import {
-  pickupWebIntake,promoteRecoveryCase,reconcileWebIntake,recordWebIntakeJourney,recordWebIntakeTaskOutcome
+  listWebIntakeDesk,pickupWebIntake,promoteRecoveryCase,reconcileWebIntake,recordWebIntakeJourney,recordWebIntakeTaskOutcome
 } from '../src/web-intake-workflow.js';
 
 const enabled=process.env.NYSA_WEB_INTAKE_DB_TEST==='local-synthetic';
@@ -64,8 +64,9 @@ test('Phase 1 WEB intake lifecycle on the guarded PostgreSQL fixture',{skip:!ena
     assert.equal((await client.query('SELECT COUNT(*)::int AS n FROM web_intake_contact_attempts WHERE case_id=$1',[dropped.id])).rows[0].n,2);
     assert.equal((await client.query("SELECT COUNT(*)::int AS n FROM tasks WHERE follow_up_case_id=$1 AND is_primary_next_action AND status='open'",[dropped.id])).rows[0].n,1);
 
-    const completeEventId=uuid(),completePayload={...payload,eventId:`synthetic-complete-${uuid()}`,form:'contact_form',intakeMode:'single_step',
+    const completeEventId=uuid(),completePayload={...payload,eventId:`synthetic-complete-${uuid()}`,form:'contact_enquiry_v2',intakeMode:'single_step',
       intakeCompleteness:'complete',journeyKey:`synthetic-complete-journey-${uuid()}`,
+      customerObjective:'buy',marketStageRequirement:'ready_secondary',propertySegmentRequirement:'residential',
       contact:{fullName:'Synthetic Completed Customer',email:'synthetic-completed@example.invalid',phone:'+971500000098',preferredChannel:'Phone'},
       requirement:{purpose:'own_use',propertyTypes:['Apartment'],areas:['Synthetic Community'],budgetMin:1000000,budgetMax:1400000,
         fundingMethod:'mortgage',timelineCode:'3_6_months',bedroomsMin:2,bedroomsMax:3,readiness:'ready'}};
@@ -76,12 +77,17 @@ test('Phase 1 WEB intake lifecycle on the guarded PostgreSQL fixture',{skip:!ena
       actorId:ids.actor},client,secrets);
     assert.equal(completed.status,'completed_unassigned');assert.equal(completed.leadId,null);
     assert.equal((await client.query("SELECT COUNT(*)::int AS n FROM leads WHERE external_source_id=$1",[`web-intake:${completed.journeyId}`])).rows[0].n,0);
-    const completedPickup=await pickupWebIntake(completed.caseId,broker,client,secrets);assert.ok(completedPickup.leadId);
+    const completedPickup=await pickupWebIntake(completed.caseId,broker,client,secrets);assert.equal(completedPickup.leadId,null);
+    assert.equal((await client.query("SELECT COUNT(*)::int AS n FROM leads WHERE external_source_id=$1",[`web-intake:${completed.journeyId}`])).rows[0].n,0);
+    assert.equal((await listWebIntakeDesk(broker,{view:'all',source:'all',campaign:'all'},client)).some(item=>item.follow_up_case_id===completed.caseId),false);
+    assert.equal((await listWebIntakeDesk(broker,{view:'assigned',source:'all',campaign:'all'},client)).some(item=>item.follow_up_case_id===completed.caseId),true);
+    const completedPromotion=await promoteRecoveryCase(completed.caseId,{customerConfirmed:true,requirement:completePayload.requirement},broker,client);
+    assert.ok(completedPromotion.leadId);
     const completedRequirement=(await client.query(`SELECT purpose,property_types,areas,bedrooms_min,bedrooms_max,timeline_code,funding_method
-      FROM lead_requirements WHERE lead_id=$1`,[completedPickup.leadId])).rows[0];
+      FROM lead_requirements WHERE lead_id=$1`,[completedPromotion.leadId])).rows[0];
     assert.deepEqual(completedRequirement,{purpose:'own_use',property_types:['Apartment'],areas:['Synthetic Community'],bedrooms_min:'2',bedrooms_max:'3',
       timeline_code:'3_6_months',funding_method:'mortgage'});
-    await client.query("UPDATE lead_follow_up_cases SET stale_notice_due_at=NOW()-INTERVAL '1 minute',stale_release_due_at=NOW()+INTERVAL '30 minutes' WHERE id=$1",[completed.caseId]);
+    await client.query("UPDATE lead_follow_up_cases SET last_contact_attempt_at=NULL,stale_notice_due_at=NOW()-INTERVAL '1 minute',stale_release_due_at=NOW()+INTERVAL '30 minutes' WHERE id=$1",[completed.caseId]);
     const notified=await reconcileWebIntake({actorId:ids.actor},client);assert.equal(notified.staleNotified,1);
     const notices=(await client.query("SELECT assignee_id,task_kind FROM tasks WHERE follow_up_case_id=$1 AND task_kind IN ('stale_owner_notice','intake_escalation')",[completed.caseId])).rows;
     assert.ok(notices.some(item=>item.assignee_id===ids.owner&&item.task_kind==='stale_owner_notice'));
@@ -90,6 +96,19 @@ test('Phase 1 WEB intake lifecycle on the guarded PostgreSQL fixture',{skip:!ena
     const released=await reconcileWebIntake({actorId:ids.actor},client);assert.equal(released.released,1);
     assert.deepEqual((await client.query('SELECT state,fallback_owner_id,previous_owner_id FROM lead_follow_up_cases WHERE id=$1',[completed.caseId])).rows[0],
       {state:'released',fallback_owner_id:null,previous_owner_id:ids.owner});
+
+    const invalidEventId=uuid(),invalidPayload={...completePayload,eventId:`synthetic-invalid-${uuid()}`,journeyKey:`synthetic-invalid-journey-${uuid()}`,
+      contact:{...completePayload.contact,email:'synthetic-invalid@example.invalid',phone:'+971500000097'}};
+    await client.query(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload)
+      VALUES($1,$2,$3,'processing',$4::jsonb)`,[invalidEventId,invalidPayload.eventId,'c'.repeat(64),JSON.stringify(invalidPayload)]);
+    const invalid=await recordWebIntakeJourney({event:{id:invalidEventId,eventId:invalidPayload.eventId,receivedAt:new Date(),payloadHash:'c'.repeat(64)},
+      payload:invalidPayload,identity:{email:invalidPayload.contact.email,phone:invalidPayload.contact.phone,emailStatus:'format_valid',phoneStatus:'format_valid'},
+      actorId:ids.actor},client,secrets);
+    const invalidPickup=await pickupWebIntake(invalid.caseId,broker,client,secrets);
+    const closed=await recordWebIntakeTaskOutcome(invalidPickup.taskId,{outcome:'not_genuine',notes:'Synthetic closure evidence'},broker,client);
+    assert.equal(closed.state,'closed');
+    const closedHistory=await listWebIntakeDesk(broker,{view:'closed',source:'contact_form',campaign:'all'},client);
+    assert.ok(closedHistory.some(item=>item.follow_up_case_id===invalid.caseId&&item.close_outcome==='not_genuine'&&item.closed_at));
     await client.query('ROLLBACK');
   }catch(error){
     await client.query('ROLLBACK').catch(()=>{});throw error;
