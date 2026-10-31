@@ -5,6 +5,7 @@
 - User review found the Customers Action column collapsing into individual characters in deployed DEV251. Earlier page-overflow checks did not detect control wrapping. Scope: audit table/card/drill-down column sizing across working screens and correct presentation only; preserve workflows, APIs, data and permissions.
 - Source baseline: DEV251 runtime `8f722679c92eabcd2efb6cef824d5225b28dbcf4`; preparation evidence `629bfa66b47e83ea8e39cfefd913cebfe66ab330`. Development branch `codex/dev252-ui-column-review`; clean checkout before this correction. CRM Test rollback archive SHA-256 `749f077d323d846c9e468aafe5ef31f1d215eed9afdde98baca9c8bc5e12178a`, migration 159. Existing verified encrypted recovery remains in the approved recovery folder; refresh before a new hosted deployment.
 - Production is explicitly on HOLD. Website companion is selected for eventual inclusion but not activated. This layout correction supersedes DEV251's prior visual acceptance; do not request production approval until corrected layout checks pass.
+- Follow-up user scope includes the populated assignment queue in a full-window layout, all-screen scrolling, modal Close/return and mobile checks. Revised DEV252 source starts from `c179ed8221eafabcf2681c247838264fd6dac5f3`; the earlier undeployed DEV252 package is superseded. CRM Test remains DEV251, migration 159, with the rollback point above. No database or configuration operation is needed for these presentation changes.
 
 ## UI-001 and production readiness candidate — 31 October 2026
 

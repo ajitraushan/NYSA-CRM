@@ -77,6 +77,23 @@ body:has(#app.shell-layout) .ui-listing-step{border:0;padding:16px 0;width:100%;
 body:has(#app.shell-layout) .ui-listing-step legend{font:600 20px/1.3 'GFS Baskerville',Georgia,serif!important;padding:0 0 16px}
 body:has(#app.shell-layout) #view :is(.stat-card strong,.stat-card b){font:600 20px/1.3 Inter,sans-serif!important}
 body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) button[data-flow-step] small{color:#14232c!important}
+/* Assignment is a working queue: use the viewport and scroll the table locally. */
+body:has(#app.shell-layout) .overlay:has(>.assignment-table-modal){padding:0;overflow:hidden}
+body:has(#app.shell-layout) .modal.assignment-table-modal{width:100%;max-width:none;height:100dvh;max-height:100dvh;min-height:0;margin:0;border-radius:0;display:flex;flex-direction:column;overflow:auto}
+body:has(#app.shell-layout) .assignment-table-modal>.assignment-table-wrap{flex:1 0 240px;max-height:none;min-height:240px;overflow:auto}
+body:has(#app.shell-layout) .assignment-table{min-width:1400px;table-layout:fixed}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(1){width:48px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(2){width:180px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(3){width:360px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(4){width:200px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(5){width:200px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(6){width:100px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(7){width:180px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(8){width:128px;min-width:128px;padding:12px}
+body:has(#app.shell-layout) .assignment-table :is(th,td){padding:12px}
+body:has(#app.shell-layout) .assignment-table .assignment-sla{white-space:nowrap}
+body:has(#app.shell-layout) .assignment-table-modal>.close-x{align-self:flex-end;width:auto;flex:none}
+body:has(#app.shell-layout) .assignment-table [data-assign-one]{white-space:nowrap;min-width:76px}
 body:has(#app.shell-layout) [hidden]{display:none!important}
 @media(max-width:1100px){body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.web-intake-summary){grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.form-grid,.kv-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){body:has(#app.shell-layout) main{padding:16px}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.form-grid,.kv-grid,.web-intake-summary){grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) [class*="span"]{grid-column:auto}body:has(#app.shell-layout) .modal{padding:16px;width:100%;max-width:100%}body:has(#app.shell-layout) .ui-page-head{display:block}body:has(#app.shell-layout) header{flex-wrap:wrap;height:auto;gap:8px}}

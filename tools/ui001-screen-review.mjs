@@ -14,6 +14,8 @@ if(url.pathname==='/api/crm/my-lead-queue')data.items=[{case_id:'synthetic-case'
 if(url.pathname==='/api/crm/tasks')data.tasks=[{id:'synthetic-task',isPrimaryNextAction:true,taskType:'web_intake',taskKind:'confirm_intake',intakeSourceSystem:'website',intakeSourceFormId:'ai_property_selection_v1',subject:'Confirm enquiry',details:'Confirm the customer requirement.',contactName:'Synthetic Customer',leadTitle:'Website enquiry',status:'open',priority:'high',dueAt:'2026-10-31T09:00:00Z',assigneeId:actor.id}];
 if(url.pathname==='/api/crm/contacts')data.contacts=[{id:'synthetic-customer',fullName:'Synthetic Customer Full Name',email:'synthetic@example.test',phone:'+971500000123',kycStatus:'unverified',duplicateReviewStatus:'not_required',leadCount:1}];
 if(url.pathname==='/api/crm/leads')data.leads=[lead];
+if(url.pathname==='/api/crm/teams')data.teams=[{id:'synthetic-team',name:'Synthetic Secondary Sales Team'}];
+if(url.pathname==='/api/crm/assignment-queue')data={leads:Array.from({length:40},(_,i)=>({...lead,id:'synthetic-queue-'+i,contactName:'Synthetic Customer '+i,leadReference:'SYNTHETIC-LD-'+i,title:'Synthetic enquiry for a two bedroom apartment with amenities',assignedTeamId:'synthetic-team',teamName:'Synthetic Secondary Sales Team',campaignCode:'SYNTHETIC_CAMPAIGN',queueWaitSeconds:60000+i,slaDeadline:'2026-10-30T09:00:00Z'})),staff:[{id:'synthetic-agent',name:'Synthetic Agent',jobRole:'sales_agent',teamIds:['synthetic-team'],openLeadCount:1}]};
 if(url.pathname==='/api/crm/leads/synthetic-lead')data={lead,activities:[],stageHistory:[],canWrite:actor.jobRole!=='director',qualificationGuidance:{}};
 if(url.pathname.endsWith('/operating-context'))data={steps:[],requirement:null,qualification:null,currentOpportunity:null};
 if(url.pathname==='/api/crm/opportunities')data.opportunities=[{id:'synthetic-opportunity',opportunityReference:'SYNTHETIC-OP-001',title:'Synthetic opportunity',contactName:'Synthetic Customer',leadTitle:lead.title,transactionType:'Sale',requirementVersion:1,ownerName:actor.name,stage:'Closed Won',nextAction:'Historic action',nextActionDueAt:'2026-10-30T08:00:00Z'}];
@@ -31,35 +33,50 @@ async function capture(page,name,selector='#view'){
   fontViolations:[...el.querySelectorAll('*')].filter(x=>x.getClientRects().length&&[...x.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&![12,14,16,20,28].includes(parseFloat(getComputedStyle(x).fontSize))).slice(0,25).map(x=>({tag:x.tagName,css:x.className,size:getComputedStyle(x).fontSize,text:x.textContent.slice(0,50)}))
  }));
  const accessibility=await page.evaluate(async selector=>{const result=await axe.run(document.querySelector(selector),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));},selector);
+ const scrollChecks=await page.$eval(selector,root=>[...new Set([root,...root.querySelectorAll('*'),root.closest('main,.overlay')].filter(Boolean))].filter(el=>el.clientHeight>0&&el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)).map(el=>{const prior=el.scrollTop;el.scrollTop=el.scrollHeight;const bottom=el.scrollTop;el.scrollTop=0;const top=el.scrollTop;el.scrollTop=prior;return{element:el.id||el.className,bottomReached:bottom>0,topReached:top===0,restored:el.scrollTop===prior};}));
+ assert.ok(scrollChecks.every(check=>check.bottomReached&&check.topReached&&check.restored),name+' scroll and return position');
  const responsive=[];
  for(const width of[2684,1920,1280,768,390]){await page.setViewport({width,height:900});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));const layout=await page.evaluate(selector=>({overflow:document.documentElement.scrollWidth>innerWidth||document.querySelector(selector).scrollWidth>document.querySelector(selector).clientWidth+1,overflowingNodes:[...document.querySelector(selector).querySelectorAll('*')].filter(e=>e.getClientRects().length&&!e.closest('details:not([open]),.pipeline-table-wrap,.table-wrap')&&e.getBoundingClientRect().right>document.querySelector(selector).getBoundingClientRect().right+1).slice(0,12).map(e=>({tag:e.tagName,id:e.id,css:e.className,width:e.getBoundingClientRect().width,text:e.textContent.slice(0,60)})),collapsedActions:[...document.querySelector(selector).querySelectorAll('td button,td a.btn')].filter(e=>e.getClientRects().length&&!e.closest('details:not([open])')&&(e.clientHeight-parseFloat(getComputedStyle(e).paddingTop)-parseFloat(getComputedStyle(e).paddingBottom))/parseFloat(getComputedStyle(e).lineHeight)>3.2).map(e=>({label:e.textContent.trim(),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height}))}),selector);await page.screenshot({path:path.join(out,name+'-'+width+'.png'),fullPage:true});responsive.push({width,...layout});}
- await page.setViewport({width:1280,height:900});return{name,...state,accessibility,responsive};
+ await page.setViewport({width:1280,height:900});return{name,...state,accessibility,responsive,scrollChecks};
 }
 const report=[],drilldowns=[];
 try{
  const page=await browser.newPage();page.on('pageerror',error=>errors.push(String(error)));await page.setViewport({width:1280,height:900});
  const endpoint='http://127.0.0.1:'+server.address().port;
  await page.goto(endpoint,{waitUntil:'networkidle0'});await page.addScriptTag({path:'node_modules/axe-core/axe.min.js'});
-const screens=extended?[]:['dashboard','incomingLeads','leadResponse','crm','tasks','diary','customers','listings','opportunities','myPayoutAdvice','externalListings','myLeave','marketingCompliance','purchasedDataImport','leadRecord','opportunityRecord'];
+const screens=(extended||process.argv.includes('--queue-only'))?[]:['dashboard','incomingLeads','leadResponse','crm','tasks','diary','customers','listings','opportunities','myPayoutAdvice','externalListings','myLeave','marketingCompliance','purchasedDataImport','leadRecord','opportunityRecord'];
  for(const tab of screens){try{
   await page.evaluate(tab=>tab==='leadRecord'?openLead('synthetic-lead'):tab==='opportunityRecord'?openOpportunityDetail('synthetic-opportunity'):switchTab(tab),tab);
   await page.waitForNetworkIdle({idleTime:50,timeout:10000});report.push(await capture(page,tab));
   if(!before&&tab==='tasks'){assert.equal(await page.$('[data-task-complete]'),null);await page.click('[data-primary-task-outcome]');await page.waitForSelector('[data-outcome-form]');assert.equal(await page.$eval('[data-outcome-form] select',el=>el.required),true);}
  }catch(error){report.push({name:tab,error:error.stack});}}
  if(!before&&!extended){
-  for(const step of['inventory','viewing','offer','negotiation','booking','deal']){try{
+  for(const step of(process.argv.includes('--queue-only')?[]:['inventory','viewing','offer','negotiation','booking','deal'])){try{
    await page.click(`[data-flow-step="${step}"]`);await page.waitForSelector('.opportunity-stage-page:not([hidden])');await page.waitForNetworkIdle({idleTime:50,timeout:10000});report.push(await capture(page,'opportunity-stage-'+step,'.opportunity-stage-page:not([hidden])'));await page.click('.opportunity-stage-page:not([hidden]) [data-stage-back]');
   }catch(error){report.push({name:'opportunity-stage-'+step,error:error.stack});}}
   for(const role of['manager','director']){
    actor.jobRole=role;await page.goto(endpoint,{waitUntil:'networkidle0'});await page.addScriptTag({path:'node_modules/axe-core/axe.min.js'});
-   for(const view of role==='director'?['Executive','Sales','Inventory','Operations and Risk']:[null]){try{
+   await page.evaluate(()=>openAssignmentQueue());await page.waitForSelector('.assignment-table-modal');
+   const queueChecks=[];
+   for(const width of[2684,1920,1280,768,390]){
+    await page.setViewport({width,height:900});
+    const check=await page.evaluate(()=>{const modal=document.querySelector('.assignment-table-modal'),table=modal.querySelector('.assignment-table-wrap'),button=modal.querySelector('[data-assign-one]'),box=modal.getBoundingClientRect();table.scrollTop=table.scrollHeight;table.scrollLeft=table.scrollWidth;const scrolled=table.scrollTop>0;table.scrollTop=0;table.scrollLeft=0;return{width:innerWidth,fullWindow:Math.abs(box.width-innerWidth)<2&&Math.abs(box.height-innerHeight)<2,scrolled,buttonWidth:button.getBoundingClientRect().width,buttonHeight:button.getBoundingClientRect().height,pageOverflow:document.documentElement.scrollWidth>innerWidth};});
+    assert.ok(check.fullWindow,role+' queue fills viewport '+width);assert.ok(check.scrolled,role+' queue scrolls '+width);assert.ok(check.buttonWidth>=70&&check.buttonHeight<60,role+' readable Assign '+JSON.stringify(check));assert.equal(check.pageOverflow,false);await page.screenshot({path:path.join(out,role+'-assignment-queue-'+width+'.png')});queueChecks.push(check);
+   }
+   await page.setViewport({width:1280,height:900});
+   await page.click('[data-assign-one]');assert.equal(await page.$$(' .overlay').then(x=>x.length),2,'Individual assignment opens above queue');
+   await page.evaluate(()=>document.querySelector('.overlay:last-child .close-x').click());assert.equal(await page.$$('.overlay').then(x=>x.length),1,'Close returns to queue');
+   assert.ok(await page.$('.assignment-table-modal [data-assign-one]'),'Queue controls retained');
+   await page.click('.assignment-table-modal .close-x');assert.equal(await page.$('.assignment-table-modal'),null,'Queue closes back to dashboard');
+   drilldowns.push({role,queueChecks,nestedClose:true});
+   for(const view of process.argv.includes('--queue-only')?[]:role==='director'?['Executive','Sales','Inventory','Operations and Risk']:[null]){try{
     await page.evaluate(view=>renderCrmDashboard(view?{view}:{}),view);await page.waitForNetworkIdle({idleTime:50,timeout:10000});const prefix=role+'-'+(view||'dashboard').replaceAll(' ','-');report.push(await capture(page,prefix));
     const cards=await page.$$('[data-dashboard-segment],[data-dashboard-summary]');const presentation=buildRoleDashboardPresentation({type:role==='director'?'executive':'manager',view,current:{leads:0},dataAsOf:'2026-10-31T08:00:00Z'});assert.equal(cards.length,presentation.kpis.length+(role==='director'?12:11),prefix+' management cards');
     for(const[index,card]of cards.entries()){
-     await card.click();await page.waitForSelector('.overlay .modal');await page.waitForNetworkIdle({idleTime:50,timeout:10000});const result=await capture(page,prefix+'-card-'+(index+1),'.overlay .modal');report.push(result);drilldowns.push({role,view,index:index+1,opened:true});await page.click('.overlay .modal .close-x');
+     await card.click();await page.waitForSelector('.overlay .modal');await page.waitForNetworkIdle({idleTime:50,timeout:10000});const result=await capture(page,prefix+'-card-'+(index+1),'.overlay .modal');report.push(result);drilldowns.push({role,view,index:index+1,opened:true});await page.click('.overlay .modal .close-x');assert.equal(await page.$('.overlay .modal'),null,prefix+' drill-down closes');assert.ok(await page.$('[data-dashboard-segment],[data-dashboard-summary]'),prefix+' returns to dashboard controls');
     }
    }catch(error){report.push({name:role+'-'+view,error:error.stack});}}
-   if(role==='director'){try{await page.evaluate(()=>openLead('synthetic-lead'));assert.equal(await page.$('#interaction-form'),null);report.push(await capture(page,'director-read-only-lead'));}catch(error){report.push({name:'director-read-only-lead',error:error.stack});}}
+   if(role==='director'&&!process.argv.includes('--queue-only')){try{await page.evaluate(()=>openLead('synthetic-lead'));assert.equal(await page.$('#interaction-form'),null);report.push(await capture(page,'director-read-only-lead'));}catch(error){report.push({name:'director-read-only-lead',error:error.stack});}}
   }
  }
  if(extended){
