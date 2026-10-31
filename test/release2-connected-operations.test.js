@@ -28,7 +28,7 @@ test('coordinated reassignment locks and validates the linked case then updates 
 
 test('connected case and role dashboards guide users without hiding future release boundaries',()=>{
   const ui=read('public/app.js'),dashboard=read('public/dashboard-ui.js'),styles=read('public/index.html'),routes=read('src/routes/opportunities.js'),dashboardRoutes=read('src/routes/dashboards.js');
-  for(const marker of ['GUIDED WORK','connected case','Review reassignment impact','Impact preview','Lead ownership will stay unchanged','View source Lead history','Ownership history'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['Work progress','connected case','Review reassignment impact','Impact preview','Lead ownership will stay unchanged','View source Lead history','Ownership history'])assert.match(ui,new RegExp(marker));
   for(const marker of ['GUIDED SALES FLOW','My operating sequence','Team operating sequence','Every sequence count opens the exact contributing records','data-guided-step','data-guided-lead','data-guided-all','My priority cases','Open full Lead register'])assert.match(dashboard,new RegExp(marker));
   for(const marker of ['dashboard-connected-flow','flow-current','flow-ready','flow-blocked','flow-not_available','reassignment-preview','guided-work-layout','guided-next-scroll','max-height:360px'])assert.match(styles,new RegExp(marker));
   assert.match(routes,/\/crm\/operations\/guided-work/);

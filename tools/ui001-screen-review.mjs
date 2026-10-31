@@ -1,0 +1,68 @@
+// Actual frontend against a read-only synthetic API. Not a live CRM UAT substitute.
+import assert from 'node:assert/strict';import {buildRoleDashboardPresentation} from '../src/dashboard-domain.js';import {execFileSync} from 'node:child_process';import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import puppeteer from 'puppeteer-core';
+const before=process.argv.includes('--before'),port=0,root=process.cwd(),out=path.join(root,'outputs/ui001',before?'before':'after');await fs.mkdir(out,{recursive:true});
+const actor={id:'synthetic-agent',name:'Synthetic Agent',role:'internal_broker',jobRole:'sales_agent',capabilities:['inventory.create','purchased_data.import'],accessPolicy:{capabilities:[]},canPost:1};
+const requests=new Set(),errors=[];
+const empty=()=>Object.fromEntries(['items','campaigns','contacts','leads','listings','opportunities','areas','teams','staff','businessLines','views','tasks','publications','fieldCatalogue','mappingVersions','fieldMappings','propertyTypes','requirements','categories','batches','applications','balances','materials','policies','documents','sources','rows','records','emirates','communities','buildings'].map(k=>[k,[]]));
+const server=http.createServer(async(req,res)=>{try{if(!['GET','HEAD'].includes(req.method)){res.statusCode=405;res.end('Synthetic review is read-only');return;}res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');const url=new URL(req.url,'http://127.0.0.1');if(url.pathname.startsWith('/api/')){requests.add(url.pathname+url.search);let data={...empty(),categories:{},requestTypes:{},count:0,total:0,page:1,pageCount:1,pageSize:25};if(url.pathname==='/api/health')data={version:'2.1.0-dev.248'};if(url.pathname==='/api/me')data=actor;
+if(url.pathname==='/api/crm/dashboard')data={...data,filters:{dateFrom:'2026-10-26',dateTo:'2026-11-01'},dataAsOf:'2026-10-31T08:00:00Z',calculationContext:'Your accessible records',dashboardType:actor.jobRole,kpis:[['assignment_offers','Assignment offers awaiting acceptance'],['sla_risk','SLA risk'],['overdue_tasks','Overdue tasks'],['no_next_action','No next action']].map(([code,label])=>({code,label,current:0,unit:code==='overdue_tasks'?'tasks':'leads',target:null,definition:'Open work in your permitted scope.'})),stages:[],sources:[],agents:[],teams:[],qualification:{hot:0,warm:0},calls:{total:0,durationSeconds:0,followUpRequired:0},inventory:{available:0,stale:0,mediaNotReady:0},hierarchy:{company:'Synthetic company',businessLines:[]},recentActivities:[],futureMetrics:[],unavailableMetrics:[],proposals:{total:0}};
+if(url.pathname==='/api/finance/workspace/queue')data={...data,totals:[],asOf:'2026-10-31T08:00:00Z'};
+const lead={id:'synthetic-lead',title:'Synthetic property enquiry',leadReference:'SYNTHETIC-LD-001',contactId:'synthetic-customer',contactName:'Synthetic Customer',stage:'New',assignmentStatus:'assigned',assignedTo:actor.id,businessType:'Sale',source:'Website',temperature:'Unassessed'};
+const summary={propertyTypes:['villa'],bedroomsMin:4,bedroomsMax:4,timelineCode:'3_to_6_months',customerObjective:'buy',marketStageRequirement:'off_plan'};
+if(url.pathname==='/api/crm/incoming-leads')data.items=[{id:'synthetic-journey',follow_up_case_id:'synthetic-case',state:'completed',case_state:'unassigned',source_system:'website',source_form_id:'ai_property_selection_v1',masked_name:'Synthetic enquiry',masked_phone:'••••0123',last_activity_at:'2026-10-31T08:00:00Z',canPickup:true,structured_summary:summary}];
+if(url.pathname==='/api/crm/my-lead-queue')data.items=[{case_id:'synthetic-case',task_id:'synthetic-task',case_kind:'completed_intake',task_status:'open',state:'human_owned',source_form_id:'ai_property_selection_v1',masked_name:'Synthetic enquiry',landing_priority:3,due_at:'2026-10-31T09:00:00Z',structured_summary:summary,next_action:'Confirm enquiry'}];
+if(url.pathname==='/api/crm/tasks')data.tasks=[{id:'synthetic-task',isPrimaryNextAction:true,taskType:'web_intake',taskKind:'confirm_intake',intakeSourceSystem:'website',intakeSourceFormId:'ai_property_selection_v1',subject:'Confirm enquiry',details:'Confirm the customer requirement.',contactName:'Synthetic Customer',leadTitle:'Website enquiry',status:'open',priority:'high',dueAt:'2026-10-31T09:00:00Z',assigneeId:actor.id}];
+if(url.pathname==='/api/crm/contacts')data.contacts=[{id:'synthetic-customer',fullName:'Synthetic Customer Full Name',email:'synthetic@example.test',phone:'+971500000123',kycStatus:'unverified',duplicateReviewStatus:'not_required',leadCount:1}];
+if(url.pathname==='/api/crm/leads')data.leads=[lead];
+if(url.pathname==='/api/crm/leads/synthetic-lead')data={lead,activities:[],stageHistory:[],canWrite:actor.jobRole!=='director',qualificationGuidance:{}};
+if(url.pathname.endsWith('/operating-context'))data={steps:[],requirement:null,qualification:null,currentOpportunity:null};
+if(url.pathname==='/api/crm/opportunities')data.opportunities=[{id:'synthetic-opportunity',opportunityReference:'SYNTHETIC-OP-001',title:'Synthetic opportunity',contactName:'Synthetic Customer',leadTitle:lead.title,transactionType:'Sale',requirementVersion:1,ownerName:actor.name,stage:'Closed Won',nextAction:'Historic action',nextActionDueAt:'2026-10-30T08:00:00Z'}];
+if(url.pathname==='/api/crm/opportunities/synthetic-opportunity')data={opportunity:{id:'synthetic-opportunity',opportunityReference:'SYNTHETIC-OP-001',title:'Synthetic opportunity',contactName:'Synthetic Customer',leadId:lead.id,contactId:lead.contactId,stage:'Closed Won',transactionType:'Sale',ownerName:actor.name,requirementVersion:1},stageHistory:[],assignmentHistory:[]};
+if(url.pathname==='/api/crm/diary')data={items:[],allowedAgents:[actor],selectedAgentId:actor.id,companyView:false};
+if(url.pathname==='/api/external-publications')data={...data,inventories:[{id:'synthetic-inventory',inventoryReference:'SYNTHETIC-INV-001',project:'Synthetic property',area:'Synthetic area',workflowStatus:'approved',verificationStatus:'verified',canMaintainPortalEvidence:true}],propertyFinderPropertyTypes:['apartment','villa']};
+if(url.pathname==='/api/crm/dashboard'){const type=actor.jobRole==='sales_agent'?'agent':actor.jobRole==='director'?'executive':'manager';data.dashboardType=type;Object.assign(data,buildRoleDashboardPresentation({type,view:url.searchParams.get('view'),current:{leads:0},dataAsOf:'2026-10-31T08:00:00Z'}));delete data.futureMetrics;}if(url.pathname.includes('classification-catalogue'))data={mappings:[],valueSets:[],definitions:[]};res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));return;}const rel=decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname);const file=path.resolve(root,'public','.'+rel);if(!file.startsWith(path.join(root,'public')+path.sep))throw Error('path');const bytes=before?execFileSync('git',['show','a6fafab35ef0042f0a5b1c31c5bd35dd33821590:public/'+path.relative(path.join(root,'public'),file).replaceAll('\\','/')],{maxBuffer:5*1024*1024,stdio:['ignore','pipe','pipe']}):await fs.readFile(file);res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.html')?'text/html':'application/octet-stream');res.end(bytes);}catch{res.statusCode=404;res.end();}});await new Promise(r=>server.listen(port,'127.0.0.1',r));
+const browser=await puppeteer.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox']});
+
+async function capture(page,name,selector='#view'){
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));
+ const state=await page.$eval(selector,el=>({
+  text:el.innerText.slice(0,600),title:el.querySelector('.ui-page-title')?.textContent,
+  technicalText:[...el.querySelectorAll('*')].filter(x=>x.getClientRects().length&&!x.closest('.ui-audit')&&[...x.childNodes].some(n=>n.nodeType===3&&/\b(?:governed|immutable|ETL|schema|provenance|SHA-256|DEV[0-9]+|release [0-9])\b/i.test(n.textContent))).map(x=>x.textContent.trim()).filter((x,i,a)=>a.indexOf(x)===i).slice(0,30),
+  fontViolations:[...el.querySelectorAll('*')].filter(x=>x.getClientRects().length&&[...x.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&![12,14,16,20,28].includes(parseFloat(getComputedStyle(x).fontSize))).slice(0,25).map(x=>({tag:x.tagName,css:x.className,size:getComputedStyle(x).fontSize,text:x.textContent.slice(0,50)}))
+ }));
+ const accessibility=await page.evaluate(async selector=>{const result=await axe.run(document.querySelector(selector),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));},selector);
+ const responsive=[];
+ for(const width of[1280,768,390]){await page.setViewport({width,height:900});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);await page.screenshot({path:path.join(out,name+'-'+width+'.png'),fullPage:true});responsive.push({width,overflow});}
+ await page.setViewport({width:1280,height:900});return{name,...state,accessibility,responsive};
+}
+const report=[],drilldowns=[];
+try{
+ const page=await browser.newPage();page.on('pageerror',error=>errors.push(String(error)));await page.setViewport({width:1280,height:900});
+ const endpoint='http://127.0.0.1:'+server.address().port;
+ await page.goto(endpoint,{waitUntil:'networkidle0'});await page.addScriptTag({path:'node_modules/axe-core/axe.min.js'});
+ const screens=['dashboard','incomingLeads','leadResponse','crm','tasks','diary','customers','listings','opportunities','myPayoutAdvice','externalListings','myLeave','marketingCompliance','purchasedDataImport','leadRecord','opportunityRecord'];
+ for(const tab of screens){try{
+  await page.evaluate(tab=>tab==='leadRecord'?openLead('synthetic-lead'):tab==='opportunityRecord'?openOpportunityDetail('synthetic-opportunity'):switchTab(tab),tab);
+  await page.waitForNetworkIdle({idleTime:50,timeout:10000});report.push(await capture(page,tab));
+  if(!before&&tab==='tasks'){assert.equal(await page.$('[data-task-complete]'),null);await page.click('[data-primary-task-outcome]');await page.waitForSelector('[data-outcome-form]');assert.equal(await page.$eval('[data-outcome-form] select',el=>el.required),true);}
+ }catch(error){report.push({name:tab,error:error.stack});}}
+ if(!before){
+  for(const step of['inventory','viewing','offer','negotiation','booking','deal']){try{
+   await page.click(`[data-flow-step="${step}"]`);await page.waitForSelector('.opportunity-stage-page:not([hidden])');await page.waitForNetworkIdle({idleTime:50,timeout:10000});report.push(await capture(page,'opportunity-stage-'+step,'.opportunity-stage-page:not([hidden])'));await page.click('.opportunity-stage-page:not([hidden]) [data-stage-back]');
+  }catch(error){report.push({name:'opportunity-stage-'+step,error:error.stack});}}
+  for(const role of['manager','director']){
+   actor.jobRole=role;await page.goto(endpoint,{waitUntil:'networkidle0'});await page.addScriptTag({path:'node_modules/axe-core/axe.min.js'});
+   for(const view of role==='director'?['Executive','Sales','Inventory','Operations and Risk']:[null]){try{
+    await page.evaluate(view=>renderCrmDashboard(view?{view}:{}),view);await page.waitForNetworkIdle({idleTime:50,timeout:10000});const prefix=role+'-'+(view||'dashboard').replaceAll(' ','-');report.push(await capture(page,prefix));
+    const cards=await page.$$('[data-dashboard-segment],[data-dashboard-summary]');const presentation=buildRoleDashboardPresentation({type:role==='director'?'executive':'manager',view,current:{leads:0},dataAsOf:'2026-10-31T08:00:00Z'});assert.equal(cards.length,presentation.kpis.length+(role==='director'?12:11),prefix+' management cards');
+    for(const[index,card]of cards.entries()){
+     await card.click();await page.waitForSelector('.overlay .modal');await page.waitForNetworkIdle({idleTime:50,timeout:10000});const result=await capture(page,prefix+'-card-'+(index+1),'.overlay .modal');report.push(result);drilldowns.push({role,view,index:index+1,opened:true});await page.click('.overlay .modal .close-x');
+    }
+   }catch(error){report.push({name:role+'-'+view,error:error.stack});}}
+   if(role==='director'){try{await page.evaluate(()=>openLead('synthetic-lead'));assert.equal(await page.$('#interaction-form'),null);report.push(await capture(page,'director-read-only-lead'));}catch(error){report.push({name:'director-read-only-lead',error:error.stack});}}
+  }
+ }
+ await fs.writeFile(path.join(out,'screen-report.json'),JSON.stringify({synthetic:true,before,report,drilldowns,errors,requests:[...requests]},null,2));
+ console.log(JSON.stringify({screens:report.length,drilldowns:drilldowns.length,failures:report.filter(x=>x.error||x.fontViolations?.length||x.accessibility?.length||x.responsive?.some(v=>v.overflow)),technicalWording:report.filter(x=>x.technicalText?.length).map(x=>({name:x.name,text:x.technicalText})),errors},null,2));
+ if(!before){assert.deepEqual(errors,[]);for(const screen of report){assert.equal(screen.error,undefined,screen.name);assert.equal(screen.fontViolations.length,0,screen.name+' typography');assert.equal(screen.accessibility.length,0,screen.name+' accessibility');assert.ok(screen.responsive.every(view=>!view.overflow),screen.name+' responsive width');assert.ok(screen.title,screen.name+' page title');}}
+}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

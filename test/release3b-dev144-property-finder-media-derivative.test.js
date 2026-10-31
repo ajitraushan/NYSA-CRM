@@ -26,12 +26,12 @@ test('dev.144 stores a separate pending derivative with provenance and no PF ope
   for(const marker of ['derived_from_media_id','derivative_purpose','derivative_transform','ON DELETE RESTRICT'])assert.ok(migration.includes(marker),marker);
   assert.ok(domain.includes('CREATE_PROPERTY_FINDER_MEDIA_DERIVATIVE'));
   for(const marker of ['PROPERTY_FINDER_DERIVATIVE_CONFIRMATION',"'pending'",'sourceHash','derivedHash','originalPreserved:true','externalWritesPerformed:false','publicationPerformed:false'])assert.ok(route.includes(marker),marker);
-  for(const marker of ['Create PF-ready copy','Generate governed preview','NYSA REALTY · governed text mark','Create unapproved PF-ready derivative','do not alter the original'])assert.ok(ui.includes(marker),marker);
+  for(const marker of ['Create PF-ready copy','Generate preview','NYSA REALTY · governed text mark','Create unapproved PF-ready derivative','do not alter the original'])assert.ok(ui.includes(marker),marker);
   assert.doesNotMatch(route,/createListing|updateListing|deleteListing|publishListing|unpublishListing/);
 });
 
 test('historical migration 082 remains while the consolidated runtime version advances',()=>{
   const migrations=readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
   assert.ok(migrations.includes('082_release3b_property_finder_media_derivatives.sql'));assert.ok(migrations.length>=82);
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.248');assert.equal(JSON.parse(read('package-lock.json')).version,'2.1.0-dev.248');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.251');assert.equal(JSON.parse(read('package-lock.json')).version,'2.1.0-dev.251');
 });

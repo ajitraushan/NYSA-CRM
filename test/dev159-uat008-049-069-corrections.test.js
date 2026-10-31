@@ -38,7 +38,7 @@ test('UAT-052 through UAT-056 preserve ranking choice, visible recovery and veri
   assert.match(app,/Rank available Inventory/);
   assert.doesNotMatch(app,/Run AI-assisted Inventory ranking/);
   assert.match(matching,/Differences affect score and explanation, not eligibility/);
-  assert.match(offer,/Renegotiate this same property as a new governed Offer/);
+  assert.match(offer,/Renegotiate this same property as a new Offer/);
   assert.match(offer,/Revised amount/);
   assert.match(app,/if\(afterWorkflow\)return afterWorkflow\(\)/);
   assert.match(app,/Verification does not assign a custodian/);

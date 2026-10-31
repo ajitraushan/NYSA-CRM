@@ -1,6 +1,6 @@
 {
   "name": "nysa-crm",
-  "version": "2.1.0-dev.248",
+  "version": "2.1.0-dev.251",
   "description": "NYSA CORE consolidated CRM Test candidate - Releases 3 to 6",
   "type": "module",
   "main": "app.cjs",
@@ -22,19 +22,25 @@
     "uat:property-finder:listing-import:pre": "node scripts/property-finder-listing-import-pre-uat.js",
     "uat:property-finder:outward:pre": "node scripts/property-finder-outward-pre-uat.js",
     "test:dashboard:seed": "node scripts/seed-dashboard-fixtures.js",
-    "test:dashboard:roles": "node --test --test-isolation=none test/dashboard-domain.test.js test/dashboard-requirements.test.js"
+    "test:dashboard:roles": "node --test --test-isolation=none test/dashboard-domain.test.js test/dashboard-requirements.test.js",
+    "test:ui001:components": "node tools/ui001-browser-check.mjs",
+    "test:ui001:screens": "node tools/ui001-screen-review.mjs",
+    "test:ui001:tasks": "node tools/ui001-task-source-check.mjs"
   },
   "engines": {
-    "node": ">=22.13"
+    "node": "^22.17.0 || >=24.0.0"
   },
   "dependencies": {
     "@fontsource/inter": "5.2.5",
-    "@sparticuz/chromium": "137.0.1",
+    "@sparticuz/chromium": "153.0.0",
     "imapflow": "2.9.1",
     "mailparser": "3.12.4",
     "nodemailer": "10.2.1",
     "pg": "8.22.0",
-    "puppeteer-core": "24.10.2",
+    "puppeteer-core": "25.16.0",
     "read-excel-file": "^9.3.2"
+  },
+  "devDependencies": {
+    "axe-core": "4.14.0"
   }
 }

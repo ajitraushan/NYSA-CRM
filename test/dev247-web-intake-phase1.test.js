@@ -77,7 +77,7 @@ test('DEV247 UI uses the approved operational names and removes abstract respons
 });
 
 test('DEV248 release identity and design evidence are present',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.248');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.251');
   assert.match(read('docs/change-requests/NYSA-CRM-20261030-DEV248-WEB-INTAKE-CORRECTIONS.md'),/Approved sequential boundary/);
   assert.match(read('docs/change-requests/NYSA-CRM-20261029-LEAD-003-WEB-INTAKE-DETAILED-DESIGN-v1.3-developer.md'),/Phase 1 — Journey and pickup foundation/);
 });

@@ -9,8 +9,12 @@
   // Feature modules must exist before app.js restores the last workspace. Loading
   // app.js early made Administration sections appear/disappear across refreshes.
   // The independent feature modules can load in parallel; only app.js is gated.
-  const featureFiles=['review-task-ui.js','director-commission-summary-ui.js','customer-lookup-ui.js','finance-workspace-ui.js','shared-review-panel.js','accountant-workspace-ui.js','purchased-data-import-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js','lead-integration-ui.js','lead-response-dev244-ui.js','incoming-leads-ui.js','web-intake-phase1-ui.js'];
+  await new Promise((resolve,reject)=>{const designCss=document.createElement('link');designCss.rel='stylesheet';designCss.href=`/ui-design-system.css?v=${encodeURIComponent(build)}`;designCss.onload=resolve;designCss.onerror=()=>reject(new Error('The shared workspace styles could not be loaded'));document.head.appendChild(designCss);});
+  await loadScript('ui-design-system.js');
+  const featureFiles=['review-task-ui.js','director-commission-summary-ui.js','customer-lookup-ui.js','finance-workspace-ui.js','shared-review-panel.js','accountant-workspace-ui.js','purchased-data-import-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js','lead-integration-ui.js','lead-response-dev244-ui.js','incoming-leads-ui.js'];
   const [moneyInput]=await Promise.all([import(`/money-input.js?v=${encodeURIComponent(build)}`),...featureFiles.map(loadScript)]);
   window.parseReceiptAmount=moneyInput.parseReceiptAmount;
+  // Phase 1 owns the current desks; legacy modules must not win a network-load race.
+  await loadScript('web-intake-phase1-ui.js');
   await loadScript('app.js');
 })().catch(error=>{document.body.innerHTML=`<main class="auth"><section class="auth-card"><h1>NYSA CORE update required</h1><p>${String(error.message||error)}</p><button class="btn btn-primary" onclick="location.reload()">Retry safely</button></section></main>`;});

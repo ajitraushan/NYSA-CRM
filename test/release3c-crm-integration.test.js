@@ -126,7 +126,7 @@ test('server mounts the Release 3C integration without replacing legacy Opportun
 
 test('Opportunity UI clearly separates governed prepared-not-sent work from the legacy launcher',()=>{
   const ui=read('public/app.js');
-  for(const marker of ['Governed customer selection','PREPARED — NOT SENT','Prepare — do not send','No delivery has occurred','Legacy WhatsApp launcher and history'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['Customer selection','PREPARED — NOT SENT','Prepare — do not send','No delivery has occurred','Legacy WhatsApp launcher and history'])assert.match(ui,new RegExp(marker));
   assert.match(ui,/governed-property-share-options/);assert.match(ui,/governed-property-shares/);
 });
 

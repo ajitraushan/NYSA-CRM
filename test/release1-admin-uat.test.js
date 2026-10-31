@@ -219,7 +219,7 @@ test('customer-originated lead creation carries a locked Customer Master referen
   assert.match(styles,/\.customer-lead-feed\{/);
   assert.match(ui,/Search existing leads/);
   assert.match(ui,/Opportunity or linked customer name/);
-  assert.match(ui,/Customers appear here only after a lead has been created/);
+  assert.match(ui,/Customers appear here after a Lead is created/);
   assert.doesNotMatch(ui,/placeholder="Lead or customer name"/);
 });
 
@@ -342,7 +342,7 @@ test('proposal builder guides shortlist media narrative and governed assumptions
   assert.match(app,/It cannot select inventory, change the score or save the proposal/);
   assert.match(app,/Customer-facing assumptions/);
   assert.match(app,/it is not another calculation input/);
-  assert.match(app,/Generate immutable draft PDF/);
+  assert.match(app,/Generate draft PDF/);
   assert.match(app,/Review on screen/);
   assert.match(app,/Approve for external delivery/);
   assert.match(app,/Request changes/);

@@ -19,7 +19,7 @@ test('lead tasks distinguish planned work from completed activities and expose o
 test('financial scenarios use business forms and preserve immutable governed snapshots',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
   assert.doesNotMatch(ui,/Inputs JSON/);
-  for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected occupancy rate (%)','Cash invested','indicative estimate','immutable snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
+  for(const contract of ['Mortgage affordability','Investment return','Down payment (%)','Annual interest rate (%)','Expected annual rent','Expected occupancy rate (%)','Cash invested','indicative estimate','locked snapshot'])assert.match(ui,new RegExp(contract.replace(/[()]/g,'\\$&')));
   assert.match(ui,/openBusinessMortgageCalculator/);
   assert.match(ui,/name="propertyPrice" data-business-amount/);
   assert.match(ui,/name="loanAmount" data-business-amount/);
@@ -39,7 +39,7 @@ test('financial scenarios use business forms and preserve immutable governed sna
 
 test('financial scenarios require active fee readiness and preview EMI DBR before save',()=>{
   const ui=read('public/app.js'),routes=read('src/routes/qualification-finance.js'),styles=read('public/index.html');
-  for(const contract of ['Financial calculation is not ready','Regulatory and Fee Assumptions','Calculate and review','Monthly EMI','Debt-burden ratio','Save immutable snapshot','The active Regulatory and Fee Assumption changed after preview'])assert.match(ui+routes,new RegExp(contract));
+  for(const contract of ['Financial calculation is not ready','Regulatory and Fee Assumptions','Calculate and review','Monthly EMI','Debt-burden ratio','Save locked snapshot','The active Regulatory and Fee Assumption changed after preview'])assert.match(ui+routes,new RegExp(contract));
   assert.match(routes,/financial-scenarios\/preview/);
   assert.match(routes,/activeAssumption/);
   assert.match(routes,/expectedAssumptionVersionId/);
