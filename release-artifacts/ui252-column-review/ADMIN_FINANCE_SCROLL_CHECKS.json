@@ -1,0 +1,1907 @@
+{
+  "synthetic": true,
+  "before": false,
+  "extended": true,
+  "report": [
+    {
+      "name": "admin-section_0",
+      "text": "LEAD INTEGRATIONS\n\nLive sending is off / paused. Save connection references here. A saved draft does not connect a provider or activate outreach. Passwords and API keys belong in protected connection setup.\n\nMETA\n\nConnection test pending\nWHATSAPP\n\nNew number and templates needed\nEMAIL\n\nMailbox connection needed\nCALENDAR\n\nSunita’s connection needed\nMETA PAGE IDS\nOnly NYSA Pages approved for this pilot.\nNEW CONSENT FORM IDS\nWHATSAPP PROVIDER NUMBER REFERENCE\nNew pilot number. No REM migration.\nEMAIL SENDER\nSUNITA’S CALENDAR CONNECTION REFERENCE\nACCOUNTABLE OPERATING OWNER\nSelect Sunita’s existin",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-organization",
+      "text": "NYSA COMPANY PROFILE AND DOCUMENT DEFAULTS\n\nThe approved active version supplies NYSA's legal identity, contact details, regional formatting, brand reference, proposal footer and default disclaimer. Draft changes do not affect live documents until approved and activated.\n\nLEGAL COMPANY NAME *\nCUSTOMER-FACING NAME *\nTRADE LICENCE NUMBER\nORN\nVAT REGISTRATION NUMBER (TRN)\nLICENSING AUTHORITY\nCOMPANY EMAIL\nCOMPANY PHONE\nCOMPANY WEBSITE\nDEFAULT PROPOSAL CURRENCY *\nAED\nUSD\nEUR\nGBP\nSAR\nBUSINESS TIMEZONE *\nAsia/Dubai\nAsia/Riyadh\nEurope/London\nUTC\nDATE AND NUMBER FORMAT *\nEnglish (UAE)\nArabic (UAE)\nEng",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-controlled_values",
+      "text": "CONTROLLED VALUES\n\nStable codes cannot be renamed after creation and used values are retired, never deleted.\n\nSTABLE CODE\nLowercase snake_case only\nNAME\nCLASS\nA\nB\nC\nCreate draft value set\nCannot read properties of undefined (reading 'length')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-sla",
+      "text": "BUSINESS HOURS AND SLA POLICIES\n\nPolicies are versioned. Activating a draft retires the previous policy without rewriting existing lead deadlines.\n\nPOLICY NAME\nBUSINESS DAYS\nSunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nBUSINESS DAY STARTS AT\nDubai local time\nBUSINESS DAY ENDS AT\nLEAD ACCEPTANCE TARGET (BUSINESS MINUTES)\n30 means half an operating hour\nFIRST CUSTOMER-CONTACT TARGET (BUSINESS MINUTES)\nTime outside business hours is excluded\nHOT QUALIFICATION FOLLOW-UP (ELAPSED MINUTES)\nRuns 24/7, including outside business hours\nWARM QUALIFICATION FOLLOW-UP (BUSINESS MINUTES)\n4 busin",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "ui-field-30",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-areas",
+      "text": "AREA MAINTENANCE\n\nMaintain each customer-facing area once. Routing and lead capture use the same governed label. Stable codes cannot be changed after creation; used areas are retired with a reason.\n\nSTABLE AREA CODE *\nLowercase snake_case only\nCUSTOMER-FACING AREA *\nEMIRATE *\nDubai\nAbu Dhabi\nSharjah\nAjman\nRas Al Khaimah\nFujairah\nUmm Al Quwain\nDISPLAY ORDER *\nAdd area\nBulk upload areas from Excel\nNo maintained areas yet. Add the areas used for customer requirements and routing.",
+      "technicalText": [
+        "Maintain each customer-facing area once. Routing and lead capture use the same governed label. Stable codes cannot be changed after creation; used areas are retired with a reason."
+      ],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-listing_mappings",
+      "text": "PROVIDER LISTING MAPPINGS\n\nETL or a provider adapter supplies the technical event shape. Here, CORE governs external business values against stable CORE values. A mapping follows Draft → Tested → Approved → Active; only one version per provider can be Active. Unknown values remain in the intake attention queue and are never guessed.\n\n1 Draft\n2 Test\n3 Approve\n4 Activate\nPROVIDER CODE *\nVERSION CODE *\nBUSINESS NAME *\nCOPY MAPPINGS FROM\nStart empty\nDESCRIPTION\nCreate Draft version\nDRAFT VERSION *\nCreate a Draft version first\nCORE FIELD *\nEXTERNAL VALUE *\nGOVERNED CORE VALUE *\nAdd mapping\nCannot r",
+      "technicalText": [
+        "ETL or a provider adapter supplies the technical event shape. Here, CORE governs external business values against stable CORE values. A mapping follows Draft → Tested → Approved → Active; only one version per provider can be Active. Unknown values remain in the intake attention queue and are never guessed.",
+        "Governed CORE value *"
+      ],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-routing",
+      "text": "LEAD ROUTING RULES AND ASSIGNMENT QUEUES\n\nRules are evaluated from the lowest priority number upward. An area-specific rule is used only when that area is selected as the lead's primary routing area; All areas is the fallback. Routing selects a team queue and never assigns a broker.\n\nRULE NAME\nPRIORITY\nSOURCE\nAny source\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nBUSINESS TYPE\nAny business\nAREA\nAll areas\nDESTINATION TEAM QUEUE\nCompany Unassigned Queue\nAdd rule\nConfigure Dubai defaults\nCannot read properties of undefined (reading 'map')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-qualification",
+      "text": "LEAD QUALIFICATION VERSIONS\n\nThis controls the objective-specific questions used by Assess qualification after substantive Customer contact. Only an Active version for the Lead's exact Customer objective is used: create a Draft, test it, Approve it, then Activate it.\n\n1 Draft\n2 Test\n3 Approve\n4 Activate\nCreate draft version\nCannot read properties of undefined (reading 'filter')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-fees",
+      "text": "REGULATORY AND TRANSACTION FEE RULES\n\nMaintain approved charges as executable business rules. Select the calculation basis, formula, VAT, payer and applicability; saved scenarios snapshot the exact active version and proposals use placeholders such as fee.dld_transfer_fee.\n\nSaved versions are read-only. Select Edit draft, Create new version, or start a separate new rule set.\n\nStart new rule set\n\nDrafts may be edited and tested. Approval freezes a version; activation retires the previous active version. Compare changes before approval or activation.\n\nRULE SET\tVERSION\tRULES / PLACEHOLDERS\tEFFECT",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-proposals",
+      "text": "NYSA PROPOSAL TEMPLATE DESIGNER\n\nDesign a governed buyer information booklet using client requirements, matched inventory, approved media and controlled user input. Draft changes do not affect live proposals until approved and activated.\n\nDesign new template\nNo proposal templates yet. Select Design new template to begin.",
+      "technicalText": [
+        "Design a governed buyer information booklet using client requirements, matched inventory, approved media and controlled user input. Draft changes do not affect live proposals until approved and activated."
+      ],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-market_intelligence",
+      "text": "DLD MARKET DATA AND AREA MAPPING\n\nManually stage an official-source CSV, review every accepted/rejected count, and explicitly accept it. CORE makes no DLD or portal connection. No automatic text matching is permitted. Admin governs drafts and final decisions.\n\n1. Market areas supplied by Area Maintenance\n\nStable code, Area label, Emirate and active state are maintained once under Administration → Area Maintenance. They are read-only here and automatically available to Market Intelligence.\n\n2. Maintain governed Building\nSTABLE CODE *\nACTIVE AREA *\nSelect active Area\nBUILDING LABEL *\nCreate gove",
+      "technicalText": [
+        "2. Maintain governed Building",
+        "Create governed Building",
+        "Create immutable mapping draft",
+        "Governed Buildings",
+        "No governed Buildings."
+      ],
+      "fontViolations": [],
+      "accessibility": [
+        {
+          "id": "label",
+          "impact": "critical",
+          "nodes": [
+            {
+              "target": [
+                "#dld-market-file"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-commission_policy",
+      "text": "COMMISSION AND PAYOUT POLICY\n\nMaintain the company payout slabs and optional individual-agent adjustments. Agent social-media eligibility is maintained separately in Administration → User records. Admin activates directly; no second approval is required.\n\nPOLICY CODE *\nCURRENCY *\nAED\nUSD\nEFFECTIVE FROM *\nEFFECTIVE TO\nTRIGGER CALCULATION *\nSelect calculation method\nOption 2 — Crossing Deal only: apply the achieved rate to this Deal and do not change previous Deals\nOption 1 — Quarterly achieved rate: apply the achieved rate to all commission credited in the quarter; record the difference as a Ti",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [
+        {
+          "id": "label",
+          "impact": "critical",
+          "nodes": [
+            {
+              "target": [
+                "input[name=\"lowerAmount\"][value=\"0\"][step=\"0.01\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"55\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"100000\"][name=\"lowerAmount\"][step=\"0.01\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"60\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"200000\"][name=\"lowerAmount\"][step=\"0.01\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"65\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"300000\"][name=\"lowerAmount\"][step=\"0.01\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"70\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"400000\"][name=\"lowerAmount\"][step=\"0.01\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                "input[value=\"75\"][name=\"agentPercent\"][max=\"100\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-customer_documents",
+      "text": "CUSTOMER DOCUMENTS\n\nConfigure reusable Customer Master identity requirements. Passport and Emirates ID are independent records; one or both may be maintained and reused for every customer role and transaction.\n\nREQUIREMENT CODE *\nREQUIREMENT NAME *\nCUSTOMER TYPE *\nIndividual\nIndividual documents\nPASSPORT\nEMIRATES ID\nPOWER OF ATTORNEY Â€” OPTIONAL\nPassport or Emirates ID is required. Both may be maintained. POA is optional for an individual.\nMINIMUM VALID DOCUMENTS *\nOne valid document\nBoth documents\nREVIEW *\nManager must review\nNo separate review\nEXPIRY *\nExpiry date required\nExpiry optional\nF",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "admin-document_compliance",
+      "text": "TRANSACTION DOCUMENTS\n\nConfigure signed or authority-issued documents required for a Sale or Lease. Customer identity is maintained once in Customer Master and must not be duplicated here.\n\nREQUIREMENT CODE *\nDOCUMENT NAME *\nTRANSACTION TYPE *\nSale\nLease\nAPPLIES TO *\nTransaction completion document\nBuyer\nSeller\nLandlord\nTenant\nREQUIRED BEFORE *\nClosing the transaction\nSubmitting for approval\nApproving the transaction\nREQUIREMENT *\nMandatory\nOptional\nUPLOAD SOURCE *\nUpload a private PDF here\nUse an existing official document\nDOCUMENT CATEGORY *\nREVIEW *\nManager or Director must review\nNo separa",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-official_documents",
+      "text": "OFFICIAL DOCUMENT REQUIREMENTS\n\nMaintain which externally obtained official documents are mandatory for a predefined CRM workflow step. Required blocks only that step when valid evidence is absent; Advisory remains visible but never blocks. Admin may draft, activate and retire configuration directly.\n\n1. Draft document definition\nSTABLE DOCUMENT CODE *\nDOCUMENT NAME *\nEXPECTED ISSUER *\nACCEPTED EVIDENCE STATE *\nOfficial captured\nExternal verified\n EXPIRY MUST BE RECORDED\nCreate immutable draft / revision\n2. Draft workflow-step rule\nPREDEFINED WORKFLOW STEP *\nPrepare external listing\nConfirm bu",
+      "technicalText": [
+        "Create immutable draft / revision",
+        "Create immutable rule draft"
+      ],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-documents",
+      "text": "CONTROLLED DOCUMENT TEMPLATES\n\nThese are approved NYSA source documents such as Marketing Agreements, not proposal layouts. Lead document categories use the active Controlled Values set with stable code document_type; maintain its labels under Controlled Values.\n\nTEMPLATE TYPE *\nNAME *\nTEMPLATE FILE *\nUpload draft\nTYPE\tNAME\tVERSION\tHASH\tSTATUS\t",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-targets",
+      "text": "DASHBOARD TARGETS AND EXCEPTION ALERTS\n\nSet a one-off goal or a repeating daily, Monday–Sunday weekly, or calendar-month target. All periods use Dubai time. Partial periods retain the full target. Active edits apply from a future period; prior values stay in history.\n\nKPI *\nAPPLIES TO *\nCompany\nBusiness line\nTeam\nAgent\nCOMPANY\nAll NYSA\nFREQUENCY *\nOne-off\nEvery day\nEvery week (Monday–Sunday)\nEvery calendar month\nEFFECTIVE FROM *\nEFFECTIVE UNTIL *\nTARGET (RECORDS PER ONE-OFF PERIOD) *\nFLAG AN EXCEPTION WHEN ACTUAL RESULT\ngoes above\ngoes below\nEXCEPTION NUMBER (RECORDS, OPTIONAL)\nREASON / PLAN R",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-teams",
+      "text": "CRM TEAMS\n\nMaintain Team Managers here. Business-line grouping is maintained in Business lines & KPIs; user reporting remains in User records.\n\nTEAM NAME\nLEAD RESPONSE SLA (HOURS)\nCreate team\nTEAM\tMANAGER\tMEMBERS\tRESPONSE SLA\t\nSynthetic Secondary Sales Team\t\nUnassigned\n\tundefined\t\tDeactivate",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [
+        {
+          "id": "label",
+          "impact": "critical",
+          "nodes": [
+            {
+              "target": [
+                "input[data-team-sla=\"synthetic-team\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "select-name",
+          "impact": "critical",
+          "nodes": [
+            {
+              "target": [
+                "select[data-team-manager=\"synthetic-team\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-media_policy",
+      "text": "PROPERTY MEDIA APPROVAL POLICY\n\nChoose whether new, compliant property-media uploads require the responsible Manager's approval. Turning approval off affects future uploads only; existing pending media remains pending so its audit history is not silently changed.\n\nRESPONSIBLE MANAGER APPROVAL FOR NEW MEDIA\nRequired\nNot required — approve compliant uploads immediately\nREASON FOR POLICY DECISION *\nSave media policy\nCannot read properties of undefined (reading 'managerApprovalRequired')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-listing_policy",
+      "text": "LISTING APPROVAL POLICY\n\nChoose whether a publication-ready listing requires the responsible Manager's approval. Turning approval off affects future submissions only; listings already awaiting review remain in the Manager queue.\n\nRESPONSIBLE MANAGER APPROVAL FOR LISTING SUBMISSIONS\nRequired\nNot required — approve ready submissions immediately\nREASON FOR POLICY DECISION *\nSave listing policy\nCannot read properties of undefined (reading 'managerApprovalRequired')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-users",
+      "text": "USER MANAGEMENT\n\nAdd an internal user directly for secure first-time activation, or send a named one-time invitation. Suspension is reversible; revocation preserves history.\n\nInvite User\nUSER EMAIL *\nROLE\nInternal User\nViewer\nAdmin\nPRIMARY USER ROLE\nAdmin\nSales Agent\nListing Executive\nManager\nDirector\nAccountant\nTEAM\nNot applicable\nEXPIRES *\nDefaults to seven days; past Dubai dates are not allowed.\nInvite User\nPending Invitations\nCannot read properties of undefined (reading 'map')\nAdd User\nNAME *\nEMAIL *\nPHONE *\nCLASSIFICATION\nInternal User\nViewer\nExternal Broker (interface identity only)\nPRIM",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-business_lines",
+      "text": "BUSINESS LINES AND KPIS\n\nBusiness lines group teams for reporting and KPI targets. Transaction classifications, routing and workflows are unchanged. Team mappings use the record creation date in Dubai time; dated changes preserve earlier reporting.\n\nCODE *\nNAME *\nDESCRIPTION\nREASON *\nCreate business line\n\nBUSINESS LINE\tCODE\tKPIS\tSTATUS\tACTIONS\nTeam business-line mapping and reporting managers\n\nThe current Team Manager is shown from CRM teams; this mapping does not change assignment authority. An Agent's primary reporting team and a Manager's reporting Director remain in User records.\n\nTEAM\tREP",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-user_records",
+      "text": "USER RECORDS\n\nMaintain existing user contact details, roles, reporting lines and access status.\n\nUSER\tCLASSIFICATION\tEFFECTIVE ROLES\tPRIMARY ROLE\tTEAM / REPORTING LINE\tSOCIAL-MEDIA PAYOUT ELIGIBILITY\tSTATUS\tACTIONS",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-operations",
+      "text": "AUDIT AND OPERATIONS LOG\nENTITY TYPE\nAll\nListing\nComment\nBroker\nInvitation\nTeam\nContact\nLead\nActivity\nCompany\nValueBrief\nWebsite intake history\nRefresh\nCannot read properties of undefined (reading 'map')",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "admin-about",
+      "text": "ABOUT NYSA CORE\n\nDeployment identity for support and release traceability.\n\nApplication\nNYSA CORE\nApplication version\n2.1.0-dev.248\nEnvironment\nLocal",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-invoice-awaiting",
+      "text": "NYSA CORE · CLIENT INVOICES\nClient Invoices\nRefresh\nAwaiting invoice\nIssued\nChange requests\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tCreate invoice\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Invoices",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-invoice-issued",
+      "text": "NYSA CORE · CLIENT INVOICES\nClient Invoices\nRefresh\nAwaiting invoice\nIssued\nChange requests\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Invoices",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-invoice-changes",
+      "text": "NYSA CORE · CLIENT INVOICES\nClient Invoices\nRefresh\nAwaiting invoice\nIssued\nChange requests\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Invoices",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-collection-unpaid",
+      "text": "NYSA CORE · CLIENT COLLECTIONS\nClient Collections\nRefresh\nAwaiting payment\nPart paid\nOverdue\nCollected\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tPart paid\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Collections",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-collection-part",
+      "text": "NYSA CORE · CLIENT COLLECTIONS\nClient Collections\nRefresh\nAwaiting payment\nPart paid\nOverdue\nCollected\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tPart paid\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Collections",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-collection-overdue",
+      "text": "NYSA CORE · CLIENT COLLECTIONS\nClient Collections\nRefresh\nAwaiting payment\nPart paid\nOverdue\nCollected\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tPart paid\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Collections",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-collection-paid",
+      "text": "NYSA CORE · CLIENT COLLECTIONS\nClient Collections\nRefresh\nAwaiting payment\nPart paid\nOverdue\nCollected\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tPart paid\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Client Collections",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-payout-prepare",
+      "text": "NYSA CORE · AGENT PAYOUTS\nAgent Payouts\nRefresh\nTo prepare\nReady for approval\nPending MD\nApproved - Pay now\nPaid\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nSelect page\nClear selection\nReview selected\n0 selected across pages\nSELECT\tREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\n\tSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Payouts",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "accountant-payout-ready",
+      "text": "NYSA CORE · AGENT PAYOUTS\nAgent Payouts\nRefresh\nTo prepare\nReady for approval\nPending MD\nApproved - Pay now\nPaid\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nSelect page\nClear selection\nReview selected\n0 selected across pages\nSELECT\tREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\n\tSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Payouts",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": [
+        {
+          "element": "view",
+          "bottomReached": true,
+          "topReached": true,
+          "restored": true
+        }
+      ]
+    },
+    {
+      "name": "accountant-payout-pending",
+      "text": "NYSA CORE · AGENT PAYOUTS\nAgent Payouts\nRefresh\nTo prepare\nReady for approval\nPending MD\nApproved - Pay now\nPaid\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Payouts",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-payout-approved",
+      "text": "NYSA CORE · AGENT PAYOUTS\nAgent Payouts\nRefresh\nTo prepare\nReady for approval\nPending MD\nApproved - Pay now\nPaid\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tRecord payment\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Payouts",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-payout-paid",
+      "text": "NYSA CORE · AGENT PAYOUTS\nAgent Payouts\nRefresh\nTo prepare\nReady for approval\nPending MD\nApproved - Pay now\nPaid\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Payouts",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-statements",
+      "text": "NYSA CORE · AGENT STATEMENTS\nAgent Statements\nRefresh\nAgent / quarter\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView details\nPrevious\nPage 1 of 1\nNext",
+      "title": "Agent Statements",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-advice-generated",
+      "text": "NYSA CORE · PAYOUT ADVICE\nPayout Advice\nRefresh\nGenerated\nPending generation\nGeneration failed\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView advice\nPrevious\nPage 1 of 1\nNext",
+      "title": "Payout Advice",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-advice-pending",
+      "text": "NYSA CORE · PAYOUT ADVICE\nPayout Advice\nRefresh\nGenerated\nPending generation\nGeneration failed\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView advice\nPrevious\nPage 1 of 1\nNext",
+      "title": "Payout Advice",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    },
+    {
+      "name": "accountant-advice-failed",
+      "text": "NYSA CORE · PAYOUT ADVICE\nPayout Advice\nRefresh\nGenerated\nPending generation\nGeneration failed\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n1 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nSYNTHETIC-REFERENCE-001\n\tSynthetic company with a longer business name\tAED 10,000.00\tAED 5,000.00 / AED 5,000.00\t31 Oct 2026\n7 Nov 2026\n\tGenerated\tView advice\nPrevious\nPage 1 of 1\nNext",
+      "title": "Payout Advice",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ],
+      "scrollChecks": []
+    }
+  ],
+  "drilldowns": [],
+  "errors": [],
+  "requests": [
+    "/api/health?asset-manifest=1793456292092",
+    "/api/health",
+    "/api/me",
+    "/api/crm/assignment-queue",
+    "/api/crm/teams",
+    "/api/crm/staff",
+    "/api/crm/business-lines",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31",
+    "/api/crm/dashboard/views",
+    "/api/health?asset-manifest=1793456293329",
+    "/api/listings?sort=newest",
+    "/api/admin/lead-integrations/setup",
+    "/api/admin/dashboard-metrics",
+    "/api/admin/business-lines",
+    "/api/admin/organization-settings",
+    "/api/admin/value-sets",
+    "/api/admin/sla-policies",
+    "/api/admin/areas",
+    "/api/admin/listing-mappings",
+    "/api/admin/routing-rules",
+    "/api/admin/qualification-models",
+    "/api/admin/regulatory-assumptions",
+    "/api/admin/proposal-templates",
+    "/api/admin/official-document-definitions",
+    "/api/admin/official-document-step-rules",
+    "/api/admin/market-communities",
+    "/api/admin/inventory-buildings",
+    "/api/admin/dld-market-batches",
+    "/api/admin/commission-payout-policies",
+    "/api/admin/customer-document-requirements",
+    "/api/admin/document-compliance/requirements",
+    "/api/admin/document-templates",
+    "/api/admin/property-media-approval-policy",
+    "/api/admin/listing-approval-policy",
+    "/api/admin/invitations",
+    "/api/admin/brokers",
+    "/api/admin/password-reset-requests",
+    "/api/admin/audit-log",
+    "/api/admin/dashboard-targets",
+    "/api/health?asset-manifest=1793456317777",
+    "/api/finance/workspace/counts",
+    "/api/finance/workspace/counts?group=invoices",
+    "/api/finance/workspace/queue?category=invoice-awaiting&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=invoice-issued&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=invoice-changes&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/counts?group=collections",
+    "/api/finance/workspace/queue?category=collection-unpaid&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=collection-part&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=collection-overdue&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=collection-paid&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/counts?group=payouts",
+    "/api/finance/workspace/filters",
+    "/api/finance/workspace/queue?category=payout-prepare&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=payout-ready&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=payout-pending&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=payout-approved&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=payout-paid&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/counts?group=statements",
+    "/api/finance/workspace/queue?category=statements&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/counts?group=advice",
+    "/api/finance/workspace/queue?category=advice-generated&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=advice-pending&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/finance/workspace/queue?category=advice-failed&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to="
+  ]
+}

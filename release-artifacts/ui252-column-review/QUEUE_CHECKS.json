@@ -1,0 +1,114 @@
+{
+  "synthetic": true,
+  "before": false,
+  "extended": false,
+  "report": [],
+  "drilldowns": [
+    {
+      "role": "manager",
+      "queueChecks": [
+        {
+          "width": 2684,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 1920,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 1280,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 768,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 390,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        }
+      ],
+      "nestedClose": true
+    },
+    {
+      "role": "director",
+      "queueChecks": [
+        {
+          "width": 2684,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 1920,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 1280,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 768,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        },
+        {
+          "width": 390,
+          "fullWindow": true,
+          "scrolled": true,
+          "buttonWidth": 73.078125,
+          "buttonHeight": 40,
+          "pageOverflow": false
+        }
+      ],
+      "nestedClose": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "/api/health?asset-manifest=1793456412361",
+    "/api/health",
+    "/api/me",
+    "/api/crm/assignment-queue",
+    "/api/crm/teams",
+    "/api/crm/staff",
+    "/api/crm/business-lines",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31",
+    "/api/crm/dashboard/views",
+    "/api/health?asset-manifest=1793456413487",
+    "/api/health?asset-manifest=1793456415788"
+  ]
+}
