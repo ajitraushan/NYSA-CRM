@@ -16,7 +16,7 @@ test('Inventory preserves originating and responsible agent identities',()=>{
   assert.match(migration,/originating_agent_id UUID REFERENCES brokers/);
   assert.match(route,/b\.responsibleAgentId=b\.originatingAgentId/);
   assert.match(ui,/Originating NYSA Inventory agent/);
-  assert.match(ui,/Immutable attribution/);
+  assert.match(ui,/Locked attribution/);
 });
 
 test('Lead conversion inherits Inventory seller and mandate but uses the assigned Sales Agent',()=>{

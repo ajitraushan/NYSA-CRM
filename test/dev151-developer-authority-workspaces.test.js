@@ -37,7 +37,7 @@ test('UAT-033 administration UI exposes both exact evidence registers',()=>{
   assert.match(app,/Property Listing NOC/);
   assert.match(app,/APPROVED LISTING NOC \/ OWNER AUTHORIZATION/);
   assert.match(app,/Save editable draft/);
-  assert.match(app,/Issue immutable Listing NOC/);
+  assert.match(app,/Issue Listing NOC/);
   assert.match(app,/id="developer-arrangement-form"/);
   assert.match(app,/id="property-listing-noc-form"/);
   assert.match(app,/name="file" type="file" accept="application\/pdf,\.pdf"/);

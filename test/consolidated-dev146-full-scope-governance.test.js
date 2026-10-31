@@ -42,7 +42,7 @@ test('UAT-014 recovery requires terminal evidence, requirement impact, property 
   const route=read('src/routes/opportunities.js'),ui=read('public/app.js');
   assert.match(route,/offer-recovery\/return-to-matching/);
   for(const marker of ['terminal_offer_governed_recovery','customer_confirmed_change','propertyDisposition','nextActionDueAt','offer_replacement_actions'])assert.match(route,new RegExp(marker));
-  for(const marker of ['Offer recovery decision required','More options — return to Matching','Review \/ change requirements','Confirmed replacement requirement','Apply governed recovery'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['Offer recovery decision required','More options — return to Matching','Review \/ change requirements','Confirmed replacement requirement','Apply recovery'])assert.match(ui,new RegExp(marker));
 });
 
 test('UAT-021 preserves the Deal while replacement Inventory receives a new Offer and Booking lineage',()=>{

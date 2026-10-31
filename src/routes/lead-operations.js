@@ -438,7 +438,8 @@ r.get('/crm/tasks',async(req,res)=>{
   if(req.query.bucket==='completed')bucket="t.status='completed'";
   if(req.query.mine==='1'){params.push(req.broker.id);bucket=`(${bucket}) AND t.assignee_id=$${params.length}`;}
   params.push(req.broker.id);const governedAssignee=`$${params.length}`;
-  const tasks=await many(`SELECT t.*,l.title AS lead_title,c.full_name AS contact_name,b.name AS assignee_name,
+  const tasks=await many(`SELECT t.*,l.title AS lead_title,COALESCE(c.full_name,intake_identity.masked_name) AS contact_name,b.name AS assignee_name,
+    l.source AS lead_source,intake_journey.source_system AS intake_source_system,intake_journey.source_form_id AS intake_source_form_id,
     p.proposal_number,p.title AS proposal_title,pv.version_number AS returned_version_number,
     pv.review_comment AS return_reason,pv.reviewed_at AS returned_at,pv.document_version_id,
     reviewer.name AS returned_by_name,la.application_reference AS leave_application_reference,
@@ -451,6 +452,9 @@ r.get('/crm/tasks',async(req,res)=>{
     ql.target_minutes AS qualification_target_minutes,ql.cycle_number AS qualification_cycle_number,
     ql.cadence_business_days AS qualification_cadence_business_days
     FROM tasks t LEFT JOIN leads l ON l.id=t.lead_id
+    LEFT JOIN lead_follow_up_cases intake_case ON intake_case.id=t.follow_up_case_id
+    LEFT JOIN web_intake_journeys intake_journey ON intake_journey.id=intake_case.journey_id
+    LEFT JOIN web_intake_provisional_identities intake_identity ON intake_identity.id=intake_journey.provisional_identity_id
     LEFT JOIN contacts c ON c.id=t.contact_id JOIN brokers b ON b.id=t.assignee_id
     LEFT JOIN proposals p ON p.id=t.proposal_id
     LEFT JOIN proposal_versions pv ON pv.id=t.proposal_version_id

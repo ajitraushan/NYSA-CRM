@@ -28,6 +28,6 @@ test('UAT-081 browser exposes maintained policy targets and the generated deadli
   assert.match(ui,/Hot qualification follow-up \(elapsed minutes\)/);
   assert.match(ui,/Warm qualification follow-up \(business minutes\)/);
   assert.match(ui,/Cold nurture cadence \(business days\)/);
-  assert.match(ui,/Governed next action/);
+  assert.match(ui,/Next action/);
   assert.match(ui,/next weekly nurture Task created/);
 });
