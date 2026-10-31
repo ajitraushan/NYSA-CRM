@@ -48,7 +48,20 @@
   const secondary=actions.filter(el=>el!==primary);
   if(secondary.length>1&&secondary.every(el=>el.parentElement===secondary[0].parentElement)){const owner=secondary[0].parentElement,menu=document.createElement('details');menu.className='ui-more-actions';const label=document.createElement('summary');label.textContent='More';menu.append(label);owner.append(menu);secondary.forEach(el=>menu.append(el));}
  }
+ function actionColumns(root){
+  for(const table of root.querySelectorAll('table')){
+   if(table.parentElement.closest('.pipeline-table-wrap,.table-wrap'))continue;
+   const wrap=document.createElement('div');wrap.className='pipeline-table-wrap ui-table-scroll';table.before(wrap);wrap.append(table);
+  }
+  for(const cell of root.querySelectorAll('td')){
+   if(cell.colSpan!==1||![...cell.querySelectorAll('button,a.btn')].some(control=>control.closest('td')===cell))continue;
+   cell.classList.add('ui-action-cell');
+   const row=cell.parentElement,header=cell.closest('table')?.rows[0];
+   if(header?.cells.length===row.cells.length&&header.cells[cell.cellIndex]?.tagName==='TH')header.cells[cell.cellIndex].classList.add('ui-action-cell');
+  }
+ }
  function rows(root){
+  actionColumns(root);
   for(const row of root.querySelectorAll('tr')){
    if(row.dataset.uiRow||!row.querySelector('td'))continue;
    if(row.matches('.clickable-row[data-record-lead],.clickable-row[data-record-opportunity],.clickable-row[data-record-listing]')){
@@ -61,6 +74,7 @@
    row.dataset.uiRow='1';row.tabIndex=0;row.classList.add('ui-record-row');row.setAttribute('aria-label',`Open ${row.cells[0]?.textContent.trim()||'record'}`);
    const activate=event=>{if(isInteractive(event.target))return;if(event.type==='keydown'&&!['Enter',' '].includes(event.key))return;if(event.type==='keydown')event.preventDefault();open.click();};
    row.addEventListener('click',activate);row.addEventListener('keydown',activate);open.classList.remove('btn-primary');open.classList.add('ui-row-open');
+   if(!open.getAttribute('aria-label'))open.setAttribute('aria-label',open.textContent.trim());open.textContent='Open';
   }
  }
  function listingSteps(root){

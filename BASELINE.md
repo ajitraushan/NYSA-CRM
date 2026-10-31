@@ -1,5 +1,11 @@
 # CRM Development Baseline
 
+## DEV252 column-layout correction — 31 October 2026
+
+- User review found the Customers Action column collapsing into individual characters in deployed DEV251. Earlier page-overflow checks did not detect control wrapping. Scope: audit table/card/drill-down column sizing across working screens and correct presentation only; preserve workflows, APIs, data and permissions.
+- Source baseline: DEV251 runtime `8f722679c92eabcd2efb6cef824d5225b28dbcf4`; preparation evidence `629bfa66b47e83ea8e39cfefd913cebfe66ab330`. Development branch `codex/dev252-ui-column-review`; clean checkout before this correction. CRM Test rollback archive SHA-256 `749f077d323d846c9e468aafe5ef31f1d215eed9afdde98baca9c8bc5e12178a`, migration 159. Existing verified encrypted recovery remains in the approved recovery folder; refresh before a new hosted deployment.
+- Production is explicitly on HOLD. Website companion is selected for eventual inclusion but not activated. This layout correction supersedes DEV251's prior visual acceptance; do not request production approval until corrected layout checks pass.
+
 ## UI-001 and production readiness candidate — 31 October 2026
 
 - User-approved scope: resolve DEV248 production blockers, implement the complete UI-001 presentation/design-system scope, run consistency/regression checks and prepare the final deployment for approval. Final production deployment is not yet authorized. Email OTP, voice, live outreach, unrelated functional observations and the held Admin invitation fix remain excluded.

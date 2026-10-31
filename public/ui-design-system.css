@@ -36,6 +36,23 @@ body:has(#app.shell-layout) .ui-more-actions .btn{display:block;margin:8px}
 body:has(#app.shell-layout) .ui-record-row{cursor:pointer}
 body:has(#app.shell-layout) .ui-record-row:hover{background:#f4f1eb}
 body:has(#app.shell-layout) .ui-row-open{background:transparent;border:0;color:#14232c;text-decoration:underline}
+/* Action controls must retain word boundaries; page-overflow alone cannot detect collapsed columns. */
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .ui-action-cell{min-width:10rem;overflow-wrap:normal;word-break:normal}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) th{overflow-wrap:normal;word-break:normal}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) td :is(button,a.btn){overflow-wrap:normal;word-break:normal;white-space:normal}
+body:has(#app.shell-layout) .ui-row-open{white-space:nowrap!important;max-width:none;padding:4px 8px}
+/* The Customer register has seven columns; legacy six-column widths consumed the entire table. */
+body:has(#app.shell-layout) #customer-results table{table-layout:fixed;min-width:960px}
+body:has(#app.shell-layout) #customer-results :is(th,td){padding:12px}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(1){width:20%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(2){width:26%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(3){width:12%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(4){width:14%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(5){width:12%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(6){width:8%;white-space:normal}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(7){width:8%;text-align:center}
+body:has(#app.shell-layout) #customer-results .ui-row-open{padding:4px}
+body:has(#app.shell-layout) #view .admin-entry-form{grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:16px}
 body:has(#app.shell-layout) :is(.empty,.empty-state,.web-intake-empty){padding:32px;border:1px dashed #8b949b;border-radius:8px;background:#fff;color:var(--ui-secondary)}
 body:has(#app.shell-layout) .web-intake-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 body:has(#app.shell-layout) .web-intake-summary>div{padding:8px;background:transparent}

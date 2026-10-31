@@ -1,0 +1,220 @@
+{
+  "baseline": true,
+  "results": [
+    {
+      "width": 2684,
+      "pageOverflow": false,
+      "customerActionWidth": 77.828125,
+      "customerRowHeight": 449,
+      "controls": [
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 1,
+          "width": 231.46875
+        },
+        {
+          "text": "Record outcome",
+          "lines": 1,
+          "width": 151.390625
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 3,
+          "width": 121.625
+        },
+        {
+          "text": "Record outcome",
+          "lines": 2,
+          "width": 121.625
+        }
+      ]
+    },
+    {
+      "width": 1920,
+      "pageOverflow": false,
+      "customerActionWidth": 77.828125,
+      "customerRowHeight": 449,
+      "controls": [
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 1,
+          "width": 231.46875
+        },
+        {
+          "text": "Record outcome",
+          "lines": 1,
+          "width": 151.390625
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 3,
+          "width": 121.625
+        },
+        {
+          "text": "Record outcome",
+          "lines": 2,
+          "width": 121.625
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "pageOverflow": false,
+      "customerActionWidth": 77.828125,
+      "customerRowHeight": 449,
+      "controls": [
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 1,
+          "width": 231.46875
+        },
+        {
+          "text": "Record outcome",
+          "lines": 1,
+          "width": 151.390625
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 3,
+          "width": 121.625
+        },
+        {
+          "text": "Record outcome",
+          "lines": 2,
+          "width": 121.625
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "pageOverflow": false,
+      "customerActionWidth": 77.828125,
+      "customerRowHeight": 449,
+      "controls": [
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 2,
+          "width": 161.765625
+        },
+        {
+          "text": "Record outcome",
+          "lines": 1,
+          "width": 151.390625
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 3,
+          "width": 116.109375
+        },
+        {
+          "text": "Record outcome",
+          "lines": 2,
+          "width": 116.109375
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "pageOverflow": false,
+      "customerActionWidth": 77.828125,
+      "customerRowHeight": 618.046875,
+      "controls": [
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Open customer record",
+          "lines": 17,
+          "width": 45.328125
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 17,
+          "width": 51.1875
+        },
+        {
+          "text": "Record outcome",
+          "lines": 9,
+          "width": 51.1875
+        },
+        {
+          "text": "Review uploaded document",
+          "lines": 19,
+          "width": 47.328125
+        },
+        {
+          "text": "Record outcome",
+          "lines": 12,
+          "width": 47.328125
+        }
+      ]
+    }
+  ]
+}
