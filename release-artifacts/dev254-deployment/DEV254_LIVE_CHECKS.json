@@ -1,0 +1,277 @@
+{
+  "version": "2.1.0-dev.254",
+  "agent": [
+    {
+      "key": "awaiting_acceptance",
+      "method": "close",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "awaiting_acceptance",
+      "method": "back",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "sla_risk",
+      "method": "close",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "sla_risk",
+      "method": "back",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "overdue_tasks",
+      "method": "close",
+      "total": 7,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "overdue_tasks",
+      "method": "back",
+      "total": 7,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "no_next_action",
+      "method": "close",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    },
+    {
+      "key": "no_next_action",
+      "method": "back",
+      "total": 0,
+      "filters": true,
+      "scroll": 137
+    }
+  ],
+  "agentRecordBack": true,
+  "agentUnsubmittedFilterIsolation": true,
+  "manager": [
+    {
+      "card": "Unassigned queue",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Unassigned queue",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "SLA breaches",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "SLA breaches",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Overdue tasks",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Overdue tasks",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Stale-risk leads",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Stale-risk leads",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 249
+    },
+    {
+      "card": "Lead stages",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Lead stages",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Source quality",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Source quality",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Team workload",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Team workload",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Agent workload",
+      "total": 2,
+      "method": "close",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Agent workload",
+      "total": 2,
+      "method": "back",
+      "filters": true,
+      "scroll": 409.5
+    },
+    {
+      "card": "Task status",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Task status",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Data, consent & integration exceptions",
+      "total": 4,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Data, consent & integration exceptions",
+      "total": 4,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Recent customer activity",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 553.5
+    },
+    {
+      "card": "Recent customer activity",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 553.5
+    }
+  ],
+  "managerHierarchyReturn": true,
+  "managerUnassigned": true
+}

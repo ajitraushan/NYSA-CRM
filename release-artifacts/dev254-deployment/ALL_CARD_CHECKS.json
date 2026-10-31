@@ -1,0 +1,1747 @@
+{
+  "synthetic": true,
+  "checks": 174,
+  "report": [
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 1280,
+      "card": "Assignment offers awaiting acceptance",
+      "total": 8,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 1280,
+      "card": "SLA risk next 60 min",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 1280,
+      "card": "Overdue tasks",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 1280,
+      "card": "No next action",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 390,
+      "card": "Assignment offers awaiting acceptance",
+      "total": 8,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 390,
+      "card": "SLA risk next 60 min",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 390,
+      "card": "Overdue tasks",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "sales_agent",
+      "view": null,
+      "width": 390,
+      "card": "No next action",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Unassigned queue",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Overdue tasks",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Stale-risk leads",
+      "total": 6,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Unassigned queue",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Overdue tasks",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Stale-risk leads",
+      "total": 6,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "New leads",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Won leads",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Capacity pressure",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Available inventory",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Customer engagement",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "New leads",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Won leads",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Capacity pressure",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Available inventory",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Customer engagement",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "New leads",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Won leads",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Hot pipeline",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Stale-risk leads",
+      "total": 6,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "New leads",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Won leads",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Hot pipeline",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Stale-risk leads",
+      "total": 6,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Available inventory",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Aging inventory",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Inventory readiness exposure",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Available inventory",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Aging inventory",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Inventory readiness exposure",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "SLA risk next 60 min",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "No next action",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "SLA breaches",
+      "total": 4,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "SLA risk next 60 min",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "No next action",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Operational exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Lead stages",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Source quality",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Team workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Agent workload",
+      "total": 205,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Task status",
+      "total": 5,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Data, consent & integration exceptions",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Proposal workload",
+      "total": 9,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Qualification and SLA",
+      "total": 7,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Inventory readiness",
+      "total": 2,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Recent customer activity",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    }
+  ],
+  "browserErrors": []
+}

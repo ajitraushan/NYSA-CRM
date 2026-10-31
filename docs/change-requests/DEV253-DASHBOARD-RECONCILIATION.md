@@ -51,3 +51,13 @@ verify the encrypted off-server copy immediately before deployment. Package only
 from the advertised GitHub commit, verify provenance and hashes, and verify the
 exact-root worker before stop and exactly one worker after readiness. Retain
 DEV252 runtime/dependencies and the paired snapshot for rollback.
+
+## Final Test release: DEV254
+
+DEV254 supersedes the intermediate DEV253 candidates. Live checking found that
+nullable API filter fields were serialized as the literal `null`, which PostgreSQL
+rejected as UUID input. Applied filters now omit null, undefined and empty values;
+API-shaped tests cover this. The new version invalidates immutable DEV253 assets.
+Runtime scope remains the dashboard count and return-navigation corrections above.
+See `release-artifacts/dev254-deployment` for final provenance, hosted readiness,
+rollback and role-check evidence. Production remains on hold.

@@ -1,5 +1,14 @@
 # CRM Development Baseline
 
+## DEV254 dashboard reconciliation deployment — 31 October 2026
+
+- CRM Test now serves `2.1.0-dev.254`, exact GitHub origin commit `42b25cb4d84d93a33336a2c49149759d4b2ca9b6`, tree `125c38bda3689c39484691b578e2e670d7685540`. Archive SHA-256 `abea1c4167cc2080defd78b982231fc1b7eefdafaf911cf1cdc71d02297f541b`; manifest SHA-256 `ccbcda5871c4b74013fcf325eadd3c7ce28ad63de59549c77a89762cb9cffb6f`. Mandatory origin build and provenance verification passed. Production/main/website remain on HOLD, unchanged.
+- Regression: 1,596 selected tests, 1,502 passed, 94 intentionally skipped, zero failures. The actual frontend passed 174 desktop/mobile card cases across Agent, Manager and four Director views; the restricted synthetic PostgreSQL fixture passed all 28 standard KPI count checks, pagination beyond 500, lifecycle and Manager boundaries.
+- Initial DEV253 live checking exposed null API filter fields serialized as the literal `null`, causing invalid UUID input. Fixed filter normalization with real API-shape coverage. DEV253 immutable browser assets required DEV254 to invalidate the previously cached version. Both intermediate candidates were replaced only after restoring and verifying all 455 DEV252 baseline files and reconciling exact-root workers. No operational data/schema/configuration was changed.
+- Same-window fresh quiesced paired rollback: `/home/nysareal/crm-release-preparation/20261031-ui253/test-20261031T161857901Z`; authenticated off-server recovery in `C:/Users/ajitr/NYSA-Recovery/20261031-dev251-preparation/test-dev253`. All seven components verified in memory, no plaintext backup files downloaded. Ciphertext SHA-256 `9415f8c86807ffbf433b56a8d178c7c88a3481bc6394d335da9a7a5ec3a80f08`. Baseline DEV252 runtime/dependencies remain retained; migration stays159.
+- Final installation completed `2026-10-31T16:44:30.098Z`: all455 runtime hashes, ten PDF formats, expected HTTP access boundaries and unchanged registered environment passed. Database readiness green; exactly one verified exact-root worker PID1709349 after readiness. Initial baseline worker3019958 and intermediate workers were stopped only after exact command/cwd checks.
+- Safe technical, source and live acceptance evidence is recorded in `release-artifacts/dev254-deployment`. Post-deployment role verification results are detailed there; do not equate source fixture coverage with live role authentication.
+
 ## DEV253 dashboard reconciliation — 31 October 2026
 
 - Authorized scope: reconcile every dashboard card/drill-down count and retain filters and scroll on Back/Close; fix discovered defects only, regression test and deploy to CRM Test from GitHub. Production/main/website remain on HOLD.
