@@ -1,0 +1,142 @@
+[
+  {
+    "format": "a2a_buyer",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.0016461383530869936,
+        "meanChannelDifference": 0.06370609221817682
+      }
+    ]
+  },
+  {
+    "format": "a2a_seller",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.0015815839078678958,
+        "meanChannelDifference": 0.06196258424355101
+      }
+    ]
+  },
+  {
+    "format": "agent_payout",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 9.03762233067369e-05,
+        "meanChannelDifference": 0.0025219269932260867
+      }
+    ]
+  },
+  {
+    "format": "buyer_proposal",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.001531554212823095,
+        "meanChannelDifference": 0.06010610598979179
+      }
+    ]
+  },
+  {
+    "format": "financial_illustration",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.001531554212823095,
+        "meanChannelDifference": 0.06010449212866131
+      }
+    ]
+  },
+  {
+    "format": "listing_noc",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.001531554212823095,
+        "meanChannelDifference": 0.06010449212866131
+      }
+    ]
+  },
+  {
+    "format": "offer_letter",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.001531554212823095,
+        "meanChannelDifference": 0.06010449212866131
+      }
+    ]
+  },
+  {
+    "format": "payout_advice",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.0011071087355075272,
+        "meanChannelDifference": 0.03777833724963634
+      }
+    ]
+  },
+  {
+    "format": "tax_invoice",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 6.455444521909779e-06,
+        "meanChannelDifference": 2.151814840636593e-06
+      }
+    ]
+  },
+  {
+    "format": "viewing_confirmation",
+    "pagesBefore": 1,
+    "pagesAfter": 1,
+    "textIdentical": true,
+    "pages": [
+      {
+        "page": 1,
+        "sameDimensions": true,
+        "changedPixelFraction": 0.0015961086580421927,
+        "meanChannelDifference": 0.06179097701001024
+      }
+    ]
+  }
+]

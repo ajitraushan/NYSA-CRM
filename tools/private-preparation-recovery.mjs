@@ -10,7 +10,7 @@ import {pipeline} from 'node:stream/promises';
 process.umask(0o077);
 if(process.platform!=='linux')throw Error('Hosting only');
 const target=process.argv[2];
-const targets={production:{root:'/home/nysareal/nysa-crm',domain:'crm.nysarealty.com',db:'nysareal_nysacrm',user:'nysareal_nysacrmapp',version:'2.1.0-rc.1',migrations:140},test:{root:'/home/nysareal/nysa-core-dashboard-dd6262a-stage',domain:'crm-test.nysarealty.com',db:'nysareal_nysa_r2_rehearsal',user:'nysareal_nysar2app',version:'2.1.0-dev.248',migrations:159}};
+const targets={production:{root:'/home/nysareal/nysa-crm',domain:'crm.nysarealty.com',db:'nysareal_nysacrm',user:'nysareal_nysacrmapp',version:'2.1.0-rc.1',migrations:140},test:{root:'/home/nysareal/nysa-core-dashboard-dd6262a-stage',domain:'crm-test.nysarealty.com',db:'nysareal_nysa_dev247_smoke',user:'nysareal_nysar2app',version:'2.1.0-dev.248',migrations:159}};
 const t=targets[target];if(!t)throw Error('Explicit production or test target required');
 const base='/home/nysareal/crm-release-preparation/20261031-ui001';fs.mkdirSync(base,{recursive:true,mode:0o700});
 const out=base+'/'+target+'-'+new Date().toISOString().replace(/[-:.]/g,'');fs.mkdirSync(out,{mode:0o700});

@@ -1,0 +1,303 @@
+{
+  "checkedAt": "2026-10-31T13:39:56.138Z",
+  "candidateCommit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "candidate": {
+    "result": "PRIVATE_CANDIDATE_VERIFIED",
+    "root": "/home/nysareal/crm-release-preparation/20261031-ui001/production-candidate-dev251",
+    "commit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+    "version": "2.1.0-dev.251",
+    "archiveSha256": "749f077d323d846c9e468aafe5ef31f1d215eed9afdde98baca9c8bc5e12178a",
+    "runtimeFiles": 455,
+    "pdfFormats": [
+      {
+        "documentCode": "buyer_proposal",
+        "bytes": 51246
+      },
+      {
+        "documentCode": "financial_illustration",
+        "bytes": 51983
+      },
+      {
+        "documentCode": "offer_letter",
+        "bytes": 68624
+      },
+      {
+        "documentCode": "viewing_confirmation",
+        "bytes": 69291
+      },
+      {
+        "documentCode": "a2a_buyer",
+        "bytes": 68284
+      },
+      {
+        "documentCode": "a2a_seller",
+        "bytes": 68285
+      },
+      {
+        "documentCode": "listing_noc",
+        "bytes": 65936
+      },
+      {
+        "documentCode": "agent_payout",
+        "bytes": 54036
+      },
+      {
+        "documentCode": "tax_invoice",
+        "bytes": 37259
+      },
+      {
+        "documentCode": "payout_advice",
+        "bytes": 18298
+      }
+    ],
+    "applicationMutation": false,
+    "databaseMutation": false
+  },
+  "testDeployment": {
+    "result": "DEPLOYED_TEST_TECHNICAL_CHECKS_PASSED",
+    "commit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+    "version": "2.1.0-dev.251",
+    "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+    "productionMutation": false,
+    "databaseMigration": false,
+    "runtimeFiles": 455,
+    "workersBefore": [
+      {
+        "pid": 2662887,
+        "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+        "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+      }
+    ],
+    "workerStop": {
+      "stopped": 1
+    },
+    "pdfFormats": [
+      {
+        "documentCode": "buyer_proposal",
+        "bytes": 51246
+      },
+      {
+        "documentCode": "financial_illustration",
+        "bytes": 51983
+      },
+      {
+        "documentCode": "offer_letter",
+        "bytes": 68624
+      },
+      {
+        "documentCode": "viewing_confirmation",
+        "bytes": 69291
+      },
+      {
+        "documentCode": "a2a_buyer",
+        "bytes": 68284
+      },
+      {
+        "documentCode": "a2a_seller",
+        "bytes": 68285
+      },
+      {
+        "documentCode": "listing_noc",
+        "bytes": 65936
+      },
+      {
+        "documentCode": "agent_payout",
+        "bytes": 54036
+      },
+      {
+        "documentCode": "tax_invoice",
+        "bytes": 37259
+      },
+      {
+        "documentCode": "payout_advice",
+        "bytes": 18298
+      }
+    ],
+    "readiness": {
+      "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+      "version": "2.1.0-dev.251",
+      "database": "ready",
+      "workerCount": 1,
+      "workers": [
+        {
+          "pid": 1067174,
+          "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+          "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+        }
+      ]
+    },
+    "http": [
+      {
+        "url": "/",
+        "status": 200
+      },
+      {
+        "url": "/api/me",
+        "status": 401
+      },
+      {
+        "url": "/api/crm/dashboard",
+        "status": 401
+      },
+      {
+        "url": "/api/crm/tasks",
+        "status": 401
+      },
+      {
+        "url": "/ui-design-system.js",
+        "status": 200
+      },
+      {
+        "url": "/ui-design-system.css",
+        "status": 200
+      }
+    ],
+    "humanRoleUat": "pending",
+    "configurationPreserved": true,
+    "completedAt": "2026-10-31T13:05:09.308Z"
+  },
+  "configurationPlan": {
+    "status": "prepared_not_applied",
+    "candidateCommit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+    "candidateVersion": "2.1.0-dev.251",
+    "plannedNewDisabledLoginActors": 2,
+    "configurationFields": [
+      "WEB_INTAKE_IDENTITY_KEY",
+      "WEB_INTAKE_MATCH_KEY",
+      "WEB_INTAKE_MATCH_KEY_VERSION",
+      "WEB_INTAKE_ACTOR_ID",
+      "WEBSITE_INTAKE_ACTOR_ID",
+      "NIA_INTAKE_ACTOR_ID",
+      "WEBSITE_INTAKE_SECRET",
+      "WEB_INTAKE_WORKER_ENABLED"
+    ],
+    "productionMutated": false,
+    "secretValuesPrinted": false,
+    "privatePlan": "/home/nysareal/crm-release-preparation/ui001-production-config-8f722679c92e/PENDING_PRODUCTION_CONFIG.json",
+    "privatePlanSha256": "899f5f5e9ee523e79da63e4fe4a2deb97342d6dc3dd7e25be55f97a9e6ae027f"
+  },
+  "websiteCompanion": {
+    "status": "REVIEW_COPY_ONLY_NOT_DEPLOYED",
+    "candidateCommit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+    "productionThemeBaselineSha256": "660cd1b1f407676924c4b783b56c1c208080d83e549f952a5cc73bbf21daa719",
+    "originHookPatchSha256": "3572d9da8d72d446679f2c6342b06133bc586c423e622f1fa12d2689a8d46039",
+    "files": [
+      {
+        "name": "functions.php",
+        "sha256": "8fa127523e5a7d90d97708ae1eed376190298c506ff36817b5d4553abf714985",
+        "phpLint": "passed"
+      },
+      {
+        "name": "page-contact-us.php",
+        "sha256": "a6d841b71a4937e24e8a98be8b9c33e05340cbb991f0414d7a3dd562d0dd31b7",
+        "phpLint": "passed"
+      },
+      {
+        "name": "nysa-core-lead-bridge.php",
+        "sha256": "54442e423c65897ce0b6e0ddc8f736cde36bbc45e5e806e8740830309ecf4143",
+        "phpLint": "passed"
+      }
+    ],
+    "productionContactHookPresent": false,
+    "productionCoreBridgeInstalled": false,
+    "productionOutboxTablePresent": false,
+    "requiredEndpoint": "https://crm.nysarealty.com/api/website-intake",
+    "sharedSecret": "Private pending CRM configuration; never printed",
+    "productionWebsiteMutation": false,
+    "requiresExactWebsiteDeploymentApproval": true,
+    "requiresFreshPairedWebsiteBackupBeforeApply": true,
+    "optionalOutreachProvidersMustRemainOff": true
+  },
+  "productionRecovery": {
+    "result": "PREPARATION_BACKUP_ENCRYPTED",
+    "directory": "/home/nysareal/crm-release-preparation/20261031-ui001/production-20261031T125241232Z",
+    "target": "production",
+    "version": "2.1.0-rc.1",
+    "migrations": 140,
+    "ciphertextSha256": "2e4db0a49421ee50fd03899d98aaaf3606176fab4fb3a0c1e8b756c222f10626",
+    "headerSha256": "7eb76a743b4e93523abde16225a9e57a6f3dd3e00746c0ccab2643b0bbb378fc",
+    "ciphertextBytes": 108648140,
+    "componentCount": 7,
+    "quiesced": false,
+    "freshMaintenanceWindowBackupRequired": true,
+    "productionMutation": false
+  },
+  "testRecovery": {
+    "result": "PREPARATION_BACKUP_ENCRYPTED",
+    "directory": "/home/nysareal/crm-release-preparation/20261031-ui001/test-20261031T125939618Z",
+    "target": "test",
+    "version": "2.1.0-dev.248",
+    "migrations": 159,
+    "ciphertextSha256": "95e88cbef1b6af7a3d7a1ac2fc1c10db0b22277a1bd3b8e729dc5087b05d362c",
+    "headerSha256": "e64e61dec4f930d37f23a62c13cae21a05e445eb0de8487c94d2a1ace60173f8",
+    "ciphertextBytes": 101534758,
+    "componentCount": 7,
+    "quiesced": false,
+    "freshMaintenanceWindowBackupRequired": true,
+    "productionMutation": false
+  },
+  "production": {
+    "version": "2.1.0-rc.1",
+    "registration": "started",
+    "workers": [
+      {
+        "pid": 1688401,
+        "command": "lsnode:/home/nysareal/nysa-crm/",
+        "cwd": "/home/nysareal/nysa-crm"
+      },
+      {
+        "pid": 3651043,
+        "command": "lsnode:/home/nysareal/nysa-crm/",
+        "cwd": "/home/nysareal/nysa-crm"
+      }
+    ],
+    "flags": {
+      "LEAD_RESPONSE_LIVE_ENABLED": false,
+      "LEAD_AI_CHAT_ENABLED": false,
+      "META_INTAKE_ENABLED": false,
+      "VOICE_ENABLED": false,
+      "WEB_INTAKE_WORKER_ENABLED": false
+    },
+    "readiness": {
+      "status": 200,
+      "version": "2.1.0-rc.1",
+      "database": "ready",
+      "ok": true
+    },
+    "websitePhpVersion": "ea-php81"
+  },
+  "test": {
+    "version": "2.1.0-dev.251",
+    "registration": "started",
+    "workers": [
+      {
+        "pid": 1067174,
+        "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+        "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+      }
+    ],
+    "flags": {
+      "LEAD_RESPONSE_LIVE_ENABLED": false,
+      "LEAD_AI_CHAT_ENABLED": false,
+      "META_INTAKE_ENABLED": false,
+      "VOICE_ENABLED": false,
+      "WEB_INTAKE_WORKER_ENABLED": true
+    },
+    "finalReadiness": {
+      "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+      "version": "2.1.0-dev.251",
+      "database": "ready",
+      "workerCount": 1,
+      "workers": [
+        {
+          "pid": 1067174,
+          "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+          "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+        }
+      ]
+    }
+  },
+  "productionMutation": false,
+  "customerRecordsExported": false,
+  "secretValuesExported": false
+}

@@ -3,7 +3,7 @@
 **Governed requirement · 30 October 2026**
 **Reference:** NYSA-CRM-20261030-UI-001
 **Source:** `NYSA-CORE-CRM-Makeover-Plan.pdf`, reviewed in full on 30 October 2026
-**Status:** Implementation approved on 31 October; DEV251 source verification passed; GitHub packaging and live CRM Test acceptance pending. See `UI-001-IMPLEMENTATION-STATUS.md`.
+**Status:** Implemented and deployed as DEV251 on CRM Test with exact approval on 31 October. Source, hosted technical and live Agent/Manager/Director checks passed. Production is unchanged and awaits exact final approval. See `UI-001-IMPLEMENTATION-STATUS.md`.
 **Target:** CRM Test first; production candidate preparation is approved, production deployment awaits exact final approval.
 
 ## 1. Document control and baseline

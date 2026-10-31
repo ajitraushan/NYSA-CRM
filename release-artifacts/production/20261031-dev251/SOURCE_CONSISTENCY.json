@@ -1,0 +1,107 @@
+{
+  "candidate": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "rc1": "b6e013c51f46be482858e733160fa7e675ff3106",
+  "totalMigrations": 159,
+  "original140MigrationsByteIdentical": true,
+  "pending19MatchSuccessfulProductionDataRehearsal": true,
+  "pending": [
+    {
+      "file": "src/migrations/141_meta_lead_source_inbox.sql",
+      "sha256": "b2ba32a2ee16227fbf8dd4956cb41f437d57c9c33bb045522b5372fe26e0e9f5",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/142_nonvoice_follow_up_jobs.sql",
+      "sha256": "5bc605b5df609859034e267040121d6a37f37e33e3b21832840035558e676d17",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/143_lead_integration_setup.sql",
+      "sha256": "f6caf46339f13f77acfeb0e96c1d77e2c247c54b024307234bc4330a6816dc18",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/144_nonvoice_response_workflow.sql",
+      "sha256": "a1a75e0ea469f6ce815a97ec9e9b3db11da2c076737b009f3cbf9948bf3d8b7a",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/145_nonvoice_provider_inbox.sql",
+      "sha256": "48922fb52b164d3ad306689c92894f3b8c4d45a8e5783250fcadb5de66725fba",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/146_cpanel_email_cursor.sql",
+      "sha256": "1afd10b57c5fc840ff9ec54c19ba848d536b64ef6bf11ddfac48a6b09ca55be0",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/147_nonvoice_handoff_pending.sql",
+      "sha256": "275d0b8c4d8c9fc36f54d9989a2469030024e465f4604648c29bcb2cbcc5cc51",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/148_nonvoice_ai_chat.sql",
+      "sha256": "c0044b910c18df6d664ce67e309a58b26038886a65b43868ee9b3a1d8d456154",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/149_nonvoice_chat_budget.sql",
+      "sha256": "8da4a3d5dfec712b9b296d66cde5029a595d9a8d0ac3e76fc93a7878f2840d0a",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/150_nonvoice_delivery_evidence.sql",
+      "sha256": "3afdb26eae3e6b0e3be7545591d7fd189c8302c8b10cd62e550f70c9792da92c",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/151_nonvoice_protected_connections.sql",
+      "sha256": "c316663af4b13d1cef0f5d80328c358cb68c2006dcdc166f92708d11a487b26f",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/152_nonvoice_pause_control.sql",
+      "sha256": "bd9edb2715d85b44f309e8dc7cf37e2bf6fc8176e4d1ab54ac73f75483a05b01",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/153_nonvoice_retry_health.sql",
+      "sha256": "7e89aa8abfcbca63f49abbe0c5302d15d0621a6f5a7c7e1793432867f622c753",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/154_nonvoice_manager_escalation.sql",
+      "sha256": "f3f0cc60585aa060a9145c099c868a06ab41c9287a01c81ed7235bdc5806cd44",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/155_website_shared_lead_response.sql",
+      "sha256": "fa3f8954b2d4ef995d970574af74d08b78f7388c78a9df826076cd7278a49ad4",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/156_nonvoice_unassigned_response_queue.sql",
+      "sha256": "bc81943c9cd13a13fb37cea051f1f78838466eeda9e723dc206b2cb5fb518d00",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/157_incoming_leads_campaign_register.sql",
+      "sha256": "839cbae282017d1b03853a88fa1a6d71edf6baf2660a66173e8e89ef9380a4ca",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/158_web_intake_phase1_foundation.sql",
+      "sha256": "98e682487c1f8511027ae6fbba2c08f8bde707b68dc934859c8b3bf2a90856ba",
+      "matchesRehearsedSource": true
+    },
+    {
+      "file": "src/migrations/159_dev248_intake_corrections.sql",
+      "sha256": "f6e791e31b2d5a0010e079468d75c07aa5a0175fea9e808caae0d0ac51a58024",
+      "matchesRehearsedSource": true
+    }
+  ],
+  "workflowPolicyDashboardAndIntegrationSourceUnchangedFromDev248": true,
+  "sqlCompanionSha256": "3885429cc570f74c0f2fb2e49b09faf830e1b28072e5be8158c708fbea954849",
+  "productionMutation": false
+}

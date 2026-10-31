@@ -1,0 +1,14 @@
+{
+  "reference": "OBS-DEV251-001",
+  "trigger": "Leave My Diary before its pending API request resolves",
+  "observed": "Existing loadDiary callback targets a removed container and logs a browser error",
+  "before": "a6fafab35ef0042f0a5b1c31c5bd35dd33821590",
+  "after": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "functionSha256": "5f31f6874292c3a283ba04ae888ef9c93c17da4cd2ef68255c571551706d537c",
+  "functionByteIdentical": true,
+  "normalStableLoadPassed": true,
+  "newRegression": false,
+  "fixed": false,
+  "decision": "Documented; not changed under the instruction to leave unrelated code untouched",
+  "customerDataMutation": false
+}
