@@ -1,0 +1,1116 @@
+{
+  "version": "2.1.0-dev.254",
+  "checkedOnDubai": "2026-11-01",
+  "role": "director",
+  "cards": 68,
+  "checks": 136,
+  "results": [
+    {
+      "view": "Executive",
+      "card": "New leads",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "New leads",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "Won leads",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "Won leads",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "SLA breaches",
+      "total": 207,
+      "method": "close",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "SLA breaches",
+      "total": 207,
+      "method": "back",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "Capacity pressure",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "Capacity pressure",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 317.5
+    },
+    {
+      "view": "Executive",
+      "card": "Available inventory",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Available inventory",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Customer engagement",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Customer engagement",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 502.5
+    },
+    {
+      "view": "Executive",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Source quality",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Source quality",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Team workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Team workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 663
+    },
+    {
+      "view": "Executive",
+      "card": "Task status",
+      "total": 9,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Task status",
+      "total": 9,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "close",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Executive",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "back",
+      "filters": true,
+      "scroll": 806.5
+    },
+    {
+      "view": "Sales",
+      "card": "New leads",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "New leads",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Won leads",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Won leads",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Hot pipeline",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Hot pipeline",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Stale-risk leads",
+      "total": 200,
+      "method": "close",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Stale-risk leads",
+      "total": 200,
+      "method": "back",
+      "filters": true,
+      "scroll": 297
+    },
+    {
+      "view": "Sales",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Source quality",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Source quality",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Team workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Team workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 447.5
+    },
+    {
+      "view": "Sales",
+      "card": "Task status",
+      "total": 9,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Task status",
+      "total": 9,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "close",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Sales",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "back",
+      "filters": true,
+      "scroll": 591
+    },
+    {
+      "view": "Inventory",
+      "card": "Available inventory",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Available inventory",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Aging inventory",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Aging inventory",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Inventory readiness exposure",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Inventory readiness exposure",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 329.5
+    },
+    {
+      "view": "Inventory",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Source quality",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Source quality",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Team workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Team workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 512
+    },
+    {
+      "view": "Inventory",
+      "card": "Task status",
+      "total": 9,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Task status",
+      "total": 9,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "close",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Inventory",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "back",
+      "filters": true,
+      "scroll": 656
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "SLA breaches",
+      "total": 207,
+      "method": "close",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "SLA breaches",
+      "total": 207,
+      "method": "back",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "SLA risk next 60 min",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "SLA risk next 60 min",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "No next action",
+      "total": 207,
+      "method": "close",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "No next action",
+      "total": 207,
+      "method": "back",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Operational exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 307
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Lead stages",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Source quality",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Source quality",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Team workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Team workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "close",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Agent workload",
+      "total": 209,
+      "method": "back",
+      "filters": true,
+      "scroll": 467.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Task status",
+      "total": 9,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Task status",
+      "total": 9,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Data, consent & integration exceptions",
+      "total": 417,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Proposal workload",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Qualification and SLA",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Inventory readiness",
+      "total": 0,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Company → business line → team → manager → agent",
+      "total": 4,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Recent customer activity",
+      "total": 1,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "close",
+      "filters": true,
+      "scroll": 611.5
+    },
+    {
+      "view": "Operations and Risk",
+      "card": "Forward-looking data maturity",
+      "total": 3,
+      "method": "back",
+      "filters": true,
+      "scroll": 611.5
+    }
+  ],
+  "pagination": {
+    "count": 209,
+    "pageRows": [
+      100,
+      100,
+      9
+    ],
+    "previous": true
+  },
+  "recordBack": {
+    "retainedPage": 3,
+    "captionCount": 209
+  },
+  "hierarchy": {
+    "unassigned": true,
+    "appliedChildFilters": true,
+    "parentRestored": true
+  },
+  "browserErrors": []
+}

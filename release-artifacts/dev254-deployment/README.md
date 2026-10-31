@@ -18,3 +18,5 @@ Final install: 31 October 2026, 16:44:30 UTC (20:44:30 Dubai). Migration159 unch
 GitHub CI succeeded for exact source:
 https://github.com/ajitraushan/NYSA-CRM/actions/runs/41220943512
 https://github.com/ajitraushan/NYSA-CRM/actions/runs/41220938988
+
+Director live acceptance completed 1 November 2026: `DIRECTOR_LIVE_CHECKS.json` records all68 cards and136 Close/Back cases across all four views,209 contributing records across three pages, record-page restoration and Unassigned hierarchy return after applying child filters. `DIRECTOR_LIVE_COUNT.png` excludes customer rows. No runtime changes or new deployment occurred.
