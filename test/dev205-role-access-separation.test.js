@@ -49,7 +49,8 @@ test('role access separates Admin maintenance from Line Manager leave decisions'
   assert.equal(LEAVE_WORKFLOW_POLICY.routingReason,'leave_to_line_manager');
   assert.equal(LEAVE_WORKFLOW_POLICY.approverLabel,'Line Manager');
   assert.equal(ROLE_ACCESS_POLICY.admin.label,'Admin');
-  assert.deepEqual(ROLE_ACCESS_POLICY.admin.workspaceTabs,['admin','purchasedDataImport','myLeave','leaveAdministration']);
+  assert.deepEqual(ROLE_ACCESS_POLICY.admin.workspaceTabs,['admin','incomingLeads','purchasedDataImport','myLeave','leaveAdministration']);
+  assert.equal(hasCapability(admin,CAPABILITY.LEAD_RESPONSE_UNASSIGNED),true);
   assert.equal(hasCapability(admin,CAPABILITY.PURCHASED_DATA_IMPORT),true);
   assert.equal(hasCapability(salesAgent,CAPABILITY.PURCHASED_DATA_IMPORT),true);
   assert.equal(hasCapability(salesAgent,CAPABILITY.INVENTORY_CREATE),true);

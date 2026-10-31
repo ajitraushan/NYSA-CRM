@@ -1,0 +1,1 @@
+ALTER TABLE lead_integration_setup ADD COLUMN paused BOOLEAN NOT NULL DEFAULT TRUE;

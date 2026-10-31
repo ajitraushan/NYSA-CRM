@@ -1,0 +1,125 @@
+{
+  "version": "2.1.0-dev.251",
+  "cards": [
+    {
+      "attribute": "data-dashboard-segment",
+      "value": "unassigned_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-segment",
+      "value": "sla_breaches",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-segment",
+      "value": "overdue_tasks",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-segment",
+      "value": "stale_risk",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "0",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "1",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "2",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "3",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "4",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "5",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "6",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "7",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "8",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "9",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "attribute": "data-dashboard-summary",
+      "value": "10",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    }
+  ]
+}

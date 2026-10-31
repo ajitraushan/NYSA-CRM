@@ -23,13 +23,14 @@ test('R3A-DUPLICATE-43 retains conflicting identities for governed review instea
   assert.match(ui,/Use email Customer/);assert.match(ui,/Use mobile Customer/);assert.match(ui,/CORE will not guess/);
 });
 
-test('R3A-INTAKE-EMAIL-42 gates non-credible email-only traffic before Customer creation',()=>{
+test('R3A-INTAKE-EMAIL-42 retains format-valid email and records credibility separately',()=>{
   const route=read('src/routes/website-intake.js'),migration=read('src/migrations/070_release3a_email_only_intake_gate.sql'),ui=read('public/app.js'),priority=read('src/routes/opportunities.js');
   assert.match(route,/function emailOnlyGate/);
   assert.match(route,/identity\.phone\|\|!identity\.email/);
-  assert.match(route,/emailCredibility\?\.status==='credible_domain'/);
-  assert.match(route,/EMAIL_ONLY_CREDIBILITY_REVIEW/);
-  assert.match(route,/email_only_review_required/);
+  assert.match(route,/emailCredibility\?\.status!=='invalid_format'/);
+  assert.match(route,/const trustedEmail=identity\.email\|\|null/);
+  assert.match(route,/recordWebIntakeJourney/);
+  assert.doesNotMatch(route.slice(route.indexOf("r.post('/intake/website'"),route.indexOf('function supportOnly')),/EMAIL_ONLY_CREDIBILITY_REVIEW/);
   assert.match(route,/resolve-email/);
   assert.match(route,/approve_email_only/);
   assert.match(route,/email_only_rejected/);

@@ -47,12 +47,24 @@ r.patch('/crm/campaigns/:id/status',async(req,res)=>{
 r.post('/crm/campaigns/:id/mappings',async(req,res)=>{
   if(!requireMaintainer(req,res))return;const sourceCode=clean(req.body?.sourceCode,80),externalCode=clean(req.body?.externalCampaignCode,160);if(!sourceCode||!externalCode)return res.status(400).json({error:'Source and external campaign code are required'});
   const campaign=await one("SELECT id,status FROM marketing_campaigns WHERE id=$1",[req.params.id]);if(!campaign)return res.status(404).json({error:'Campaign not found'});if(!['active','paused'].includes(campaign.status))return res.status(409).json({error:'Mappings may be added only to an active or paused campaign'});
-  try{const result=await transaction(async client=>{const row=await one(`INSERT INTO campaign_external_mappings(id,source_code,external_campaign_code,campaign_id,created_by) VALUES($1,$2,$3,$4,$5) RETURNING *`,[uuid(),sourceCode,externalCode,campaign.id,req.broker.id],client);const events=await execute(`UPDATE website_intake_events SET campaign_id=$1,campaign_mapping_status='mapped'
-      WHERE campaign_mapping_status='unmapped' AND LOWER(source_code)=LOWER($2) AND LOWER(campaign_code)=LOWER($3)`,[campaign.id,sourceCode,externalCode],client);await execute(`UPDATE leads l SET campaign_id=$1,updated_at=NOW() FROM website_intake_events e
-      WHERE e.lead_id=l.id AND e.campaign_id=$1 AND l.campaign_id IS NULL`,[campaign.id],client);await audit('CampaignMapping',row.id,'created',req.broker.id,{campaignId:campaign.id,sourceCode,externalCampaignCode:externalCode,reconciledEvents:events.rowCount},client);return {mapping:row,reconciledEvents:events.rowCount};});res.status(201).json(result);}catch(error){if(error?.code==='23505')return res.status(409).json({error:'That source campaign code is already actively mapped'});throw error;}
+  try{const result=await transaction(async client=>{
+    const row=await one(`INSERT INTO campaign_external_mappings(id,source_code,external_campaign_code,campaign_id,created_by) VALUES($1,$2,$3,$4,$5) RETURNING *`,[uuid(),sourceCode,externalCode,campaign.id,req.broker.id],client);
+    const events=await execute(`UPDATE website_intake_events SET campaign_id=$1,campaign_mapping_status='mapped'
+      WHERE campaign_mapping_status='unmapped' AND LOWER(source_code)=LOWER($2) AND LOWER(campaign_code)=LOWER($3)`,[campaign.id,sourceCode,externalCode],client);
+    const meta=sourceCode.toLowerCase()==='meta'?await execute(`UPDATE lead_source_inbox SET campaign_id=$1,campaign_mapping_status='mapped'
+      WHERE source_system='meta' AND campaign_mapping_status='unmapped' AND LOWER(external_campaign_code)=LOWER($2)`,[campaign.id,externalCode],client):{rowCount:0};
+    await execute(`UPDATE leads l SET campaign_id=$1,updated_at=NOW() FROM website_intake_events e
+      WHERE e.lead_id=l.id AND e.campaign_id=$1 AND l.campaign_id IS NULL`,[campaign.id],client);
+    await execute(`UPDATE leads l SET campaign_id=$1,updated_at=NOW() FROM lead_source_inbox s
+      WHERE s.lead_id=l.id AND s.campaign_id=$1 AND l.campaign_id IS NULL`,[campaign.id],client);
+    await audit('CampaignMapping',row.id,'created',req.broker.id,{campaignId:campaign.id,sourceCode,externalCampaignCode:externalCode,reconciledEvents:events.rowCount,reconciledMetaEvents:meta.rowCount},client);
+    return {mapping:row,reconciledEvents:events.rowCount,reconciledMetaEvents:meta.rowCount};
+  });res.status(201).json(result);}catch(error){if(error?.code==='23505')return res.status(409).json({error:'That source campaign code is already actively mapped'});throw error;}
 });
 
-r.get('/crm/campaigns/unmapped/intake',async(req,res)=>{if(!requireMaintainer(req,res))return;const unmapped=await many(`SELECT source_code,campaign_code,COUNT(*)::int AS event_count,MIN(received_at) AS first_received_at,MAX(received_at) AS last_received_at
-  FROM website_intake_events WHERE campaign_mapping_status='unmapped' GROUP BY source_code,campaign_code ORDER BY first_received_at`);res.json({unmapped});});
+r.get('/crm/campaigns/unmapped/intake',async(req,res)=>{if(!requireMaintainer(req,res))return;const unmapped=await many(`SELECT source_code,campaign_code,COUNT(*)::int AS event_count,MIN(received_at) AS first_received_at,MAX(received_at) AS last_received_at FROM (
+  SELECT source_code,campaign_code,received_at FROM website_intake_events WHERE campaign_mapping_status='unmapped'
+  UNION ALL SELECT 'Meta',external_campaign_code,received_at FROM lead_source_inbox WHERE source_system='meta' AND campaign_mapping_status='unmapped'
+  ) source_campaigns GROUP BY source_code,campaign_code ORDER BY first_received_at`);res.json({unmapped});});
 
 export default r;

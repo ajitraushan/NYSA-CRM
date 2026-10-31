@@ -65,7 +65,7 @@ test('R3B-FEEDBACK-51 migration and route integration are append-only scoped and
   assert.match(route,/canOperateLead/);assert.match(route,/FOR UPDATE OF c/);assert.match(route,/FOR UPDATE OF li/);
   assert.match(route,/expectedPreviousDecisionId/);assert.match(route,/evaluateInventoryEligibilityV2/);
   assert.match(route,/createsPropertyMatch:Boolean\(governedAssignment\)/);assert.match(route,/createsInventoryAssignment:Boolean\(governedAssignment\)/);assert.match(route,/reservesInventory:false/);
-  for(const marker of ['Shortlist','Defer','Reject','Record immutable property feedback','Customer reported','Property feedback recorded as governed evidence'])assert.match(ui,new RegExp(marker));
+  for(const marker of ['Shortlist','Defer','Reject','Record property feedback','Customer reported','Property feedback recorded as governed evidence'])assert.match(ui,new RegExp(marker));
 });
 
 test('R3B-REQUIREMENT-47 detects only materially changed website evidence and hashes the exact governed version',()=>{

@@ -98,7 +98,7 @@ test('Inventory API is optional and never rewrites existing developer or ownersh
 
 test('Company UI keeps corporate governance inside the Company experience without requiring a personal owner or SHA input',()=>{
   const ui=read('public/app.js');
-  for(const marker of ['Governed organization status','openCompanyGovernance','EXISTING COMPANY · GOVERNED ORGANIZATION','No personal owner is required','Legal structure','technical evidence digest automatically'])assert.match(ui,new RegExp(marker,'i'));
+  for(const marker of ['Organization status','openCompanyGovernance','EXISTING COMPANY · GOVERNED ORGANIZATION','No personal owner is required','Legal structure','technical evidence digest automatically'])assert.match(ui,new RegExp(marker,'i'));
   assert.doesNotMatch(ui,/Source evidence SHA-256 \*/);
 });
 

@@ -1,0 +1,99 @@
+/* UI-001 shared working-screen tokens. Login and generated documents are excluded. */
+body:has(#app.shell-layout){--ui-ink:#14232c;--ui-secondary:#5b6770;--ui-label:#7a5a26;--ui-primary:#8f6a30;--ui-focus:#285b75;--ui-space:8px;--gold-dim:#7a5a26}
+body:has(#app.shell-layout) #app.shell-layout{--amber:#7a5a26}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page){font:400 16px/1.5 Inter,sans-serif;color:var(--ui-ink);min-width:0;--gold-dim:#7a5a26}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) *{box-sizing:border-box;min-width:0}
+body:has(#app.shell-layout) :where(#view,.modal,.record-workspace,.opportunity-stage-page) *{font-size:inherit!important;line-height:inherit!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(h1,h2,h3,h4){font-family:'GFS Baskerville',Georgia,serif;font-weight:600;color:var(--ui-ink);line-height:1.3!important;letter-spacing:0;font-size:20px!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .ui-page-title{font-size:28px!important;line-height:1.2!important;margin:8px 0}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(p,td,dd,input,select,textarea,button,.btn){font-size:16px!important;line-height:1.5!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(small,.muted,.tool-note,.hint,.subtitle,.secondary,.web-intake-meta){font-size:14px;line-height:1.45;color:var(--ui-secondary)}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(label,th,dt,.eyebrow,.badge,.pill,.web-intake-badge){font-size:12px;line-height:1.3;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ui-label)}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) th{color:#fff;background:#14232c}
+body:has(#app.shell-layout) nav :is(a,button){font-size:14px;line-height:1.45}
+body:has(#app.shell-layout) header :is(span,button){font-size:14px;line-height:1.45}
+body:has(#app.shell-layout) :is(button,input,select,textarea,summary,a,[tabindex]):focus-visible{outline:3px solid var(--ui-focus);outline-offset:3px}
+body:has(#app.shell-layout) :is(#app.shell-layout>header,#app.shell-layout>nav.tabs) :is(button,summary,a,[tabindex]):focus-visible{outline-color:#c9a86a}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .btn-primary{background:var(--ui-primary);border-color:var(--ui-primary);color:#fff}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(button,input,select,textarea){min-height:40px;max-width:100%}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(button,input,select,textarea):disabled{opacity:1!important;color:#5b6770!important;background:#f4f1eb!important;border-color:#8b949b;cursor:not-allowed}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(input[type="checkbox"],input[type="radio"]){min-height:20px;width:20px;flex:none;accent-color:var(--ui-primary)}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(table){width:100%;table-layout:auto}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(td,th){padding:12px 16px;min-height:48px;white-space:normal;overflow-wrap:anywhere;vertical-align:top}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) td small{display:block;margin-top:8px}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.pipeline-table-wrap,.table-wrap){max-width:100%;overflow-x:auto}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .filter-grid>[class*="span"]{grid-column:auto}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filterbar,.dashboard-panel,.dashboard-card,.web-intake-card){padding:24px;margin-bottom:24px}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.form-grid,.kv-grid){gap:16px}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.panel-head,.detail-head,.ui-page-head){gap:16px;margin-bottom:24px;flex-wrap:wrap}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .ui-page-head p{font-size:14px!important;line-height:1.45!important;color:var(--ui-secondary);max-width:75ch;margin:8px 0}
+body:has(#app.shell-layout) :is(.ui-more-filters,.ui-audit){padding:16px 0;margin-top:8px}
+body:has(#app.shell-layout) summary{cursor:pointer;min-height:40px;padding:8px;color:var(--ui-ink)}
+body:has(#app.shell-layout) .ui-more-actions{margin-left:auto;position:relative;display:flex;gap:8px}
+body:has(#app.shell-layout) .ui-more-actions[open]{padding:8px;background:#fff;border:1px solid #b9c0c6;border-radius:8px}
+body:has(#app.shell-layout) .ui-more-actions .btn{display:block;margin:8px}
+body:has(#app.shell-layout) .ui-record-row{cursor:pointer}
+body:has(#app.shell-layout) .ui-record-row:hover{background:#f4f1eb}
+body:has(#app.shell-layout) .ui-row-open{background:transparent;border:0;color:#14232c;text-decoration:underline}
+/* Action controls must retain word boundaries; page-overflow alone cannot detect collapsed columns. */
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) .ui-action-cell{min-width:10rem;overflow-wrap:normal;word-break:normal}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) th{overflow-wrap:normal;word-break:normal}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) td :is(button,a.btn){overflow-wrap:normal;word-break:normal;white-space:normal}
+body:has(#app.shell-layout) .ui-row-open{white-space:nowrap!important;max-width:none;padding:4px 8px}
+/* The Customer register has seven columns; legacy six-column widths consumed the entire table. */
+body:has(#app.shell-layout) #customer-results table{table-layout:fixed;min-width:960px}
+body:has(#app.shell-layout) #customer-results :is(th,td){padding:12px}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(1){width:20%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(2){width:26%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(3){width:12%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(4){width:14%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(5){width:12%}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(6){width:8%;white-space:normal}
+body:has(#app.shell-layout) #customer-results :is(th,td):nth-child(7){width:8%;text-align:center}
+body:has(#app.shell-layout) #customer-results .ui-row-open{padding:4px}
+body:has(#app.shell-layout) #view .admin-entry-form{grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:16px}
+body:has(#app.shell-layout) :is(.empty,.empty-state,.web-intake-empty){padding:32px;border:1px dashed #8b949b;border-radius:8px;background:#fff;color:var(--ui-secondary)}
+body:has(#app.shell-layout) .web-intake-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+body:has(#app.shell-layout) .web-intake-summary>div{padding:8px;background:transparent}
+body:has(#app.shell-layout) .web-intake-card h3{overflow-wrap:anywhere;max-width:40ch}
+body:has(#app.shell-layout) .ui-intake-desk>.web-intake-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:16px;padding:16px}
+body:has(#app.shell-layout) .ui-intake-desk :is(.web-intake-card-head,.web-intake-detail){grid-column:1/-1}
+body:has(#app.shell-layout) .ui-intake-desk :is(p,.web-intake-actions){margin:0}
+body:has(#app.shell-layout) .web-intake-shell [data-intake-filters]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto auto;gap:16px;align-items:end}
+body:has(#app.shell-layout) .ui-intake-desk .web-intake-actions{grid-column:3;align-self:center}
+@media(max-width:1100px){body:has(#app.shell-layout) header .system-name{display:none}body:has(#app.shell-layout) header .userbox{gap:8px;flex-wrap:wrap;justify-content:flex-end}body:has(#app.shell-layout) header .userbox>span{max-width:24ch;overflow-wrap:anywhere}}
+@media(max-width:768px){body:has(#app.shell-layout) .ui-intake-desk>.web-intake-card{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:768px){body:has(#app.shell-layout) .ui-intake-desk .web-intake-actions{grid-column:auto}body:has(#app.shell-layout) .web-intake-shell [data-intake-filters]{grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) .web-intake-shell [data-intake-filters]>label{grid-column:1/-1}}
+@media(max-width:600px){body:has(#app.shell-layout) header .system-name{display:block}}
+body:has(#app.shell-layout) .ui-outreach-badge{display:inline-flex;align-items:center;justify-self:start;border:1px solid #b9c0c6;border-radius:16px;padding:8px 16px;font-size:12px;color:#5b6770;background:#f4f1eb}
+body:has(#app.shell-layout) .ui-listing-steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) th{color:#fff!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(label,th,dt,.eyebrow,.badge,.pill,.web-intake-badge){font-size:12px!important;line-height:1.3!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(small,.muted,.tool-note,.hint,.subtitle,.secondary,.web-intake-meta){font-size:14px!important;line-height:1.45!important}
+body:has(#app.shell-layout) .ui-page-head>div:first-child{flex:1 1 55%}
+body:has(#app.shell-layout) .ui-more-filters{grid-column:1/-1}
+body:has(#app.shell-layout) .ui-listing-step{border:0;padding:16px 0;width:100%;margin:0}
+body:has(#app.shell-layout) .ui-listing-step legend{font:600 20px/1.3 'GFS Baskerville',Georgia,serif!important;padding:0 0 16px}
+body:has(#app.shell-layout) #view :is(.stat-card strong,.stat-card b){font:600 20px/1.3 Inter,sans-serif!important}
+body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) button[data-flow-step] small{color:#14232c!important}
+/* Assignment is a working queue: use the viewport and scroll the table locally. */
+body:has(#app.shell-layout) .overlay:has(>.assignment-table-modal){padding:0;overflow:hidden}
+body:has(#app.shell-layout) .modal.assignment-table-modal{width:100%;max-width:none;height:100dvh;max-height:100dvh;min-height:0;margin:0;border-radius:0;display:flex;flex-direction:column;overflow:auto}
+body:has(#app.shell-layout) .assignment-table-modal>.assignment-table-wrap{flex:1 0 240px;max-height:none;min-height:240px;overflow:auto}
+body:has(#app.shell-layout) .assignment-table{min-width:1400px;table-layout:fixed}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(1){width:48px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(2){width:180px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(3){width:360px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(4){width:200px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(5){width:200px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(6){width:100px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(7){width:180px}
+body:has(#app.shell-layout) .assignment-table :is(th,td):nth-child(8){width:128px;min-width:128px;padding:12px}
+body:has(#app.shell-layout) .assignment-table :is(th,td){padding:12px}
+body:has(#app.shell-layout) .assignment-table .assignment-sla{white-space:nowrap}
+body:has(#app.shell-layout) .assignment-table-modal>.close-x{align-self:flex-end;width:auto;flex:none}
+body:has(#app.shell-layout) .assignment-table [data-assign-one]{white-space:nowrap;min-width:76px}
+body:has(#app.shell-layout) [hidden]{display:none!important}
+@media(max-width:1100px){body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.web-intake-summary){grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.form-grid,.kv-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){body:has(#app.shell-layout) main{padding:16px}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.form-grid,.kv-grid,.web-intake-summary){grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) [class*="span"]{grid-column:auto}body:has(#app.shell-layout) .modal{padding:16px;width:100%;max-width:100%}body:has(#app.shell-layout) .ui-page-head{display:block}body:has(#app.shell-layout) header{flex-wrap:wrap;height:auto;gap:8px}}

@@ -1,0 +1,96 @@
+{
+  "schema": "nysa.production-preparation.v2",
+  "status": "PREPARED_FOR_EXACT_APPROVAL",
+  "checkedAt": "2026-10-31T13:43:40.095Z",
+  "candidateVersion": "2.1.0-dev.251",
+  "candidateCommit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "tree": "e3bc1aa96f8b0fd104ef868e57df4348aa53ed64",
+  "archiveSha256": "749f077d323d846c9e468aafe5ef31f1d215eed9afdde98baca9c8bc5e12178a",
+  "manifestSha256": "4676cbbb600efd48f81cb168e265cf9c06c153e4a61225ab07472c2459d12e53",
+  "draftPr": "https://github.com/ajitraushan/NYSA-CRM/pull/8",
+  "mainUnchanged": "4f1034167c591acb87fe9c025af48835d58630e3",
+  "scopedChecksPassed": true,
+  "regression": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-10-31T12:54:06.709Z",
+    "completedAt": "2026-10-31T12:54:21.283Z",
+    "tests": 1589,
+    "passed": 1496,
+    "failed": 0,
+    "skipped": 93,
+    "outputSha256": "69677b63e80bbb60c7d71aa65c15912116c4c9cddadc63e47704bce48f5937b9",
+    "includedFiles": 291,
+    "excludedHistoricalArtifactFiles": 92,
+    "includedFilesSha256": "bc84088c4cd1e2249a53b139cbb349f512a4fecb608a6ff2ea66e6b2fb40a0eb",
+    "excludedFilesSha256": "bbb0494f80eff0336c695f3e6f9f5b616bdc0bd477a145ddc754f2447a82f4ed"
+  },
+  "syntheticUi": {
+    "views": 111,
+    "drilldowns": 83,
+    "failures": 0
+  },
+  "liveCards": {
+    "agent": 4,
+    "manager": 15,
+    "director": 68,
+    "total": 87
+  },
+  "postgres": {
+    "migrations": 159,
+    "taskSourceScopePrivacy": "passed; separately executed"
+  },
+  "pdfFormats": 10,
+  "dependencyAdvisories": 0,
+  "pendingMigrations": 19,
+  "original140MigrationsByteIdentical": true,
+  "pending19RehearsalSourceIdentical": true,
+  "reusedRehearsal": {
+    "originalProductionTablesPreserved": 257,
+    "originalR2TablesRestored": 109
+  },
+  "encryptedRecovery": {
+    "production": "PASSED",
+    "test": "PASSED",
+    "plaintextFilesWritten": false
+  },
+  "privateProductionPlanSha256": "899f5f5e9ee523e79da63e4fe4a2deb97342d6dc3dd7e25be55f97a9e6ae027f",
+  "ui001": {
+    "implemented": true,
+    "deployedToCrmTest": true,
+    "deployedToProduction": false
+  },
+  "production": {
+    "version": "2.1.0-rc.1",
+    "database": "ready",
+    "workers": 2,
+    "mutation": false,
+    "configurationApplied": false,
+    "deploymentApproved": false,
+    "mainPromotionApproved": false,
+    "workerReconciliationRequiresApproval": true
+  },
+  "websiteCompanion": {
+    "reviewReady": true,
+    "deployed": false,
+    "approvalRequired": true
+  },
+  "maintenanceWindow": null,
+  "freshQuiescedPairedBackupRequired": true,
+  "knownExistingObservation": {
+    "reference": "OBS-DEV251-001",
+    "trigger": "Leave My Diary before its pending API request resolves",
+    "observed": "Existing loadDiary callback targets a removed container and logs a browser error",
+    "before": "a6fafab35ef0042f0a5b1c31c5bd35dd33821590",
+    "after": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+    "functionSha256": "5f31f6874292c3a283ba04ae888ef9c93c17da4cd2ef68255c571551706d537c",
+    "functionByteIdentical": true,
+    "normalStableLoadPassed": true,
+    "newRegression": false,
+    "fixed": false,
+    "decision": "Documented; not changed under the instruction to leave unrelated code untouched",
+    "customerDataMutation": false
+  },
+  "evidenceBranch": "codex/dev251-production-evidence",
+  "customerRecordsExported": false,
+  "secretValuesExported": false
+}

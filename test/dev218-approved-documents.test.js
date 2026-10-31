@@ -100,7 +100,7 @@ test('DEV218 persistence freezes issued evidence and independently verifies sign
   assert.match(domain,/Identify both agencies and agents, including agent BRN and BRN issue date, before preparing A2A/);
   assert.match(listingRoutes,/executed Listing NOC and obtain independent Manager\/Director verification before external publication/);
   assert.match(ui,/Save editable draft/);
-  assert.match(ui,/Issue immutable Listing NOC/);
+  assert.match(ui,/Issue Listing NOC/);
 });
 
 test('DEV218 approved documents are role-scoped, audited and opened outside the CRM workspace',()=>{

@@ -92,7 +92,10 @@ export function createApp() {
     req.on('data', (c) => {
       if (bodyTooLarge) return;
       bodySize += c.length;
-      const bodyLimit = rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
+      const metaIntake = req.method === 'POST' && /^\/api\/intake\/meta\/?$/.test(req.path);
+      const leadProvider = req.method === 'POST' && /^\/api\/providers\/(lead-response|lead-whatsapp)\/events\/?$/.test(req.path);
+      const leadCredentials = req.method === 'POST' && /^\/api\/admin\/lead-integrations\/connections\//.test(req.path);
+      const bodyLimit = leadCredentials ? 64 * 1024 : (metaIntake || leadProvider) ? 256 * 1024 : rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
       if (bodySize > bodyLimit) {
         bodyTooLarge = true;
         chunks.length = 0;

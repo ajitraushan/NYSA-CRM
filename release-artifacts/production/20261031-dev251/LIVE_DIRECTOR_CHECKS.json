@@ -1,0 +1,649 @@
+{
+  "version": "2.1.0-dev.251",
+  "views": [
+    {
+      "view": "Executive",
+      "cards": 20
+    },
+    {
+      "view": "Sales",
+      "cards": 16
+    },
+    {
+      "view": "Inventory",
+      "cards": 16
+    },
+    {
+      "view": "Operations and Risk",
+      "cards": 16
+    }
+  ],
+  "cards": [
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "new_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "won_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "sla_breaches",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "team_capacity_pressure",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "inventory_available",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "proposal_workload",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "customer_engagement",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-segment",
+      "value": "operational_exceptions",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "0",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "1",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "2",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "3",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "4",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "5",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "6",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "7",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "8",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "9",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "10",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Executive",
+      "attribute": "data-dashboard-summary",
+      "value": "11",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-segment",
+      "value": "new_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-segment",
+      "value": "won_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-segment",
+      "value": "hot_leads",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-segment",
+      "value": "stale_risk",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "0",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "1",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "2",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "3",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "4",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "5",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "6",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "7",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "8",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "9",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "10",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Sales",
+      "attribute": "data-dashboard-summary",
+      "value": "11",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-segment",
+      "value": "inventory_available",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-segment",
+      "value": "inventory_stale",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-segment",
+      "value": "inventory_readiness_exposure",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-segment",
+      "value": "operational_exceptions",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "0",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "1",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "2",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "3",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "4",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "5",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "6",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "7",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "8",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "9",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "10",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Inventory",
+      "attribute": "data-dashboard-summary",
+      "value": "11",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-segment",
+      "value": "sla_breaches",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-segment",
+      "value": "sla_risk",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-segment",
+      "value": "no_next_action",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-segment",
+      "value": "operational_exceptions",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "0",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "1",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "2",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "3",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "4",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "5",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "6",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "7",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "8",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "9",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "10",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "view": "Operations and Risk",
+      "attribute": "data-dashboard-summary",
+      "value": "11",
+      "error": false,
+      "opened": true,
+      "overflow": false,
+      "titleSize": "28px"
+    }
+  ],
+  "widths": [
+    {
+      "width": 768,
+      "overflow": false,
+      "titleSize": "28px"
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "titleSize": "28px"
+    }
+  ],
+  "allTeamsViewAvailable": true,
+  "customerRecordsExported": false
+}

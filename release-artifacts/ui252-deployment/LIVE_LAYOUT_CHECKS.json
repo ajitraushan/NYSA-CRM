@@ -1,0 +1,39 @@
+{
+  "version": "2.1.0-dev.252",
+  "commit": "e87b9f879b61acfe5f97f93194f29e17c27647b0",
+  "role": "director",
+  "queue": {
+    "records": 207,
+    "fullWindow": {
+      "width": 1280,
+      "height": 720
+    },
+    "assign": {
+      "width": 73.0703125,
+      "height": 40
+    },
+    "pageOverflow": false,
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "fullWindow": true,
+      "queueVerticalScroll": true,
+      "tableHorizontalScroll": true,
+      "pageOverflow": false
+    },
+    "closeReturnsDashboard": true
+  },
+  "customers": {
+    "openLabel": "Open",
+    "accessibleLabel": "Open customer record",
+    "buttonHeight": 40,
+    "rowHeights": [
+      97.59375,
+      97.59375,
+      97.59375
+    ],
+    "pageOverflow": false
+  },
+  "productionMutation": false,
+  "databaseMigration": false
+}

@@ -1,0 +1,5234 @@
+{
+  "synthetic": true,
+  "before": false,
+  "extended": false,
+  "report": [
+    {
+      "name": "dashboard",
+      "text": "NYSA CORE · AGENT DASHBOARD\nAgent dashboard\n\nYour accessible records\n\nSaved views\nMore\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nAssignment offers awaiting acceptance\n0 leads\nOpen Leads currently offered to an Agent and still awaiting that Agent’s acceptance. Recycled reassignment claims are not included.\nSLA risk next 60 min\n0 leads\nOpen leads with an active deadline in the next 60 minutes.\nOverd",
+      "title": "Agent dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "incomingLeads",
+      "text": "NYSA CORE · WEB INTAKE LEADS\nWEB Intake Leads\n\nReview arriving enquiries and pick up eligible work.\n\nLIVE OUTREACH OFF\nAvailable\nIn progress\nDropped / incomplete\nCompleted\nAssigned\nNeeds attention\nEscalated\nReleased\nClosed history\nSOURCE \nAll sources\nContact Form\nNIA\nMeta Instant Forms\nOther\nCAMPAIGN \nAll campaigns\nNo campaign\nUnmapped campaign\nApply\nRefresh\n\n1 journey chain in this view\n\nSynthetic enquiry\n••••0123\nNIA - Property selection\n6 hr ago\nAI: Not provided\nCOMPLETED · AVAILABLE\n\nCampaign: No campaign · Owner: Available to pick up\n\nReview\nPick up",
+      "title": "WEB Intake Leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "leadResponse",
+      "text": "NYSA CORE · MY LEAD QUEUE\nMy Lead Queue\n\nYour picked-up enquiries and incomplete-intake recovery work, ordered by task priority and due time.\n\nACTIVE 1 OVERDUE 1 LIVE OUTREACH OFF\nMy active work\nDue today\nOverdue\nIntake recovery\nNo response\nClosed / completed\nRefresh\nSynthetic enquiry\nIntake awaiting confirmation\nNIA - Property selection\nHuman Owned\nHIGH\n\nNext action: Confirm enquiry\n31 Oct 2026, 13:00\n\nVilla · 4 bedrooms · 3–6 months · Budget not provided\n\nRequirement details\nRecord outcome\nConfirm and create Lead",
+      "title": "My Lead Queue",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "crm",
+      "text": "NYSA CORE · LEAD PIPELINE\nLead pipeline\n\nFind and follow up the leads you can access.\n\n+ Add lead\nMore\nSEARCH EXISTING LEADS\nSearch by Lead reference, title or customer. Customers appear here after a Lead is created.\nSTAGE\nAll stages\nNew\nContacted\nQualified\nViewing\nNegotiation\nWon\nLost\nQUALIFICATION\nAll\nUnassessed\nHot\nWarm\nCold\nWORKING VIEW\nMy assigned Leads\nCompany-visible Leads\nMore filters\nApply\nReset\n0 matching leads · showing 0–0\nCUSTOMER / ACTIVE RECORD\tCURRENT STATUS\tPRIORITY\tBUSINESS\tOWNER\tNEXT ACTION\nSynthetic Customer\nSYNTHETIC-LD-001 · Synthetic property enquiry\nProperty: Not select",
+      "title": "Lead pipeline",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "tasks",
+      "text": "NYSA CORE · MY TASKS\nMy tasks\n\nRecord outcomes and manage your next actions.\n\nSTATUS\nOpen and in progress\nOverdue\nDue today\nUpcoming\nCompleted\nSEARCH MY TASKS\nTASK CATEGORY\nAll categories\nREQUEST TYPE\nAll request types\nRefresh\n0 tasks\nPRIORITY\tACTION REQUIRED\tCONTEXT\tSTATUS\tDUE\tACTIONS\nHIGH\t\nConfirm enquiry\nConfirm the customer requirement.\n\tSynthetic Customer\nSource: NIA - Property selection\nWebsite enquiry\n\topen\t31 Oct 2026, 13:00\tRecord outcome\nPrevious\n1 / 1\nNext",
+      "title": "My tasks",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "diary",
+      "text": "NYSA CORE · MY DIARY\nMy Diary\n\nPlan appointments and follow-up work.\n\nCustomer, Lead and Opportunity records open over this Diary. Close the record with × to return here without losing the selected date, view, owner or filters.\n\nAsia/Dubai\nUTC+4 · Google Calendar reports external delivery only\nToday\nWeek\n← Previous\nToday\nNext →\n31 Oct 2026\nShow\nCALLS\nMEETINGS\nVIEWINGS\nTASKS & FOLLOW-UPS\n0 scheduled items\nOverdue\n0\nThe appointment end has passed, or a call/task is more than 30 minutes past its due time.\nDue now\n0\nThe item starts within 30 minutes, is in progress, or is within 30 minutes after a",
+      "title": "My Diary",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "customers",
+      "text": "NYSA CORE · CUSTOMERS\nCustomers\n\nFind customers and open their authorized records.\n\n+ Create customer\nCompanies and Developers\nSEARCH CUSTOMERS\nKYC STATUS\nAll statuses\nUnverified\nPending review\nVerified\nExpired\nRejected\nDUPLICATE REVIEW\nAll records\nPending duplicate review\nApproved separate customers\nRejected drafts\nNo duplicate warning\nSORT BY\nName A–Z\nMost recently created\nKYC status, then name\nMore filters\nSearch\nReset filters\n0 matching customers · showing 0–0\nCUSTOMER\tCONTACT\tROLES / COMPANY\tKYC\tDUPLICATE STATUS\tRELATED LEADS\tACTION\nSynthetic Customer Full Name\nAddress not recorded\n\ts***@",
+      "title": "Customers",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "listings",
+      "text": "NYSA CORE · INVENTORY\nInventory\n\nFind property inventory and check its current status.\n\nUpload Inventory Excel\nCreate Inventory draft\nSEARCH\nAREA\nAll maintained areas\nCOMMUNITY\nPROPERTY TYPE\nAny\nApartment\nVilla\nTownhouse\nPenthouse\nDuplex\nPlot\nBulk deal\nMore filters\nApply filters\nReset\nNewest first\nPrice: low → high\nPrice: high → low\nBiggest discount vs reference\nNearest handover\n0 matching listings · showing 0–0\nNo Inventory matches these filters. Reset filters to search again.",
+      "title": "Inventory",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunities",
+      "text": "NYSA CORE · OPPORTUNITY PIPELINE\nOpportunity pipeline\n\nFollow your opportunities from selection to closure.\n\nLead-first governance\nCreate every Opportunity from an assigned, qualified Lead. Open the Lead and use Create opportunity.\nSEARCH OPPORTUNITIES\nSTAGE\nAll stages\nRequirements\nMatching\nViewing\nOffer\nNegotiation\nBooking\nDeal\nClosed Won\nClosed Lost\nOWNERSHIP\nEveryone in scope\nMy Opportunities\nSORT SEQUENCE\nNext action due first\nNewest first\nRecently updated\nCustomer A–Z\nMore filters\nSearch\nReset\nPrevious\nNext\n0 matching · page 1 of 1 · showing 1\nOpportunity is the active tracking record\nOpe",
+      "title": "Opportunity pipeline",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "myPayoutAdvice",
+      "text": "FINANCE · MY PAYOUTS\nPayout Advice\nRefresh\nGenerated\nPending generation\nGeneration failed\nSearch and filters\nSEARCH REFERENCE OR NAME\nCURRENCY\nFROM\nTO\nSearch\nClear filters\nMore filters\n\n0 matching records · · Updated 31 Oct 2026, 12:00\n\nREFERENCE\tAGENT / PAYER\tAMOUNT\tCOLLECTED / BALANCE\tDATE / DUE\tSTATUS\tACTION\nNo records match these filters.\nPrevious\nPage 1 of 1\nNext",
+      "title": "Payout Advice",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "externalListings",
+      "text": "NYSA CORE · EXTERNAL PORTAL LISTINGS\nExternal Portal Listings\n\nPrepare property advertising and review portal readiness.\n\nOpen Internal Inventory\nPortal publishing off\n1. Select Inventory and prepare portal posting\nProperty facts are inherited. Only mandatory advertising and portal identity fields are entered here.\n1. Listing selection\n2. Advertising details\n3. Media\nListing selection\nAPPROVED INTERNAL INVENTORY *\nSelect Inventory to post\nSYNTHETIC-INV-001 · Synthetic property · Synthetic area\nPORTAL / CHANNEL *\nSelect portal\nProperty Finder\nBayut\nDubizzle\nNext\n2. Confirm internal authority an",
+      "title": "External Portal Listings",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "myLeave",
+      "text": "NYSA CORE · MY LEAVE\nMy Leave\n\nRequest leave and follow its approval.\n\nNo active employment and leave policy is assigned. Contact Administration.",
+      "title": "My Leave",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "marketingCompliance",
+      "text": "NYSA CORE · MARKETING MATERIAL COMPLIANCE\nMarketing Material Compliance\n\nReview marketing material and its required approvals.\n\nNew marketing material\nUpload the final file, then submit it to the selected Manager or Director for review. Saved files are versioned.\nA Admin must activate at least one material type and channel rule before submission is available.\nMarketing material register\nApproval and current release eligibility remain separate.\n0 records\nREFERENCE\tMATERIAL\tINVENTORY / CAMPAIGN\tSTATUS\tRELEASED CHANNELS\tACTION\nNo marketing materials yet.",
+      "title": "Marketing Material Compliance",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "purchasedDataImport",
+      "text": "NYSA CORE · CUSTOMER AND LEAD BULK UPLOAD\nCustomer and Lead Bulk Upload\n\nImport records and review the results.\n\n1. Choose upload action\nCustomer-only upload creates Customer records. Lead upload resolves an exact Customer or creates the minimum Customer and Lead together.\nUPLOAD ACTION *\nCustomer-only upload\nLead upload\nAPPROVED TEMPLATE\nDownload Customer template\nCOMPLETED WORKBOOK *\nThe Batch sheet records supplier, acquisition batch, acquisition date and processing basis. Raw workbooks are retained as private evidence and never published.\nValidate and preview every row\n2. Select, review an",
+      "title": "Customer and Lead Bulk Upload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "leadRecord",
+      "text": "←\nBack\nRECORDS · SYNTHETIC CUSTOMER\nSynthetic Customer\n\nSynthetic property enquiry\n\nACTIVE\nCurrent pursuit status: active\nHistorical Lead stage: New · Historical qualification: Unassessed. Closure status is authoritative and is not replaced by “Warm” or another qualification label.\nSchedule with Calendly\nOpen customer record\nNo effective marketing consent\nWORK PROGRESS\nSynthetic Customer · connected case\n\nFollow the highlighted step. Locked steps explain what is required; your existing records are linked and reused.\n\nSELECTED LEAD LIFECYCLE · SYNTHETIC-LD-001\nSynthetic property enquiry\n\nOne cu",
+      "title": "Synthetic Customer",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [
+            {
+              "tag": "DIV",
+              "id": "",
+              "css": "lead-lifecycle-lost future",
+              "width": 150,
+              "text": "!LostSeparate terminal outcome"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 93,
+              "text": "Lost"
+            },
+            {
+              "tag": "SMALL",
+              "id": "",
+              "css": "",
+              "width": 93,
+              "text": "Separate terminal outcome"
+            }
+          ],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [
+            {
+              "tag": "OL",
+              "id": "",
+              "css": "",
+              "width": 610,
+              "text": "1Customer2Lead3Contacted4Qualified5Viewing6Negotiation7Won"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "4Qualified"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "5Viewing"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "5"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 63.609375,
+              "text": "Viewing"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "6Negotiation"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "6"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 91.109375,
+              "text": "Negotiation"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "7Won"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "7"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 35.578125,
+              "text": "Won"
+            },
+            {
+              "tag": "DIV",
+              "id": "",
+              "css": "lead-lifecycle-lost future",
+              "width": 150,
+              "text": "!LostSeparate terminal outcome"
+            }
+          ],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunityRecord",
+      "text": "←\nBack\nRECORDS · SYNTHETIC CUSTOMER\nSynthetic Customer\n\nCustomer · Opportunity: Synthetic opportunity · Active status: Closed Won · Source Lead history: undefined\n\nCLOSED WON\nSource, ownership and reminder evidence\nView source Lead history\nApproved documents\n1\nInventory selection\nNOT COMPLETED\n2\nViewing & feedback\nNOT COMPLETED\n3\nOffer\nNOT COMPLETED\n4\nNegotiation\nNOT COMPLETED\n5\nBooking & reservation\nNOT COMPLETED\n6\nClosure Steps\nNOT COMPLETED\nOpen one stage at a time\nOpen a stage to work on it. Back returns without saving; Save as draft keeps your changes. Use the named action to approve or c",
+      "title": "Synthetic Customer",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-inventory",
+      "text": "← Back to Opportunity\nSTAGE 1 OF 6 · NOT COMPLETED\nInventory selection\n\nAttach a suitable eligible Inventory property to begin.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n1. INVENTORY SELECTION\n\nChoose the property directly in the viewing form. You do not need a separate shortlist step.\n\nNo active Inventory assignment exists for this Opportunity.\nINVENTORY RECOMMENDATION AND ASSIGNMENT\n\nOpen a dedicated review workspace for transparent advisory ranking against this Opportunity's exact confirmed Requirement Version. Results are shown 10 at a time, and you can return to the Opportunity ",
+      "title": "Inventory selection",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-viewing",
+      "text": "← Back to Opportunity\nSTAGE 2 OF 6 · NOT COMPLETED\nViewing & feedback\n\nComplete Inventory selection first.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n2. VIEWING AND CUSTOMER FEEDBACK (0)\nNo confirmed viewing is recorded in this Opportunity yet.\nUse the form below once to record the property, confirmed date/time and physical location. Saving it will update the Opportunity to Viewing automatically.\nDraft history (0)\nUse the named action in this stage to submit.",
+      "title": "Viewing & feedback",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-offer",
+      "text": "← Back to Opportunity\nSTAGE 3 OF 6 · NOT COMPLETED\nOffer\n\nComplete Viewing & feedback before creating an offer.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n3. OFFER AND COMMERCIAL TERMS\n\nEach card is one property offer. CORE keeps every revision and negotiation event locked, and every sent event points to the exact branded document version.\n\nNo offer has been created for this Opportunity.\nNo property is ready for an offer\nRecord the Customer decision Ready for Offer and complete or cancel pending viewings for that property. Historical completed feedback retains its prior eligibility.\nD",
+      "title": "Offer",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-negotiation",
+      "text": "← Back to Opportunity\nSTAGE 4 OF 6 · NOT COMPLETED\nNegotiation\n\nCreate and send an offer before negotiation can begin.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n4. NEGOTIATION\n\nEach card is one property offer. CORE keeps every revision and negotiation event locked, and every sent event points to the exact branded document version.\n\nNo offer has been created for this Opportunity.\nDraft history (0)\nUse the named action in this stage to submit.",
+      "title": "Negotiation",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-booking",
+      "text": "← Back to Opportunity\nSTAGE 5 OF 6 · NOT COMPLETED\nBooking & reservation\n\nAn accepted exact offer revision is required before reservation.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n5. BOOKING AND RESERVATION\n\nAccepted offer terms enable reservation; inventory changes only through the explicit controls here.\n\nNo booking or reservation has been recorded in this Opportunity.\nDraft history (0)\nUse the named action in this stage to submit.",
+      "title": "Booking & reservation",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "opportunity-stage-deal",
+      "text": "← Back to Opportunity\nSTAGE 6 OF 6 · NOT COMPLETED\nClosure Steps\n\nComplete Booking & reservation first.\n\nSYNTHETIC-OP-001\nNo current draft\nSave stage draft\n6. CLOSURE STEPS\n\nComplete the transaction record from the accepted commercial terms.\n\nDeal not ready\nAn accepted Offer is required. Maintained Inventory also requires an active reservation; current off-plan Developer stock does not.\nDraft history (0)\nUse the named action in this stage to submit.",
+      "title": "Closure Steps",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard",
+      "text": "NYSA CORE · MANAGER DASHBOARD\nManager dashboard\n\nYour accessible records\n\nSaved views\nMore\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nUnassigned queue\n0 leads\nAccessible leads without a responsible agent.\nSLA breaches\n0 leads\nOpen leads beyond acceptance or first-contact deadline.\nOverdue tasks\n0 tasks\nOpen tasks whose due time has passed.\nStale-risk leads\n0 leads\nOpen leads unchanged for at least ",
+      "title": "Manager dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-1",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · UNASSIGNED LEADS\nContributing records · unassigned leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · unassigned leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-2",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · SLA BREACHES\nContributing records · sla breaches\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · sla breaches",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-3",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · OVERDUE TASKS\nContributing records · overdue tasks\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · overdue tasks",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-4",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · STALE RISK\nContributing records · stale risk\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · stale risk",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-5",
+      "text": "×\nClose\nRECORDS · LEAD STAGES\nLead stages\nCATEGORY\tCOUNT\nNo data",
+      "title": "Lead stages",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-6",
+      "text": "×\nClose\nRECORDS · SOURCE QUALITY\nSource quality\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Source quality",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-7",
+      "text": "×\nClose\nRECORDS · TEAM WORKLOAD\nTeam workload\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Team workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-8",
+      "text": "×\nClose\nRECORDS · AGENT WORKLOAD\nAgent workload\nCATEGORY\tCOUNT\tOVERDUE\nNo data",
+      "title": "Agent workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-9",
+      "text": "×\nClose\nRECORDS · TASK STATUS\nTask status\nCATEGORY\tCOUNT\nNo data",
+      "title": "Task status",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-10",
+      "text": "×\nClose\nRECORDS · DATA, CONSENT & INTEGRATION EXCEPTIONS\nData, consent & integration exceptions\nCATEGORY\tCOUNT\nNo data",
+      "title": "Data, consent & integration exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-11",
+      "text": "×\nClose\nRECORDS · PROPOSAL WORKLOAD\nProposal workload\nCATEGORY\tCOUNT\nNo data",
+      "title": "Proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-12",
+      "text": "×\nClose\nRECORDS · QUALIFICATION AND SLA\nQualification and SLA\nHOT\n0\nWARM\n0\nCALLS\n0 · 0 minutes\nCALL FOLLOW-UP\n0",
+      "title": "Qualification and SLA",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-13",
+      "text": "×\nClose\nRECORDS · INVENTORY READINESS\nInventory readiness\nAVAILABLE\n0\nSTALE\n0\nMEDIA NOT READY\n0",
+      "title": "Inventory readiness",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-14",
+      "text": "×\nClose\nRECORDS · COMPANY → BUSINESS LINE → TEAM → MANAGER → AGENT\nCompany → business line → team → manager → agent\nSynthetic company\nNo records in the selected period.",
+      "title": "Company → business line → team → manager → agent",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "manager-dashboard-card-15",
+      "text": "×\nClose\nRECORDS · RECENT CUSTOMER ACTIVITY\nRecent customer activity\nNo recent activity",
+      "title": "Recent customer activity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive",
+      "text": "NYSA CORE · MANAGING DIRECTOR DASHBOARD\nManaging Director dashboard\n\nYour accessible records\n\nSaved views\nMore\nExecutive\nSales\nInventory\nOperations and Risk\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nNew leads\n0 leads\nDistinct leads received in the selected period.\nWon leads\n0 leads\nLeads reaching Won in the selected creation cohort.\nSLA breaches\n0 leads\nOpen leads beyond acceptance or first-contac",
+      "title": "Managing Director dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-1",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · NEW LEADS\nContributing records · new leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · new leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-2",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · WON LEADS\nContributing records · won leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · won leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-3",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · SLA BREACHES\nContributing records · sla breaches\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · sla breaches",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-4",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · TEAM CAPACITY PRESSURE\nContributing records · team capacity pressure\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · team capacity pressure",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-5",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · INVENTORY AVAILABLE\nContributing records · inventory available\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · inventory available",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-6",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · PROPOSAL WORKLOAD\nContributing records · proposal workload\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-7",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · CUSTOMER ENGAGEMENT\nContributing records · customer engagement\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · customer engagement",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-8",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · OPERATIONAL EXCEPTIONS\nContributing records · operational exceptions\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · operational exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-9",
+      "text": "×\nClose\nRECORDS · LEAD STAGES\nLead stages\nCATEGORY\tCOUNT\nNo data",
+      "title": "Lead stages",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-10",
+      "text": "×\nClose\nRECORDS · SOURCE QUALITY\nSource quality\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Source quality",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-11",
+      "text": "×\nClose\nRECORDS · TEAM WORKLOAD\nTeam workload\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Team workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-12",
+      "text": "×\nClose\nRECORDS · AGENT WORKLOAD\nAgent workload\nCATEGORY\tCOUNT\tOVERDUE\nNo data",
+      "title": "Agent workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-13",
+      "text": "×\nClose\nRECORDS · TASK STATUS\nTask status\nCATEGORY\tCOUNT\nNo data",
+      "title": "Task status",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-14",
+      "text": "×\nClose\nRECORDS · DATA, CONSENT & INTEGRATION EXCEPTIONS\nData, consent & integration exceptions\nCATEGORY\tCOUNT\nNo data",
+      "title": "Data, consent & integration exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-15",
+      "text": "×\nClose\nRECORDS · PROPOSAL WORKLOAD\nProposal workload\nCATEGORY\tCOUNT\nNo data",
+      "title": "Proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-16",
+      "text": "×\nClose\nRECORDS · QUALIFICATION AND SLA\nQualification and SLA\nHOT\n0\nWARM\n0\nCALLS\n0 · 0 minutes\nCALL FOLLOW-UP\n0",
+      "title": "Qualification and SLA",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-17",
+      "text": "×\nClose\nRECORDS · INVENTORY READINESS\nInventory readiness\nAVAILABLE\n0\nSTALE\n0\nMEDIA NOT READY\n0",
+      "title": "Inventory readiness",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-18",
+      "text": "×\nClose\nRECORDS · COMPANY → BUSINESS LINE → TEAM → MANAGER → AGENT\nCompany → business line → team → manager → agent\nSynthetic company\nNo records in the selected period.",
+      "title": "Company → business line → team → manager → agent",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-19",
+      "text": "×\nClose\nRECORDS · RECENT CUSTOMER ACTIVITY\nRecent customer activity\nNo recent activity",
+      "title": "Recent customer activity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Executive-card-20",
+      "text": "×\nClose\nRECORDS · FORWARD-LOOKING DATA MATURITY\nForward-looking data maturity\nWeighted opportunity pipeline\nUnavailable · Opportunity and deal records\nRevenue and commission forecast\nUnavailable · Transaction and commission records\nSecurity incident trend\nUnavailable · Authoritative security-event records",
+      "title": "Forward-looking data maturity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales",
+      "text": "NYSA CORE · MANAGING DIRECTOR DASHBOARD\nManaging Director dashboard\n\nYour accessible records\n\nSaved views\nMore\nExecutive\nSales\nInventory\nOperations and Risk\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nNew leads\n0 leads\nDistinct leads received in the selected period.\nWon leads\n0 leads\nLeads reaching Won in the selected creation cohort.\nHot pipeline\n0 leads\nAccessible leads with the latest Hot qualifi",
+      "title": "Managing Director dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-1",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · NEW LEADS\nContributing records · new leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · new leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-2",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · WON LEADS\nContributing records · won leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · won leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-3",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · HOT LEADS\nContributing records · hot leads\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · hot leads",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-4",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · STALE RISK\nContributing records · stale risk\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · stale risk",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-5",
+      "text": "×\nClose\nRECORDS · LEAD STAGES\nLead stages\nCATEGORY\tCOUNT\nNo data",
+      "title": "Lead stages",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-6",
+      "text": "×\nClose\nRECORDS · SOURCE QUALITY\nSource quality\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Source quality",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-7",
+      "text": "×\nClose\nRECORDS · TEAM WORKLOAD\nTeam workload\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Team workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-8",
+      "text": "×\nClose\nRECORDS · AGENT WORKLOAD\nAgent workload\nCATEGORY\tCOUNT\tOVERDUE\nNo data",
+      "title": "Agent workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-9",
+      "text": "×\nClose\nRECORDS · TASK STATUS\nTask status\nCATEGORY\tCOUNT\nNo data",
+      "title": "Task status",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-10",
+      "text": "×\nClose\nRECORDS · DATA, CONSENT & INTEGRATION EXCEPTIONS\nData, consent & integration exceptions\nCATEGORY\tCOUNT\nNo data",
+      "title": "Data, consent & integration exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-11",
+      "text": "×\nClose\nRECORDS · PROPOSAL WORKLOAD\nProposal workload\nCATEGORY\tCOUNT\nNo data",
+      "title": "Proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-12",
+      "text": "×\nClose\nRECORDS · QUALIFICATION AND SLA\nQualification and SLA\nHOT\n0\nWARM\n0\nCALLS\n0 · 0 minutes\nCALL FOLLOW-UP\n0",
+      "title": "Qualification and SLA",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-13",
+      "text": "×\nClose\nRECORDS · INVENTORY READINESS\nInventory readiness\nAVAILABLE\n0\nSTALE\n0\nMEDIA NOT READY\n0",
+      "title": "Inventory readiness",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-14",
+      "text": "×\nClose\nRECORDS · COMPANY → BUSINESS LINE → TEAM → MANAGER → AGENT\nCompany → business line → team → manager → agent\nSynthetic company\nNo records in the selected period.",
+      "title": "Company → business line → team → manager → agent",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-15",
+      "text": "×\nClose\nRECORDS · RECENT CUSTOMER ACTIVITY\nRecent customer activity\nNo recent activity",
+      "title": "Recent customer activity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Sales-card-16",
+      "text": "×\nClose\nRECORDS · FORWARD-LOOKING DATA MATURITY\nForward-looking data maturity\nWeighted opportunity pipeline\nUnavailable · Opportunity and deal records\nRevenue and commission forecast\nUnavailable · Transaction and commission records\nSecurity incident trend\nUnavailable · Authoritative security-event records",
+      "title": "Forward-looking data maturity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory",
+      "text": "NYSA CORE · MANAGING DIRECTOR DASHBOARD\nManaging Director dashboard\n\nYour accessible records\n\nSaved views\nMore\nExecutive\nSales\nInventory\nOperations and Risk\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nAvailable inventory\n0 properties\nNon-deleted properties currently marked Available.\nAging inventory\n0 properties\nNon-closed inventory not updated for 30 days.\nInventory readiness exposure\n0 exceptions\n",
+      "title": "Managing Director dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-1",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · INVENTORY AVAILABLE\nContributing records · inventory available\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · inventory available",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-2",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · INVENTORY STALE\nContributing records · inventory stale\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · inventory stale",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-3",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · INVENTORY READINESS EXPOSURE\nContributing records · inventory readiness exposure\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · inventory readiness exposure",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-4",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · OPERATIONAL EXCEPTIONS\nContributing records · operational exceptions\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · operational exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-5",
+      "text": "×\nClose\nRECORDS · LEAD STAGES\nLead stages\nCATEGORY\tCOUNT\nNo data",
+      "title": "Lead stages",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-6",
+      "text": "×\nClose\nRECORDS · SOURCE QUALITY\nSource quality\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Source quality",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-7",
+      "text": "×\nClose\nRECORDS · TEAM WORKLOAD\nTeam workload\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Team workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-8",
+      "text": "×\nClose\nRECORDS · AGENT WORKLOAD\nAgent workload\nCATEGORY\tCOUNT\tOVERDUE\nNo data",
+      "title": "Agent workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-9",
+      "text": "×\nClose\nRECORDS · TASK STATUS\nTask status\nCATEGORY\tCOUNT\nNo data",
+      "title": "Task status",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-10",
+      "text": "×\nClose\nRECORDS · DATA, CONSENT & INTEGRATION EXCEPTIONS\nData, consent & integration exceptions\nCATEGORY\tCOUNT\nNo data",
+      "title": "Data, consent & integration exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-11",
+      "text": "×\nClose\nRECORDS · PROPOSAL WORKLOAD\nProposal workload\nCATEGORY\tCOUNT\nNo data",
+      "title": "Proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-12",
+      "text": "×\nClose\nRECORDS · QUALIFICATION AND SLA\nQualification and SLA\nHOT\n0\nWARM\n0\nCALLS\n0 · 0 minutes\nCALL FOLLOW-UP\n0",
+      "title": "Qualification and SLA",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-13",
+      "text": "×\nClose\nRECORDS · INVENTORY READINESS\nInventory readiness\nAVAILABLE\n0\nSTALE\n0\nMEDIA NOT READY\n0",
+      "title": "Inventory readiness",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-14",
+      "text": "×\nClose\nRECORDS · COMPANY → BUSINESS LINE → TEAM → MANAGER → AGENT\nCompany → business line → team → manager → agent\nSynthetic company\nNo records in the selected period.",
+      "title": "Company → business line → team → manager → agent",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-15",
+      "text": "×\nClose\nRECORDS · RECENT CUSTOMER ACTIVITY\nRecent customer activity\nNo recent activity",
+      "title": "Recent customer activity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Inventory-card-16",
+      "text": "×\nClose\nRECORDS · FORWARD-LOOKING DATA MATURITY\nForward-looking data maturity\nWeighted opportunity pipeline\nUnavailable · Opportunity and deal records\nRevenue and commission forecast\nUnavailable · Transaction and commission records\nSecurity incident trend\nUnavailable · Authoritative security-event records",
+      "title": "Forward-looking data maturity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk",
+      "text": "NYSA CORE · MANAGING DIRECTOR DASHBOARD\nManaging Director dashboard\n\nYour accessible records\n\nSaved views\nMore\nExecutive\nSales\nInventory\nOperations and Risk\nFROM\nTO\nSOURCE\nAll\nWebsite\nWhatsApp\nCurrent CRM\nPurchased data\nReferral\nSocial media\nWalk-in\nPhone\nProperty portal\nOther\nTRANSACTION TYPE\nAll\nMore filters\nApply to all componentsReset\nData as of 31 Oct 2026, 12:00 · 26 Oct 2026 to 1 Nov 2026\nSLA breaches\n0 leads\nOpen leads beyond acceptance or first-contact deadline.\nSLA risk next 60 min\n0 leads\nOpen leads with an active deadline in the next 60 minutes.\nNo next action\n0 leads\nOpen leads wi",
+      "title": "Managing Director dashboard",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-1",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · SLA BREACHES\nContributing records · sla breaches\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · sla breaches",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-2",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · SLA RISK\nContributing records · sla risk\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · sla risk",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-3",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · NO NEXT ACTION\nContributing records · no next action\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · no next action",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-4",
+      "text": "×\nClose\nRECORDS · CONTRIBUTING RECORDS · OPERATIONAL EXCEPTIONS\nContributing records · operational exceptions\n\nThe selected dashboard filters and role scope remain applied.\n\nCUSTOMER\tLEAD / OPPORTUNITY REFERENCE\tCURRENT / HISTORICAL STATUS\tTEAM / AGENT\tCREATED\nNo contributing records",
+      "title": "Contributing records · operational exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-5",
+      "text": "×\nClose\nRECORDS · LEAD STAGES\nLead stages\nCATEGORY\tCOUNT\nNo data",
+      "title": "Lead stages",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-6",
+      "text": "×\nClose\nRECORDS · SOURCE QUALITY\nSource quality\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Source quality",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-7",
+      "text": "×\nClose\nRECORDS · TEAM WORKLOAD\nTeam workload\nCATEGORY\tCOUNT\tWON\nNo data",
+      "title": "Team workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-8",
+      "text": "×\nClose\nRECORDS · AGENT WORKLOAD\nAgent workload\nCATEGORY\tCOUNT\tOVERDUE\nNo data",
+      "title": "Agent workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-9",
+      "text": "×\nClose\nRECORDS · TASK STATUS\nTask status\nCATEGORY\tCOUNT\nNo data",
+      "title": "Task status",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-10",
+      "text": "×\nClose\nRECORDS · DATA, CONSENT & INTEGRATION EXCEPTIONS\nData, consent & integration exceptions\nCATEGORY\tCOUNT\nNo data",
+      "title": "Data, consent & integration exceptions",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-11",
+      "text": "×\nClose\nRECORDS · PROPOSAL WORKLOAD\nProposal workload\nCATEGORY\tCOUNT\nNo data",
+      "title": "Proposal workload",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-12",
+      "text": "×\nClose\nRECORDS · QUALIFICATION AND SLA\nQualification and SLA\nHOT\n0\nWARM\n0\nCALLS\n0 · 0 minutes\nCALL FOLLOW-UP\n0",
+      "title": "Qualification and SLA",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-13",
+      "text": "×\nClose\nRECORDS · INVENTORY READINESS\nInventory readiness\nAVAILABLE\n0\nSTALE\n0\nMEDIA NOT READY\n0",
+      "title": "Inventory readiness",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-14",
+      "text": "×\nClose\nRECORDS · COMPANY → BUSINESS LINE → TEAM → MANAGER → AGENT\nCompany → business line → team → manager → agent\nSynthetic company\nNo records in the selected period.",
+      "title": "Company → business line → team → manager → agent",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-15",
+      "text": "×\nClose\nRECORDS · RECENT CUSTOMER ACTIVITY\nRecent customer activity\nNo recent activity",
+      "title": "Recent customer activity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-Operations-and-Risk-card-16",
+      "text": "×\nClose\nRECORDS · FORWARD-LOOKING DATA MATURITY\nForward-looking data maturity\nWeighted opportunity pipeline\nUnavailable · Opportunity and deal records\nRevenue and commission forecast\nUnavailable · Transaction and commission records\nSecurity incident trend\nUnavailable · Authoritative security-event records",
+      "title": "Forward-looking data maturity",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        }
+      ]
+    },
+    {
+      "name": "director-read-only-lead",
+      "text": "←\nBack\nRECORDS · SYNTHETIC CUSTOMER\nSynthetic Customer\n\nSynthetic property enquiry\n\nACTIVE\nCurrent pursuit status: active\nHistorical Lead stage: New · Historical qualification: Unassessed. Closure status is authoritative and is not replaced by “Warm” or another qualification label.\nRead-only contact details · operational contact remains with the assigned Agent\nOpen customer record\nNo effective marketing consent\nWORK PROGRESS\nSynthetic Customer · connected case\n\nFollow the highlighted step. Locked steps explain what is required; your existing records are linked and reused.\n\nSELECTED LEAD LIFECY",
+      "title": "Synthetic Customer",
+      "technicalText": [],
+      "fontViolations": [],
+      "accessibility": [],
+      "responsive": [
+        {
+          "width": 2684,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1920,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "overflowingNodes": [],
+          "collapsedActions": []
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "overflowingNodes": [
+            {
+              "tag": "DIV",
+              "id": "",
+              "css": "lead-lifecycle-lost future",
+              "width": 150,
+              "text": "!LostSeparate terminal outcome"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 93,
+              "text": "Lost"
+            },
+            {
+              "tag": "SMALL",
+              "id": "",
+              "css": "",
+              "width": 93,
+              "text": "Separate terminal outcome"
+            }
+          ],
+          "collapsedActions": []
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "overflowingNodes": [
+            {
+              "tag": "OL",
+              "id": "",
+              "css": "",
+              "width": 610,
+              "text": "1Customer2Lead3Contacted4Qualified5Viewing6Negotiation7Won"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "4Qualified"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "5Viewing"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "5"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 63.609375,
+              "text": "Viewing"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "6Negotiation"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "6"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 91.109375,
+              "text": "Negotiation"
+            },
+            {
+              "tag": "LI",
+              "id": "",
+              "css": "lead-lifecycle-step future",
+              "width": 87.140625,
+              "text": "7Won"
+            },
+            {
+              "tag": "SPAN",
+              "id": "",
+              "css": "",
+              "width": 30,
+              "text": "7"
+            },
+            {
+              "tag": "B",
+              "id": "",
+              "css": "",
+              "width": 35.578125,
+              "text": "Won"
+            },
+            {
+              "tag": "DIV",
+              "id": "",
+              "css": "lead-lifecycle-lost future",
+              "width": 150,
+              "text": "!LostSeparate terminal outcome"
+            }
+          ],
+          "collapsedActions": []
+        }
+      ]
+    }
+  ],
+  "drilldowns": [
+    {
+      "role": "manager",
+      "view": null,
+      "index": 1,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 2,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 3,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 4,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 5,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 6,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 7,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 8,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 9,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 10,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 11,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 12,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 13,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 14,
+      "opened": true
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "index": 15,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 1,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 2,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 3,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 4,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 5,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 6,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 7,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 8,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 9,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 10,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 11,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 12,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 13,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 14,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 15,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 16,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 17,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 18,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 19,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "index": 20,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 1,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 2,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 3,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 4,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 5,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 6,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 7,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 8,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 9,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 10,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 11,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 12,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 13,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 14,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 15,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "index": 16,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 1,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 2,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 3,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 4,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 5,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 6,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 7,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 8,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 9,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 10,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 11,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 12,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 13,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 14,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 15,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "index": 16,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 1,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 2,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 3,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 4,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 5,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 6,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 7,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 8,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 9,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 10,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 11,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 12,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 13,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 14,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 15,
+      "opened": true
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "index": 16,
+      "opened": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "/api/health?asset-manifest=1793455453915",
+    "/api/health",
+    "/api/me",
+    "/api/crm/assignment-queue",
+    "/api/crm/teams",
+    "/api/crm/staff",
+    "/api/crm/business-lines",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31",
+    "/api/crm/dashboard/views",
+    "/api/crm/incoming-leads?view=all&source=all&campaign=all",
+    "/api/crm/my-lead-queue?view=active",
+    "/api/crm/leads?assignedTo=me&pageSize=25&page=1",
+    "/api/crm/tasks?mine=1&bucket=open&page=1&category=&requestType=&q=",
+    "/api/crm/diary?from=2026-10-30T20%3A00%3A00.000Z&to=2026-10-31T20%3A00%3A00.000Z",
+    "/api/crm/contacts?pageSize=25&page=1&sort=newest",
+    "/api/crm/areas",
+    "/api/listings?status=Available&sort=newest&pageSize=25&page=1",
+    "/api/crm/opportunities?pageSize=25&page=1&sort=due",
+    "/api/finance/workspace/counts?group=advice",
+    "/api/finance/workspace/queue?category=advice-generated&q=&page=1&size=25&currency=&dateFrom=&dateTo=&sort=reference&direction=asc&status=&agentId=&teamId=&quarter=&from=&to=",
+    "/api/external-publications",
+    "/api/crm/my-employment",
+    "/api/crm/my-leave-balances",
+    "/api/crm/my-leave-applications",
+    "/api/marketing-material-compliance/workspace",
+    "/api/marketing-material-compliance/materials",
+    "/api/marketing-material-compliance/configuration",
+    "/api/crm/purchased-data-import/batches",
+    "/api/crm/leads/synthetic-lead",
+    "/api/listings?sort=newest&status=Available&pageSize=100",
+    "/api/crm/leads/synthetic-lead/operating-context",
+    "/api/crm/contacts/synthetic-customer/consent",
+    "/api/crm/opportunities/synthetic-opportunity",
+    "/api/crm/opportunities/synthetic-opportunity/governed-property-share-options",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/inventory",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/viewing",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/offer",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/negotiation",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/booking",
+    "/api/crm/opportunities/synthetic-opportunity/stage-drafts/deal",
+    "/api/health?asset-manifest=1793455470026",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&segment=unassigned_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&segment=sla_breaches",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&segment=overdue_tasks",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&segment=stale_risk",
+    "/api/health?asset-manifest=1793455483361",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31&view=Executive",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=new_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=won_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=sla_breaches",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=team_capacity_pressure",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=inventory_available",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=proposal_workload",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=customer_engagement",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Executive&segment=operational_exceptions",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31&view=Sales",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Sales&segment=new_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Sales&segment=won_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Sales&segment=hot_leads",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Sales&segment=stale_risk",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31&view=Inventory",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Inventory&segment=inventory_available",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Inventory&segment=inventory_stale",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Inventory&segment=inventory_readiness_exposure",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Inventory&segment=operational_exceptions",
+    "/api/crm/dashboard?dateFrom=2026-10-02&dateTo=2026-10-31&view=Operations+and+Risk",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Operations+and+Risk&segment=sla_breaches",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Operations+and+Risk&segment=sla_risk",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Operations+and+Risk&segment=no_next_action",
+    "/api/crm/dashboard/records?dateFrom=2026-10-02&dateTo=2026-10-31&source=&businessType=&businessLineId=&stage=&teamId=&agentId=&view=Operations+and+Risk&segment=operational_exceptions"
+  ]
+}

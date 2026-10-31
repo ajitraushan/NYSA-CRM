@@ -1,4 +1,5 @@
 import {startAdviceWorker} from './payout-advice.js';
+import {startWebIntakeWorker} from './web-intake-worker.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './lib/http-kit.js';
@@ -37,17 +38,37 @@ import emailCalendlyRoutes from './routes/email-calendly.js';
 import classificationCatalogueRoutes from './routes/classification-catalogue.js';
 import purchasedDataImportRoutes from './routes/purchased-data-import.js';
 import approvedDocumentRoutes from './routes/approved-documents.js';
-import { migrate, closeDatabase } from './db.js';
+import { migrate, closeDatabase, transaction } from './db.js';
+import { createMetaIntakeRoutes } from './routes/meta-intake.js';
+import { createLeadIntegrationSetupRoutes } from './routes/lead-integration-setup.js';
+import { createLeadResponseRoutes } from './routes/lead-response.js';
+import { createWebIntakePhase1Routes } from './routes/web-intake-phase1.js';
+import { createLeadChannelInboxRoutes } from './routes/lead-channel-inbox.js';
+import { createNativeLeadWhatsAppRoutes } from './lead-whatsapp.js';
+import { leadConnectionEnvironment } from './lead-integration-connections.js';
+import { requireAuth } from './auth.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = createApp();
+const loadLeadEnvironment=async()=>{
+ if(process.env.META_INTAKE_ENABLED!=='true' && process.env.LEAD_WHATSAPP_INBOX_ENABLED!=='true')return process.env;
+ const draft=await transaction(async c=>(await c.query('SELECT draft FROM lead_integration_setup WHERE singleton=TRUE')).rows[0]?.draft);
+ const credentials=process.env.LEAD_CONNECTION_KEY?await transaction(c=>leadConnectionEnvironment(c,process.env.LEAD_CONNECTION_KEY)):{};
+ return {...process.env,...credentials,...(draft?.pageIds?.length?{META_ALLOWED_PAGE_IDS:draft.pageIds.join(',')}:{} )};
+};
 
 app.mount('/api', authRoutes);
 app.mount('/api', listingRoutes);
 app.mount('/api', commentRoutes);
 app.mount('/api', adminRoutes);
 app.mount('/api', websiteIntakeRoutes);
+app.mount('/api', createMetaIntakeRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
+app.mount('/api', createLeadIntegrationSetupRoutes({requireAuth,transaction}));
+app.mount('/api', createLeadResponseRoutes({requireAuth,transaction}));
+app.mount('/api', createWebIntakePhase1Routes({requireAuth,transaction}));
+app.mount('/api', createLeadChannelInboxRoutes({transaction}));
+app.mount('/api', createNativeLeadWhatsAppRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
 app.mount('/api', listingIntakeRoutes);
 app.mount('/api', listingMappingRoutes);
 app.mount('/api', crmRoutes);
@@ -92,6 +113,7 @@ async function start() {
   writeRuntimeEvent('starting');
   await migrate();
   startAdviceWorker();
+  startWebIntakeWorker({transaction});
   await new Promise((resolve, reject) => {
     server = app.listen(PORT, () => {
       server.off('error', reject);

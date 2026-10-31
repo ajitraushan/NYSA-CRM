@@ -1,0 +1,107 @@
+{
+  "version": "2.1.0-dev.251",
+  "commit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "screens": [
+    {
+      "screen": "Customers",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Customers"
+    },
+    {
+      "screen": "Leads",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Lead pipeline"
+    },
+    {
+      "screen": "WEB Intake Leads",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "WEB Intake Leads"
+    },
+    {
+      "screen": "Inventory",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Inventory"
+    },
+    {
+      "screen": "External Portal Listings",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "External Portal Listings"
+    },
+    {
+      "screen": "Opportunities",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Opportunity pipeline"
+    },
+    {
+      "screen": "My Leave",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "My Leave"
+    },
+    {
+      "screen": "Marketing Compliance",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Marketing Material Compliance"
+    },
+    {
+      "screen": "Bulk Upload",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Customer and Lead Bulk Upload"
+    },
+    {
+      "screen": "My Payout Advice",
+      "errors": 0,
+      "font": "28px",
+      "identityFiltersVisible": 0,
+      "overflow": false,
+      "title": "Payout Advice"
+    }
+  ],
+  "cards": [
+    {
+      "card": "Assignment offers awaiting acceptance",
+      "opened": true,
+      "error": false
+    },
+    {
+      "card": "SLA risk next 60 min",
+      "opened": true,
+      "error": false
+    },
+    {
+      "card": "No next action",
+      "opened": true,
+      "error": false
+    }
+  ],
+  "overdueCardOpened": true,
+  "diaryStableLoadPassed": true,
+  "primaryQueue": "empty; outcome behaviour verified synthetically and through PostgreSQL",
+  "noCustomerRecordsExported": true
+}

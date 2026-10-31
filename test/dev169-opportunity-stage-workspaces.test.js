@@ -40,6 +40,6 @@ test('DEF-092/111 draft capture excludes files and named actions retain governed
   assert.match(app,/control\.type!=='file'/);
   assert.match(app,/Files must be selected again when you return/);
   assert.doesNotMatch(app,/<button[^>]*data-stage-save>Save<\/button>/);
-  assert.match(app,/Use each named action/);
+  assert.match(app,/Use the named action/);
   for(const form of ['#property-match-form','#viewing-create-form','#offer-create-form','.offer-event-form','#booking-create-form','#deal-create-form'])assert.ok(forms.includes(form),`missing governed form ${form}`);
 });

@@ -1,0 +1,11 @@
+
+> nysa-crm@2.1.0-dev.251 release:verify-package
+> node tools/verify-release-provenance.mjs release-artifacts/production/20261031-dev251/nysa-core-2.1.0-dev.251-origin.zip release-artifacts/production/20261031-dev251/nysa-core-2.1.0-dev.251-origin.manifest.json release-artifacts/production/20261031-dev251/nysa-core-2.1.0-dev.251-origin.manifest.sha256.txt
+
+{
+  "verified": true,
+  "commit": "8f722679c92eabcd2efb6cef824d5225b28dbcf4",
+  "tree": "e3bc1aa96f8b0fd104ef868e57df4348aa53ed64",
+  "packageSha256": "749f077d323d846c9e468aafe5ef31f1d215eed9afdde98baca9c8bc5e12178a",
+  "manifestSha256": "4676cbbb600efd48f81cb168e265cf9c06c153e4a61225ab07472c2459d12e53"
+}

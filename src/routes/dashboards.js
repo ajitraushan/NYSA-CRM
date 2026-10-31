@@ -19,10 +19,10 @@ function filters(req,alias='l',dateColumn=`${alias}.created_at`){
   if(Number.isNaN(start.valueOf())||Number.isNaN(end.valueOf())||start>end)return {error:'Invalid date range'};
   add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(end.getTime()+86400000));
   if(req.query.businessLineId){if(req.query.businessLineId==='unassigned')where.push(`${businessLineAtSql(`${alias}.assigned_team_id`,`${alias}.created_at`)} IS NULL`);else add(businessLineFilterSql(`${alias}.assigned_team_id`,`${alias}.created_at`,'?'),req.query.businessLineId);}
-  if(req.query.source)add(`${alias}.source=?`,req.query.source);if(req.query.teamId)add(`${alias}.assigned_team_id=?`,req.query.teamId);
+  if(req.query.source)add(`${alias}.source=?`,req.query.source);if(req.query.teamId==='unassigned')where.push(`${alias}.assigned_team_id IS NULL`);else if(req.query.teamId)add(`${alias}.assigned_team_id=?`,req.query.teamId);
   if(req.query.campaignCode)add(`${alias}.campaign_code=?`,req.query.campaignCode);
   if(req.query.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,req.query.managerId);
-  if(req.query.agentId)add(`${alias}.assigned_to=?`,req.query.agentId);if(req.query.businessType)add(`${alias}.business_type=?`,req.query.businessType);if(req.query.stage)add(`${alias}.stage=?`,req.query.stage);
+  if(req.query.agentId==='unassigned')where.push(`${alias}.assigned_to IS NULL`);else if(req.query.agentId)add(`${alias}.assigned_to=?`,req.query.agentId);if(req.query.businessType)add(`${alias}.business_type=?`,req.query.businessType);if(req.query.stage)add(`${alias}.stage=?`,req.query.stage);
   return {params,where:where.join(' AND '),start,end,selected:{businessLineId:req.query.businessLineId||null,dateFrom:start.toISOString().slice(0,10),dateTo:end.toISOString().slice(0,10),source:req.query.source||null,campaignCode:req.query.campaignCode||null,teamId:req.query.teamId||null,managerId:req.query.managerId||null,agentId:req.query.agentId||null,businessType:req.query.businessType||null,stage:req.query.stage||null}};
 }
 async function relevantDashboardTargets(req,selected){
@@ -37,7 +37,7 @@ async function relevantDashboardTargets(req,selected){
   return isCompanyReader(req.broker)&&!selected.businessLineId&&!selected.businessType&&!selected.teamId&&!selected.agentId;
  }).map(t=>({...t,scopeMatchesDashboard:t.scopeType!=='team'||Boolean(selected.teamId)||teams.length===1}));
 }
-function priorWhere(base,alias='l',dateColumn=`${alias}.created_at`){const days=Math.max(1,Math.ceil((base.end-base.start)/86400000)+1),end=new Date(base.start.getTime()-1),start=new Date(end.getTime()-(days-1)*86400000);const params=[],scope=dashboardLeadScopeSql(alias,base.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(base.start));if(base.selected.businessLineId){if(base.selected.businessLineId==='unassigned')where.push(`${businessLineAtSql(`${alias}.assigned_team_id`,`${alias}.created_at`)} IS NULL`);else add(businessLineFilterSql(`${alias}.assigned_team_id`,`${alias}.created_at`,'?'),base.selected.businessLineId);}if(base.selected.source)add(`${alias}.source=?`,base.selected.source);if(base.selected.campaignCode)add(`${alias}.campaign_code=?`,base.selected.campaignCode);if(base.selected.teamId)add(`${alias}.assigned_team_id=?`,base.selected.teamId);if(base.selected.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,base.selected.managerId);if(base.selected.agentId)add(`${alias}.assigned_to=?`,base.selected.agentId);if(base.selected.businessType)add(`${alias}.business_type=?`,base.selected.businessType);if(base.selected.stage)add(`${alias}.stage=?`,base.selected.stage);return {where:where.join(' AND '),params,start,end};}
+function priorWhere(base,alias='l',dateColumn=`${alias}.created_at`){const days=Math.max(1,Math.ceil((base.end-base.start)/86400000)+1),end=new Date(base.start.getTime()-1),start=new Date(end.getTime()-(days-1)*86400000);const params=[],scope=dashboardLeadScopeSql(alias,base.broker,params),where=[`(${scope.clause})`],add=(sql,v)=>{params.push(v);where.push(sql.replace('?',`$${params.length}`));};add(`${dateColumn}>=?`,start);add(`${dateColumn}<?`,new Date(base.start));if(base.selected.businessLineId){if(base.selected.businessLineId==='unassigned')where.push(`${businessLineAtSql(`${alias}.assigned_team_id`,`${alias}.created_at`)} IS NULL`);else add(businessLineFilterSql(`${alias}.assigned_team_id`,`${alias}.created_at`,'?'),base.selected.businessLineId);}if(base.selected.source)add(`${alias}.source=?`,base.selected.source);if(base.selected.campaignCode)add(`${alias}.campaign_code=?`,base.selected.campaignCode);if(base.selected.teamId==='unassigned')where.push(`${alias}.assigned_team_id IS NULL`);else if(base.selected.teamId)add(`${alias}.assigned_team_id=?`,base.selected.teamId);if(base.selected.managerId)add(`${alias}.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)`,base.selected.managerId);if(base.selected.agentId==='unassigned')where.push(`${alias}.assigned_to IS NULL`);else if(base.selected.agentId)add(`${alias}.assigned_to=?`,base.selected.agentId);if(base.selected.businessType)add(`${alias}.business_type=?`,base.selected.businessType);if(base.selected.stage)add(`${alias}.stage=?`,base.selected.stage);return {where:where.join(' AND '),params,start,end};}
 
 const opportunityPipelineStageSql=alias=>`CASE ${alias}.stage
   WHEN 'Requirements' THEN 'Qualified' WHEN 'Matching' THEN 'Qualified'
@@ -63,33 +63,46 @@ async function loadOpportunityPipelineCounts(broker,f){
   return [...counts].map(([label,value])=>({label,value}));
 }
 
-async function loadOpportunityPipelineRecords(broker,f,stage){
+function dashboardRecordResult(req,payload){
+  const pageSize=Math.max(1,Math.min(500,Number.parseInt(req.query.pageSize,10)||100)),count=Number(payload.records[0]?.dashboardTotal??payload.records.length),pages=Math.max(1,Math.ceil(count/pageSize)),page=Math.max(1,Math.min(pages,Number.parseInt(req.query.page,10)||1));
+  const paged=payload.records[0]?.dashboardTotal!==undefined,rows=paged?payload.records:payload.records.slice((page-1)*pageSize,page*pageSize);
+  return {...payload,count,page,pageSize,pages,records:rows.map(({dashboardTotal,dashboardOrdinal,...row})=>row)};
+}
+async function dashboardPageRows(req,sql,params=[]){
+  const size=Math.max(1,Math.min(500,Number.parseInt(req.query.pageSize,10)||100)),requested=Math.max(1,Number.parseInt(req.query.page,10)||1);
+  const query=page=>many(`SELECT result.*,COUNT(*) OVER()::int AS dashboard_total,ROW_NUMBER() OVER() AS dashboard_ordinal FROM (${sql}) result ORDER BY dashboard_ordinal LIMIT $${params.length+1} OFFSET $${params.length+2}`,[...params,size,(page-1)*size]);
+  let rows=await query(requested);if(!rows.length&&requested>1){const total=(await one(`SELECT COUNT(*)::int AS count FROM (${sql}) result`,params)).count;rows=await query(Math.max(1,Math.ceil(total/size)));}
+  return rows;
+}
+
+async function loadOpportunityPipelineRecords(broker,f,stage,req){
   const opportunityParams=[...f.params],opportunityScope=opportunityScopeSql('o',broker,opportunityParams);
-  const opportunities=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,
+  const opportunityQuery=`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,
     o.created_at,o.next_action_due_at AS next_follow_up_at,c.full_name AS contact_name,t.id AS team_id,t.name AS team_name,
     m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name,${opportunityPipelineStageSql('o')} AS pipeline_stage,
     o.id AS pipeline_opportunity_id,o.opportunity_reference
     FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id
     LEFT JOIN teams t ON t.id=o.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=o.owner_id
     WHERE ${f.where} AND (${opportunityScope.clause}) AND (${opportunityPipelineStageSql('o')})=$${opportunityParams.length+1}
-    ORDER BY o.created_at DESC LIMIT 500`,[...opportunityParams,stage]);
+    ORDER BY o.created_at DESC`;
   const leadParams=[...f.params],childScope=opportunityScopeSql('child_o',broker,leadParams);
-  const leads=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,
+  const leadQuery=`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,
     c.full_name AS contact_name,t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name,
     ${leadOnlyPipelineStageSql} AS pipeline_stage,NULL::uuid AS pipeline_opportunity_id,NULL::text AS opportunity_reference
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
     WHERE ${f.where} AND NOT EXISTS(SELECT 1 FROM opportunities child_o WHERE child_o.lead_id=l.id AND (${childScope.clause}))
-      AND (${leadOnlyPipelineStageSql})=$${leadParams.length+1} ORDER BY l.created_at DESC LIMIT 500`,[...leadParams,stage]);
-  return [...opportunities,...leads].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,500);
+      AND (${leadOnlyPipelineStageSql})=$${leadParams.length+1} ORDER BY l.created_at DESC`;
+  const firstParams=[...opportunityParams,stage],secondQuery=leadQuery.replace(/\$(\d+)/g,(_,index)=>'$'+(Number(index)+firstParams.length));
+  return dashboardPageRows(req,'SELECT * FROM (('+opportunityQuery+') UNION ALL ('+secondQuery+')) pipeline_records ORDER BY created_at DESC,pipeline_opportunity_id,id',[...firstParams,...leadParams,stage]);
 }
 
 async function loadProposalApprovalQueue(req,selected={},search='',page=1,pageSize=20){
   if(!isProposalApprover(req.broker))return {rows:[],count:0,page:1,pageSize};
   const params=[],scope=proposalApprovalScopeSql('l',req.broker,params),where=[`(${scope.clause})`,`v.status='generated'`,`v.version_number=(SELECT MAX(latest.version_number) FROM proposal_versions latest WHERE latest.proposal_id=v.proposal_id)`],add=(sql,value)=>{params.push(value);where.push(sql.replace('?',`$${params.length}`));};
   if(selected.businessLineId){if(selected.businessLineId==='unassigned')where.push(`${businessLineAtSql('l.assigned_team_id','l.created_at')} IS NULL`);else add(businessLineFilterSql('l.assigned_team_id','l.created_at','?'),selected.businessLineId);}
-  if(selected.teamId)add('l.assigned_team_id=?',selected.teamId);
+  if(selected.teamId==='unassigned')where.push('l.assigned_team_id IS NULL');else if(selected.teamId)add('l.assigned_team_id=?',selected.teamId);
   if(selected.managerId)add('l.assigned_team_id IN (SELECT id FROM teams WHERE manager_id=?)',selected.managerId);
-  if(selected.agentId)add('l.assigned_to=?',selected.agentId);
+  if(selected.agentId==='unassigned')where.push('l.assigned_to IS NULL');else if(selected.agentId)add('l.assigned_to=?',selected.agentId);
   if(selected.businessType)add('l.business_type=?',selected.businessType);
   if(search){params.push(`%${search}%`);const key=`$${params.length}`;where.push(`(c.full_name ILIKE ${key} OR l.title ILIKE ${key} OR p.proposal_number ILIKE ${key} OR p.title ILIKE ${key} OR p.template_type ILIKE ${key} OR COALESCE(t.name,'') ILIKE ${key} OR COALESCE(creator.name,'') ILIKE ${key} OR ('Version '||v.version_number::text) ILIKE ${key} OR 'pending approval' ILIKE ${key} OR 'awaiting review' ILIKE ${key} OR TO_CHAR(v.created_at AT TIME ZONE 'Asia/Dubai','DD Mon YYYY HH24:MI') ILIKE ${key})`);}
   const from=`FROM proposal_versions v JOIN proposals p ON p.id=v.proposal_id JOIN leads l ON l.id=p.lead_id JOIN contacts c ON c.id=p.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers creator ON creator.id=v.created_by WHERE ${where.join(' AND ')}`;
@@ -223,7 +236,7 @@ async function renderDashboardData(req,res){
     LEFT JOIN brokers b ON b.team_id=t.id AND b.status='active' AND b.role='internal_broker' AND b.job_role IN ('sales_agent','listing_agent')
     WHERE t.active=1 AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL)
       OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL))
-      AND ($2::uuid IS NULL OR t.id=$2) AND ($3::uuid IS NULL OR b.id=$3)
+      AND ($2::text IS NULL OR t.id::text=$2) AND ($3::text IS NULL OR b.id::text=$3)
     ORDER BY t.name,b.name`,[req.broker.id,f.selected.teamId,f.selected.agentId]):[];
   const hierarchy={company:'NYSA CORE',businessLines:[],teams:[]};for(const row of hierarchyRows){let business=hierarchy.businessLines.find(x=>x.code===row.businessType);if(!business){business={id:row.businessLineId||'unassigned',code:row.businessType,teams:[]};hierarchy.businessLines.push(business);}let team=business.teams.find(x=>x.id===row.teamId&&x.managerId===row.managerId);if(!team){team={id:row.teamId,name:row.teamName,managerId:row.managerId,manager:row.managerName,agents:[]};business.teams.push(team);}team.agents.push({id:row.agentId,name:row.agentName,value:row.value});}
   const activityByAgent=new Map();for(const row of hierarchyRows){if(row.agentId)activityByAgent.set(row.agentId,(activityByAgent.get(row.agentId)||0)+Number(row.value||0));}
@@ -263,10 +276,10 @@ r.get('/crm/dashboard/records',async(req,res)=>{
   const f=filters(req);if(f.error)return res.status(400).json({error:f.error});const segment=req.query.segment||'new_leads';
   const lifecycle=AGENT_LIFECYCLE_STAGES.find(item=>`lifecycle_${item.stage.toLowerCase()}`===segment);
   if(lifecycle){
-    const rows=await loadOpportunityPipelineRecords(req.broker,f,lifecycle.stage),sample=rows[0];
+    const rows=await loadOpportunityPipelineRecords(req.broker,f,lifecycle.stage,req),sample=rows[0];
     const breadcrumbs=['NYSA CORE',f.selected.businessType,f.selected.teamId?sample?.teamName:null,f.selected.managerId?sample?.managerName:null,f.selected.agentId?sample?.agentName:null].filter(Boolean);
-    return res.json({entityType:'opportunity',segment,segmentLabel:lifecycle.label,stageAction:lifecycle.action,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,
-      records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.opportunityReference||row.title].filter(Boolean)}))});
+    return res.json(dashboardRecordResult(req,{entityType:'opportunity',segment,segmentLabel:lifecycle.label,stageAction:lifecycle.action,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,
+      records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.opportunityReference||row.title].filter(Boolean)}))}));
   }
   if(segment.startsWith('guided_')){
     const step=segment.slice(7),leadSteps={customer:'TRUE',lead:'TRUE',qualification:'EXISTS(SELECT 1 FROM qualification_assessments qa WHERE qa.lead_id=l.id)',requirements:'EXISTS(SELECT 1 FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL)'};
@@ -289,7 +302,7 @@ r.get('/crm/dashboard/records',async(req,res)=>{
         LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=o.owner_id
         WHERE ${scope.clause} AND ${conditions[step]} ORDER BY o.created_at DESC`,params);
     }
-    return res.json({entityType:'lead',segment,segmentLabel:step==='customer'?'Customers':step[0].toUpperCase()+step.slice(1),dataAsOf:new Date(),filters:{},count:rows.length,breadcrumbs:['NYSA CORE',req.broker.jobRole==='manager'?'Team operating sequence':'My operating sequence'],records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+    return res.json(dashboardRecordResult(req,{entityType:'lead',segment,segmentLabel:step==='customer'?'Customers':step[0].toUpperCase()+step.slice(1),dataAsOf:new Date(),filters:{},count:rows.length,breadcrumbs:['NYSA CORE',req.broker.jobRole==='manager'?'Team operating sequence':'My operating sequence'],records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))}));
   }
   if(['inventory_available','inventory_stale','inventory_media_not_ready','inventory_readiness_exposure','inventory_aging_exposure','inventory_compliance_exposure'].includes(segment)){
     if(!isCompanyReader(req.broker))return res.status(403).json({error:'Company inventory drill-down requires Director access'});
@@ -298,8 +311,8 @@ r.get('/crm/dashboard/records',async(req,res)=>{
       inventory_compliance_exposure:`${active} AND ((permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))`,
       inventory_readiness_exposure:`${active} AND (availability_confirmed_at IS NULL OR availability_confirmed_at<NOW()-INTERVAL '7 days' OR (permit_expires_at IS NOT NULL AND permit_expires_at<NOW()+INTERVAL '30 days') OR verification_status NOT IN('verified','not_required') OR verification_expires_at<NOW()+INTERVAL '30 days' OR portal_status NOT IN('ready','published') OR NOT EXISTS(SELECT 1 FROM property_media m WHERE m.listing_id=listings.id AND m.approval_status='approved' AND m.usage_rights_confirmed=TRUE AND (m.rights_expires_at IS NULL OR m.rights_expires_at>NOW())))`};
     const lineParams=[],lineWhere=f.selected.businessLineId?(f.selected.businessLineId==='unassigned'?` AND ${businessLineAtSql('(SELECT bl_owner.team_id FROM brokers bl_owner WHERE bl_owner.id=listings.posted_by)','listings.created_at')} IS NULL`:(lineParams.push(f.selected.businessLineId),` AND ${businessLineFilterSql('(SELECT bl_owner.team_id FROM brokers bl_owner WHERE bl_owner.id=listings.posted_by)','listings.created_at','$1')}`)):'';
-    const records=await many(`SELECT id,project AS title,area,nysa_inventory_effective_status(id) AS status,property_type,updated_at,availability_confirmed_at,verification_status,verification_expires_at,permit_number,permit_expires_at,portal_status FROM listings WHERE deleted_at IS NULL AND ${conditions[segment]}${lineWhere} ORDER BY updated_at LIMIT 500`,lineParams);
-    return res.json({entityType:'listing',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE','Inventory'],records:records.map(row=>({...row,breadcrumbs:['NYSA CORE','Inventory',row.area,row.title].filter(Boolean)}))});
+    const records=await dashboardPageRows(req,`SELECT id,project AS title,area,nysa_inventory_effective_status(id) AS status,property_type,updated_at,availability_confirmed_at,verification_status,verification_expires_at,permit_number,permit_expires_at,portal_status FROM listings WHERE deleted_at IS NULL AND ${conditions[segment]}${lineWhere} ORDER BY updated_at,id`,lineParams);
+    return res.json(dashboardRecordResult(req,{entityType:'listing',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE','Inventory'],records:records.map(row=>({...row,breadcrumbs:['NYSA CORE','Inventory',row.area,row.title].filter(Boolean)}))}));
   }
   if(['proposal_workload','customer_engagement'].includes(segment)){
     const proposalF=filters(req,'l','p.updated_at'),callF=filters(req,'l','a.created_at');
@@ -308,14 +321,16 @@ r.get('/crm/dashboard/records',async(req,res)=>{
     const proposals=await many(`SELECT p.id,${common},p.updated_at AS created_at,'Proposal '||p.status AS engagement_type FROM proposals p JOIN leads l ON l.id=p.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE ${proposalF.where} AND ${proposalStatus} ORDER BY p.updated_at DESC`,proposalF.params);
     const calls=segment==='customer_engagement'?await many(`SELECT a.id,${common},a.created_at,'Call' AS engagement_type FROM activities a JOIN leads l ON l.id=a.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to WHERE a.activity_type='Call' AND ${callF.where} ORDER BY a.created_at DESC`,callF.params):[];
     const records=[...proposals,...calls].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(row=>({...row,id:row.leadId,sourceType:row.engagementType,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title,row.engagementType].filter(Boolean)}));
-    return res.json({entityType:'engagement',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE',segment==='proposal_workload'?'Proposal workload':'Customer engagement'],records});
+    return res.json(dashboardRecordResult(req,{entityType:'engagement',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE',segment==='proposal_workload'?'Proposal workload':'Customer engagement'],records}));
+  }
+  if(['overdue_tasks','due_today'].includes(segment)){
+    const condition=segment==='overdue_tasks'?"task.due_at<NOW()":"task.due_at>=NOW() AND task.due_at<CURRENT_DATE+INTERVAL '1 day'";
+    const rows=await dashboardPageRows(req,`SELECT task.id AS task_id,task.subject,task.status,l.id AS lead_id,l.lead_reference,l.title AS lead_title,task.due_at AS created_at,c.full_name AS contact_name,t.name AS team_name,b.name AS agent_name FROM tasks task JOIN leads l ON l.id=task.lead_id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers b ON b.id=task.assignee_id WHERE ${f.where} AND task.status NOT IN('completed','cancelled') AND ${condition} ORDER BY task.due_at,task.id`,f.params);
+    return res.json(dashboardRecordResult(req,{entityType:'task',segment,dataAsOf:new Date(),filters:f.selected,records:rows.map(row=>({...row,id:row.leadId,title:row.subject,stage:row.status}))}));
   }
   if(segment==='team_capacity_pressure'){
-    const rows=await many(`WITH scoped AS (SELECT l.id,COUNT(*) FILTER(WHERE l.stage NOT IN('Won','Lost')) OVER(PARTITION BY l.assigned_to) AS agent_open FROM leads l WHERE ${f.where})
-      SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name
-      FROM scoped s JOIN leads l ON l.id=s.id JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
-      WHERE l.assigned_to IS NOT NULL AND s.agent_open>=10 ORDER BY l.created_at DESC LIMIT 500`,f.params);
-    return res.json({entityType:'lead',segment,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs:['NYSA CORE','Capacity pressure'],records:rows.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+    const records=await dashboardPageRows(req,`SELECT l.assigned_to AS agent_id,l.assigned_team_id AS team_id,b.name AS agent_name,t.name AS team_name,COUNT(*) FILTER(WHERE l.stage NOT IN('Won','Lost'))::int AS open_lead_count FROM leads l LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id WHERE ${f.where} AND l.assigned_to IS NOT NULL GROUP BY l.assigned_to,l.assigned_team_id,b.name,t.name HAVING COUNT(*) FILTER(WHERE l.stage NOT IN('Won','Lost'))>=10 ORDER BY b.name,t.name`,f.params);
+    return res.json(dashboardRecordResult(req,{entityType:'agent',segment,dataAsOf:new Date(),filters:f.selected,records}));
   }
   if(['operational_exceptions','exception_trend'].includes(segment)){
     const records=await many(`SELECT l.id,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
@@ -328,13 +343,13 @@ r.get('/crm/dashboard/records',async(req,res)=>{
         CASE WHEN EXISTS(SELECT 1 FROM contact_channels cc JOIN contact_channels dc ON dc.channel_kind=cc.channel_kind AND dc.normalized_value=cc.normalized_value AND dc.contact_id<>cc.contact_id WHERE cc.contact_id=c.id AND cc.normalized_value IS NOT NULL) THEN 'Possible duplicate contact' END,
         CASE WHEN c.do_not_contact=0 AND NOT EXISTS(SELECT 1 FROM marketing_agreements ma WHERE ma.contact_id=c.id AND ma.status='executed' AND ma.effective_at<=NOW() AND (ma.expires_at IS NULL OR ma.expires_at>NOW())) THEN 'Missing effective consent' END,
         CASE WHEN NOT EXISTS(SELECT 1 FROM documents d WHERE d.lead_id=l.id AND d.status<>'retired') THEN 'Missing active document' END
-      ]) ex(exception_type) WHERE ${f.where} AND ex.exception_type IS NOT NULL ORDER BY l.created_at DESC`,f.params);
-    if(!f.selected.businessLineId&&(isManager(req.broker)||isCompanyReader(req.broker))){const events=await many("SELECT event_id,error_code,received_at FROM website_intake_events WHERE status='failed' AND received_at>=$1 AND received_at<$2 ORDER BY received_at",[f.start,new Date(f.end.getTime()+86400000)]);for(const event of events)records.push({id:null,title:event.eventId,contactName:'Website intake',businessType:'Operations',stage:'Failed',temperature:'—',teamName:'Digital intake',managerName:'Company support',agentName:null,createdAt:event.receivedAt,exceptionType:event.errorCode||'Integration failure'});}
-    return res.json({entityType:'exception',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE','Operations and Risk'],records:records.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+      ]) ex(exception_type) WHERE ${f.where} AND ex.exception_type IS NOT NULL ORDER BY l.created_at DESC,l.id`,f.params);
+    if(!f.selected.businessLineId&&isCompanyReader(req.broker)){const events=await many("SELECT event_id,error_code,received_at FROM website_intake_events WHERE status='failed' AND received_at>=$1 AND received_at<$2 ORDER BY received_at",[f.start,new Date(f.end.getTime()+86400000)]);for(const event of events)records.push({id:null,title:event.eventId,contactName:'Website intake',businessType:'Operations',stage:'Failed',temperature:'—',teamName:'Digital intake',managerName:'Company support',agentName:null,createdAt:event.receivedAt,exceptionType:event.errorCode||'Integration failure'});}
+    return res.json(dashboardRecordResult(req,{entityType:'exception',segment,dataAsOf:new Date(),filters:f.selected,count:records.length,breadcrumbs:['NYSA CORE','Operations and Risk'],records:records.map(row=>({...row,breadcrumbs:['NYSA CORE',row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))}));
   }
   const clauses={sla_breaches:"((l.accepted_at IS NULL AND l.acceptance_due_at<NOW()) OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at<NOW()))",
     sla_risk:"l.stage NOT IN('Won','Lost') AND ((l.accepted_at IS NULL AND l.acceptance_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes') OR (l.accepted_at IS NOT NULL AND l.first_contact_at IS NULL AND l.first_contact_due_at BETWEEN NOW() AND NOW()+INTERVAL '60 minutes'))",
-    no_next_action:"l.next_follow_up_at IS NULL AND l.current_status='active' AND l.stage NOT IN('Won','Lost')",won_leads:"l.stage='Won'",hot_leads:"l.temperature='Hot'",warm_leads:"l.temperature='Warm'",
+    no_next_action:"l.next_follow_up_at IS NULL AND l.current_status='active' AND l.stage NOT IN('Won','Lost')",won_leads:"l.current_status='closed_won'",hot_leads:"l.temperature='Hot' AND l.current_status='active'",warm_leads:"l.temperature='Warm' AND l.current_status='active'",
     hot_warm_pipeline:"l.temperature IN('Hot','Warm') AND l.stage NOT IN('Won','Lost')",hot_warm_aging:"l.temperature IN('Hot','Warm') AND l.updated_at<NOW()-INTERVAL '7 days' AND l.stage NOT IN('Won','Lost')",
     stale_risk:"l.updated_at<NOW()-INTERVAL '7 days' AND l.stage NOT IN('Won','Lost')",unassigned_leads:"l.assigned_to IS NULL AND l.stage NOT IN('Won','Lost')",
     awaiting_acceptance:"l.accepted_at IS NULL AND l.stage NOT IN('Won','Lost')",overdue_tasks:"EXISTS(SELECT 1 FROM tasks dt WHERE dt.lead_id=l.id AND dt.status NOT IN('completed','cancelled') AND dt.due_at<NOW())",
@@ -343,13 +358,13 @@ r.get('/crm/dashboard/records',async(req,res)=>{
     };
   const pipelineParams=[...f.params],pipelineFrom=pipelineJoin(req.broker,pipelineParams);
   const extra=lifecycle?`(${pipelineStageSql})='${lifecycle.stage}'`:clauses[segment];
-  const rows=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
+  const rows=await dashboardPageRows(req,`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.business_type,l.stage,l.temperature,l.created_at,l.next_follow_up_at,c.full_name AS contact_name,
     t.id AS team_id,t.name AS team_name,m.id AS manager_id,m.name AS manager_name,b.id AS agent_id,b.name AS agent_name,
     ${pipelineStageSql} AS pipeline_stage,pipeline.id AS pipeline_opportunity_id,pipeline.opportunity_reference
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN brokers m ON m.id=t.manager_id LEFT JOIN brokers b ON b.id=l.assigned_to
-    ${pipelineFrom} WHERE ${f.where}${extra?' AND '+extra:''} ORDER BY l.created_at DESC LIMIT 500`,pipelineParams);
+    ${pipelineFrom} WHERE ${f.where}${extra?' AND '+extra:''} ORDER BY l.created_at DESC,l.id`,pipelineParams);
   const sample=rows[0],breadcrumbs=['NYSA CORE',f.selected.businessType,f.selected.teamId?sample?.teamName:null,f.selected.managerId?sample?.managerName:null,f.selected.agentId?sample?.agentName:null].filter(Boolean);
-  res.json({entityType:'lead',segment,segmentLabel:lifecycle?lifecycle.label:null,stageAction:lifecycle?lifecycle.action:null,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,records:rows.map(row=>({...row,breadcrumbs:["NYSA CORE",row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))});
+  res.json(dashboardRecordResult(req,{entityType:'lead',segment,segmentLabel:lifecycle?lifecycle.label:null,stageAction:lifecycle?lifecycle.action:null,dataAsOf:new Date(),filters:f.selected,count:rows.length,breadcrumbs,records:rows.map(row=>({...row,breadcrumbs:["NYSA CORE",row.businessType,row.teamName,row.managerName,row.agentName,row.title].filter(Boolean)}))}));
 });
 
 const csvCell=v=>`"${String(v??'').replace(/"/g,'""')}"`;

@@ -19,6 +19,21 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
 - Report migrations, tests, security/privacy impact, backup/rollback and the
   production state at completion.
 
+## Mandatory hosted-worker verification
+
+- Every hosted deployment must audit Node.js workers for the exact application
+  root before the controlled restart and again after post-start readiness.
+- After requesting `/api/readiness`, exactly one `lsnode:<exact-app-root>/`
+  worker must be present and it must serve the expected version with database
+  readiness green. An idle pre-request count of zero may be normal on cPanel;
+  zero after the readiness request or more than one worker fails deployment
+  acceptance.
+- Stop or kill workers only after verifying both their exact application-root
+  command marker and `/proc/<pid>/cwd`. Never use a broad Node.js process kill.
+- A stale or duplicate worker makes the deployment incomplete. Reconcile the
+  process lifecycle, perform the single controlled start, and repeat readiness
+  plus worker-count verification before connector or external-write testing.
+
 ## Mandatory release packaging
 
 - The only authorized packaging command is
