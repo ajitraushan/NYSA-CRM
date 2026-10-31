@@ -1,0 +1,60 @@
+{
+  "freshMaintenanceWindowBackupRequired": true,
+  "result": "PASSED",
+  "migrations": 159,
+  "keyProtection": "Windows DPAPI CurrentUser",
+  "checkedAt": "2026-10-31T13:02:03.5598794Z",
+  "version": "2.1.0-dev.248",
+  "schema": "nysa.local-recovery-verification.v2",
+  "ciphertextSha256": "95e88cbef1b6af7a3d7a1ac2fc1c10db0b22277a1bd3b8e729dc5087b05d362c",
+  "target": "test",
+  "plaintextFilesWritten": false,
+  "headerSha256": "e64e61dec4f930d37f23a62c13cae21a05e445eb0de8487c94d2a1ace60173f8",
+  "components": [
+    {
+      "sha256": "d6839250c6a07635122eec4524449a0b0d7777ac754435a093d812cdbf7706cf",
+      "verified": true,
+      "bytes": 1714580,
+      "name": "database.dump"
+    },
+    {
+      "sha256": "a2fa00ed63f429e2aab715145574daad47b564ba57a36a5a1c2626116cb003f8",
+      "verified": true,
+      "bytes": 272612,
+      "name": "restore-list.txt"
+    },
+    {
+      "sha256": "e7d2d006da15e5816074c0e1cf56b89dfecb7d96364669ee1785cf1056869162",
+      "verified": true,
+      "bytes": 27868,
+      "name": "database-ownership.json"
+    },
+    {
+      "sha256": "df55d168332b342874ef15d0ad2e35e7e890c32a9a29956143f2a320d60be02e",
+      "verified": true,
+      "bytes": 3947,
+      "name": "registered-config.json"
+    },
+    {
+      "sha256": "6aa6167f502c341811913a8fc5283ae0671decc798e2a7aac51f4c6da71d5924",
+      "verified": true,
+      "bytes": 13697381,
+      "name": "application.tar.gz"
+    },
+    {
+      "sha256": "0cf28c529a79ba805b97a4cf99610faee25b23b3f47dd8a9f64c7891cb379ef3",
+      "verified": true,
+      "bytes": 83563522,
+      "name": "dependencies.tar.gz"
+    },
+    {
+      "sha256": "9cfd8d6d1cbd759664621c04408c3934b797fb7712b6f697435aad863646e47a",
+      "verified": true,
+      "bytes": 3879000,
+      "name": "private-storage.tar.gz"
+    }
+  ],
+  "authenticatedDecryption": true,
+  "quiesced": false,
+  "productionMutation": false
+}

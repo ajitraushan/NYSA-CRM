@@ -1,0 +1,28 @@
+{
+  "synthetic": true,
+  "checks": [
+    "Dubai presenter",
+    "header type",
+    "idempotent filters",
+    "FormData preserved",
+    "identity filters collapsed",
+    "keyboard record open",
+    "secondary action handler retained",
+    "listing steps retain form values",
+    "responsive width"
+  ],
+  "viewports": [
+    {
+      "width": 1280,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 768,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 390,
+      "horizontalOverflow": false
+    }
+  ]
+}

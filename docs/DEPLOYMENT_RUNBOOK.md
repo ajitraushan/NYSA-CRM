@@ -165,8 +165,20 @@ before upload. Record its SHA-256 with the release.
 8. Save cPanel application settings.
 9. Restart the Node.js application once.
 10. Wait for startup migration and inspect `stderr.log` if startup fails.
+11. Request `/api/readiness` to force cPanel to start the request-serving
+    worker, then confirm the expected version and database readiness.
+12. Count only processes whose command contains
+    `lsnode:<exact-application-root>/`; require exactly one immediately after
+    the readiness request.
+13. If the count is zero or greater than one, fail deployment acceptance. Stop
+    the application and terminate only PIDs whose command marker and
+    `/proc/<pid>/cwd` both match the exact application root, then perform one
+    controlled start and repeat readiness plus worker-count verification.
 
 Do not repeatedly restart a failing application before reading the latest error.
+Do not use broad `pkill node`, `killall node`, or account-wide process cleanup.
+A hosted deployment is incomplete while a stale worker for the same application
+root survives.
 
 ## Production Verification
 
@@ -177,6 +189,9 @@ Do not repeatedly restart a failing application before reading the latest error.
 3. Log in with a controlled administrator account.
 4. Confirm dashboard and existing inventory load.
 5. Review `stderr.log` for new startup errors without exposing secrets.
+6. Immediately after the readiness request, record the exact application root,
+   the single worker PID and a worker count of one. Treat zero or duplicate
+   workers as a failed verification.
 
 ### Release workflow smoke test
 
@@ -258,6 +273,8 @@ Migration test result:
 Archive SHA-256:
 Health result:
 Smoke-test result:
+Application root:
+Post-readiness worker PID/count:
 Errors or exceptions:
 Rollback required: yes/no
 Documents updated:

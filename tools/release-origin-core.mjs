@@ -4,7 +4,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 
 export const FULL_SHA=/^[0-9a-f]{40}$/;
-export const runtimePath=name=>['app.cjs','.env.example','package.json','package-lock.json'].includes(name)||name.startsWith('public/')||name.startsWith('src/');
+export const runtimePath=name=>['app.cjs','.env.example','package.json','package-lock.json'].includes(name)||name.startsWith('public/')||name.startsWith('src/')||name.startsWith('integrations/wordpress/');
 export const git=(repo,args,options={})=>execFileSync('git',args,{cwd:repo,encoding:'utf8',stdio:['ignore','pipe','pipe'],...options}).trim();
 export function assertFullCommit(value){if(!FULL_SHA.test(String(value||'')))throw new Error('Release commit must be an explicit full 40-character lowercase SHA');return value;}
 export function parseAdvertisedRefs(text){return String(text||'').trim().split(/\r?\n/).filter(Boolean).map(line=>{const [sha,ref]=line.trim().split(/\s+/);return{sha,ref};});}

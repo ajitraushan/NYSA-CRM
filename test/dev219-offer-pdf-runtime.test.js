@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PUPPETEER_REVISIONS} from 'puppeteer-core/internal/revisions.js';
 import {chromiumLaunchOptions} from '../src/approved-document-renderer.js';
 
 const read=file=>readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
@@ -32,9 +31,12 @@ test('DEV219 server renderer uses the headless-shell mode required by packaged C
   }
 });
 
-test('DEV219 packaged Chromium major matches Puppeteer required headless-shell major',()=>{
+test('PDF runtime uses the exact patched pair verified with all ten formats on hosted Linux',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.dependencies['@sparticuz/chromium'].split('.')[0],PUPPETEER_REVISIONS['chrome-headless-shell'].split('.')[0]);
+  // Puppeteer's downloaded-browser revision is not its minimum CDP version.
+  // Keep this explicit pair pinned. Any update requires another hosted runtime smoke check.
+  assert.equal(pkg.dependencies['@sparticuz/chromium'],'153.0.0');
+  assert.equal(pkg.dependencies['puppeteer-core'],'25.16.0');
 });
 
 test('DEV219 Offer creation returns an actionable renderer failure instead of a generic 500',()=>{

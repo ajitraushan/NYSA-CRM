@@ -93,7 +93,7 @@ test('external property remains a separate governed transaction source through c
 test('finance, multi-Inventory and viewing remediation contracts are visible and immutable',()=>{
   const app=read('public/app.js'),routes=read('src/routes/opportunities.js'),crm=read('src/routes/crm.js');
   for(const marker of ['Expected occupancy rate (%)','occupancyPercent','100-Number(f.occupancyPercent)',
-    'Investment scenario comparison','separate immutable record','Annual rent','Net yield'])
+    'Investment scenario comparison','separate locked record','Annual rent','Net yield'])
     assert.match(app,new RegExp(marker.replace(/[()]/g,'\\$&')));
   for(const marker of ['listingIds','lead_inventory_selections','Carried forward from originating Lead','property_match_history'])
     assert.match(routes+crm,new RegExp(marker));
