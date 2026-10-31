@@ -1,0 +1,107 @@
+{
+  "synthetic": true,
+  "checks": 10,
+  "report": [
+    {
+      "role": "manager",
+      "view": null,
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "manager",
+      "view": null,
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Executive",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Sales",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Inventory",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 1280,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    },
+    {
+      "role": "director",
+      "view": "Operations and Risk",
+      "width": 390,
+      "card": "Company → business line → team → manager → agent",
+      "total": 1,
+      "close": true,
+      "browserBack": true,
+      "recordBack": false
+    }
+  ],
+  "browserErrors": []
+}

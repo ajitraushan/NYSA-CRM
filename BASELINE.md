@@ -1,5 +1,10 @@
 # CRM Development Baseline
 
+## DEV253 dashboard reconciliation — 31 October 2026
+
+- Authorized scope: reconcile every dashboard card/drill-down count and retain filters and scroll on Back/Close; fix discovered defects only, regression test and deploy to CRM Test from GitHub. Production/main/website remain on HOLD.
+- Source baseline: DEV252 deployed commit `e87b9f879b61acfe5f97f93194f29e17c27647b0`; deployment evidence `a802867`, clean worktree before changes. Candidate branch `codex/dev253-dashboard-reconciliation`. Migration baseline 159; archive and fresh recovery rollback points are recorded below. Refresh Test paired/encrypted recovery immediately before deployment. No data migration or access-policy change is intended.
+
 ## DEV252 column-layout correction — 31 October 2026
 
 - Approved CRM Test deployment completed 31 October 2026 at 18:30 Dubai time: `2.1.0-dev.252`, origin commit `e87b9f879b61acfe5f97f93194f29e17c27647b0`, archive SHA-256 `87b640f9549767c33955453f6d5ffa338f18324d05786b99ed5153da10af7f1c`. All 455 runtime hashes, ten PDF checks and database readiness passed; exactly one verified worker PID 3019958 serves the exact Test root. No migration, registered configuration or workflow change occurred.

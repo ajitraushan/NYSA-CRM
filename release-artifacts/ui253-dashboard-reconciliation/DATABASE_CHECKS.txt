@@ -1,0 +1,10 @@
+{"dashboardReconciliation":"passed","cardChecks":28,"roles":3,"synthetic":true,"paginationBeyond500":true}
+✔ Dashboard cards reconcile with paginated records for Agent, Manager and all Director views (3607.3443ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3747.6613
