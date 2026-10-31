@@ -1,0 +1,97 @@
+{
+  "result": "DEPLOYED_TEST_TECHNICAL_CHECKS_PASSED",
+  "commit": "e87b9f879b61acfe5f97f93194f29e17c27647b0",
+  "version": "2.1.0-dev.252",
+  "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+  "productionMutation": false,
+  "databaseMigration": false,
+  "runtimeFiles": 455,
+  "workersBefore": [],
+  "workerStop": {
+    "stopped": 0
+  },
+  "pdfFormats": [
+    {
+      "documentCode": "buyer_proposal",
+      "bytes": 51246
+    },
+    {
+      "documentCode": "financial_illustration",
+      "bytes": 51983
+    },
+    {
+      "documentCode": "offer_letter",
+      "bytes": 68624
+    },
+    {
+      "documentCode": "viewing_confirmation",
+      "bytes": 69291
+    },
+    {
+      "documentCode": "a2a_buyer",
+      "bytes": 68284
+    },
+    {
+      "documentCode": "a2a_seller",
+      "bytes": 68285
+    },
+    {
+      "documentCode": "listing_noc",
+      "bytes": 65936
+    },
+    {
+      "documentCode": "agent_payout",
+      "bytes": 54036
+    },
+    {
+      "documentCode": "tax_invoice",
+      "bytes": 37259
+    },
+    {
+      "documentCode": "payout_advice",
+      "bytes": 18298
+    }
+  ],
+  "readiness": {
+    "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+    "version": "2.1.0-dev.252",
+    "database": "ready",
+    "workerCount": 1,
+    "workers": [
+      {
+        "pid": 3019958,
+        "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+        "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+      }
+    ]
+  },
+  "http": [
+    {
+      "url": "/",
+      "status": 200
+    },
+    {
+      "url": "/api/me",
+      "status": 401
+    },
+    {
+      "url": "/api/crm/dashboard",
+      "status": 401
+    },
+    {
+      "url": "/api/crm/tasks",
+      "status": 401
+    },
+    {
+      "url": "/ui-design-system.js",
+      "status": 200
+    },
+    {
+      "url": "/ui-design-system.css",
+      "status": 200
+    }
+  ],
+  "humanRoleUat": "pending",
+  "configurationPreserved": true,
+  "completedAt": "2026-10-31T14:30:25.042Z"
+}
