@@ -1565,7 +1565,7 @@ async function renderCrmDashboard(selected={}){
   }
   if(ME.jobRole==='sales_agent')panels='';
   $('#dashboard-body').className=['manager','director'].includes(ME.jobRole)?'stat-grid':'dashboard-grid';$('#dashboard-body').innerHTML=panels;
-  const appliedFilters={...data.filters,...(defaults.view?{view:defaults.view}:{})};
+  const appliedFilters=Object.fromEntries(Object.entries({...data.filters,...(defaults.view?{view:defaults.view}:{})}).filter(([,value])=>value!==null&&value!==undefined&&value!==''));
   const currentFilters=()=>{const x=Object.fromEntries(new FormData($('#dashboard-filters')));if(defaults.view)x.view=defaults.view;return x;};$('#dashboard-filters').addEventListener('submit',e=>{e.preventDefault();renderCrmDashboard(currentFilters());});$('#dashboard-reset').addEventListener('click',()=>renderCrmDashboard());
   document.querySelectorAll('[data-dashboard-summary]').forEach(button=>button.addEventListener('click',()=>{
     const detail=dashboardDialog('<div class="modal lead-modal"><button class="close-x">×</button>'+summaryDetails[Number(button.dataset.dashboardSummary)]+'</div>');

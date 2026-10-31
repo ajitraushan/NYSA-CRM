@@ -65,11 +65,11 @@ for(const role of ['sales_agent','manager','director'])test(`Agent has no lower 
 
 for(const [role,type,view] of [['sales_agent','agent',null],['manager','manager',null],...['Executive','Sales','Inventory','Operations and Risk'].map(view=>['director','executive',view])])test('API-shaped all-card drill-down contract: '+role+'/'+(view||'default'),async()=>{
  const h=harness();h.context.ME.jobRole=role;h.context.FormData=class{constructor(){return new Map([['source','Synthetic source'],['teamId','synthetic-team']]);}};
- const presentation=buildRoleDashboardPresentation({type,view,current:{leads:3},dataAsOf:'2026-10-26'}),data={...payload('Real API contract'),dashboardType:type,...presentation};data.filters={...data.filters,source:'Applied source',teamId:'applied-team'};
+ const presentation=buildRoleDashboardPresentation({type,view,current:{leads:3},dataAsOf:'2026-10-26'}),data={...payload('Real API contract'),dashboardType:type,...presentation};data.filters={...data.filters,source:'Applied source',teamId:'applied-team',businessLineId:null,agentId:null,managerId:null,campaignCode:null};
  assert.equal(Object.hasOwn(data,'futureMetrics'),false,'Use the real API field rather than a fabricated legacy field');
  const run=h.render(view?{view}:{});await settleStaff(h);h.calls[2].resolve(data);h.calls[3].resolve({views:[]});await run;
  assert.equal(h.kpiButtons.length,presentation.kpis.length);assert.equal(h.summaryButtons.length,role==='sales_agent'?0:role==='director'?12:11);
- for(const [i,button]of h.kpiButtons.entries()){button.click();assert.equal(h.drilldowns[i][0],presentation.kpis[i].drilldownSegment);assert.equal(h.drilldowns[i][1].source,'Applied source');assert.equal(h.drilldowns[i][1].teamId,'applied-team');if(view)assert.equal(h.drilldowns[i][1].view,view);}
+ for(const [i,button]of h.kpiButtons.entries()){button.click();assert.equal(h.drilldowns[i][0],presentation.kpis[i].drilldownSegment);assert.equal(h.drilldowns[i][1].source,'Applied source');assert.equal(h.drilldowns[i][1].teamId,'applied-team');assert.equal(new URLSearchParams(h.drilldowns[i][1]).has('businessLineId'),false);assert.equal(new URLSearchParams(h.drilldowns[i][1]).has('agentId'),false);if(view)assert.equal(h.drilldowns[i][1].view,view);}
  for(const button of h.summaryButtons){button.click();assert.match(h.getDetail(),/<h3>[^<]+<\/h3>/);assert.doesNotMatch(h.getDetail(),/undefined/);}
  if(role==='director'){h.summaryButtons.at(-1).click();assert.match(h.getDetail(),/Weighted opportunity pipeline/);assert.match(h.getDetail(),/Revenue and commission forecast/);}
  assert.ok(h.get('#dashboard-export').href);assert.ok(h.bound.some(([,selector,event])=>selector==='#dashboard-filters'&&event==='submit'));
