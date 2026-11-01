@@ -1,0 +1,34 @@
+{
+  "reference": "NYSA-CRM-20261101-WA-001",
+  "increment": "Stage A protocol foundation 1",
+  "functionalDesignApproved": true,
+  "costsApproved": false,
+  "timelinesApproved": false,
+  "designPdfSha256": "fd1abd96e0b044fdb016f619ebf19e96a1bbb527a62d0b4fa1d8a563c79d3124",
+  "sourceBaseline": "8457d4bd785af01dde7a6f7ca92a657cb99b1393",
+  "focused": {
+    "passed": 15,
+    "failed": 0
+  },
+  "regression": {
+    "total": 1606,
+    "passed": 1512,
+    "skipped": 94,
+    "failed": 0
+  },
+  "providerCallsPerformed": false,
+  "databaseChanged": false,
+  "hostedDeploymentPerformed": false,
+  "existingRuntimeFilesChanged": false,
+  "fileSha256": {
+    "src/whatsapp-sandbox.js": "1afd026b913dc5c8834735b047fdb256aba23aec2830a6b4af9d8b372611a3ff",
+    "test/whatsapp-sandbox.test.js": "f0ecb2e95fe7597e026993a2cf5142e00955d91af5ea257e24171d7141737909"
+  },
+  "pending": [
+    "Protected Admin setup",
+    "Durable quota/attempt and event storage",
+    "Authenticated provider callback contract and route wiring",
+    "Real sandbox send/receive acceptance",
+    "Bulk and AI stages"
+  ]
+}

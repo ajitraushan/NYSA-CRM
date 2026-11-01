@@ -1,0 +1,100 @@
+{
+  "reference": "NYSA-CRM-20261101-WA-001",
+  "version": "1.0",
+  "status": "FOR_APPROVAL_NOT_BASELINED",
+  "issuedDubai": "2026-11-01",
+  "file": "NYSA-CRM-20261101-WA-001-v1.0-For-Approval.docx",
+  "sha256": "02d6368a926cf016875ecc6aa2e5eeef730e8fdad85f3ec6490f14c26dd0475e",
+  "sourceBaseline": "42b25cb4d84d93a33336a2c49149759d4b2ca9b6",
+  "runtimeChanged": false,
+  "productionChanged": false,
+  "sections": [
+    [
+      1,
+      "Scope and agreed requirements"
+    ],
+    [
+      2,
+      "Current capability and delivery gaps"
+    ],
+    [
+      3,
+      "End to end business journey"
+    ],
+    [
+      4,
+      "Recipient upload and identity"
+    ],
+    [
+      5,
+      "Audience grouping and permission"
+    ],
+    [
+      6,
+      "Template lifecycle and Meta verification"
+    ],
+    [
+      7,
+      "Campaign approval and immutable versions"
+    ],
+    [
+      8,
+      "Dispatch states and recovery"
+    ],
+    [
+      9,
+      "Incoming messages and Lead promotion"
+    ],
+    [
+      10,
+      "AI follow through and human control"
+    ],
+    [
+      11,
+      "Materials pricing and follow up"
+    ],
+    [
+      12,
+      "Meeting and accepted Agent handover"
+    ],
+    [
+      13,
+      "User screens and responsibilities"
+    ],
+    [
+      14,
+      "Architecture and integration contracts"
+    ],
+    [
+      15,
+      "Proposed data model and transaction rules"
+    ],
+    [
+      16,
+      "Security privacy and operational controls"
+    ],
+    [
+      17,
+      "Sandbox and live channel acceptance"
+    ],
+    [
+      18,
+      "Functional and regression acceptance"
+    ],
+    [
+      19,
+      "Handover tests and release criteria"
+    ],
+    [
+      20,
+      "Delivery plan decisions and signoff"
+    ],
+    [
+      21,
+      "Traceability sources and document control"
+    ]
+  ],
+  "approvalArtifact": "NYSA-CRM-20261101-WA-001-v1.0-For-Approval.pdf",
+  "approvalArtifactSha256": "9580f77b17c8004db6598206b7d1a1925367f0eb90809a367f4c305f98f8f881",
+  "editableDraftSha256": "02d6368a926cf016875ecc6aa2e5eeef730e8fdad85f3ec6490f14c26dd0475e"
+}

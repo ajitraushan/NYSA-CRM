@@ -1,5 +1,36 @@
 # CRM Development Baseline
 
+## DEV255 sandbox foundation preparation — 1 November 2026
+
+- Continuing the approved WA-001 v1.1 implementation, with costs and timelines
+  excluded. Candidate version DEV255 extends the isolated foundation with
+  protected Admin setup, durable send/event/audit storage and a locked callback
+  probe. See `docs/change-requests/NYSA-CRM-20261101-WA-001/DEV255_SANDBOX_READINESS.md`.
+- Migration160 has been applied only to a newly created local synthetic fixture;
+  all160 migrations built successfully under a restricted role. Existing hosted
+  Test remains DEV254/migration159 and production RC1/migration140, unchanged.
+- Exact source rollback is DEV254 `42b25cb4d84d93a33336a2c49149759d4b2ca9b6`,
+  with starting evidence commit `8457d4bd785af01dde7a6f7ca92a657cb99b1393`.
+  New source settings default off. Hosted deployment, actual provider tests and
+  credential entry remain separate readiness steps; no sending is claimed live.
+
+## WA-001 approved implementation start — 1 November 2026
+
+- User approved v1.1 functional requirements/design, excluding costs and timelines,
+  and authorised implementation. See
+  `docs/change-requests/NYSA-CRM-20261101-WA-001/IMPLEMENTATION_APPROVAL.md`
+  for the exact approval, immutable design hash, unresolved activation decisions
+  and source rollback points.
+- Isolated development starts at `8457d4bd785af01dde7a6f7ca92a657cb99b1393`,
+  runtime DEV254 / migrations159. Stage A first increment adds isolated sandbox
+  protocol functions and synthetic tests only. No database/schema/configuration
+  mutation, existing workflow change or hosted deployment is authorised by this
+  increment. CRM Test, production, website and REM remain unchanged.
+- Increment 1 verification: focused 15/15 passed; full governed release selection
+  1,512 passed, 94 skipped, zero failures (1,606 total). Restricted loopback EACCES
+  failures were resolved by a permitted test rerun, not unrelated code edits.
+  Real sandbox connectivity, durable storage and Admin wiring remain pending.
+
 ## DEV254 dashboard reconciliation deployment — 31 October 2026
 
 - CRM Test now serves `2.1.0-dev.254`, exact GitHub origin commit `42b25cb4d84d93a33336a2c49149759d4b2ca9b6`, tree `125c38bda3689c39484691b578e2e670d7685540`. Archive SHA-256 `abea1c4167cc2080defd78b982231fc1b7eefdafaf911cf1cdc71d02297f541b`; manifest SHA-256 `ccbcda5871c4b74013fcf325eadd3c7ce28ad63de59549c77a89762cb9cffb6f`. Mandatory origin build and provenance verification passed. Production/main/website remain on HOLD, unchanged.

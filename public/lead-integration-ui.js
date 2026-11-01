@@ -1,4 +1,53 @@
 (()=>{
+ const sandboxMessage=error=>({SANDBOX_SETUP_DISABLED:'Protected sandbox setup is locked.',SANDBOX_STALE_CONFIGURATION:'Settings changed. Refresh before saving.',SANDBOX_ACTIVATION_NOT_APPROVED:'Sandbox sending remains locked until callback authentication is approved.',SANDBOX_UNRESOLVED_SUBMISSION:'A previous submission needs reconciliation. No further test was sent.',SANDBOX_LOCAL_QUOTA_EXHAUSTED:'The local test request budget is exhausted.',SANDBOX_RECIPIENT_CHANGE_REQUIRES_REVIEW:'Changing the fixed sandbox recipient requires review.',SANDBOX_CUSTOMER_WINDOW_CLOSED:'Receive a verified test message first; the reply window is closed.',SANDBOX_ACTION_CONFLICT:'This request reference belongs to different content. Refresh and review before another test.'})[error.message]||error.message||'Sandbox operation unavailable';
+ async function renderSandbox({root,api,esc}){
+  let section=root.querySelector('[data-wa-sandbox]');
+  if(!section){section=document.createElement('section');section.dataset.waSandbox='';section.className='dashboard-panel';root.append(section);}
+  section.innerHTML='<h3>WhatsApp sandbox</h3><p role="status">Loading protected sandbox status…</p>';
+  try{
+   const data=await api('/admin/whatsapp-sandbox');if(!section.isConnected)return;
+   section.innerHTML=`<h3>WhatsApp sandbox · test only</h3><p>Separate from the live WhatsApp connection and REM. Saving a key keeps sending paused. No customer campaign or AI is activated here.</p>
+    ${!data.setupEnabled?'<p role="status">Protected sandbox setup is locked until an approved Test setup session is enabled.</p>':`
+    <p role="status" data-wa-status>${data.configured?'Credentials saved':'Not configured'} · ${data.paused===false?'Test sending unpaused':'Paused'} · ${data.relayApproved?'Callback authentication approved':'Callback authentication approval pending'}</p>
+    <form class="form-grid" data-wa-credentials>
+     <div><label for="wa-sandbox-key">Sandbox API key</label><input id="wa-sandbox-key" name="apiKey" type="password" autocomplete="new-password" required maxlength="4096"></div>
+     <div><label for="wa-sandbox-kind">Fixed recipient type</label><select id="wa-sandbox-kind" name="recipientKind"><option value="phone">Phone number</option><option value="bsuid">Business-scoped user ID</option></select></div>
+     <div><label for="wa-sandbox-recipient">Fixed recipient</label><input id="wa-sandbox-recipient" name="recipient" type="password" autocomplete="new-password" required maxlength="160"><small>Use the exact number (with +country code) or ID tied to the sandbox key.</small></div>
+     <div><label for="wa-sandbox-relay">Private callback authentication secret</label><input id="wa-sandbox-relay" name="relaySecret" type="password" autocomplete="new-password" required minlength="32" maxlength="512"><button type="button" class="btn btn-sm" data-wa-generate>Generate secret</button><small>This does not configure or authenticate the provider automatically.</small></div>
+     <div class="span2"><button type="submit" class="btn">Save protected sandbox credentials</button><p data-wa-save-result role="status"></p></div>
+    </form>
+    <p>Local request budget: ${esc(data.budget??0)} · reserved/used ${esc(data.used??0)} · locally remaining ${esc(data.remaining??data.budget??0)}. This is not the provider's remaining quota. Rejections and unknown outcomes consume a local reservation.</p>
+    ${data.configured?`<p>Callback configuration: ${data.webhookConfigured?'Provider configuration receipt recorded':'Not confirmed'} · ${data.callbackObserved?'Authenticated callback observed':'Real callback test pending'}</p>${data.authMode==='basic'?`<p><button class="btn" type="button" data-wa-connect ${data.paused?'':'disabled'}>Connect sandbox callback</button></p><p data-wa-connect-result role="status"></p>`:''}<p><button class="btn" type="button" data-wa-pause>${data.paused?'Unpause approved sandbox tests':'Pause sandbox tests'}</button></p>
+    <form class="form-grid" data-wa-send>
+     <div><label for="wa-sandbox-type">Test message</label><select id="wa-sandbox-type" name="type"><option value="template">Predefined disclaimer template</option><option value="text">Reply to verified inbound message</option></select></div>
+     <div><label for="wa-sandbox-text">Reply text</label><textarea id="wa-sandbox-text" name="text" maxlength="1500" placeholder="Synthetic test reply"></textarea></div>
+     <div class="span2"><label><input type="checkbox" name="confirmed" style="width:auto" required> Send this test only to the fixed sandbox recipient.</label></div>
+     <div class="span2"><button class="btn btn-primary" type="submit" ${data.sendingEnabled?'':'disabled'}>Send one sandbox test</button><p data-wa-send-result role="status"></p></div>
+    </form>
+    <div class="pipeline-table-wrap"><table><thead><tr><th>Test request</th><th>Submission</th><th>Delivery</th></tr></thead><tbody>${(data.attempts||[]).map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(a.state)}${a.result_code?`<small>${esc(a.result_code)}</small>`:''}</td><td>${esc(a.delivery_state||'No delivery evidence')}</td></tr>`).join('')||'<tr><td colspan="3">No test submissions.</td></tr>'}</tbody></table></div>
+    <p>${(data.events||[]).map(e=>`${esc(e.type)}: ${esc(e.count)}`).join(' · ')||'No verified inbound events.'}</p>`:''}`}
+    <p><button type="button" class="btn btn-sm" data-wa-refresh>Refresh sandbox status</button></p>`;
+   section.querySelector('[data-wa-refresh]').onclick=()=>renderSandbox({root,api,esc});
+   const post=(path,body)=>api('/admin/whatsapp-sandbox/'+path,{method:'POST',headers:{'x-nysa-sandbox-action':'1'},refreshWorkspace:false,body});
+   const form=section.querySelector('[data-wa-credentials]');
+   if(form){
+    form.querySelector('[data-wa-generate]').onclick=()=>{const bytes=crypto.getRandomValues(new Uint8Array(32));form.elements.relaySecret.value=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');};
+    form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('[type="submit"]'),result=form.querySelector('[data-wa-save-result]');button.disabled=true;
+     try{const saved=await post('connection',{...Object.fromEntries(new FormData(form)),revision:data.revision||0});data.revision=saved.revision;data.paused=true;data.sendingEnabled=false;section.querySelector('[data-wa-status]').textContent='Credentials saved - Paused';const testButton=section.querySelector('[data-wa-send] button[type="submit"]');if(testButton)testButton.disabled=true;const pauseButton=section.querySelector('[data-wa-pause]');if(pauseButton)pauseButton.textContent='Unpause approved sandbox tests';result.textContent='Encrypted credentials saved. Sandbox sending is paused. Refresh status before testing.';}
+     catch(e){result.textContent=sandboxMessage(e);}finally{form.querySelectorAll('input').forEach(x=>x.value='');button.disabled=false;}
+    };
+   }
+   const pause=section.querySelector('[data-wa-pause]');if(pause)pause.onclick=async()=>{pause.disabled=true;try{await post('pause',{paused:!data.paused,confirmed:true});await renderSandbox({root,api,esc});}catch(e){pause.textContent=sandboxMessage(e);pause.disabled=false;}};
+   const connect=section.querySelector('[data-wa-connect]');if(connect)connect.onclick=async()=>{connect.disabled=true;const result=section.querySelector('[data-wa-connect-result]');try{await post('configure-webhook',{confirmed:true});result.textContent='Provider configuration receipt recorded. Send a message from the fixed test phone, then refresh to check authenticated receipt. Sending remains paused.';}catch(e){result.textContent=sandboxMessage(e);}finally{connect.disabled=!data.paused;}};
+   const send=section.querySelector('[data-wa-send]');
+   if(send){let actionKey=crypto.randomUUID();send.onsubmit=async event=>{event.preventDefault();const button=send.querySelector('[type="submit"]'),result=send.querySelector('[data-wa-send-result]');button.disabled=true;
+    try{const values=Object.fromEntries(new FormData(send));const outcome=await post('send-test',{actionKey,confirmed:values.confirmed==='on',...(values.type==='text'?{type:'text',text:values.text}:{type:'template',templateName:'disclaimer'})});
+     result.textContent=outcome.state==='accepted'?'Provider accepted the test. Refresh for delivery evidence.':outcome.state==='rejected'?'Provider rejected the test. Refresh and review the result.':'Submission outcome is unresolved. Do not resend; reconcile first.';
+     if(['accepted','rejected'].includes(outcome.state))actionKey=crypto.randomUUID();
+    }catch(e){result.textContent=sandboxMessage(e);}finally{button.disabled=!data.sendingEnabled;}
+   };}
+  }catch{section.innerHTML='<h3>WhatsApp sandbox</h3><p role="alert">Sandbox status is unavailable. Sending remains controlled on the server.</p>';}
+ }
  window.renderLeadIntegrationSetup=async({root,api,escape:esc})=>{
   if(!root)return;
   root.innerHTML='<p role="status">Loading lead integration setup…</p>';
@@ -46,6 +95,7 @@
       data.revision=saved.revision;result.textContent='Setup draft saved. Outreach activation is unchanged.';
     }catch(error){result.textContent=error.message||'Setup could not be saved';}finally{button.disabled=false;}
    });
+   await renderSandbox({root,api,esc});
   }catch{root.innerHTML='<p role="alert">Lead integration setup is unavailable. Refresh to try again; live sending remains off.</p>';}
  };
 })();

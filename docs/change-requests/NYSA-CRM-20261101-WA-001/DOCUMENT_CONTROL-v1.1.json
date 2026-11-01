@@ -1,0 +1,142 @@
+{
+  "reference": "NYSA-CRM-20261101-WA-001",
+  "version": "1.1",
+  "status": "FOR_APPROVAL_NOT_BASELINED",
+  "issuedDubai": "2026-11-01",
+  "file": "NYSA-CRM-20261101-WA-001-v1.1-For-Approval.docx",
+  "sha256": "7c1eee8b2cc9c689fc01cc4afc03d3f87284f1360b6683e08ec38d01828725b7",
+  "sourceBaseline": "42b25cb4d84d93a33336a2c49149759d4b2ca9b6",
+  "runtimeChanged": false,
+  "productionChanged": false,
+  "sections": [
+    [
+      1,
+      "Scope and agreed requirements"
+    ],
+    [
+      2,
+      "Current capability and delivery gaps"
+    ],
+    [
+      3,
+      "End to end business journey"
+    ],
+    [
+      4,
+      "Recipient upload and identity"
+    ],
+    [
+      5,
+      "Audience grouping and permission"
+    ],
+    [
+      6,
+      "Template lifecycle and Meta verification"
+    ],
+    [
+      7,
+      "Campaign approval and immutable versions"
+    ],
+    [
+      8,
+      "Dispatch states and recovery"
+    ],
+    [
+      9,
+      "Incoming messages and Lead promotion"
+    ],
+    [
+      10,
+      "AI follow through and human control"
+    ],
+    [
+      11,
+      "Materials pricing and follow up"
+    ],
+    [
+      12,
+      "Meeting and accepted Agent handover"
+    ],
+    [
+      13,
+      "User screens and responsibilities"
+    ],
+    [
+      14,
+      "Architecture and integration contracts"
+    ],
+    [
+      15,
+      "Proposed data model and transaction rules"
+    ],
+    [
+      16,
+      "Security privacy and operational controls"
+    ],
+    [
+      17,
+      "Sandbox and live channel acceptance"
+    ],
+    [
+      18,
+      "Functional and regression acceptance"
+    ],
+    [
+      19,
+      "Handover tests and release criteria"
+    ],
+    [
+      20,
+      "Staged delivery plan and approval gates"
+    ],
+    [
+      21,
+      "Traceability sources and document control"
+    ],
+    [
+      22,
+      "Decision register and baseline signoff"
+    ],
+    [
+      23,
+      "Costs and effort - indicative planning only"
+    ],
+    [
+      24,
+      "UAE compliance and contact-policy gate"
+    ],
+    [
+      25,
+      "Inbound entry points and permission capture"
+    ],
+    [
+      26,
+      "Review reconciliation"
+    ],
+    [
+      27,
+      "Additional acceptance for review changes"
+    ]
+  ],
+  "approvalArtifact": "NYSA-CRM-20261101-WA-001-v1.1-For-Approval.pdf",
+  "approvalArtifactSha256": "fd1abd96e0b044fdb016f619ebf19e96a1bbb527a62d0b4fa1d8a563c79d3124",
+  "editableDraftSha256": "7c1eee8b2cc9c689fc01cc4afc03d3f87284f1360b6683e08ec38d01828725b7",
+  "reviewInput": "Review Comments \u2014 NYSA-CRM-20261101-WA-001 v1.0.docx",
+  "reviewInputSha256": "2a5ee918e8b85255ff7e4bf13730d3870f0ce74e3652fbc3f6fa970863daeebe",
+  "supersedesAfterApproval": "1.0",
+  "baselineApproved": false,
+  "implementationAuthorized": false,
+  "pageCount": 29,
+  "reviewCommentsReconciled": 9,
+  "acceptanceCases": 32,
+  "sandboxAcceptanceCases": 8,
+  "pendingDecisions": "D01-D12; resolved only by explicit recorded approval",
+  "visualReview": "All 29 pages reviewed; changed pages re-rendered and checked",
+  "checks": [
+    "Requirement and decision IDs present",
+    "Worked cost arithmetic verified",
+    "PDF hash verified",
+    "Original v1.0 retained",
+    "No runtime/database/provider/production change"
+  ]
+}
