@@ -1,5 +1,25 @@
 # CRM Development Baseline
 
+## DEV255 approved CRM Test installation — 1 November 2026
+
+- Exact user-approved origin commit `c4a6a04de892e50cf933ecb1821f202576b76e8d`
+  is installed on CRM Test, version `2.1.0-dev.255`, migration160. All459 runtime
+  files verified;11 files changed. All278 original non-ledger tables preserved.
+  Ten PDF formats and HTTP authentication boundaries passed. Readiness green,
+  exactly one command/cwd-verified worker3210021 at06:49:55 UTC.
+- Fresh paired rollback is the private `20261101-wa255/test-20261101T063433359Z`
+  set. Its encrypted off-server copy authenticated all7 components in memory in
+  approved `NYSA-Recovery/20261031-dev251-preparation/test-dev255`. No plaintext
+  backup downloaded. Browser download authority failed; user downloaded the
+  encrypted files manually. DEV254 was temporarily restored while awaiting it,
+  then safely quiesced again for the approved installation.
+- Sandbox setup and authenticated receive-only probe enabled; sending and
+  callback approval remain false. New private encryption key created on hosting;
+  encrypted key-recovery file pending off-server verification. No provider key
+  entered or real provider connectivity claimed. Admin live screen acceptance
+  pending. Production/main/website/REM remain unchanged. See
+  `release-artifacts/dev255-preparation/DEPLOYMENT_VERIFIED.json`.
+
 ## DEV255 sandbox foundation preparation — 1 November 2026
 
 - Continuing the approved WA-001 v1.1 implementation, with costs and timelines
