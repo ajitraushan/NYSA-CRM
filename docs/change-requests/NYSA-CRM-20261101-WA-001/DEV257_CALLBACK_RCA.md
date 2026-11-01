@@ -38,9 +38,17 @@ No unauthenticated diagnostic writes or outbound activation are introduced.
   08:16:38 UTC. No migrations; ledger160.
 - Fresh paired DEV256 backup captured after exact worker345949 quiescence:
   /home/nysareal/crm-release-preparation/20261101-wa257/test-20261101T081441334Z.
-  Encrypted off-server verification pending manual download, required by the
-  browser download security gate. Do not install before that gate passes.
-- Unchanged DEV256 restarted and verified database-ready with exactly one
-  exact-root worker839204 while waiting. DEV257 is staged, not installed.
-- Production/main/website/REM unchanged. Repeat one inbound test after deployment
-  before claiming real callback acceptance. No outgoing test authorized.
+  The downloaded encrypted pair authenticated all seven components in memory at
+  08:21:42 UTC, wrote no plaintext locally, and is retained in the approved
+  `NYSA-Recovery/20261031-dev251-preparation/test-dev257` folder.
+- The first installer attempt failed closed before copying files because a worker
+  appeared during the stop/install gap. A single controlled quiesce-and-install
+  sequence then succeeded. DEV257 verification completed at 08:23:48 UTC: all
+  459 runtime hashes, ten PDFs, database readiness, ledger160 and all282 preserved
+  original tables passed; exactly one exact-root command/cwd-verified worker
+  (`999701`) served readiness.
+- Real post-fix acceptance passed: after the approved phone sent the DEV257 test,
+  the protected Admin status reported `Authenticated callback observed` and one
+  verified reply event. No test submission or outbound message was created.
+- Production/main/website/REM remain unchanged. Sending and callback activation
+  remain false; no outgoing test was authorized or performed.

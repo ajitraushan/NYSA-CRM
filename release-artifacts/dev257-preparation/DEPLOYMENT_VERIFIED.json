@@ -1,0 +1,33 @@
+{
+  "schema": "nysa.crm-test.deployment-verification.v1",
+  "environment": "crm-test",
+  "version": "2.1.0-dev.257",
+  "originCommit": "b4a12928aa3678757d5c725a7f1d3861707c9c9c",
+  "archiveSha256": "bd87f5cd153f11a305fa3169409874db84905332b37dcecb603304f616fe7f9f",
+  "manifestSha256": "13dae90a5d00c35f3341df4256366324dd61564482a82b975a90d42e2dd75b91",
+  "verificationCompletedAt": "2026-11-01T08:23:48.037Z",
+  "runtimeFilesVerified": 459,
+  "pdfFormatsVerified": 10,
+  "migrationCount": 160,
+  "preservedOriginalTables": 282,
+  "databaseReady": true,
+  "exactRootWorkerCountAfterReadiness": 1,
+  "verifiedWorkerPid": 999701,
+  "sendingPaused": true,
+  "callbackActivationApproved": false,
+  "offServerRecovery": {
+    "verified": true,
+    "componentsAuthenticatedInMemory": 7,
+    "plaintextWrittenLocally": false,
+    "verifiedAt": "2026-11-01T08:21:42Z"
+  },
+  "realInboundAcceptance": {
+    "passed": true,
+    "adminStatus": "Authenticated callback observed",
+    "verifiedReplyEvents": 1,
+    "outboundTestSubmissions": 0
+  },
+  "productionChanged": false,
+  "websiteChanged": false,
+  "remChanged": false
+}

@@ -15,6 +15,17 @@
 - Existing DEV255 recovery retained; refresh paired DEV256 recovery and verify
   encrypted off-server copy before installing a GitHub-built DEV257 package.
   Production/main/REM/website remain unchanged.
+- DEV257 origin commit `b4a12928aa3678757d5c725a7f1d3861707c9c9c`
+  was installed on CRM Test after the fresh DEV256 rollback pair authenticated
+  all seven components in memory and was retained encrypted in the approved
+  recovery folder. Installation verification completed at
+  `2026-11-01T08:23:48.037Z`: all 459 runtime hashes, ten PDF formats, database
+  readiness, migration ledger 160 and all 282 preserved original tables passed;
+  exactly one exact-root command/cwd-verified worker (`999701`) served readiness.
+  Sending and callback-activation flags remain false. The real post-fix inbound
+  message was accepted: the protected Admin status showed `Authenticated callback
+  observed` with one verified reply event after the user sent the DEV257 test.
+  Production/main/REM/website are unchanged.
 
 ## DEV256 sandbox callback correction installed — 1 November 2026
 
