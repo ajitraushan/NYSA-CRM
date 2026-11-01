@@ -48,10 +48,39 @@ Implemented source foundations:
 - CRM Test review deployments are planned every 2-3 days and remain subject to
   exact-candidate approval and governed release controls.
 
-## Remaining before a CRM Test candidate
+## Connected-number Stage B boundary
 
-- User-facing upload, segment, template and campaign-approval workspace.
-- Authenticated APIs and team-scope integration around the tested domain.
+- After internal approval and a separate connected-number activation approval,
+  CORE will submit templates through the 360dialog Templates API and reconcile
+  Meta status from the API and template-status webhooks. Manual Hub submission
+  remains a recovery option, not the only operating path.
+- Agents will manually reply from the CORE inbox. Free-form messages are allowed
+  only inside the active 24-hour customer service window; outside that window,
+  CORE must require a currently Meta-approved template.
+- Automated follow-ups and AI-generated or AI-directed conversation are Stage C
+  and are excluded from the number-independent DEV258 review candidate.
+
+## DEV258 number-independent review candidate
+
+- User-facing template library, Manager/Director review queue, recipient CSV
+  import, reusable segments, draft-only campaign composer and materials
+  catalogue are implemented behind authenticated team scope.
+- Template and campaign records retain internal version/approval evidence while
+  provider status remains `Not submitted`. No Meta submission or send endpoint
+  is present in this candidate.
+- Migrations 001-162 passed in a clean isolated restricted-role PostgreSQL
+  fixture. The real route integration passed Agent creation, Manager review,
+  Director visibility, recipient duplicate decisions, segment/material/campaign
+  creation, team isolation and absence of a send route.
+- Focused domain tests: 12 passed, zero failed. Responsive browser checks passed
+  at 1280, 768 and 390 pixels. Governed regression: 1,534 passed, 96
+  intentionally skipped and zero failed.
+
+## Remaining after the DEV258 source candidate
+
+- Commit and advertise the exact source through GitHub, build and verify the
+  mandatory origin package, refresh paired CRM Test recovery evidence and
+  obtain exact-candidate deployment approval.
 - Meta verification of the virtual number under `Nysa Realty Test` and a
   protected 360dialog live-test connection.
 - NYSA template set and Meta approval evidence.

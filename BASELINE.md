@@ -1,5 +1,38 @@
 # CRM Development Baseline
 
+## WA-001 Stage B number-independent workspaces — 1 November 2026
+
+- Source rollback point: clean GitHub-advertised commit
+  `038c37fb0cd5e4a5ed4ec89b029ad06d20c30cf8` on branch
+  `codex/wa001-stage-b-foundation`. Target environment is CRM Test only; it
+  remains installed at `2.1.0-dev.257`, origin commit
+  `b4a12928aa3678757d5c725a7f1d3861707c9c9c`, migration 160.
+- Authorized source scope: number-independent WhatsApp workspaces for template
+  drafts/versions/internal approval, Manager/Director review, recipient import,
+  governed segments, draft-only campaign composition and a materials catalogue.
+  Meta status must remain `Not submitted` until the test number is connected.
+- Acceptance boundary: no send endpoint, send control, provider submission or
+  live-number dependency; Agents may prepare drafts and their in-scope Manager
+  or a Director may review them. Production, website, REM and the live number
+  remain unchanged.
+- Connected-number Stage B, after separate approval, includes CORE submission of
+  internally approved templates through the 360dialog Templates API, status
+  synchronization back from API/webhook evidence, and Agent manual replies from
+  the CORE inbox. Free-form replies are limited to an active 24-hour customer
+  service window; outside it, only a currently Meta-approved template may be
+  used. Automated follow-ups and AI conversation remain Stage C.
+- Proposed candidate is `2.1.0-dev.258` with migration 162. Development uses
+  synthetic data only. Before any CRM Test installation: complete focused and
+  governed regression, advertise the exact commit through GitHub, package only
+  with the mandatory origin builder, verify provenance, refresh the paired
+  rollback backup and obtain exact-candidate approval.
+- Local acceptance is complete: migrations 001-162 passed in a clean isolated
+  restricted-role PostgreSQL fixture; the authenticated Agent/Manager/Director
+  workspace lifecycle passed; 12 focused domain tests passed; responsive
+  browser checks passed at 1280, 768 and 390 pixels; and the governed release
+  regression passed 1,534 with 96 intentional skips and zero failures. The
+  candidate has not been committed, packaged, approved or deployed yet.
+
 ## WA-001 Stage B decision-independent foundation — 1 November 2026
 
 - Source baseline: repository HEAD `0d8ce08a7d9c1143d6e0f931196e5f43a65beaa9`
