@@ -1,5 +1,21 @@
 # CRM Development Baseline
 
+## DEV257 dual-identity correction baseline — 1 November 2026
+
+- Target CRM Test only, installed DEV256 origin e9af2be, migrations160,
+  source evidence7f9e8a8. Runtime459 hashes and worker345949 were verified.
+  Safe hosted audit establishes callback_rejected/alternate_identity at
+  2026-11-01T07:54:40.507Z after successful secret-path authentication.
+- Private comparison confirms saved kind phone, approved test phone matches,
+  connection paused and sending false. No phone normalization change needed.
+- Narrow correction: accept a valid accompanying BSUID only when the exact
+  approved phone is present; retain both within encrypted event evidence.
+  Add safe recipient/empty/invalid-JSON diagnostics after authentication only.
+  Live receiver and other JSON endpoints retain their existing behavior.
+- Existing DEV255 recovery retained; refresh paired DEV256 recovery and verify
+  encrypted off-server copy before installing a GitHub-built DEV257 package.
+  Production/main/REM/website remain unchanged.
+
 ## DEV256 sandbox callback correction installed — 1 November 2026
 
 - CRM Test serves `2.1.0-dev.256`, origin commit

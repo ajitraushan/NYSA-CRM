@@ -121,7 +121,12 @@ export function createApp() {
         } else {
           req.rawBody = bytes.toString('utf8');
           try { req.body = JSON.parse(req.rawBody); }
-          catch { return res.status(400).json({ error: 'Invalid JSON body' }); }
+          catch {
+            // Only the isolated sandbox authenticates first and records a safe
+            // malformed-body reason. All other JSON endpoints retain behavior.
+            if(req.method==='POST'&&/^\/api\/providers\/whatsapp-sandbox\/events(?:\/[^/]+)?\/?$/.test(req.path))req.sandboxJsonInvalid=true;
+            else return res.status(400).json({ error: 'Invalid JSON body' });
+          }
         }
       }
       dispatch(req, res);

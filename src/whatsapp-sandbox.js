@@ -139,10 +139,16 @@ export function parseSandboxEvents(body, {recipientKind, recipient, now = Date.n
   const events = [];
   function identity(item, status) {
     const value = recipientKind === 'phone' ? item[status ? 'recipient_id' : 'from'] : item[status ? 'recipient_user_id' : 'from_user_id'];
-    if (typeof value !== 'string' || value !== (recipientKind === 'phone' ? recipient.slice(1) : recipient)) fail('SANDBOX_EVENT_RECIPIENT_MISMATCH');
-    // Reject conflicting alternate identities instead of choosing one silently.
+    if (typeof value !== 'string' || !value) fail('SANDBOX_EVENT_RECIPIENT_MISMATCH','recipient_missing');
+    if (value !== (recipientKind === 'phone' ? recipient.slice(1) : recipient)) fail('SANDBOX_EVENT_RECIPIENT_MISMATCH','recipient_mismatch');
+    // A provider may include a BSUID alongside the approved phone. The phone
+    // remains mandatory and authoritative; the alternate ID cannot authorize it.
     const other = recipientKind === 'phone' ? item[status ? 'recipient_user_id' : 'from_user_id'] : item[status ? 'recipient_id' : 'from'];
-    if (other !== undefined) fail('SANDBOX_EVENT_INVALID','alternate_identity');
+    if (other !== undefined) {
+      if (recipientKind !== 'phone' || !bsuid(other)) fail('SANDBOX_EVENT_INVALID','alternate_identity');
+      return {identity:{phone:value,businessScopedUserId:other}};
+    }
+    return {};
   }
   function base(item) {
     if (!item || typeof item.id !== 'string' || !/^[A-Za-z0-9_.:+/=-]{1,200}$/.test(item.id)) fail('SANDBOX_EVENT_INVALID','message_id');
@@ -158,14 +164,14 @@ export function parseSandboxEvents(body, {recipientKind, recipient, now = Date.n
       const value = change.value;
       for (const field of ['messages', 'statuses']) if (value[field] !== undefined && (!Array.isArray(value[field]) || value[field].length > 100)) fail('SANDBOX_EVENT_INVALID','event_array');
       for (const item of value.messages ?? []) {
-        const common = base(item); identity(item, false);
+        const common = {...base(item),...identity(item, false)};
         if (item.type === 'text' && (typeof item.text?.body !== 'string' || item.text.body.length > 10000)) fail('SANDBOX_EVENT_INVALID','text_format');
         const text = item.type === 'text' ? item.text.body : '';
         const type = item.type !== 'text' ? 'unsupported' : /^\s*(stop|unsubscribe|do not contact)\b/i.test(text) ? 'opt_out' : 'reply';
         events.push({...common, eventRef: item.id, type, text});
       }
       for (const item of value.statuses ?? []) {
-        const common = base(item); identity(item, true);
+        const common = {...base(item),...identity(item, true)};
         if (!['sent', 'delivered', 'read', 'failed'].includes(item.status)) fail('SANDBOX_EVENT_INVALID','delivery_status');
         events.push({...common, eventRef: `status:${item.id}:${item.status}:${item.timestamp}`, type: 'delivery_status', status: item.status});
       }

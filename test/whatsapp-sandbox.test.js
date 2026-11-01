@@ -94,6 +94,17 @@ test('wrong sender, malformed event structures, invalid timestamps and oversized
   assert.throws(() => parseSandboxEvents({entry: [null]}, {recipientKind: 'phone', recipient: input.recipient, now}), /EVENT_INVALID/);
 });
 
+test('dual identities require the approved phone and retain the BSUID as evidence only',()=>{
+ const dual={...message,from_user_id:'synthetic:user:1'};
+ assert.deepEqual(parse({messages:[dual]})[0].identity,{phone:message.from,businessScopedUserId:'synthetic:user:1'});
+ const status={id:message.id,recipient_id:message.from,recipient_user_id:'synthetic:user:1',timestamp:message.timestamp,status:'read'};
+ assert.deepEqual(parse({statuses:[status]})[0].identity,{phone:message.from,businessScopedUserId:'synthetic:user:1'});
+ for(const [from,reason]of [[undefined,'recipient_missing'],['919900000002','recipient_mismatch']]){
+  assert.throws(()=>parse({messages:[{...dual,from}]}),e=>e.message==='SANDBOX_EVENT_RECIPIENT_MISMATCH'&&e.sandboxDiagnostic===reason);
+ }
+ for(const from_user_id of ['',null,{},'x'.repeat(161)])assert.throws(()=>parse({messages:[{...dual,from_user_id}]}),e=>e.sandboxDiagnostic==='alternate_identity');
+});
+
 test('relay verification binds exact raw bytes and timestamp; it is not advertised as native authentication', () => {
   const rawBody = JSON.stringify(packet({messages: [message]})), timestamp = String(now), secret = 'synthetic-relay-secret-'.repeat(3);
   const signature = 'sha256=' + crypto.createHmac('sha256', secret).update(timestamp + '.' + rawBody).digest('hex');

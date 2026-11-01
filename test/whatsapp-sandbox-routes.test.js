@@ -80,7 +80,15 @@ test('sandbox URL token binds connection/revision and accepts minimal provider p
  assert.deepEqual(await response.json(),{status:'durably_received'});assert.equal(writes.length,2);
  assert.deepEqual(JSON.parse(writes[1].args[4]),{revision:1,authMode:'path_token'});
  writes.length=0;
- assert.equal((await fetch(url,{method:'POST',body:JSON.stringify(packet('919900000002'))})).status,400);assert.equal(writes.length,0);
+ assert.equal((await fetch(url,{method:'POST',body:JSON.stringify(packet('919900000002'))})).status,400);assert.equal(writes.length,1);
+ assert.equal(JSON.parse(writes[0].args[3]).reason,'recipient_mismatch');writes.length=0;
+ for(const [body,reason] of [['','empty_body'],['{','invalid_json'],[JSON.stringify(packet(undefined)),'recipient_missing']]){
+  assert.equal((await fetch(url,{method:'POST',body})).status,400);
+  assert.deepEqual(JSON.parse(writes.at(-1).args[3]),{revision:1,reason});
+ }
+ writes.length=0;
+ const dual=packet('919900000001');dual.entry[0].changes[0].value.messages[0].from_user_id='synthetic:user:1';
+ assert.equal((await fetch(url,{method:'POST',body:JSON.stringify(dual)})).status,200);writes.length=0;
  const authorization='Basic '+Buffer.from('nysa-sandbox:'+secret).toString('base64');
  for(const wrong of ['x'.repeat(64),sandboxCallbackToken({...row,revision:2,credentials})]){
   assert.equal((await fetch(base+'/api/providers/whatsapp-sandbox/events/'+wrong,{method:'POST',headers:{authorization},body:JSON.stringify(packet('919900000001'))})).status,401);
