@@ -1,5 +1,25 @@
 # CRM Development Baseline
 
+## DEV256 sandbox callback correction installed — 1 November 2026
+
+- CRM Test serves `2.1.0-dev.256`, origin commit
+  `e9af2be51e1925a9763986419eb54ffb253f5ea7`, pinned by GitHub tag
+  `crm-test/dev256-candidate`. Installation completed 07:52:34 UTC; verification
+  completed 07:53:08 UTC. All459 runtime hashes, ten PDF formats, database
+  readiness and exactly one command/cwd-verified worker345949 passed. All282
+  original non-ledger tables retained their values; migration count stays160.
+- Fresh DEV255 rollback set `20261101-wa256/test-20261101T070834378Z` was
+  authenticated off-server at07:50:54 UTC, all7 components verified in memory,
+  no local plaintext. Encrypted copy retained in the approved recovery folder
+  `20261031-dev251-preparation/test-dev256`. Worker3651688 stopped only after
+  exact-root command/cwd verification. Runtime rollback retained on hosting.
+- Separate sandbox secret-path receiver and URL-only provider configuration
+  installed. 360dialog accepted reconfiguration; actual inbound receipt remains
+  pending the user's repeated test. Do not claim the HTTP400 resolved until that
+  authenticated durable receipt is observed. Sending remains paused, both
+  outbound activation flags false. Live receiver, production/main/website/REM
+  unchanged.
+
 ## Sandbox HTTP400 correction — 1 November 2026
 
 - User authorizes diagnosis, narrow fix, regression and GitHub deployment to CRM

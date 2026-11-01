@@ -1,0 +1,28 @@
+{
+  "productionMutation": false,
+  "sendingPaused": true,
+  "schema": "nysa.dev256-deployment.v1",
+  "database": "ready",
+  "installedAt": "2026-11-01T07:52:34.585Z",
+  "outboundEnabled": false,
+  "migrations": 160,
+  "providerReconfiguration": "accepted",
+  "commit": "e9af2be51e1925a9763986419eb54ffb253f5ea7",
+  "verifiedAt": "2026-11-01T07:53:08.347Z",
+  "workerCount": 1,
+  "version": "2.1.0-dev.256",
+  "callbackApproval": false,
+  "runtimeFiles": 459,
+  "pdfFormatsPassed": 10,
+  "originalTablesPreserved": 282,
+  "liveReceiverChanged": false,
+  "regression": {
+    "passed": 1521,
+    "skipped": 95,
+    "failed": 0
+  },
+  "workerPid": 345949,
+  "realInboundRetest": "pending",
+  "manifestSha256": "9269872264830b1a02de77e8d81c47dbee5910a0481426cd1a5cfe562c59ad98",
+  "archiveSha256": "c3b82db96801a238a69e787db86e1d7ac39d39f1e9724f63c955f2bc1309aef9"
+}

@@ -44,18 +44,26 @@ phone, message, token, API key or raw body is recorded in that diagnostic.
 ## Deployment status
 
 The initial diagnostic-only candidate2760b58 was staged but never installed.
-The revised candidate above supersedes it. CRM Test remains DEV255, paused,
-after exact-worker restart verification (one worker3651688, database ready).
-Production/main/website/REM are unchanged.
+The revised candidate above supersedes it. CRM Test now serves DEV256, installed
+07:52:34 UTC and verified07:53:08 UTC. All459 runtime hashes, ten PDF formats,
+database readiness and exactly one command/cwd-verified worker345949 passed.
+All282 original non-ledger tables preserved their values. Both outbound flags
+remain false. Production/main/website/REM are unchanged.
 
 Fresh private DEV255 paired backup:
 /home/nysareal/crm-release-preparation/20261101-wa256/test-20261101T070834378Z.
-Manual encrypted download pending because the browser's download security gate
-could not acquire authority. Verify the new encrypted pair off-server before
-installation. Recheck freshness/baseline immediately before mutation. Do not use
-the earlier DEV254 backup as the DEV255 credential rollback.
+User manually downloaded the encrypted pair after the browser download gate
+required handoff. Authentication and all7 component hashes passed in memory
+at07:50:54 UTC; encrypted copy retained in the approved recovery folder under
+test-dev256. Ciphertext SHA256
+920990923cfcf2e096401ac3c695f94905a1f7906ca5dce1da0278e57c9fe12e.
+No plaintext was downloaded. Backup age passed the installation gate.
 
-After installation, reconnect the sandbox callback using the new URL-only action,
-then repeat the user's inbound test and inspect authenticated durable receipt or
-the static rejection reason. Sending and callback activation remain false; no
-outbound message is authorized by this correction.
+360dialog accepted reconfiguration through the new URL-only action. User repeat
+inbound test is pending; inspect authenticated durable receipt or the static
+rejection reason before claiming the400 resolved. Sending and callback activation
+remain false; no outbound message is authorized by this correction.
+
+The evidence branch advanced after packaging; re-verification correctly rejected
+the no-longer-advertised commit. The exact candidate is now pinned by origin tag
+crm-test/dev256-candidate and mandatory provenance verification passes again.
