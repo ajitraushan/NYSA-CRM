@@ -1,5 +1,42 @@
 # CRM Development Baseline
 
+## WA-001 DEV259a review-correction baseline - 1 November 2026
+
+- The user confirmed that simulated calling remains a separate DEV259b release.
+  CAL01-CAL04 and the five first-screen call placements are therefore excluded
+  from DEV259a and remain mandatory for the later, separately tested candidate.
+- DEV259a correction work starts from clean, GitHub-advertised commit
+  `5d999da9f7767029134abecf841d1b15806c3303` on branch
+  `codex/wa001-dev259a`. CRM Test still serves `2.1.0-dev.258`; production,
+  website, REM, provider configuration and WhatsApp sending remain unchanged.
+- The earlier DEV259a archive SHA-256
+  `e1ca1cc7b707d70979e07d9ea5862b8800a0ce8e08d73bbf1fa2662ff1667d60`
+  is superseded for acceptance and must not be deployed. It remains retained as
+  source/release evidence only.
+- Revised DEV259a scope implements Addendum 2 sections A and C plus B2-B8:
+  distinct Website and CTWA sources; audited Manager/Director self-approval;
+  mandatory marketing opt-out action and cross-list suppression foundation;
+  mapped CSV/XLSX imports with exact reconciliation/error output; expanded
+  unique-phone segments; recipient preview, schedule, budget and immutable
+  campaign approval snapshots; Lead-linked inbox ownership controls; governed
+  retention; and the remaining Meta-template preflight checks. Provider
+  submission, sending, connected inbound/replies, AI and real calls remain off.
+- Before any CRM Test installation, the corrected candidate requires migration
+  execution in an isolated PostgreSQL fixture, authenticated role/lifecycle
+  checks, governed regression, a new GitHub-advertised commit, mandatory
+  origin-only packaging and verification, fresh paired rollback evidence and
+  exact-candidate approval.
+- The complete 001-165 migration chain now passes in a restricted synthetic
+  PostgreSQL fixture (non-superuser, no database/role creation rights). The
+  authenticated DEV259a lifecycle also passes, including team scoping,
+  recipient reconciliation, unique-phone preview and immutable campaign
+  approval snapshot. CRM Test and all external systems remain unchanged.
+- Governed origin-candidate regression after the review corrections: 1,540
+  passed, 96 intentionally fixture-gated skips and zero failures. The first
+  restricted run produced only expected loopback-denied failures plus one
+  superseded independent-review assertion; the approved Manager/Director
+  self-approval rule was asserted and the permitted loopback rerun passed.
+
 ## WA-001 DEV259a approved implementation extension — 1 November 2026
 
 - Reproducible source rollback point: clean, GitHub-advertised team-scope

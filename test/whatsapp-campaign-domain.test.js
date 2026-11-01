@@ -44,13 +44,13 @@ test('360dialog template sync normalizes provider state and enforces five-minute
   assert.deepEqual(templateEligibility(templates[0],{now:Date.parse('2026-11-01T08:05:01.000Z')}),{eligible:false,reason:'template_catalogue_stale'});
 });
 
-test('campaign approval preserves Agent draft and Manager or Director review separation',()=>{
+test('campaign approval preserves Agent draft and audited Manager or Director authority including approved self-review',()=>{
   const draft={id:'c1',status:'draft',preparedBy:'agent-1',ownerTeamId:'team-1'};
   const pending=campaignCommand(draft,'submit',{actorId:'agent-1',actorRole:'sales_agent'});assert.equal(pending.status,'pending_approval');
   assert.throws(()=>campaignCommand(pending,'approve',{actorId:'agent-1',actorRole:'sales_agent'}),/Manager or Director/);
   assert.equal(campaignCommand(pending,'approve',{actorId:'manager-1',actorRole:'manager',managedTeamIds:['team-1'],activeApproverCount:2}).status,'approved');
   const self={...pending,preparedBy:'director-1'};
-  assert.throws(()=>campaignCommand(self,'approve',{actorId:'director-1',actorRole:'director',activeApproverCount:2}),/Independent reviewer/);
+  assert.equal(campaignCommand(self,'approve',{actorId:'director-1',actorRole:'director',activeApproverCount:2}).status,'approved');
   assert.equal(campaignCommand(self,'approve',{actorId:'director-1',actorRole:'director',activeApproverCount:1}).status,'approved');
 });
 

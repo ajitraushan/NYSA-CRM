@@ -114,3 +114,42 @@ recovery and exact deployment approval. Sending remains disabled.
 - Migration 164 adds provenance, suppression and 12-month-retention fields plus
   conversation, message, notification and assignment-history records. It adds
   no provider submission or dispatch table.
+
+## DEV259a Addendum 2 correction boundary
+
+DEV259a is the WhatsApp-workspace release only. It includes the template
+library, internal review, recipient CSV/XLSX import and mapping, reusable
+segments, draft campaigns, materials catalogue, number-independent inbox and
+opt-out/suppression controls. Website and CTWA are separate maintained source
+values. The inbox presents the 24-hour customer-service reply window separately
+from the CTWA 72-hour pricing window.
+
+Manager- or Director-authored templates and campaigns may be internally
+self-approved, with the self-approval recorded in the immutable audit. Internal
+approval and Meta status remain separate; an internally approved template stays
+`Meta: Not submitted` and is not sendable in DEV259a. Campaign approval freezes
+the current revision, schedule, AED budget, segment definition, template data,
+materials and the exact unique-phone recipient/message snapshot. Later opt-out
+or wrong-number evidence may only remove recipients from that snapshot.
+
+The recipient import accepts CSV and the explicit `Recipients` sheet of XLSX.
+Required columns are name and phone; arbitrary layouts can be mapped before
+preview. The approved workbook lists all maintained field and dropdown values.
+The raw upload is not retained, and committing a batch neither creates a
+Customer nor a Lead. Reconciliation, inclusion/exclusion and source/consent
+evidence are retained in the governed audit.
+
+Migration 165 adds the approval-snapshot, suppression, campaign schedule/budget
+and inbox lock fields. The complete 001-165 migration chain and authenticated
+DEV259a lifecycle passed in the restricted synthetic PostgreSQL fixture. No
+Meta submission, provider send, external message dispatch or live receiver is
+introduced.
+
+## DEV259b is a separate release
+
+Simulated calling is not part of DEV259a. DEV259b will have its own source
+change, migrations, test evidence, release package and exact-candidate approval.
+That later scope includes CAL01-CAL04, company-number enforcement, lead-local
+calling hours, DNCR/repeat-call controls and the agreed call placements. None of
+those calling behaviours or screens may be inferred from or deployed with
+DEV259a.

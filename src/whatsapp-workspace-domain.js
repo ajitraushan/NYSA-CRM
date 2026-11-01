@@ -8,7 +8,7 @@ const LANGUAGE=/^[a-z]{2,3}(?:_[A-Z]{2})?$/;
 const VARIABLE=/^[a-z][a-z0-9_]{0,39}$/;
 const TEMPLATE_NAME=/^[a-z0-9_]+$/;
 const HEADER_TYPE=new Set(['none','text','image','video','document']);
-const BUTTON_TYPE=new Set(['quick_reply','url']);
+const BUTTON_TYPE=new Set(['quick_reply','url','phone_number']);
 
 const stable=value=>{
   if(Array.isArray(value))return value.map(stable);
@@ -27,7 +27,11 @@ export function validateTemplateDraft(value={}){
   const name=normalizeMetaTemplateName(rawName),languageCode=clean(value.languageCode,20),category=clean(value.category,30).toLowerCase(),headerType=clean(value.headerType,20).toLowerCase()||'none',headerText=headerType==='text'?clean(rawHeader,60)||null:null,headerMaterialId=headerType==='image'||headerType==='video'||headerType==='document'?clean(value.headerMaterialId,36)||null:null,bodyText=clean(rawBody,1024),footerText=clean(rawFooter,60)||null;
   const variableNames=[...new Set((Array.isArray(value.variableNames)?value.variableNames:String(value.variableNames||'').split(',')).map(item=>clean(item,40).toLowerCase()).filter(Boolean))];
   const inputSamples=value.variableSamples&&typeof value.variableSamples==='object'&&!Array.isArray(value.variableSamples)?value.variableSamples:{},variableSamples=Object.fromEntries(variableNames.map(item=>[item,clean(inputSamples[item],200)]));
-  const inputButtons=Array.isArray(value.buttons)?value.buttons:[],buttons=inputButtons.map(item=>({type:clean(item?.type,20).toLowerCase(),text:clean(item?.text,25),url:clean(item?.url,2000)||null,sampleValue:clean(item?.sampleValue,500)||null}));
+  const inputButtons=Array.isArray(value.buttons)?value.buttons:[],buttons=inputButtons.map(item=>({type:clean(item?.type,20).toLowerCase(),text:clean(item?.text,25),url:clean(item?.url,2000)||null,phoneNumber:normalizeWhatsAppPhone(item?.phoneNumber)||null,sampleValue:clean(item?.sampleValue,500)||null}));
+  if(category==='marketing'&&!buttons.some(item=>item.type==='quick_reply'&&item.text.toLowerCase()==='stop promotions')){
+    const stop={type:'quick_reply',text:'Stop promotions',url:null,phoneNumber:null,sampleValue:null},firstNonQuick=buttons.findIndex(item=>item.type!=='quick_reply');
+    if(firstNonQuick<0)buttons.push(stop);else buttons.splice(firstNonQuick,0,stop);
+  }
   const errors=[];
   if(name.length<3)errors.push('Template name must contain at least 3 characters');
   if(rawName.length>512||!TEMPLATE_NAME.test(name))errors.push('Template name could not be normalized to Meta format');
@@ -48,15 +52,23 @@ export function validateTemplateDraft(value={}){
   if(/\{\{[^{}]+\}\}/.test(footerText||''))errors.push('Footer cannot contain variables');
   if(unknown.length)errors.push(`Declare template variable: ${unknown[0]}`);
   if(unused.length)errors.push(`Variable is not used in the body: ${unused[0]}`);
+  const bodyPlaceholders=[...bodyText.matchAll(/\{\{([a-z][a-z0-9_]*)\}\}/g)];
+  if(bodyPlaceholders.length&&/^\s*\{\{[^{}]+\}\}/.test(bodyText))errors.push('A variable cannot start the template body');
+  if(bodyPlaceholders.length&&/\{\{[^{}]+\}\}\s*$/.test(bodyText))errors.push('A variable cannot end the template body');
+  if(/\}\}\s*\{\{/.test(bodyText))errors.push('Template variables cannot be adjacent');
+  const fixedBody=bodyText.replace(/\{\{[^{}]+\}\}/g,'').replace(/[^a-z0-9]+/gi,'');
+  if(bodyPlaceholders.length&&fixedBody.length<Math.max(10,bodyPlaceholders.length*3))errors.push('Add more fixed text around the template variables');
   const missingSample=variableNames.find(item=>!variableSamples[item]);if(missingSample)errors.push(`Sample value is required for variable: ${missingSample}`);
   if(buttons.length>10)errors.push('A template may contain at most 10 buttons');
   if(buttons.some(item=>!BUTTON_TYPE.has(item.type)))errors.push('Button type is invalid');
   if(buttons.some(item=>!item.text))errors.push('Every button needs label text');
   if(inputButtons.some(item=>String(item?.text??'').trim().length>25))errors.push('Button text must not exceed 25 characters');
   if(inputButtons.some(item=>String(item?.url??'').trim().length>2000))errors.push('Button URL must not exceed 2,000 characters');
-  const quickReplies=buttons.filter(item=>item.type==='quick_reply'),urlButtons=buttons.filter(item=>item.type==='url');
+  const quickReplies=buttons.filter(item=>item.type==='quick_reply'),urlButtons=buttons.filter(item=>item.type==='url'),phoneButtons=buttons.filter(item=>item.type==='phone_number');
   if(quickReplies.length>10)errors.push('A template may contain at most 10 quick replies');
   if(urlButtons.length>2)errors.push('A template may contain at most 2 URL buttons');
+  if(phoneButtons.length>1)errors.push('A template may contain at most 1 phone-number button');
+  if(phoneButtons.some(item=>!item.phoneNumber))errors.push('Phone-number buttons require an E.164 company number');
   const typeSequence=buttons.map(item=>item.type),firstChange=typeSequence.findIndex((item,index)=>index>0&&item!==typeSequence[index-1]);
   if(firstChange>=0&&typeSequence.slice(firstChange+1).some(item=>item===typeSequence[firstChange-1]))errors.push('Quick replies and URL buttons must each remain in one group');
   for(const button of urlButtons){
@@ -80,12 +92,14 @@ export function validateMaterialDraft(value={}){
 }
 
 export function validateCampaignDraft(value={}){
-  const name=clean(value.name,180),purpose=clean(value.purpose,1000),segmentId=clean(value.segmentId,36),templateVersionId=clean(value.templateVersionId,36),materialIds=[...new Set((Array.isArray(value.materialIds)?value.materialIds:[]).map(item=>clean(item,36)).filter(Boolean))],errors=[];
+  const name=clean(value.name,180),purpose=clean(value.purpose,1000),segmentId=clean(value.segmentId,36),templateVersionId=clean(value.templateVersionId,36),materialIds=[...new Set((Array.isArray(value.materialIds)?value.materialIds:[]).map(item=>clean(item,36)).filter(Boolean))],scheduledAt=clean(value.scheduledAt,50),budgetAed=Number(value.budgetAed),errors=[];
   if(name.length<3)errors.push('Campaign name must contain at least 3 characters');
   if(purpose.length<5)errors.push('Campaign purpose must contain at least 5 characters');
   if(!segmentId)errors.push('Audience segment is required');
   if(!templateVersionId)errors.push('Internally approved template version is required');
-  return{valid:errors.length===0,errors,value:{name,purpose,segmentId,templateVersionId,materialIds}};
+  if(!scheduledAt||!Number.isFinite(Date.parse(scheduledAt)))errors.push('Campaign schedule is required');
+  if(!Number.isFinite(budgetAed)||budgetAed<=0)errors.push('Campaign budget must be greater than zero AED');
+  return{valid:errors.length===0,errors,value:{name,purpose,segmentId,templateVersionId,materialIds,scheduledAt:scheduledAt||null,budgetAed:Number.isFinite(budgetAed)?budgetAed:null}};
 }
 
 export function validateRecipientImport(value={}){

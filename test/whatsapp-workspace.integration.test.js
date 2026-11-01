@@ -73,14 +73,18 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     const material=await request('/crm/whatsapp-workspace/materials',{method:'POST',status:201,body:{teamId:teams.main,title:`${prefix} brochure`,materialType:'brochure',description:'Synthetic metadata-only catalogue item'}});
     ids.material=material.material.id;assert.equal(material.material.storageKey,null);
 
-    const campaign=await request('/crm/whatsapp-workspace/campaigns',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} campaign`,purpose:'Synthetic approval-flow verification only',segmentId:ids.segment,templateVersionId:ids.version,materialIds:[ids.material]}});
+    const campaign=await request('/crm/whatsapp-workspace/campaigns',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} campaign`,purpose:'Synthetic approval-flow verification only',segmentId:ids.segment,templateVersionId:ids.version,materialIds:[ids.material],scheduledAt:'2026-11-24T10:00:00+04:00',budgetAed:500}});
     ids.campaign=campaign.campaign.id;
+    const campaignPreview=await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/preview`);
+    assert.equal(campaignPreview.preview.totalUniquePhones,1);
+    assert.equal(campaignPreview.preview.eligibleCount,1);
     await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/submit`,{method:'POST',body:{}});
     const review=await request('/crm/whatsapp-workspace',{as:'manager'});
     assert.equal(review.reviewQueue.campaigns.length,1);
     assert.equal(review.reviewQueue.campaigns[0].metaStatusLabel,'Not submitted');
     const campaignApproval=await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/decision`,{method:'POST',as:'manager',body:{decision:'approve'}});
     assert.equal(campaignApproval.campaign.status,'approved');
+    assert.equal(campaignApproval.approval.recipientCount,1);
 
     const finalAgent=await request('/crm/whatsapp-workspace');
     assert.equal(finalAgent.templates.length,1);
@@ -98,7 +102,7 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     if(server){server.close();server.closeAllConnections?.();}
     const entityIds=Object.values(ids).filter(Boolean);
     if(entityIds.length)await db.execute('DELETE FROM wa_campaign_audit WHERE entity_id=ANY($1::uuid[])',[entityIds]);
-    if(ids.campaign){await db.execute('DELETE FROM wa_campaign_materials WHERE campaign_id=$1',[ids.campaign]);await db.execute('DELETE FROM wa_campaign_revisions WHERE campaign_id=$1',[ids.campaign]);await db.execute('DELETE FROM wa_campaign_drafts WHERE id=$1',[ids.campaign]);}
+    if(ids.campaign){await db.execute('DELETE FROM wa_campaign_approval_recipients WHERE campaign_id=$1',[ids.campaign]);await db.execute('DELETE FROM wa_campaign_materials WHERE campaign_id=$1',[ids.campaign]);await db.execute('DELETE FROM wa_campaign_revisions WHERE campaign_id=$1',[ids.campaign]);await db.execute('DELETE FROM wa_campaign_drafts WHERE id=$1',[ids.campaign]);}
     if(ids.segment)await db.execute('DELETE FROM wa_audience_segments WHERE id=$1',[ids.segment]);
     if(ids.batch){await db.execute('DELETE FROM wa_campaign_recipients WHERE batch_id=$1',[ids.batch]);await db.execute('DELETE FROM wa_recipient_import_batches WHERE id=$1',[ids.batch]);}
     if(ids.material)await db.execute('DELETE FROM wa_material_catalogue WHERE id=$1',[ids.material]);

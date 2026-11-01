@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 export const WA_STAGE_B_MAX_IMPORT_ROWS=5000;
 export const WA_TEMPLATE_FRESHNESS_MS=5*60*1000;
 export const WA_CONSENT_STATUSES=Object.freeze(['verified','evidence_pending','withdrawn','denied']);
-export const WA_SOURCE_TYPES=Object.freeze(['existing_crm','website_ctwa','property_portal','event','referral','purchased_list','other']);
+export const WA_SOURCE_TYPES=Object.freeze(['existing_crm','website','ctwa','property_portal','event','referral','purchased_list','other']);
 const CONSENT=new Set(WA_CONSENT_STATUSES);
 const TEMPLATE_STATUS=new Set(['approved','pending','rejected','paused','disabled','unknown']);
 const CAMPAIGN_STATUS=new Set(['draft','pending_approval','approved','returned','retired']);
@@ -54,7 +54,7 @@ export function reviewWhatsAppRecipientRows(rows,{existingPhones=new Map()}={}){
   return {rows:reviewed,counts:Object.fromEntries(['ready','review_required','invalid'].map(action=>[action,reviewed.filter(row=>row.action===action).length]))};
 }
 
-const allowedSegmentKeys=new Set(['batchIds','sources','tagsAny','areasAny','businessTypes','consentStatus','budgetMin','budgetMax']);
+const allowedSegmentKeys=new Set(['batchIds','sources','tagsAny','areasAny','businessTypes','transactionTypes','projects','propertyTypes','bedroomsMin','bedroomsMax','timeframes','languages','ownerIds','consentStatus','budgetMin','budgetMax']);
 export function normalizeAudienceSegmentDefinition(value={}){
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Segment definition must be an object');
   const unknown=Object.keys(value).filter(key=>!allowedSegmentKeys.has(key));
@@ -63,9 +63,11 @@ export function normalizeAudienceSegmentDefinition(value={}){
   const consentStatus=value.consentStatus===undefined?null:clean(value.consentStatus,30);
   if(consentStatus&&!CONSENT.has(consentStatus))throw new Error('Invalid segment consent status');
   const number=key=>value[key]===undefined||value[key]===null||value[key]===''?null:Number(value[key]);
-  const budgetMin=number('budgetMin'),budgetMax=number('budgetMax');
+  const budgetMin=number('budgetMin'),budgetMax=number('budgetMax'),bedroomsMin=number('bedroomsMin'),bedroomsMax=number('bedroomsMax');
   if((budgetMin!==null&&!Number.isFinite(budgetMin))||(budgetMax!==null&&!Number.isFinite(budgetMax))||(budgetMin!==null&&budgetMax!==null&&budgetMin>budgetMax))throw new Error('Invalid segment budget range');
-  return {batchIds:list('batchIds'),sources:list('sources'),tagsAny:list('tagsAny'),areasAny:list('areasAny'),businessTypes:list('businessTypes'),consentStatus,budgetMin,budgetMax};
+  if((bedroomsMin!==null&&!Number.isFinite(bedroomsMin))||(bedroomsMax!==null&&!Number.isFinite(bedroomsMax))||(bedroomsMin!==null&&bedroomsMax!==null&&bedroomsMin>bedroomsMax))throw new Error('Invalid segment bedroom range');
+  const transactionTypes=list('transactionTypes').length?list('transactionTypes'):list('businessTypes');
+  return {batchIds:list('batchIds'),sources:list('sources'),tagsAny:list('tagsAny'),areasAny:list('areasAny'),transactionTypes,projects:list('projects'),propertyTypes:list('propertyTypes'),bedroomsMin,bedroomsMax,timeframes:list('timeframes'),languages:list('languages'),ownerIds:list('ownerIds'),consentStatus,budgetMin,budgetMax};
 }
 
 export function recipientMatchesSegment(recipient,definition){
@@ -74,12 +76,24 @@ export function recipientMatchesSegment(recipient,definition){
   if(filter.sources.length&&!filter.sources.includes(String(recipient?.source||'')))return false;
   if(filter.tagsAny.length&&!filter.tagsAny.some(tag=>recipientTags.has(tag)))return false;
   if(filter.areasAny.length&&!filter.areasAny.some(area=>areas.has(area)))return false;
-  if(filter.businessTypes.length&&!filter.businessTypes.includes(String(requirements.businessType||'')))return false;
+  if(filter.transactionTypes.length&&!filter.transactionTypes.includes(String(requirements.transactionType||requirements.businessType||'')))return false;
+  if(filter.projects.length&&!filter.projects.includes(String(requirements.project||'')))return false;
+  if(filter.propertyTypes.length&&!filter.propertyTypes.includes(String(requirements.propertyType||'')))return false;
+  const bedrooms=Number(requirements.bedrooms??NaN);
+  if(filter.bedroomsMin!==null&&(!Number.isFinite(bedrooms)||bedrooms<filter.bedroomsMin))return false;
+  if(filter.bedroomsMax!==null&&(!Number.isFinite(bedrooms)||bedrooms>filter.bedroomsMax))return false;
+  if(filter.timeframes.length&&!filter.timeframes.includes(String(requirements.timeframe||'')))return false;
+  if(filter.languages.length&&!filter.languages.includes(String(requirements.language||'')))return false;
+  if(filter.ownerIds.length&&!filter.ownerIds.includes(String(requirements.ownerId||'')))return false;
   if(filter.consentStatus&&filter.consentStatus!==recipient?.consentStatus)return false;
   const budget=Number(requirements.budgetMax??requirements.budget??NaN);
   if(filter.budgetMin!==null&&(!Number.isFinite(budget)||budget<filter.budgetMin))return false;
   if(filter.budgetMax!==null&&(!Number.isFinite(budget)||budget>filter.budgetMax))return false;
   return true;
+}
+
+export function uniqueSegmentPhoneCount(recipients,definition){
+  return new Set((Array.isArray(recipients)?recipients:[]).filter(item=>recipientMatchesSegment(item,definition)).map(item=>normalizeWhatsAppPhone(item?.phone||item?.normalizedPhone)).filter(Boolean)).size;
 }
 
 export function recipientEligibility(recipient){
@@ -90,8 +104,10 @@ export function recipientEligibility(recipient){
 }
 
 const OPT_OUT_KEYWORDS=new Set(['stop','stop promotions','unsubscribe','توقف','إيقاف','إلغاء الاشتراك','أوقف الرسائل','لا أريد رسائل']);
+const WRONG_NUMBER_KEYWORDS=new Set(['wrong number','not my number','you have the wrong number','ليس رقمي','رقم خاطئ','الرقم غير صحيح']);
 export function normalizeOptOutText(value){return clean(value,160).normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase('und');}
 export function isWhatsAppOptOut(value){return OPT_OUT_KEYWORDS.has(normalizeOptOutText(value));}
+export function classifyWhatsAppSuppression(value){const normalized=normalizeOptOutText(value);if(OPT_OUT_KEYWORDS.has(normalized))return'opt_out';if(WRONG_NUMBER_KEYWORDS.has(normalized))return'wrong_number';return null;}
 
 export function normalize360dialogTemplates(payload,{syncedAt=new Date().toISOString()}={}){
   const items=Array.isArray(payload)?payload:Array.isArray(payload?.waba_templates)?payload.waba_templates:Array.isArray(payload?.data)?payload.data:[];
@@ -121,10 +137,8 @@ export function campaignCommand(campaign,command,{actorId,actorRole,managedTeamI
   if(!transitions[command]?.includes(current))throw new Error(`Campaign cannot ${command} from ${current}`);
   if(command==='submit'&&String(campaign?.preparedBy)!==String(actorId)&&!managerInScope)throw new Error('Only the preparer or their Manager may submit this campaign');
   if(['approve','return'].includes(command)&&!approver)throw new Error('Manager or Director approval in campaign scope is required');
-  if(command==='approve'&&String(campaign?.preparedBy)===String(actorId)){
-    if(activeApproverCount>=2)throw new Error('Independent reviewer is required');
-    if(actorRole!=='director')throw new Error('Only a Director may self-approve when no independent reviewer exists');
-  }
+  // Addendum 2 expressly permits Manager/Director self-approval. The route
+  // records that fact in the immutable decision audit.
   if(['return','retire'].includes(command)&&!clean(reason,500))throw new Error('A decision reason is required');
   const status={submit:'pending_approval',approve:'approved',return:'returned',retire:'retired'}[command];
   return{...campaign,status,decisionReason:clean(reason,500)||null,decisionBy:['approve','return'].includes(command)?actorId:campaign?.decisionBy||null,decisionAt:['approve','return'].includes(command)?new Date().toISOString():campaign?.decisionAt||null};
