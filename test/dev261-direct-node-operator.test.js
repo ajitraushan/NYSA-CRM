@@ -17,6 +17,8 @@ test('DEV261 operator creates and verifies a scoped app/database rollback in the
   assert.match(source,/pg_restore',\['--list'/);
   assert.match(source,/dumpTables\.size===liveTableCount/);
   assert.match(source,/expectedTableCount/);
+  assert.match(source,/tableCountComparison=\{sql:tableCountSql,expected:Number\(config\.expectedTableCount\),observed:liveTableCount/);
+  assert.match(source,/expected \$\{report\.tableCountComparison\.expected\}, observed \$\{report\.tableCountComparison\.observed\}/);
   assert.match(source,/PGPASSWORD:environment\.PGPASSWORD/);
   assert.doesNotMatch(source,/mysqldump|--password/);
   assert.match(source,/crm-test-app\.tar\.gz/);

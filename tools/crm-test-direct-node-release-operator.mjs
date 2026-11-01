@@ -102,13 +102,14 @@ function scopedBackupDirectory(){
 }
 async function createAndVerifyScopedBackup(environment){
   const directory=scopedBackupDirectory(),appArchive=path.join(directory,'crm-test-app.tar.gz'),databaseDump=path.join(directory,`${config.expectedDatabase}.dump`),databaseEnv=databaseEnvironment(environment);
-  const livePool=poolFor(environment);let liveTableCount,serverVersionNumber;
+  const tableCountSql="SELECT COUNT(*)::int AS count FROM pg_tables WHERE schemaname='public'",livePool=poolFor(environment);let liveTableCount,serverVersionNumber;
   try{
-    liveTableCount=Number((await livePool.query("SELECT COUNT(*)::int AS count FROM pg_tables WHERE schemaname='public'")).rows[0].count);
+    liveTableCount=Number((await livePool.query(tableCountSql)).rows[0].count);
     serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
   }
   finally{await livePool.end();}
-  if(liveTableCount!==Number(config.expectedTableCount))throw Error('Live CRM Test table count drift');
+  report.tableCountComparison={sql:tableCountSql,expected:Number(config.expectedTableCount),observed:liveTableCount,matches:liveTableCount===Number(config.expectedTableCount)};
+  if(!report.tableCountComparison.matches)throw Error(`Live CRM Test table count drift: expected ${report.tableCountComparison.expected}, observed ${report.tableCountComparison.observed}`);
   const pgDumpVersion=run('pg_dump',['--version'],60_000,{env:databaseEnv}).toString().trim(),pgRestoreVersion=run('pg_restore',['--version'],60_000,{env:databaseEnv}).toString().trim();
   const clientMajor=Number(pgDumpVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),restoreMajor=Number(pgRestoreVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),serverMajor=Math.floor(serverVersionNumber/10_000);
   if(!clientMajor||!restoreMajor||!serverMajor||clientMajor<serverMajor||restoreMajor<serverMajor)throw Error('PostgreSQL backup client is older than the CRM Test server');
@@ -122,7 +123,7 @@ async function createAndVerifyScopedBackup(environment){
   for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
   const databaseIncluded=dumpTables.has('schema_migrations')&&dumpTables.size===liveTableCount;
   if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
-  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,liveTableCount,dumpTableCount:dumpTables.size,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableCountComparison:report.tableCountComparison,liveTableCount,dumpTableCount:dumpTables.size,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
   fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
   write('SCOPED_BACKUP_VERIFIED.json',receipt);
   return receipt;
