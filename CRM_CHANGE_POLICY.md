@@ -15,6 +15,47 @@
 7. Change production only after explicit approval for that exact version and
    operation. Back up immediately before deployment and run regression checks.
 
+## Hosted deployment preparation and operator controls
+
+Every hosted deployment preparation, approval packet, operator and completion
+report must explicitly reference this section and the mandatory hosted-worker
+verification in `AGENTS.md`. A preparation that omits these controls is
+incomplete and must not proceed to deployment.
+
+- Keep deployment operators and their meaningful tests in the governed GitHub
+  repository. The reviewed source, exact commit and operator hash must be part
+  of deployment evidence.
+- Run deployment tooling outside the installed application root. Never add a
+  release-only script to the live application's `package.json` or otherwise
+  mutate governed runtime files to make the operator executable.
+- Make stage/preflight non-mutating. Before deployment it must verify the exact
+  origin package and manifest hashes, installed runtime manifest, database and
+  migration identity, registered configuration guards, rollback evidence and
+  exact-root workers. A runtime mismatch must identify the file plus expected
+  and actual hashes.
+- Parameterize and record the approved backup path and freshness rule. Do not
+  rely on a hidden hard-coded filename, timestamp or environment identity.
+- Run environment-dependent browser/PDF checks where the required runtime is
+  supported. If shared hosting cannot launch a browser, defer that check
+  explicitly to a remote post-deployment test; do not hang the hosted stage.
+- Treat the approved run count as a hard limit. On failure, timeout or stall,
+  stop and report without retrying, killing broad process groups, contacting a
+  third party or expanding scope unless separately authorized.
+- Before mutation, record every worker whose command marker and
+  `/proc/<pid>/cwd` match the exact application root. Stop only verified
+  exact-root workers, perform one controlled start, request `/api/readiness`,
+  and then verify database readiness, expected version and exactly one
+  `lsnode:<exact-app-root>/` worker.
+- A stale, duplicate, zero-after-readiness or command/cwd-unverified worker is a
+  failed deployment. Reconcile it and repeat readiness/worker verification
+  within the approved operation; otherwise roll back or stop. Never hand over a
+  deployment, enable a connector or perform an external write while such a
+  worker remains.
+- Completion evidence must state the deployed version and commit, package and
+  manifest hashes, backup/rollback point, migrations, runtime integrity,
+  readiness, exact worker PID/command/cwd, regression results, deferred remote
+  checks and confirmation that unrelated environments remained unchanged.
+
 ## Enforced release provenance
 
 Every deployment archive must be generated only by

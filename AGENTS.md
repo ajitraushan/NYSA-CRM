@@ -21,6 +21,10 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
 
 ## Mandatory hosted-worker verification
 
+- Every deployment preparation plan, approval packet, operator and completion
+  report must cite this section and the hosted-deployment controls in
+  `CRM_CHANGE_POLICY.md`. Treat them as acceptance criteria, not optional
+  operational guidance.
 - Every hosted deployment must audit Node.js workers for the exact application
   root before the controlled restart and again after post-start readiness.
 - After requesting `/api/readiness`, exactly one `lsnode:<exact-app-root>/`
@@ -33,6 +37,33 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
 - A stale or duplicate worker makes the deployment incomplete. Reconcile the
   process lifecycle, perform the single controlled start, and repeat readiness
   plus worker-count verification before connector or external-write testing.
+- Never hand over, approve or describe a deployment as complete while a stale,
+  duplicate or unverified exact-root worker remains after deployment.
+
+## Mandatory deployment operator controls
+
+- Deployment operators and their tests must be versioned in the governed GitHub
+  repository. Do not create or maintain an unreviewed release-local operator on
+  hosting as the only source of deployment logic.
+- A deployment operator must not modify the installed application's
+  `package.json`, runtime manifest or any other governed runtime file merely to
+  make itself runnable. Invoke it directly with the approved Node.js executable
+  from outside the application root.
+- Stage/preflight must be non-mutating and must complete every available
+  integrity check before deployment starts: exact origin provenance and hashes,
+  installed-runtime manifest with exact expected/actual mismatch reporting,
+  database identity and migration ledger, backup identity/freshness, registered
+  configuration guards and exact-root worker inventory.
+- Backup paths, freshness limits and environment identities must be explicit
+  operator inputs or approved configuration, not unexplained release-specific
+  assumptions. Record the resolved values in the evidence.
+- Do not launch a browser on shared hosting when the platform cannot support it.
+  Record the check as deferred and run it remotely against the deployed target
+  before acceptance.
+- Run the approved stage and deployment no more than the authorized number of
+  times. On a failure, timeout or stall, stop and report the exact completed
+  phase and safe error; do not retry or broaden the operation without new
+  approval.
 
 ## Mandatory release packaging
 
