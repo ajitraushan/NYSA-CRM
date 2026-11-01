@@ -15,9 +15,11 @@
   then safely quiesced again for the approved installation.
 - Sandbox setup and authenticated receive-only probe enabled; sending and
   callback approval remain false. New private encryption key created on hosting;
-  encrypted key-recovery file pending off-server verification. No provider key
+  encrypted key-recovery file authenticated off-server and protected with Windows
+  DPAPI CurrentUser; no plaintext written. No provider key
   entered or real provider connectivity claimed. Admin live screen acceptance
-  pending. Production/main/website/REM remain unchanged. See
+  passed: empty private fields, paused/not configured status and live refresh.
+  Production/main/website/REM remain unchanged. See
   `release-artifacts/dev255-preparation/DEPLOYMENT_VERIFIED.json`.
 
 ## DEV255 sandbox foundation preparation — 1 November 2026

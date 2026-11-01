@@ -1,0 +1,8 @@
+{
+  "sha256": "5bca1fd25f34f69eec3e5aa47abe516e271a2dfcb1c3621cbd166425cfbd1600",
+  "version": "2.1.0-dev.255",
+  "plaintextFilesWritten": false,
+  "authenticated": true,
+  "protection": "Windows DPAPI CurrentUser",
+  "result": "PASSED"
+}

@@ -10,17 +10,36 @@
   "migrations": 160,
   "originalNonLedgerTablesPreserved": 278,
   "pdfFormatsPassed": 10,
-  "readiness": {"version":"2.1.0-dev.255","database":"ready","workerCount":1,"pid":3210021,"exactCommandAndCwdVerified":true},
-  "http": {"root":200,"unauthenticatedMe":401,"unauthenticatedSandboxAdmin":401,"unauthenticatedDashboard":401,"unauthenticatedTasks":401},
-  "backup": {"serverDirectory":"/home/nysareal/crm-release-preparation/20261101-wa255/test-20261101T063433359Z","ciphertextSha256":"a2b45e3b24dd0741d002956cd95eb6296cbf968773a139b7ee742554431705d7","headerSha256":"eb7527608ad02f0f68af1300eafd67eebdbbd3dbe850ad31efaa16052e3d24bd","authenticatedOffServer":true,"components":7,"plaintextDownloaded":false},
-  "sandboxSendingEnabled":false,
-  "sandboxCallbackApproved":false,
-  "sandboxKeyEntered":false,
-  "realProviderTested":false,
-  "adminLiveAcceptance":"pending user sign-in",
-  "newEncryptionKeyOffServerRecovery":"pending user encrypted-file download",
-  "productionChanged":false,
-  "remChanged":false,
-  "websiteChanged":false,
-  "mainChanged":false
+  "readiness": {
+    "version": "2.1.0-dev.255",
+    "database": "ready",
+    "workerCount": 1,
+    "pid": 3210021,
+    "exactCommandAndCwdVerified": true
+  },
+  "http": {
+    "root": 200,
+    "unauthenticatedMe": 401,
+    "unauthenticatedSandboxAdmin": 401,
+    "unauthenticatedDashboard": 401,
+    "unauthenticatedTasks": 401
+  },
+  "backup": {
+    "serverDirectory": "/home/nysareal/crm-release-preparation/20261101-wa255/test-20261101T063433359Z",
+    "ciphertextSha256": "a2b45e3b24dd0741d002956cd95eb6296cbf968773a139b7ee742554431705d7",
+    "headerSha256": "eb7527608ad02f0f68af1300eafd67eebdbbd3dbe850ad31efaa16052e3d24bd",
+    "authenticatedOffServer": true,
+    "components": 7,
+    "plaintextDownloaded": false
+  },
+  "sandboxSendingEnabled": false,
+  "sandboxCallbackApproved": false,
+  "sandboxKeyEntered": false,
+  "realProviderTested": false,
+  "adminLiveAcceptance": "PASSED: Admin Lead integrations sandbox loaded, empty private fields, paused/not configured status and live Refresh verified",
+  "newEncryptionKeyOffServerRecovery": "PASSED: RSA recovery authenticated in memory; Windows DPAPI CurrentUser copy saved; no plaintext written",
+  "productionChanged": false,
+  "remChanged": false,
+  "websiteChanged": false,
+  "mainChanged": false
 }
