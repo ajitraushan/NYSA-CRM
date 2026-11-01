@@ -3,9 +3,12 @@ import {normalizeAudienceSegmentDefinition,normalizeWhatsAppPhone,reviewWhatsApp
 
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
 const CATEGORY=new Set(['marketing','utility','authentication']);
-const MATERIAL_TYPE=new Set(['brochure','floor_plan','price_list','presentation','image','other']);
+const MATERIAL_TYPE=new Set(['brochure','floor_plan','price_list','presentation','image','video','document','other']);
 const LANGUAGE=/^[a-z]{2,3}(?:_[A-Z]{2})?$/;
 const VARIABLE=/^[a-z][a-z0-9_]{0,39}$/;
+const TEMPLATE_NAME=/^[a-z0-9_]+$/;
+const HEADER_TYPE=new Set(['none','text','image','video','document']);
+const BUTTON_TYPE=new Set(['quick_reply','url']);
 
 const stable=value=>{
   if(Array.isArray(value))return value.map(stable);
@@ -16,18 +19,52 @@ const stable=value=>{
 export const workspaceHash=value=>crypto.createHash('sha256').update(JSON.stringify(stable(value))).digest('hex');
 
 export function validateTemplateDraft(value={}){
-  const name=clean(value.name,160),languageCode=clean(value.languageCode,20),category=clean(value.category,30).toLowerCase(),headerText=clean(value.headerText,120)||null,bodyText=clean(value.bodyText,4096),footerText=clean(value.footerText,120)||null;
+  const rawName=String(value.name??'').trim(),rawHeader=String(value.headerText??'').trim(),rawBody=String(value.bodyText??'').trim(),rawFooter=String(value.footerText??'').trim();
+  const name=clean(rawName,512),languageCode=clean(value.languageCode,20),category=clean(value.category,30).toLowerCase(),headerType=clean(value.headerType,20).toLowerCase()||'none',headerText=headerType==='text'?clean(rawHeader,60)||null:null,headerMaterialId=headerType==='image'||headerType==='video'||headerType==='document'?clean(value.headerMaterialId,36)||null:null,bodyText=clean(rawBody,1024),footerText=clean(rawFooter,60)||null;
   const variableNames=[...new Set((Array.isArray(value.variableNames)?value.variableNames:String(value.variableNames||'').split(',')).map(item=>clean(item,40).toLowerCase()).filter(Boolean))];
+  const inputSamples=value.variableSamples&&typeof value.variableSamples==='object'&&!Array.isArray(value.variableSamples)?value.variableSamples:{},variableSamples=Object.fromEntries(variableNames.map(item=>[item,clean(inputSamples[item],200)]));
+  const inputButtons=Array.isArray(value.buttons)?value.buttons:[],buttons=inputButtons.map(item=>({type:clean(item?.type,20).toLowerCase(),text:clean(item?.text,25),url:clean(item?.url,2000)||null,sampleValue:clean(item?.sampleValue,500)||null}));
   const errors=[];
   if(name.length<3)errors.push('Template name must contain at least 3 characters');
+  if(rawName.length>512||!TEMPLATE_NAME.test(name))errors.push('Template name may contain lowercase letters, numbers and underscores only');
   if(!LANGUAGE.test(languageCode))errors.push('Language must use a code such as en or en_US');
   if(!CATEGORY.has(category))errors.push('Template category is invalid');
+  if(!HEADER_TYPE.has(headerType))errors.push('Header type is invalid');
+  if(headerType==='text'&&!headerText)errors.push('Text header is required');
+  if(['image','video','document'].includes(headerType)&&!headerMaterialId)errors.push('Select header media from the Materials catalogue');
+  if(rawHeader.length>60)errors.push('Header text must not exceed 60 characters');
+  if(rawBody.length>1024)errors.push('Template body must not exceed 1,024 characters');
+  if(rawFooter.length>60)errors.push('Footer text must not exceed 60 characters');
   if(bodyText.length<5)errors.push('Template body must contain at least 5 characters');
   if(variableNames.some(item=>!VARIABLE.test(item)))errors.push('Variable names must use lowercase letters, numbers and underscores');
-  const placeholders=[...bodyText.matchAll(/\{\{([a-z][a-z0-9_]*)\}\}/g)].map(match=>match[1]),unknown=[...new Set(placeholders.filter(item=>!variableNames.includes(item)))],unused=variableNames.filter(item=>!placeholders.includes(item));
+  const content=`${headerText||''} ${bodyText}`,placeholders=[...content.matchAll(/\{\{([a-z][a-z0-9_]*)\}\}/g)].map(match=>match[1]),unknown=[...new Set(placeholders.filter(item=>!variableNames.includes(item)))],unused=variableNames.filter(item=>!placeholders.includes(item));
+  const allPlaceholderTokens=[...content.matchAll(/\{\{([^{}]+)\}\}/g)].map(match=>match[1]);
+  if(allPlaceholderTokens.some(item=>!VARIABLE.test(item)))errors.push('Header and body placeholders must use named variables such as {{project_name}}');
+  if(headerText&&[...headerText.matchAll(/\{\{([a-z][a-z0-9_]*)\}\}/g)].length>1)errors.push('Text header may contain at most one variable');
+  if(/\{\{[^{}]+\}\}/.test(footerText||''))errors.push('Footer cannot contain variables');
   if(unknown.length)errors.push(`Declare template variable: ${unknown[0]}`);
   if(unused.length)errors.push(`Variable is not used in the body: ${unused[0]}`);
-  const result={name,languageCode,category,headerText,bodyText,footerText,variableNames};
+  const missingSample=variableNames.find(item=>!variableSamples[item]);if(missingSample)errors.push(`Sample value is required for variable: ${missingSample}`);
+  if(buttons.length>10)errors.push('A template may contain at most 10 buttons');
+  if(buttons.some(item=>!BUTTON_TYPE.has(item.type)))errors.push('Button type is invalid');
+  if(buttons.some(item=>!item.text))errors.push('Every button needs label text');
+  if(inputButtons.some(item=>String(item?.text??'').trim().length>25))errors.push('Button text must not exceed 25 characters');
+  if(inputButtons.some(item=>String(item?.url??'').trim().length>2000))errors.push('Button URL must not exceed 2,000 characters');
+  const quickReplies=buttons.filter(item=>item.type==='quick_reply'),urlButtons=buttons.filter(item=>item.type==='url');
+  if(quickReplies.length>10)errors.push('A template may contain at most 10 quick replies');
+  if(urlButtons.length>2)errors.push('A template may contain at most 2 URL buttons');
+  const typeSequence=buttons.map(item=>item.type),firstChange=typeSequence.findIndex((item,index)=>index>0&&item!==typeSequence[index-1]);
+  if(firstChange>=0&&typeSequence.slice(firstChange+1).some(item=>item===typeSequence[firstChange-1]))errors.push('Quick replies and URL buttons must each remain in one group');
+  for(const button of urlButtons){
+    if(!button.url){errors.push('Every URL button needs a URL');continue;}
+    const variables=[...button.url.matchAll(/\{\{1\}\}/g)];
+    if(variables.length>1||(/\{\{[^}]+\}\}/.test(button.url)&&variables.length!==1)){errors.push('A dynamic URL may contain only {{1}}');continue;}
+    if(variables.length===1&&!button.url.endsWith('{{1}}'))errors.push('The dynamic URL variable {{1}} must be at the end');
+    const checkUrl=variables.length===1?button.url.slice(0,-5):button.url;
+    try{const parsed=new URL(checkUrl);if(parsed.protocol!=='https:')errors.push('URL buttons must use HTTPS');}catch{errors.push('Enter a valid HTTPS URL for every URL button');}
+    if(variables.length===1&&!button.sampleValue)errors.push('A dynamic URL button requires a sample value');
+  }
+  const result={name,languageCode,category,headerType,headerText,headerMaterialId,bodyText,footerText,variableNames,variableSamples,buttons};
   return{valid:errors.length===0,errors,value:result,contentHash:workspaceHash(result)};
 }
 

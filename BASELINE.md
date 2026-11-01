@@ -1,5 +1,29 @@
 # CRM Development Baseline
 
+## WA-001 Template Library components — 1 November 2026
+
+- Source and hosted rollback point: clean GitHub-advertised DEV258 commit
+  `2e1a47e97224a376ab34afda5bd54b1288b4e4c7` on branch
+  `codex/wa001-stage-b-foundation`; CRM Test is installed at
+  `2.1.0-dev.258`, migration 162. Production, website, REM and provider
+  configuration are unchanged.
+- Authorized scope is limited to the Template Library and its supporting
+  Materials catalogue: governed text/image/video/document headers, provider
+  size/type checks, quick-reply and URL buttons, per-variable approval
+  examples, provider-valid template names, header/body/footer counters and a
+  live WhatsApp-style preview. No send or Meta-submission capability is added.
+- Proposed candidate is `2.1.0-dev.259` with additive migration 163. New and
+  edited templates use lowercase letters, numbers and underscores in their
+  names; URL buttons require HTTPS, allow at most two URLs and allow one
+  dynamic `{{1}}` only at the end. Header material remains private and
+  team-scoped.
+- Local acceptance completed: 13 focused domain/media checks passed; the
+  governed release suite passed 1,536 with 96 intentional skips and zero
+  failures; synthetic browser interactions and responsive layout passed at
+  1280, 768 and 390 pixels. Migration execution, authenticated lifecycle UAT,
+  package provenance, a fresh paired rollback backup and exact-candidate
+  approval remain mandatory before CRM Test installation.
+
 ## WA-001 Stage B number-independent workspaces — 1 November 2026
 
 - Source rollback point: clean GitHub-advertised commit

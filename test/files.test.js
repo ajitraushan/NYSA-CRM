@@ -33,6 +33,13 @@ test('private upload validation accepts genuine MPEG and QuickTime MOV property 
   assert.match(decodeAndValidateFile({base64:mov.toString('base64'),mediaType:'video/quicktime',fileName:'wrong.mp4',maxBytes:1024,allowedTypes:['video/quicktime']}).error,/extension/);
 });
 
+test('private upload validation accepts an MP4 media header and rejects mismatched content',()=>{
+  const mp4=Buffer.concat([Buffer.from([0x00,0x00,0x00,0x18]),Buffer.from('ftypisom','ascii'),Buffer.alloc(16)]);
+  const valid=decodeAndValidateFile({base64:mp4.toString('base64'),mediaType:'video/mp4',fileName:'project-preview.mp4',maxBytes:1024,allowedTypes:['video/mp4']});
+  assert.equal(valid.error,undefined);assert.equal(valid.buffer.length,mp4.length);
+  assert.match(decodeAndValidateFile({base64:Buffer.from('not mp4').toString('base64'),mediaType:'video/mp4',fileName:'fake.mp4',maxBytes:1024,allowedTypes:['video/mp4']}).error,/content/);
+});
+
 test('security test content is rejected before persistence',()=>{
   const eicar=Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
   assert.match(decodeAndValidateFile({base64:eicar.toString('base64'),mediaType:'text/plain',fileName:'test.txt',maxBytes:1024,allowedTypes:['text/plain']}).error,/security/);

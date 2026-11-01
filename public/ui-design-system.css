@@ -99,7 +99,24 @@ body:has(#app.shell-layout) .workspace-subnav{display:flex;gap:8px;flex-wrap:wra
 body:has(#app.shell-layout) .wa-editor{margin:0 0 24px;border:1px solid #d5d0c8;border-radius:8px;background:#fff}
 body:has(#app.shell-layout) .wa-editor>summary{font-weight:700;padding:12px 16px}
 body:has(#app.shell-layout) .wa-editor>.form-grid{padding:16px;border-top:1px solid #d5d0c8}
+body:has(#app.shell-layout) .wa-template-form{align-items:start}
+body:has(#app.shell-layout) .wa-variable-samples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px}
+body:has(#app.shell-layout) .wa-variable-samples label{display:grid;grid-template-columns:minmax(100px,.35fr) minmax(0,1fr);align-items:center;gap:8px}
+body:has(#app.shell-layout) .wa-template-buttons{display:grid;gap:10px;margin-top:10px}
+body:has(#app.shell-layout) .wa-button-row{display:grid;grid-template-columns:auto minmax(150px,.7fr) minmax(240px,1.5fr) minmax(150px,.7fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #d5d0c8;border-radius:8px;background:#faf9f6}
+body:has(#app.shell-layout) .wa-button-row:not([data-button-type="url"]){grid-template-columns:auto minmax(180px,1fr) auto}
+body:has(#app.shell-layout) .wa-phone-preview{min-height:260px;display:grid;place-items:center;padding:24px;border-radius:12px;background:#e8e2d8}
+body:has(#app.shell-layout) .wa-preview-bubble{width:min(420px,100%);overflow:hidden;border-radius:12px;background:#fff;box-shadow:0 2px 12px #1d2a3230}
+body:has(#app.shell-layout) .wa-preview-media{display:block;width:100%;max-height:240px;object-fit:cover;background:#101820}
+body:has(#app.shell-layout) .wa-preview-document{padding:24px;background:#f0eee9;font-weight:700;color:#7c5a20}
+body:has(#app.shell-layout) .wa-preview-header,body:has(#app.shell-layout) .wa-preview-body,body:has(#app.shell-layout) .wa-preview-footer{display:block;padding:12px 14px 0}
+body:has(#app.shell-layout) .wa-preview-body{white-space:normal;overflow-wrap:anywhere}
+body:has(#app.shell-layout) .wa-preview-footer{color:#66717b;padding-top:8px}
+body:has(#app.shell-layout) .wa-preview-buttons{display:grid;margin-top:12px;border-top:1px solid #e1ddd5}
+body:has(#app.shell-layout) .wa-preview-button{display:block;text-align:center;padding:10px 12px;color:#856224;border-bottom:1px solid #e1ddd5;font-weight:700;overflow-wrap:anywhere}
+body:has(#app.shell-layout) .wa-preview-button small{display:block;font-weight:400;color:#66717b}
+body:has(#app.shell-layout) .wa-preview-bubble time{display:block;text-align:right;padding:6px 12px;color:#73808a;font-size:.75rem}
 body:has(#app.shell-layout) #wa-workspace-panel code{display:block;max-width:36rem;white-space:normal;overflow-wrap:anywhere;font-size:12px}
 body:has(#app.shell-layout) #wa-workspace-panel td>small{display:block;margin-top:4px}
-@media(max-width:1100px){body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.web-intake-summary){grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.form-grid,.kv-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){body:has(#app.shell-layout) main{padding:16px}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.form-grid,.kv-grid,.web-intake-summary){grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) [class*="span"]{grid-column:auto}body:has(#app.shell-layout) .modal{padding:16px;width:100%;max-width:100%}body:has(#app.shell-layout) .ui-page-head{display:block}body:has(#app.shell-layout) header{flex-wrap:wrap;height:auto;gap:8px}}
+@media(max-width:1100px){body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.web-intake-summary){grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.form-grid,.kv-grid){grid-template-columns:repeat(2,minmax(0,1fr))}body:has(#app.shell-layout) .wa-button-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}body:has(#app.shell-layout) .wa-button-row>*{min-width:0}}
+@media(max-width:600px){body:has(#app.shell-layout) main{padding:16px}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) :is(.filter-grid,.finance-filters,.ui-filter-extra,.form-grid,.kv-grid,.web-intake-summary){grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) :is(#view,.modal,.record-workspace,.opportunity-stage-page) [class*="span"]{grid-column:auto}body:has(#app.shell-layout) .modal{padding:16px;width:100%;max-width:100%}body:has(#app.shell-layout) .ui-page-head{display:block}body:has(#app.shell-layout) header{flex-wrap:wrap;height:auto;gap:8px}body:has(#app.shell-layout) :is(.wa-variable-samples,.wa-button-row,.wa-button-row:not([data-button-type="url"])){grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) .wa-variable-samples label{grid-template-columns:minmax(0,1fr)}body:has(#app.shell-layout) .wa-phone-preview{padding:12px}}

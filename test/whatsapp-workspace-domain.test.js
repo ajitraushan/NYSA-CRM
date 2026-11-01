@@ -4,10 +4,22 @@ import fs from 'node:fs';
 import {displayMetaStatus,normalizeSegmentDraft,recipientDecision,validateCampaignDraft,validateMaterialDraft,validateRecipientImport,validateTemplateDraft,workspaceHash} from '../src/whatsapp-workspace-domain.js';
 
 test('template drafts require declared variables and remain number-independent',()=>{
-  const valid=validateTemplateDraft({name:'Project brochure follow-up',languageCode:'en_US',category:'marketing',bodyText:'Hello {{name}}, here is {{project_name}}.',variableNames:['name','project_name']});
+  const valid=validateTemplateDraft({name:'project_brochure_follow_up',languageCode:'en_US',category:'marketing',headerType:'text',headerText:'Hello {{name}}',bodyText:'Here is {{project_name}}.',variableNames:['name','project_name'],variableSamples:{name:'Amal',project_name:'Marina Vista'},buttons:[{type:'quick_reply',text:'Send brochure'},{type:'url',text:'View project',url:'https://nysarealty.com/go/{{1}}',sampleValue:'marina_vista'}]});
   assert.equal(valid.valid,true);assert.equal(valid.contentHash.length,64);
-  assert.deepEqual(validateTemplateDraft({name:'Test',languageCode:'en',category:'marketing',bodyText:'Hello {{name}}',variableNames:[]}).errors,['Declare template variable: name']);
+  assert.deepEqual(validateTemplateDraft({name:'test',languageCode:'en',category:'marketing',bodyText:'Hello {{name}}',variableNames:[]}).errors,['Declare template variable: name']);
   assert.equal(displayMetaStatus('not_submitted'),'Not submitted');
+});
+
+test('template components enforce Meta-ready names, counters, samples, media and buttons',()=>{
+  const invalid=validateTemplateDraft({name:'Project Launch',languageCode:'en',category:'marketing',headerType:'image',bodyText:'Hello {{name}}',variableNames:['name'],variableSamples:{name:''},buttons:[{type:'url',text:'This button label is much too long',url:'http://example.com/{{1}}/bad'}]});
+  assert.equal(invalid.valid,false);
+  assert.ok(invalid.errors.includes('Template name may contain lowercase letters, numbers and underscores only'));
+  assert.ok(invalid.errors.includes('Select header media from the Materials catalogue'));
+  assert.ok(invalid.errors.includes('Sample value is required for variable: name'));
+  assert.ok(invalid.errors.includes('Button text must not exceed 25 characters'));
+  assert.ok(invalid.errors.includes('The dynamic URL variable {{1}} must be at the end'));
+  assert.ok(invalid.errors.includes('URL buttons must use HTTPS'));
+  assert.equal(validateTemplateDraft({name:'valid_name',languageCode:'en',category:'marketing',bodyText:'12345',buttons:[{type:'url',text:'One',url:'https://nysarealty.com/one'},{type:'url',text:'Two',url:'https://nysarealty.com/two'},{type:'url',text:'Three',url:'https://nysarealty.com/three'}]}).errors.includes('A template may contain at most 2 URL buttons'),true);
 });
 
 test('materials, segments and draft campaigns are validated without dispatch data',()=>{
@@ -29,10 +41,11 @@ test('workspace hash is stable across object key order',()=>{
   assert.equal(workspaceHash({b:2,a:1}),workspaceHash({a:1,b:2}));
 });
 
-test('DEV258 route and UI expose no send or Meta-submission action',()=>{
-  const route=fs.readFileSync(new URL('../src/routes/whatsapp-workspace.js',import.meta.url),'utf8'),ui=fs.readFileSync(new URL('../public/whatsapp-workspace-ui.js',import.meta.url),'utf8'),migration=fs.readFileSync(new URL('../src/migrations/162_whatsapp_stage_b_workspaces.sql',import.meta.url),'utf8');
+test('DEV259 route and UI expose governed template components without send or Meta submission',()=>{
+  const route=fs.readFileSync(new URL('../src/routes/whatsapp-workspace.js',import.meta.url),'utf8'),ui=fs.readFileSync(new URL('../public/whatsapp-workspace-ui.js',import.meta.url),'utf8'),migration=fs.readFileSync(new URL('../src/migrations/163_whatsapp_template_components.sql',import.meta.url),'utf8');
   assert.doesNotMatch(route,/\/send(?:['"/]|$)|submit-to-meta|provider-template/i);
   assert.doesNotMatch(ui,/data-(?:send|meta-submit)|Send campaign|Submit to Meta/i);
   assert.match(ui,/Sending: unavailable/);assert.match(ui,/Meta: Not submitted/);
-  assert.match(migration,/no provider-dispatch or provider-submission path/i);
+  assert.match(ui,/Live WhatsApp preview/);assert.match(ui,/maxlength="1024"/);assert.match(ui,/https:\/\/nysarealty\.com\/go\/\{\{1\}\}/);
+  assert.match(migration,/no provider submission or message dispatch capability/i);
 });

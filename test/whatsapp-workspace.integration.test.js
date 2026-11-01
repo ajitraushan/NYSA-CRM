@@ -45,7 +45,7 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     assert.equal(initial.provider.sendingEnabled,false);
     assert.deepEqual(initial.teams.map(item=>item.id),[teams.main]);
 
-    const templateBody={teamId:teams.main,name:`${prefix} launch`,languageCode:'en',category:'marketing',headerText:'NYSA update',bodyText:'Hello {{first_name}}, view our latest properties.',footerText:'Reply STOP to opt out',variableNames:['first_name']};
+    const templateBody={teamId:teams.main,name:`synthetic_${crypto.randomBytes(6).toString('hex')}_launch`,languageCode:'en',category:'marketing',headerType:'text',headerText:'NYSA update',bodyText:'Hello {{first_name}}, view our latest properties.',footerText:'Reply STOP to opt out',variableNames:['first_name'],variableSamples:{first_name:'Amal'},buttons:[{type:'quick_reply',text:'Talk to an agent'},{type:'url',text:'View project',url:'https://nysarealty.com/go/{{1}}',sampleValue:'synthetic_project'}]};
     const created=await request('/crm/whatsapp-workspace/templates',{method:'POST',body:templateBody,status:201});
     ids.template=created.template.id;ids.version=created.version.id;
     assert.equal(created.version.metaStatus,'not_submitted');
@@ -90,7 +90,7 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     assert.ok(director.templates.some(item=>item.id===ids.template));
     const outside=await request('/crm/whatsapp-workspace',{as:'outside'});
     assert.equal(outside.templates.length,0);
-    await request('/crm/whatsapp-workspace/templates',{method:'POST',as:'outside',status:403,body:{...templateBody,teamId:teams.main,name:`${prefix} forbidden`}});
+    await request('/crm/whatsapp-workspace/templates',{method:'POST',as:'outside',status:403,body:{...templateBody,teamId:teams.main,name:`synthetic_forbidden_${crypto.randomBytes(4).toString('hex')}`}});
     await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/send`,{method:'POST',body:{},status:404});
   }finally{
     if(server){server.close();server.closeAllConnections?.();}
