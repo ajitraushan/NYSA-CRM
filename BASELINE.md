@@ -10,13 +10,19 @@
 - Authorized development scope: a one-page decision addendum plus isolated
   Stage B source work for recipient import and duplicate handling, reusable
   audience segments, 360dialog template catalogue synchronization, and an
-  Agent-draft / Manager-or-Director-approval campaign flow. This increment
-  must remain draft-only and must not dispatch provider messages.
-- Open activation decisions remain external to this increment: dedicated
-  staging SIM/number, inbound-enquiry scope, opt-in sources and evidence,
-  sending hours/frequency/spend/Meta-tier limits, languages and AI provider.
-  Existing CRM workflows, production, website, REM, live number and provider
-  configuration remain unchanged.
+  Agent-draft / Manager-or-Director-approval campaign flow. Stage B also covers
+  CTWA ads, the website button and portal enquiries that create or match a Lead,
+  preserve source attribution and route to an Agent. This increment must remain
+  draft-only and must not dispatch provider messages.
+- The Stage B test connection will use the Meta-provided virtual number under
+  `Nysa Realty Test`, pending Meta verification; the approved test customer is
+  `056 106 6469`. The 23-27 November canary is subject to that verification.
+- Open activation decisions remain external to this increment: opt-in sources
+  and evidence, sending hours/frequency/spend/Meta-tier limits, languages and AI
+  provider. Stage A flags are false and sending remains disabled. CRM Test
+  review deployments are planned every 2-3 days, subject to exact-candidate
+  approval. Existing CRM workflows, production, website, REM, live number and
+  provider configuration remain unchanged.
 - Development rollback is the source baseline above. The hosted rollback point
   remains the verified DEV257 recovery set and exact-root worker evidence from
   Stage A. A fresh paired backup, GitHub-origin package and exact candidate

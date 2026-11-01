@@ -175,7 +175,7 @@ set_font(run, size=20, bold=True)
 meta = doc.add_paragraph()
 set_para(meta, after=3, line=1.0)
 for text, bold, color in [
-    ("NYSA CRM 20261101 WA 001 Addendum 1", True, RGBColor(154, 113, 41)),
+    ("NYSA CRM 20261101 WA 001 Addendum 1 v1.1", True, RGBColor(154, 113, 41)),
     ("   |   Issued 1 November 2026   |   Stage B working baseline", False, MUTED),
 ]:
     r = meta.add_run(text)
@@ -186,7 +186,7 @@ set_para(intro, after=2, line=1.04)
 lead = intro.add_run("Decision. ")
 set_font(lead, size=8.6, bold=True)
 rest = intro.add_run(
-    "Close Stage A fail-safe and begin only the decision-independent Stage B build in CRM Test: recipient import and deduplication, reusable segments, 360dialog template catalogue sync, and Agent draft with Manager or Director approval. Provider sending remains disabled. Production, the website, REM and +971 56 819 8022 remain unchanged."
+    "Stage A is closed with WHATSAPP_SANDBOX_CALLBACK_APPROVED=false and WHATSAPP_SANDBOX_ENABLED=false. Build Stage B in CRM Test: import and deduplication, segments, template sync, Agent draft with Manager or Director approval, and inbound enquiries from CTWA ads, the website button and portals that create or match a Lead, preserve source attribution and route to an Agent. Review deployments will be made every 2-3 days. Provider sending remains disabled; production, REM and +971 56 819 8022 remain unchanged."
 )
 set_font(rest, size=8.6)
 
@@ -232,8 +232,8 @@ set_font(r, size=10.2, bold=True)
 plan = [
     ("2-6 Nov", "Foundation", "Schema, validation, duplicate decisions and draft-only controls."),
     ("9-13 Nov", "Import and segments", "Synthetic import, exclusions, saved audiences and audit evidence."),
-    ("16-20 Nov", "Templates and approval", "360dialog catalogue sync, freshness state and approval workflow."),
-    ("23-27 Nov", "Live canary and acceptance", "Only if the staging number, opt-in and sending limits are approved."),
+    ("16-20 Nov", "Templates, approval and intake", "Template controls plus CTWA, website-button and portal Lead routing with source attribution."),
+    ("23-27 Nov", "Canary subject to verification", "Only after Meta verifies the Nysa Realty Test virtual number and opt-in and sending limits are approved."),
 ]
 pt = left.add_table(rows=1, cols=3)
 pt.autofit = False
@@ -250,7 +250,7 @@ set_para(p, after=1, keep=True)
 r = p.add_run("Inputs required from NYSA")
 set_font(r, size=10.2, bold=True)
 inputs = [
-    ("By 6 Nov", "Staging SIM and number", "Dedicated 360dialog number; do not move the REM number."),
+    ("Pending", "Meta-provided virtual number", "Under Nysa Realty Test; pending Meta verification. Test customer: 056 106 6469."),
     ("By 10 Nov", "Initial templates", "NYSA names, languages, use cases and sample wording for Meta approval."),
     ("By 13 Nov", "Scope and consent", "Inbound channels in Stage B and accepted opt-in sources/evidence."),
     ("By 13 Nov", "Limits", "AED cap, campaign size at live Meta tier, sending hours and frequency."),
@@ -265,9 +265,21 @@ for i, row in enumerate(inputs):
     body_row(it.add_row(), row, shade=ALT if i % 2 else None, widths=iw, bold_columns=(0, 1))
 set_table_borders(it)
 
+review = doc.add_paragraph()
+set_para(review, before=3, after=1, line=1.0)
+rr = review.add_run("Review cadence. ")
+set_font(rr, size=8.0, bold=True)
+rr = review.add_run("CRM Test review deployments every 2-3 days; each deployment remains subject to exact-candidate approval and release controls.")
+set_font(rr, size=8.0)
+
+approval = doc.add_paragraph()
+set_para(approval, before=1, after=0, line=1.0)
+ar = approval.add_run("Approval   Name ____________________   Signature ____________________   Date ____________________")
+set_font(ar, size=8.2, bold=True)
+
 footer = section.footer.paragraphs[0]
 set_para(footer, before=0, after=0, align=WD_ALIGN_PARAGRAPH.RIGHT)
-fr = footer.add_run("CRM Test only   |   Sending disabled   |   Approval required before any live canary")
+fr = footer.add_run("CRM Test only   |   Stage A flags false   |   Sending disabled   |   Canary subject to Meta verification")
 set_font(fr, size=7.2, color=MUTED)
 
 OUT.parent.mkdir(parents=True, exist_ok=True)

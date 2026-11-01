@@ -4,7 +4,9 @@
 
 This increment starts only the decision-independent Stage B foundation. It adds
 no provider dispatch path and changes no production, website, REM or live-number
-configuration.
+configuration. The working Stage B baseline includes inbound enquiries from
+CTWA ads, the website button and portals: create or match the Lead, preserve
+source attribution and route it to an Agent.
 
 Implemented source foundations:
 
@@ -34,13 +36,26 @@ Implemented source foundations:
   outcomes and STOP pause behavior.
 - The one-page addendum rendered as exactly one page and was visually reviewed.
 
+## Working-baseline controls
+
+- `WHATSAPP_SANDBOX_CALLBACK_APPROVED=false` and
+  `WHATSAPP_SANDBOX_ENABLED=false`; sandbox sending remains paused.
+- The test connection is the Meta-provided virtual number under
+  `Nysa Realty Test`, pending Meta verification; the approved test customer is
+  `056 106 6469`.
+- The 23-27 November canary is subject to Meta verification and the remaining
+  opt-in and sending-limit approvals.
+- CRM Test review deployments are planned every 2-3 days and remain subject to
+  exact-candidate approval and governed release controls.
+
 ## Remaining before a CRM Test candidate
 
 - User-facing upload, segment, template and campaign-approval workspace.
 - Authenticated APIs and team-scope integration around the tested domain.
-- Dedicated staging SIM/number and protected 360dialog live-test connection.
+- Meta verification of the virtual number under `Nysa Realty Test` and a
+  protected 360dialog live-test connection.
 - NYSA template set and Meta approval evidence.
-- Final inbound scope, opt-in sources, AED cap and live Meta-tier controls.
+- Final opt-in sources, AED cap and live Meta-tier controls.
 
 Any CRM Test installation still requires a committed and GitHub-advertised
 candidate, mandatory origin-only package, verified provenance, fresh paired
