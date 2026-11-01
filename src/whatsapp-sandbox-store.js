@@ -1,6 +1,6 @@
 import {randomUUID, createHmac} from 'node:crypto';
 import {sealLeadEvidence, readLeadEvidence} from './meta-lead-retrieval.js';
-import {buildSandboxMessage, parseSandboxEvents, submitSandboxMessage,boundedSandboxJson} from './whatsapp-sandbox.js';
+import {buildSandboxMessage, parseSandboxEvents, submitSandboxMessage,boundedSandboxJson,sandboxCallbackToken} from './whatsapp-sandbox.js';
 
 const error = (code, statusCode = 409) => Object.assign(new Error(code), {statusCode});
 const digest = (value, key) => createHmac('sha256', key).update(value).digest('hex');
@@ -68,15 +68,15 @@ export async function configureSandboxWebhook({actorId,env,transaction,fetchImpl
  if(!sandboxSetupAllowed(env)||env.WHATSAPP_SANDBOX_AUTH_MODE!=='basic'||env.WHATSAPP_SANDBOX_PUBLIC_ORIGIN!=='https://crm-test.nysarealty.com')throw error('SANDBOX_WEBHOOK_SETUP_DISABLED',503);
  const row=await transaction(c=>loadSandboxConnection(c,env));
  if(!row.paused)throw error('SANDBOX_PAUSE_BEFORE_WEBHOOK_SETUP');
- const url='https://crm-test.nysarealty.com/api/providers/whatsapp-sandbox/events';
+ const url='https://crm-test.nysarealty.com/api/providers/whatsapp-sandbox/events/'+sandboxCallbackToken(row);
  try{
   const response=await fetchImpl('https://waba-sandbox.360dialog.io/v1/configs/webhook',{method:'POST',redirect:'error',
    headers:{'D360-API-KEY':row.credentials.apiKey,'Content-Type':'application/json'},
-   body:JSON.stringify({url,headers:{Authorization:'Basic '+Buffer.from('nysa-sandbox:'+row.credentials.relaySecret).toString('base64')}}),signal:AbortSignal.timeout(10000)});
+   body:JSON.stringify({url}),signal:AbortSignal.timeout(10000)});
   if(!response.ok){await response.body?.cancel().catch(()=>{});throw error('SANDBOX_WEBHOOK_CONFIGURATION_UNCONFIRMED');}
   const receipt=await boundedSandboxJson(response);if(receipt?.url!==url)throw error('SANDBOX_WEBHOOK_CONFIGURATION_UNCONFIRMED');
  }catch{throw error('SANDBOX_WEBHOOK_CONFIGURATION_UNCONFIRMED');}
- await transaction(async c=>{const current=await loadSandboxConnection(c,env,{lock:true});if(current.revision!==row.revision)throw error('SANDBOX_STALE_CONFIGURATION');await audit(c,row.id,actorId,'webhook_configured',{revision:row.revision,authMode:'basic'});});
+ await transaction(async c=>{const current=await loadSandboxConnection(c,env,{lock:true});if(current.revision!==row.revision)throw error('SANDBOX_STALE_CONFIGURATION');await audit(c,row.id,actorId,'webhook_configured',{revision:row.revision,authMode:'path_token'});});
  return {webhookConfigured:true,callbackVerified:false,paused:true};
 }
 export async function setSandboxPaused({paused,actorId,env},c) {
@@ -151,6 +151,6 @@ export async function receiveSandboxEvents({body,env,authMode},c) {
   if(event.type==='opt_out')await c.query('UPDATE wa_sandbox_connections SET paused=TRUE WHERE id=$1',[row.id]);
   if(event.type==='delivery_status')await reconcileSandboxDelivery(c,row.id,event.messageRef);
  }
- if(fresh&&['basic','relay'].includes(authMode))await audit(c,row.id,null,'callback_authenticated',{revision:row.revision,authMode});
+ if(fresh&&['basic','relay','path_token'].includes(authMode))await audit(c,row.id,null,'callback_authenticated',{revision:row.revision,authMode});
  return {status:'durably_received'};
 }

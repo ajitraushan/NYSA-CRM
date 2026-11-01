@@ -1,6 +1,6 @@
 import {Router} from '../lib/http-kit.js';
 import {randomUUID} from 'node:crypto';
-import {verifySandboxRelay,verifySandboxBasic} from '../whatsapp-sandbox.js';
+import {verifySandboxRelay,verifySandboxBasic,verifySandboxPathToken} from '../whatsapp-sandbox.js';
 import {sandboxSetupAllowed,sandboxEnvironmentAllowed,saveSandboxConnection,sandboxStatus,setSandboxPaused,loadSandboxConnection,sendSandboxTest,receiveSandboxEvents,configureSandboxWebhook} from '../whatsapp-sandbox-store.js';
 
 function respondError(res,e) {
@@ -35,7 +35,7 @@ export function createWhatsAppSandboxAdminRoutes({requireAuth,transaction,env=pr
 }
 export function createWhatsAppSandboxInboxRoutes({transaction,env=process.env}) {
  const r=Router();
- r.post('/providers/whatsapp-sandbox/events',async(req,res)=>{
+ const receive=async(req,res)=>{
   const basic=env.WHATSAPP_SANDBOX_AUTH_MODE==='basic';
   const probe=basic&&env.WHATSAPP_SANDBOX_NATIVE_PROBE_ENABLED==='true';
   if(!sandboxSetupAllowed(env)||!sandboxEnvironmentAllowed(env)||(env.WHATSAPP_SANDBOX_CALLBACK_APPROVED!=='true'&&!probe))return res.status(503).json({error:'SANDBOX_INGRESS_DISABLED'});
@@ -44,10 +44,10 @@ export function createWhatsAppSandboxInboxRoutes({transaction,env=process.env}) 
   try{
    const result=await transaction(async c=>{
     const row=await loadSandboxConnection(c,env,{lock:true});
-    const authenticated=basic?verifySandboxBasic({authorization:req.headers.authorization,secret:row.credentials.relaySecret}):verifySandboxRelay({rawBody:req.rawBody,timestamp:req.headers['x-nysa-timestamp'],signature:req.headers['x-nysa-signature'],secret:row.credentials.relaySecret});
+    const authenticated=req.params.token!==undefined?basic&&verifySandboxPathToken(req.params.token,row):basic?verifySandboxBasic({authorization:req.headers.authorization,secret:row.credentials.relaySecret}):verifySandboxRelay({rawBody:req.rawBody,timestamp:req.headers['x-nysa-timestamp'],signature:req.headers['x-nysa-signature'],secret:row.credentials.relaySecret});
     if(!authenticated)throw Object.assign(new Error('SANDBOX_AUTH_DENIED'),{statusCode:401});
     verified={id:row.id,revision:row.revision};
-    return receiveSandboxEvents({body:req.body,env,authMode:basic?'basic':'relay'},c);
+    return receiveSandboxEvents({body:req.body,env,authMode:req.params.token!==undefined?'path_token':basic?'basic':'relay'},c);
    });res.json(result);
   }catch(e){
    const reasons=['envelope','alternate_identity','message_id','timestamp_format','timestamp_range','changes','change_value','event_array','text_format','delivery_status'];
@@ -56,6 +56,8 @@ export function createWhatsAppSandboxInboxRoutes({transaction,env=process.env}) 
    }
    respondError(res,e);
   }
- });
+ };
+ r.post('/providers/whatsapp-sandbox/events',receive);
+ r.post('/providers/whatsapp-sandbox/events/:token',receive);
  return r;
 }

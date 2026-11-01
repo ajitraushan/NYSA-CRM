@@ -96,7 +96,7 @@ export function createApp() {
       const leadProvider = req.method === 'POST' && /^\/api\/providers\/(lead-response|lead-whatsapp)\/events\/?$/.test(req.path);
       const leadCredentials = req.method === 'POST' && /^\/api\/admin\/lead-integrations\/connections\//.test(req.path);
       const sandboxAdmin = req.method === 'POST' && /^\/api\/admin\/whatsapp-sandbox\//.test(req.path);
-      const sandboxInbox = req.method === 'POST' && /^\/api\/providers\/whatsapp-sandbox\/events\/?$/.test(req.path);
+      const sandboxInbox = req.method === 'POST' && /^\/api\/providers\/whatsapp-sandbox\/events(?:\/[^/]+)?\/?$/.test(req.path);
       const bodyLimit = (leadCredentials || sandboxAdmin) ? 64 * 1024 : (metaIntake || leadProvider || sandboxInbox) ? 256 * 1024 : rawDldCsv ? 50 * 1024 * 1024 : Number(process.env.MAX_JSON_BODY_BYTES || 33554432);
       if (bodySize > bodyLimit) {
         bodyTooLarge = true;

@@ -34,7 +34,7 @@ test('sandbox durable lifecycle, quota, encryption and concurrent idempotency on
   await assert.rejects(()=>configureSandboxWebhook({actorId,env:{...callbackEnv,WHATSAPP_SANDBOX_PUBLIC_ORIGIN:'https://example.invalid'},transaction}),/SETUP_DISABLED/);
   const connected=await configureSandboxWebhook({actorId,env:callbackEnv,transaction,fetchImpl:async(url,options)=>{
    assert.equal(url,'https://waba-sandbox.360dialog.io/v1/configs/webhook');assert.equal(options.redirect,'error');
-   const payload=JSON.parse(options.body);assert.equal(payload.url,'https://crm-test.nysarealty.com/api/providers/whatsapp-sandbox/events');assert.ok(payload.headers.Authorization.startsWith('Basic '));
+   const payload=JSON.parse(options.body);assert.deepEqual(Object.keys(payload),['url']);assert.match(payload.url,/^https:\/\/crm-test\.nysarealty\.com\/api\/providers\/whatsapp-sandbox\/events\/[a-f0-9]{64}$/);
    return new Response(JSON.stringify({url:payload.url}),{status:200});
   }});
   assert.equal(connected.callbackVerified,false);assert.equal((await transaction(c=>sandboxStatus(c,callbackEnv))).webhookConfigured,true);

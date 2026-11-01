@@ -121,6 +121,17 @@ export function verifySandboxBasic({authorization, secret}) {
   return crypto.timingSafeEqual(hash(authorization),hash(expected));
 }
 
+// Dedicated sandbox bearer path. Never return this token in UI/status or logs.
+// Connection/revision binding invalidates a URL when protected credentials change.
+export function sandboxCallbackToken({id,revision,credentials}) {
+  if(typeof id!=='string'||!Number.isInteger(revision)||revision<1||typeof credentials?.relaySecret!=='string'||credentials.relaySecret.length<32)fail('SANDBOX_CONFIGURATION_INVALID');
+  return crypto.createHmac('sha256',credentials.relaySecret).update(`nysa-sandbox-callback:${id}:${revision}`).digest('hex');
+}
+export function verifySandboxPathToken(token,connection) {
+  if(typeof token!=='string'||!/^[a-f0-9]{64}$/.test(token))return false;
+  return crypto.timingSafeEqual(Buffer.from(token),Buffer.from(sandboxCallbackToken(connection)));
+}
+
 export function parseSandboxEvents(body, {recipientKind, recipient, now = Date.now()} = {}) {
   if (!(recipientKind === 'phone' ? phone(recipient) : recipientKind === 'bsuid' && bsuid(recipient))) fail('SANDBOX_CONFIGURATION_INVALID');
   if (!body || typeof body !== 'object' || !Array.isArray(body.entry) || body.entry.length > 20 ||

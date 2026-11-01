@@ -5,6 +5,7 @@ import {createWhatsAppSandboxAdminRoutes,createWhatsAppSandboxInboxRoutes} from 
 import {sandboxCredentials,sandboxQuota} from '../src/whatsapp-sandbox-store.js';
 import {sealLeadEvidence} from '../src/meta-lead-retrieval.js';
 import crypto from 'node:crypto';
+import {sandboxCallbackToken} from '../src/whatsapp-sandbox.js';
 
 async function appFor(t,{role='admin',env={},transaction=async fn=>fn({query:async()=>{throw new Error('unexpected database access');}})}={}){
  const app=createApp();app.mount('/api',createWhatsAppSandboxAdminRoutes({requireAuth:(req,res,next)=>{req.broker={id:'synthetic',role};next();},transaction,env}));app.mount('/api',createWhatsAppSandboxInboxRoutes({transaction,env}));
@@ -64,4 +65,26 @@ test('authenticated rejection records only an allowlisted reason after rollback;
  assert.equal(r.status,400);assert.deepEqual(await r.json(),{error:'SANDBOX_EVENT_INVALID'});
  assert.equal(audits.length,1);assert.deepEqual(JSON.parse(audits[0][3]),{revision:1,reason:'envelope'});
  assert.equal(transactions,3);assert.ok(!JSON.stringify(audits).includes('do not record this'));assert.ok(!JSON.stringify(audits).includes(secret));
+});
+
+test('sandbox URL token binds connection/revision and accepts minimal provider packet without live metadata',async t=>{
+ const secret='synthetic-native-secret-'.repeat(3),key='a'.repeat(64);
+ const credentials={recipientKind:'phone',recipient:'+919900000001',relaySecret:secret};
+ const row={id:'synthetic',revision:1,encrypted_credentials:sealLeadEvidence(credentials,key)};
+ const env={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SANDBOX_SETUP_ENABLED:'true',WHATSAPP_SANDBOX_AUTH_MODE:'basic',WHATSAPP_SANDBOX_NATIVE_PROBE_ENABLED:'true',LEAD_CONNECTION_KEY:key};
+ const writes=[];const transaction=async fn=>fn({query:async(sql,args)=>{if(sql.startsWith('SELECT *'))return {rows:[row]};writes.push({sql,args});return {rows:[{id:'inserted'}]};}});
+ const token=sandboxCallbackToken({...row,credentials});
+ const base=await appFor(t,{env,transaction}),url=base+'/api/providers/whatsapp-sandbox/events/'+token;
+ const packet=from=>({entry:[{changes:[{field:'messages',value:{messages:[{id:'wamid.synthetic',from,timestamp:String(Math.floor(Date.now()/1000)),type:'text',text:{body:'synthetic test'}}]}}]}]});
+ const response=await fetch(url,{method:'POST',body:JSON.stringify(packet('919900000001'))});assert.equal(response.status,200);
+ assert.deepEqual(await response.json(),{status:'durably_received'});assert.equal(writes.length,2);
+ assert.deepEqual(JSON.parse(writes[1].args[4]),{revision:1,authMode:'path_token'});
+ writes.length=0;
+ assert.equal((await fetch(url,{method:'POST',body:JSON.stringify(packet('919900000002'))})).status,400);assert.equal(writes.length,0);
+ const authorization='Basic '+Buffer.from('nysa-sandbox:'+secret).toString('base64');
+ for(const wrong of ['x'.repeat(64),sandboxCallbackToken({...row,revision:2,credentials})]){
+  assert.equal((await fetch(base+'/api/providers/whatsapp-sandbox/events/'+wrong,{method:'POST',headers:{authorization},body:JSON.stringify(packet('919900000001'))})).status,401);
+ }
+ assert.equal(writes.length,0);
+ assert.equal((await fetch(url,{method:'POST',body:JSON.stringify({padding:'x'.repeat(256*1024)})})).status,413);
 });
