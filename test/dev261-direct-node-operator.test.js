@@ -15,10 +15,15 @@ test('DEV261 operator creates and verifies a scoped app/database rollback in the
   assert.match(source,/clientMajor<serverMajor/);
   assert.match(source,/--format=custom/);
   assert.match(source,/pg_restore',\['--list'/);
-  assert.match(source,/dumpTables\.size===liveTableCount/);
+  assert.match(source,/databaseIncluded=.*dumpCanonical===observedCanonical/);
+  assert.match(source,/dumpTableNamesSha256/);
   assert.match(source,/expectedTableCount/);
-  assert.match(source,/tableCountComparison=\{sql:tableCountSql,expected:Number\(config\.expectedTableCount\),observed:liveTableCount/);
-  assert.match(source,/expected \$\{report\.tableCountComparison\.expected\}, observed \$\{report\.tableCountComparison\.observed\}/);
+  assert.match(source,/expectedTableNames/);
+  assert.match(source,/tableComparison=\{sql:tableNamesSql,expectedCount:Number\(config\.expectedTableCount\),observedCount:liveTableNames\.length/);
+  assert.match(source,/expectedNamesSha256/);
+  assert.match(source,/observedNamesSha256/);
+  assert.match(source,/extra,missing,matches/);
+  assert.match(source,/dumpCanonical===observedCanonical/);
   assert.match(source,/PGPASSWORD:environment\.PGPASSWORD/);
   assert.doesNotMatch(source,/mysqldump|--password/);
   assert.match(source,/crm-test-app\.tar\.gz/);

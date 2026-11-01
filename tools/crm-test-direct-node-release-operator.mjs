@@ -22,7 +22,7 @@ const args=argumentsOf(process.argv.slice(2));
 if(process.platform!=='linux')throw Error('Hosted Linux operator required');
 if(!args.config||!args['backup-path']||!args.approved)throw Error('Config, backup path and exact approval are required');
 const config=JSON.parse(fs.readFileSync(args.config,'utf8'));
-const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','expectedMigrationCount','expectedTableCount','expectedTestPassed','totalTimeoutMinutes'];
+const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedTestPassed','totalTimeoutMinutes'];
 for(const key of required)if(config[key]===undefined||config[key]===null||config[key]==='')throw Error(`Missing operator configuration: ${key}`);
 if(args.approved!==config.commit||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit mismatch');
 if(!path.isAbsolute(args['backup-path']))throw Error('Backup path must be absolute');
@@ -102,14 +102,19 @@ function scopedBackupDirectory(){
 }
 async function createAndVerifyScopedBackup(environment){
   const directory=scopedBackupDirectory(),appArchive=path.join(directory,'crm-test-app.tar.gz'),databaseDump=path.join(directory,`${config.expectedDatabase}.dump`),databaseEnv=databaseEnvironment(environment);
-  const tableCountSql="SELECT COUNT(*)::int AS count FROM pg_tables WHERE schemaname='public'",livePool=poolFor(environment);let liveTableCount,serverVersionNumber;
+  const tableNamesSql="SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",livePool=poolFor(environment);let liveTableNames,serverVersionNumber;
   try{
-    liveTableCount=Number((await livePool.query(tableCountSql)).rows[0].count);
+    liveTableNames=(await livePool.query(tableNamesSql)).rows.map(row=>row.tablename);
     serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
   }
   finally{await livePool.end();}
-  report.tableCountComparison={sql:tableCountSql,expected:Number(config.expectedTableCount),observed:liveTableCount,matches:liveTableCount===Number(config.expectedTableCount)};
-  if(!report.tableCountComparison.matches)throw Error(`Live CRM Test table count drift: expected ${report.tableCountComparison.expected}, observed ${report.tableCountComparison.observed}`);
+  const expectedTableNames=config.expectedTableNames;
+  if(!Array.isArray(expectedTableNames)||expectedTableNames.length!==Number(config.expectedTableCount)||new Set(expectedTableNames).size!==expectedTableNames.length||expectedTableNames.some((name,index)=>!/^[a-z0-9_]+$/.test(name)||(index>0&&expectedTableNames[index-1]>=name)))throw Error('Expected CRM Test table-name baseline is invalid');
+  const expectedCanonical=`${expectedTableNames.join('\n')}\n`,observedCanonical=`${liveTableNames.join('\n')}\n`;
+  const extra=liveTableNames.filter(name=>!expectedTableNames.includes(name)),missing=expectedTableNames.filter(name=>!liveTableNames.includes(name));
+  report.tableComparison={sql:tableNamesSql,expectedCount:Number(config.expectedTableCount),observedCount:liveTableNames.length,expectedNamesSha256:crypto.createHash('sha256').update(expectedCanonical).digest('hex'),observedNamesSha256:crypto.createHash('sha256').update(observedCanonical).digest('hex'),extra,missing,matches:liveTableNames.length===Number(config.expectedTableCount)&&extra.length===0&&missing.length===0&&expectedCanonical===observedCanonical};
+  if(!report.tableComparison.matches)throw Error(`Live CRM Test table-name drift: expected ${report.tableComparison.expectedCount}, observed ${report.tableComparison.observedCount}, extra ${extra.length}, missing ${missing.length}`);
+  const liveTableCount=liveTableNames.length;
   const pgDumpVersion=run('pg_dump',['--version'],60_000,{env:databaseEnv}).toString().trim(),pgRestoreVersion=run('pg_restore',['--version'],60_000,{env:databaseEnv}).toString().trim();
   const clientMajor=Number(pgDumpVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),restoreMajor=Number(pgRestoreVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),serverMajor=Math.floor(serverVersionNumber/10_000);
   if(!clientMajor||!restoreMajor||!serverMajor||clientMajor<serverMajor||restoreMajor<serverMajor)throw Error('PostgreSQL backup client is older than the CRM Test server');
@@ -121,9 +126,9 @@ async function createAndVerifyScopedBackup(environment){
   const appPrefix=`${path.basename(config.root)}/`,appIncluded=entries.includes(`${appPrefix}package.json`)&&entries.includes(`${appPrefix}RUNTIME_MANIFEST.sha256`);
   const dumpList=run('pg_restore',['--list',databaseDump],10*60_000,{env:databaseEnv}).toString(),dumpTables=new Set();
   for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
-  const databaseIncluded=dumpTables.has('schema_migrations')&&dumpTables.size===liveTableCount;
+  const dumpTableNames=[...dumpTables].sort(),dumpCanonical=`${dumpTableNames.join('\n')}\n`,databaseIncluded=dumpTables.has('schema_migrations')&&dumpTableNames.length===liveTableCount&&dumpCanonical===observedCanonical;
   if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
-  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableCountComparison:report.tableCountComparison,liveTableCount,dumpTableCount:dumpTables.size,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:crypto.createHash('sha256').update(dumpCanonical).digest('hex'),contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
   fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
   write('SCOPED_BACKUP_VERIFIED.json',receipt);
   return receipt;
