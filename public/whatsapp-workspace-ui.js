@@ -1,5 +1,5 @@
 (()=>{
-  const safe=value=>esc(value),date=value=>value?fmtDate(value):'—',fileBase64=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(new Error('File could not be read'));reader.readAsDataURL(file);});
+  const safe=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character])),date=value=>value?fmtDate(value):'—',fileBase64=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(new Error('File could not be read'));reader.readAsDataURL(file);});
   let data=null,active='templates',templateMode={kind:'create'},campaignMode=null,recipientPreview=null,recipientRows=null;
   const sectionLabels={templates:'Template library',reviews:'Review queue',recipients:'Recipient import',segments:'Segments',campaigns:'Campaign composer',inbox:'Conversation inbox',materials:'Materials catalogue'};
   const normalizeTemplateName=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'').slice(0,512);

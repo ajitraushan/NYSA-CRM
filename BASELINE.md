@@ -1,5 +1,30 @@
 # CRM Development Baseline
 
+## DEV260 WhatsApp workspace loader blocker - 1 November 2026
+
+- Target environment: CRM Test only. Installed rollback point is verified
+  DEV259a `2.1.0-dev.259`, GitHub commit
+  `e7dc3728d38d719287afbc330507cdea232d962a`, migration 165, package SHA-256
+  `4bd9794001b05a19926489d503e87b4b17fbae9ad3e6da01da829c17c8396623`.
+- QA reproduced a deterministic browser-load failure before any WhatsApp API
+  call: `ReferenceError: esc is not defined` in
+  `public/whatsapp-workspace-ui.js`. Bootstrap loads independent feature
+  bundles before `app.js`; the WhatsApp bundle evaluated `safe()` immediately
+  while depending on the later lexical `app.js` helper.
+- Authorized correction is limited to making the WhatsApp feature bundle's
+  HTML escaping self-contained and adding a load-order regression test. BUG-02
+  through BUG-06, dashboard/task/intake business logic, workflows, schemas,
+  provider configuration and all external systems are outside this correction.
+- No migration is required. Production, website, REM, provider configuration
+  and WhatsApp sending remain unchanged. A new GitHub-advertised exact
+  candidate, mandatory origin package verification, fresh paired CRM Test
+  rollback evidence and exact-candidate approval are required before deployment.
+- Pre-deployment verification completed against the corrected source: focused
+  loader/domain checks passed 7/7; governed release regression passed 1,541
+  with 96 skipped and zero failures; the synthetic browser check rendered all
+  six WhatsApp sections, exposed no send action and had no horizontal overflow
+  at 1280, 768 or 390 pixels. These results do not authorize deployment.
+
 ## WA-001 DEV259a review-correction baseline - 1 November 2026
 
 - The user confirmed that simulated calling remains a separate DEV259b release.
