@@ -19,9 +19,9 @@
   Conversation inbox and Materials catalogue. All six passed with zero page
   errors and zero console errors. The test is included in the governed release
   selection and is not skipped.
-- Governed source regression: 1,544 passed, 96 intentionally skipped, zero
+- Governed source regression: 1,543 passed, 96 intentionally skipped, zero
   failed; selection SHA-256
-  `ec2e7f28facdcd98c0868f06ef72b17427547a332656b6dd0e6ef155184fb99d`.
+  `d596b26bf4db38667f0373fe4903c1e3b0f7a13d5bb0c99de2e838d0da8e08e8`.
   The exact browser evidence is retained under
   `release-artifacts/dev261-preparation/browser-evidence`.
 - The direct-node deployment operator and its policy controls were committed
@@ -30,11 +30,17 @@
   inputs, performs stage then deploy once, never edits installed
   `package.json`, verifies the exact-root worker before and after readiness,
   and permits only exact DEV260 cleanup files after DEV261 is healthy.
-- A separate versioned direct-node wrapper creates one full cPanel account
-  backup, waits for that exact archive to complete, and passes its discovered
-  path to the operator without renaming it. Backup and stage/deploy therefore
-  run under one bounded command; a failed, stalled or timed-out step stops the
-  run without retrying.
+- The versioned direct-node operator creates a scoped CRM Test rollback set in
+  the same bounded run: one exact app-root archive plus a database-only dump of
+  `nysareal_nysa_dev247_smoke`. It verifies size, SHA-256 and contents before
+  mutation, including `pg_restore --list` readability, an exact 299-table
+  live-versus-dump reconciliation, and `pg_dump`/`pg_restore` client-major
+  compatibility with the live PostgreSQL server before backup begins. Database
+  credentials remain in the existing registered environment and are never
+  command arguments or log output. Its
+  failure path restores only those two Test targets. It does
+  not request or rename a full-account cPanel backup; those are reserved for
+  production or scheduled weekly protection.
 - DEV261 remains a pre-approval source candidate. It must be committed and
   advertised by GitHub origin, packaged only by the mandatory detached-origin
   builder, provenance-verified, and presented with exact hashes and a fresh

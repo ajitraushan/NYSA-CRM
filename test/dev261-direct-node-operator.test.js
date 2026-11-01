@@ -2,13 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-test('DEV261 operator is versioned, direct-node compatible and has no hard-coded backup path',()=>{
+test('DEV261 operator creates and verifies a scoped app/database rollback in the same direct-node run',()=>{
   const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
   assert.match(source,/args\['backup-path'\]/);
   assert.doesNotMatch(source,/const backup\s*=\s*['"]\/home\/nysareal\/backup-/);
   assert.match(source,/mode:'stage-and-deploy-once'/);
   assert.match(source,/totalTimeoutMinutes/);
-  assert.match(source,/backupMaxAgeMinutes/);
+  assert.match(source,/createAndVerifyScopedBackup\(environment\)/);
+  assert.match(source,/pg_dump/);
+  assert.match(source,/pg_dump',\['--version'\]/);
+  assert.match(source,/server_version_num/);
+  assert.match(source,/clientMajor<serverMajor/);
+  assert.match(source,/--format=custom/);
+  assert.match(source,/pg_restore',\['--list'/);
+  assert.match(source,/dumpTables\.size===liveTableCount/);
+  assert.match(source,/expectedTableCount/);
+  assert.match(source,/PGPASSWORD:environment\.PGPASSWORD/);
+  assert.doesNotMatch(source,/mysqldump|--password/);
+  assert.match(source,/crm-test-app\.tar\.gz/);
+  assert.match(source,/SCOPED_BACKUP_VERIFIED\.json/);
+  assert.match(source,/ROLLED_BACK_SCOPED_APP_AND_DATABASE/);
+  assert.doesNotMatch(source,/fullbackup_to_homedir|Approved full backup/);
   assert.match(source,/STAGE_RESULT\.json/);
   assert.match(source,/DEPLOYED_TECHNICAL_CHECKS_PASSED/);
   assert.match(source,/report\.cleanup=cleanAfterHealth/);

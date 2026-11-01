@@ -22,7 +22,7 @@ const args=argumentsOf(process.argv.slice(2));
 if(process.platform!=='linux')throw Error('Hosted Linux operator required');
 if(!args.config||!args['backup-path']||!args.approved)throw Error('Config, backup path and exact approval are required');
 const config=JSON.parse(fs.readFileSync(args.config,'utf8'));
-const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','expectedMigrationCount','expectedTestPassed','backupMaxAgeMinutes','totalTimeoutMinutes'];
+const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','expectedMigrationCount','expectedTableCount','expectedTestPassed','totalTimeoutMinutes'];
 for(const key of required)if(config[key]===undefined||config[key]===null||config[key]==='')throw Error(`Missing operator configuration: ${key}`);
 if(args.approved!==config.commit||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit mismatch');
 if(!path.isAbsolute(args['backup-path']))throw Error('Backup path must be absolute');
@@ -36,7 +36,7 @@ const remaining=()=>{
   return value;
 };
 const commandTimeout=preferred=>Math.max(1000,Math.min(preferred,remaining()));
-const run=(command,values,timeout=15*60_000)=>execFileSync(command,values,{stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024,timeout:commandTimeout(timeout),killSignal:'SIGTERM'});
+const run=(command,values,timeout=15*60_000,options={})=>execFileSync(command,values,{stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024,timeout:commandTimeout(timeout),killSignal:'SIGTERM',...options});
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const hashStream=file=>new Promise((resolve,reject)=>{
   const digest=crypto.createHash('sha256'),stream=fs.createReadStream(file);
@@ -90,16 +90,52 @@ async function readiness(expectedVersion){
   }
   throw last;
 }
-async function verifyBackup(backupPath){
-  const stat=fs.statSync(backupPath),maximumAge=Number(config.backupMaxAgeMinutes)*60_000;
-  if(!stat.isFile()||stat.size<1024*1024||Date.now()-stat.mtimeMs>maximumAge)throw Error('Approved full backup is missing or outside the configured freshness window');
-  const entries=run('tar',['-tzf',backupPath],30*60_000).toString();
-  const appIncluded=entries.includes('homedir/nysa-core-dashboard-dd6262a-stage/package.json')&&entries.includes('homedir/nysa-core-dashboard-dd6262a-stage/RUNTIME_MANIFEST.sha256');
-  const databaseIncluded=entries.includes(config.expectedDatabase);
-  if(!appIncluded||!databaseIncluded)throw Error('Full backup does not contain the CRM Test application and database');
-  const receipt={path:backupPath,createdAt:stat.mtime.toISOString(),bytes:stat.size,sha256:await hashStream(backupPath),appIncluded,databaseIncluded,verifiedAt:new Date().toISOString()};
-  write('BACKUP_VERIFIED.json',receipt);
+function databaseEnvironment(environment){
+  return {...process.env,PGHOST:environment.PGHOST||'localhost',PGPORT:String(environment.PGPORT||5432),PGDATABASE:config.expectedDatabase,PGUSER:config.expectedRole,PGPASSWORD:environment.PGPASSWORD||''};
+}
+function scopedBackupDirectory(){
+  const resolved=path.resolve(args['backup-path']),preparationRoot='/home/nysareal/crm-release-preparation';
+  if(!resolved.startsWith(`${preparationRoot}${path.sep}`)||resolved===config.root||resolved.startsWith(`${config.root}${path.sep}`))throw Error('Scoped backup path is outside the CRM Test preparation boundary');
+  if(fs.existsSync(resolved))throw Error('Scoped backup directory must not pre-exist');
+  fs.mkdirSync(resolved,{recursive:true,mode:0o700});
+  return resolved;
+}
+async function createAndVerifyScopedBackup(environment){
+  const directory=scopedBackupDirectory(),appArchive=path.join(directory,'crm-test-app.tar.gz'),databaseDump=path.join(directory,`${config.expectedDatabase}.dump`),databaseEnv=databaseEnvironment(environment);
+  const livePool=poolFor(environment);let liveTableCount,serverVersionNumber;
+  try{
+    liveTableCount=Number((await livePool.query("SELECT COUNT(*)::int AS count FROM pg_tables WHERE schemaname='public'")).rows[0].count);
+    serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
+  }
+  finally{await livePool.end();}
+  if(liveTableCount!==Number(config.expectedTableCount))throw Error('Live CRM Test table count drift');
+  const pgDumpVersion=run('pg_dump',['--version'],60_000,{env:databaseEnv}).toString().trim(),pgRestoreVersion=run('pg_restore',['--version'],60_000,{env:databaseEnv}).toString().trim();
+  const clientMajor=Number(pgDumpVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),restoreMajor=Number(pgRestoreVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),serverMajor=Math.floor(serverVersionNumber/10_000);
+  if(!clientMajor||!restoreMajor||!serverMajor||clientMajor<serverMajor||restoreMajor<serverMajor)throw Error('PostgreSQL backup client is older than the CRM Test server');
+  run('tar',['-czf',appArchive,'-C',path.dirname(config.root),path.basename(config.root)],30*60_000);
+  run('pg_dump',['--format=custom','--no-owner','--no-privileges','--file',databaseDump,config.expectedDatabase],30*60_000,{env:databaseEnv});
+  const appStat=fs.statSync(appArchive),databaseStat=fs.statSync(databaseDump);
+  if(!appStat.isFile()||appStat.size<1024*1024||!databaseStat.isFile()||databaseStat.size<4096)throw Error('Scoped rollback backup is empty or incomplete');
+  const entries=run('tar',['-tzf',appArchive],30*60_000).toString();
+  const appPrefix=`${path.basename(config.root)}/`,appIncluded=entries.includes(`${appPrefix}package.json`)&&entries.includes(`${appPrefix}RUNTIME_MANIFEST.sha256`);
+  const dumpList=run('pg_restore',['--list',databaseDump],10*60_000,{env:databaseEnv}).toString(),dumpTables=new Set();
+  for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
+  const databaseIncluded=dumpTables.has('schema_migrations')&&dumpTables.size===liveTableCount;
+  if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,liveTableCount,dumpTableCount:dumpTables.size,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
+  write('SCOPED_BACKUP_VERIFIED.json',receipt);
   return receipt;
+}
+function restoreScopedBackup(receipt,environment){
+  if(!receipt?.app?.path||!receipt?.database?.path)throw Error('Verified scoped rollback receipt is unavailable');
+  const parent=path.dirname(config.root),failedRoot=`${config.root}.failed-${Date.now()}`;
+  if(fs.existsSync(failedRoot))throw Error('Rollback quarantine path already exists');
+  fs.renameSync(config.root,failedRoot);
+  try{run('tar',['-xzf',receipt.app.path,'-C',parent],30*60_000);}
+  catch(error){if(fs.existsSync(config.root))fs.rmSync(config.root,{recursive:true,force:true});fs.renameSync(failedRoot,config.root);throw error;}
+  run('pg_restore',['--clean','--if-exists','--no-owner','--no-privileges','--exit-on-error','--dbname',config.expectedDatabase,receipt.database.path],30*60_000,{env:databaseEnvironment(environment)});
+  return {appRestoredFrom:receipt.app.path,databaseRestoredFrom:receipt.database.path,failedRuntimeRetained:failedRoot};
 }
 function validateCleanupPath(value,currentBackup){
   const resolved=path.resolve(value);
@@ -121,16 +157,14 @@ function cleanAfterHealth(currentBackup){
 }
 
 fs.mkdirSync(config.base,{recursive:true,mode:0o700});
-let changed=false,restore=[];
+let changed=false,stopped=false,restore=[],environment;
 const report={mode:'stage-and-deploy-once',root:config.root,domain:config.domain,commit:config.commit,version:config.version,startedAt:new Date(startedAt).toISOString(),productionMutation:false,websiteMutation:false,remMutation:false};
 try{
-  const original=registration(),environment=original.env_vars||{};
+  const original=registration();environment=original.env_vars||{};
   if(environment.PGDATABASE!==config.expectedDatabase||environment.PGUSER!==config.expectedRole)throw Error('CRM Test registration database drift');
   if(environment.WHATSAPP_SANDBOX_ENABLED!=='false'||environment.WHATSAPP_SANDBOX_CALLBACK_APPROVED!=='false')throw Error('WhatsApp sending flags are not closed');
   if(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).version!==config.baselineVersion)throw Error('Installed baseline version drift');
   if(JSON.parse(fs.readFileSync(path.join(config.root,'RELEASE_PROVENANCE.json'))).commit!==config.baselineCommit)throw Error('Installed baseline provenance drift');
-  report.backup=await verifyBackup(args['backup-path']);
-
   if(hash(config.zip)!==config.archiveHash||hash(config.manifest)!==config.manifestHash)throw Error('Candidate archive or manifest hash mismatch');
   const manifestData=JSON.parse(fs.readFileSync(config.manifest));
   if(manifestData.commit!==config.commit||manifestData.packageSha256!==config.archiveHash||manifestData.version!==config.version||manifestData.testReceipt.failed!==0||manifestData.testReceipt.passed!==Number(config.expectedTestPassed))throw Error('Candidate test or provenance receipt mismatch');
@@ -155,20 +189,19 @@ try{
   write('STAGE_RESULT.json',{...report,result:'STAGED_AND_VERIFIED',completedAt:new Date().toISOString()});
 
   report.workerStop=await stop();
+  stopped=true;
   if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
+  report.backup=await createAndVerifyScopedBackup(environment);
   const pool=poolFor(environment);
   try{
     await ledger(pool);
     const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename);
     const before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);
-    const prior=path.join(config.base,'changed-runtime-baseline');fs.mkdirSync(prior,{mode:0o700});
     for(const name of [...runtimeNames(config.candidate),'RUNTIME_MANIFEST.sha256']){
       remaining();
       const source=path.join(config.candidate,name),target=path.join(config.root,name);
       if(fs.existsSync(target)&&hash(source)===hash(target))continue;
-      if(fs.existsSync(target)){
-        const destination=path.join(prior,name);fs.mkdirSync(path.dirname(destination),{recursive:true,mode:0o700});fs.copyFileSync(target,destination);restore.push({name,existed:true});
-      }else restore.push({name,existed:false});
+      restore.push({name,existed:fs.existsSync(target)});
       fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);changed=true;
     }
     write('CHANGED_RUNTIME.json',restore);runtimeNames(config.root);report.changedFiles=restore.length;
@@ -180,7 +213,7 @@ try{
   process.chdir(config.root);
   const {verifyApprovedDocumentRuntime:verifyInstalledPdfs}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));
   report.installedPdfFormats=await verifyInstalledPdfs();
-  selector('start');report.readiness=await readiness(config.version);
+  selector('start');report.readiness=await readiness(config.version);stopped=false;
   report.runtimeFiles=runtimeNames(config.root).length;
   const verificationPool=poolFor(environment);try{report.ledger=await ledger(verificationPool);}finally{await verificationPool.end();}
   report.http=[];
@@ -194,19 +227,18 @@ try{
   if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');
   report.sandboxSendingEnabled=false;report.callbackApproval=false;
   report.result='DEPLOYED_TECHNICAL_CHECKS_PASSED';
-  report.cleanup=cleanAfterHealth(args['backup-path']);
+  report.cleanup=cleanAfterHealth(report.backup.directory);
 }catch(error){
   report.result='FAILED';report.errorName=error.name;report.errorCode=error.code||null;report.safeError=String(error.message||'').startsWith('Command failed:')?'External command failed':String(error.message||'').slice(0,240);
   if(changed){
     try{
       await stop();
-      for(const item of restore.reverse()){
-        const target=path.join(config.root,item.name);
-        if(item.existed)fs.copyFileSync(path.join(config.base,'changed-runtime-baseline',item.name),target);
-        else if(fs.existsSync(target))fs.rmSync(target);
-      }
-      selector('start');report.rollback=await readiness(config.baselineVersion);report.result='ROLLED_BACK_CODE';
+      report.scopedRestore=restoreScopedBackup(report.backup,environment);
+      selector('start');report.rollback=await readiness(config.baselineVersion);stopped=false;report.result='ROLLED_BACK_SCOPED_APP_AND_DATABASE';
     }catch{report.result='ROLLBACK_REQUIRES_ATTENTION';}
+  }else if(stopped){
+    try{selector('start');report.rollback=await readiness(config.baselineVersion);stopped=false;report.result='STOPPED_BEFORE_MUTATION_BASELINE_RESTARTED';}
+    catch{report.result='BASELINE_RESTART_REQUIRES_ATTENTION';}
   }
   process.exitCode=1;
 }finally{
