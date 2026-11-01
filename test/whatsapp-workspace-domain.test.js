@@ -47,5 +47,7 @@ test('DEV259 route and UI expose governed template components without send or Me
   assert.doesNotMatch(ui,/data-(?:send|meta-submit)|Send campaign|Submit to Meta/i);
   assert.match(ui,/Sending: unavailable/);assert.match(ui,/Meta: Not submitted/);
   assert.match(ui,/Live WhatsApp preview/);assert.match(ui,/maxlength="1024"/);assert.match(ui,/https:\/\/nysarealty\.com\/go\/\{\{1\}\}/);
+  assert.match(route,/team_memberships tm/);assert.match(route,/user_role_assignments ur/);
+  assert.match(ui,/teams\.length===1\?teams\[0\]\.id/);
   assert.match(migration,/no provider submission or message dispatch capability/i);
 });

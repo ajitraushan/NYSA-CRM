@@ -1,5 +1,19 @@
 # CRM Development Baseline
 
+## WA-001 DEV259 team-scope correction — 1 November 2026
+
+- Source rollback point: clean, GitHub-advertised DEV259 commit
+  `39a34eae789d217aa34f72c93de7c9e0e8825923` on branch
+  `codex/wa001-stage-b-foundation`; CRM Test remains installed at DEV258 and
+  production, website, REM and provider configuration remain unchanged.
+- Live review found that the template Team selector can be empty for a valid
+  Agent whose current team is recorded through `team_memberships` or
+  `user_role_assignments` rather than the legacy `brokers.team_id` column.
+- Authorized correction is limited to resolving WhatsApp-workspace team scope
+  from current active CORE team assignments and preselecting a sole eligible
+  team. It must retain the same role boundaries and add no provider submission,
+  message sending, workflow or external-system change.
+
 ## WA-001 Template Library components — 1 November 2026
 
 - Source and hosted rollback point: clean GitHub-advertised DEV258 commit

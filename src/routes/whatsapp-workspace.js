@@ -20,12 +20,23 @@ const headerMediaPolicy={
 const token=(payload,session)=>crypto.createHmac('sha256',String(session||'')).update(JSON.stringify(payload)).digest('hex');
 const equal=(a,b)=>{const x=Buffer.from(String(a||'')),y=Buffer.from(String(b||''));return x.length===y.length&&x.length>0&&crypto.timingSafeEqual(x,y);};
 
-r.use(requireAuth,(req,res,next)=>req.broker?.role==='internal_broker'&&operational.has(req.broker.jobRole)?next():res.status(403).json({error:'WhatsApp Campaigns is restricted to Sales Agents, Managers and Directors'}));
+r.use(requireAuth,async(req,res,next)=>{
+  if(req.broker?.role!=='internal_broker'||!operational.has(req.broker.jobRole))return res.status(403).json({error:'WhatsApp Campaigns is restricted to Sales Agents, Managers and Directors'});
+  if(req.broker.jobRole==='director'){req.broker.whatsAppTeamIds=null;return next();}
+  const rows=await many(`SELECT DISTINCT t.id FROM teams t
+    WHERE t.active=1 AND (
+      t.id=$2
+      OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.ends_at IS NULL)
+      OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.status='active' AND ur.ends_at IS NULL)
+      OR ($3='manager' AND t.manager_id=$1)
+    ) ORDER BY t.id`,[req.broker.id,req.broker.teamId||null,req.broker.jobRole]);
+  req.broker.whatsAppTeamIds=rows.map(row=>String(row.id));
+  next();
+});
 
 function teamIds(broker){
   if(broker.jobRole==='director')return null;
-  if(broker.jobRole==='manager')return [...new Set([...(broker.managedTeamIds||[]),broker.teamId].filter(Boolean).map(String))];
-  return [broker.teamId].filter(Boolean).map(String);
+  return [...new Set((broker.whatsAppTeamIds||[]).filter(Boolean).map(String))];
 }
 function canUseTeam(broker,teamId){const scope=teamIds(broker);return scope===null||scope.includes(String(teamId||''));}
 function requireCreator(req,res){if(!creator.has(req.broker.jobRole)){res.status(403).json({error:'Sales Agent or Manager draft access required'});return false;}return true;}

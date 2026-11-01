@@ -26,8 +26,9 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
       await db.execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[crypto.createHash('sha256').update(tokens[role]).digest('hex'),id]);
     }
     await db.execute('INSERT INTO teams(id,name,manager_id) VALUES($1,$2,$3),($4,$5,NULL)',[teams.main,`${prefix} main`,people.manager,teams.outside,`${prefix} outside`]);
-    await db.execute('UPDATE brokers SET team_id=$1 WHERE id=ANY($2::uuid[])',[teams.main,[people.agent,people.manager]]);
+    await db.execute('UPDATE brokers SET team_id=$1 WHERE id=$2',[teams.main,people.manager]);
     await db.execute('UPDATE brokers SET team_id=$1 WHERE id=$2',[teams.outside,people.outside]);
+    await db.execute("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'member',$4)",[uuid(),teams.main,people.agent,people.manager]);
     await db.execute("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$3)",[uuid(),teams.main,people.manager]);
 
     const app=createApp();app.mount('/api',routes);

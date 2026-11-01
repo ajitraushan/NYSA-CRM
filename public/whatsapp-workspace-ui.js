@@ -2,7 +2,7 @@
   const safe=value=>esc(value),date=value=>value?fmtDate(value):'—',fileBase64=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(new Error('File could not be read'));reader.readAsDataURL(file);});
   let data=null,active='templates',templateMode={kind:'create'},recipientPreview=null,recipientRows=[];
   const sectionLabels={templates:'Template library',reviews:'Review queue',recipients:'Recipient import',segments:'Segments',campaigns:'Campaign composer',materials:'Materials catalogue'};
-  const teamOptions=selected=>(data?.teams||[]).map(team=>`<option value="${team.id}" ${String(selected||'')===String(team.id)?'selected':''}>${safe(team.name)}</option>`).join('');
+  const teamOptions=selected=>{const teams=data?.teams||[],resolved=selected||(teams.length===1?teams[0].id:'');return teams.map(team=>`<option value="${team.id}" ${String(resolved||'')===String(team.id)?'selected':''}>${safe(team.name)}</option>`).join('');};
   const status=value=>`<span class="pill">${safe(String(value||'—').replaceAll('_',' '))}</span>`;
   const empty=(message,span=6)=>`<tr><td colspan="${span}">${safe(message)}</td></tr>`;
   const templateVariables=value=>[...new Set([...String(value||'').matchAll(/\{\{([a-z][a-z0-9_]*)\}\}/g)].map(match=>match[1]))];
