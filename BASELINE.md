@@ -1,5 +1,40 @@
 # CRM Development Baseline
 
+## DEV261 WhatsApp workspace runtime blocker — 2 November 2026
+
+- Target is CRM Test only. The user reports DEV260 `2.1.0-dev.260` is
+  installed and its technical deployment checks passed. Production, website,
+  REM, Meta/360dialog configuration and WhatsApp sending remain unchanged.
+- DEV260 removed the earlier feature-bundle load-order error, but opening the
+  workspace then raised `ReferenceError: recipientForm is not defined` from
+  `public/whatsapp-workspace-ui.js`. The correction is one local declaration
+  bound to the existing `#wa-recipient-form`; no workflow, API, schema,
+  permission, provider or data behavior changes.
+- A pinned ESLint `no-undef` scan of the entire release file found seven
+  references to one undeclared name (`recipientForm`) before the correction.
+  The same scan completes with zero errors after the correction.
+- The new release test launches real Chrome as a synthetic Sales Agent, loads
+  the tracked `public/whatsapp-workspace-ui.js` file, records its SHA-256 and
+  opens Template library, Recipient import, Segments, Campaign composer,
+  Conversation inbox and Materials catalogue. All six passed with zero page
+  errors and zero console errors. The test is included in the governed release
+  selection and is not skipped.
+- Governed source regression: 1,543 passed, 96 intentionally skipped, zero
+  failed; selection SHA-256
+  `d596b26bf4db38667f0373fe4903c1e3b0f7a13d5bb0c99de2e838d0da8e08e8`.
+  The exact browser evidence is retained under
+  `release-artifacts/dev261-preparation/browser-evidence`.
+- The direct-node deployment operator and its policy controls were committed
+  and advertised first in GitHub commit
+  `885a76b7baabf4112bfccf221b8fe51e56818a8b`. The operator accepts the backup path and freshness/time limits as
+  inputs, performs stage then deploy once, never edits installed
+  `package.json`, verifies the exact-root worker before and after readiness,
+  and permits only exact DEV260 cleanup files after DEV261 is healthy.
+- DEV261 remains a pre-approval source candidate. It must be committed and
+  advertised by GitHub origin, packaged only by the mandatory detached-origin
+  builder, provenance-verified, and presented with exact hashes and a fresh
+  backup plan before any CRM Test mutation.
+
 ## DEV260 WhatsApp workspace loader blocker - 1 November 2026
 
 - Target environment: CRM Test only. Installed rollback point is verified

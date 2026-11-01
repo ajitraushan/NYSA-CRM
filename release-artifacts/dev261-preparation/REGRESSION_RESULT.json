@@ -1,0 +1,17 @@
+{
+  "candidate": "2.1.0-dev.261 pre-approval source",
+  "command": "npm run test:release",
+  "includedTestFiles": 303,
+  "historicalLocalArtifactFilesExcluded": 92,
+  "selectionSha256": "d596b26bf4db38667f0373fe4903c1e3b0f7a13d5bb0c99de2e838d0da8e08e8",
+  "tests": 1639,
+  "passed": 1543,
+  "failed": 0,
+  "skipped": 96,
+  "whatsAppBrowserTestsSkipped": 0,
+  "whatsAppPostgreSqlTestsSkipped": 2,
+  "whatsAppPostgreSqlSkipReason": "Dedicated synthetic PostgreSQL fixture environment was unavailable in this worktree; these are separate durable-lifecycle tests and the DEV261 change has no schema or route mutation.",
+  "agentBrowserTestIncluded": true,
+  "agentBrowserTestSkipped": false,
+  "agentBrowserTestPassed": true
+}

@@ -1,0 +1,25 @@
+{
+  "file": "public/whatsapp-workspace-ui.js",
+  "linter": "eslint@9.39.1",
+  "rule": "no-undef:error",
+  "before": {
+    "problemCount": 7,
+    "uniqueUndeclaredNames": [
+      "recipientForm"
+    ],
+    "locations": [
+      "59:8",
+      "59:23",
+      "59:217",
+      "60:8",
+      "60:22",
+      "60:93",
+      "60:193"
+    ]
+  },
+  "after": {
+    "problemCount": 0,
+    "exitCode": 0
+  },
+  "packageJsonModifiedByLint": false
+}

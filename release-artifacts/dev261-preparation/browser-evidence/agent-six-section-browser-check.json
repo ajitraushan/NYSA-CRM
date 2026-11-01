@@ -1,0 +1,55 @@
+{
+  "candidate": "DEV261 pre-approval source",
+  "role": "Sales Agent",
+  "synthetic": true,
+  "releaseFile": "public/whatsapp-workspace-ui.js",
+  "releaseSha256": "a28a020092cd4a4db6c0b5f254a37c2cae9f590e24102442a7119b900e688a82",
+  "loadedFromTrackedReleaseFile": true,
+  "sections": [
+    {
+      "section": "templates",
+      "heading": "Template library",
+      "status": "passed",
+      "textLength": 1183,
+      "screenshot": "01-templates.png"
+    },
+    {
+      "section": "recipients",
+      "heading": "Recipient import",
+      "status": "passed",
+      "textLength": 1060,
+      "screenshot": "02-recipients.png"
+    },
+    {
+      "section": "segments",
+      "heading": "Reusable audience segments",
+      "status": "passed",
+      "textLength": 544,
+      "screenshot": "03-segments.png"
+    },
+    {
+      "section": "campaigns",
+      "heading": "Draft-only campaign composer",
+      "status": "passed",
+      "textLength": 707,
+      "screenshot": "04-campaigns.png"
+    },
+    {
+      "section": "inbox",
+      "heading": "Conversation inbox",
+      "status": "passed",
+      "textLength": 390,
+      "screenshot": "05-inbox.png"
+    },
+    {
+      "section": "materials",
+      "heading": "Materials catalogue",
+      "status": "passed",
+      "textLength": 523,
+      "screenshot": "06-materials.png"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "checkedAt": "2026-11-01T21:53:49.766Z"
+}
