@@ -1,5 +1,17 @@
 # CRM Development Baseline
 
+## Sandbox HTTP400 correction — 1 November 2026
+
+- User authorizes diagnosis, narrow fix, regression and GitHub deployment to CRM
+  Test; sending must remain paused. Source baseline2616e89, installed DEV255
+  c4a6a04de892e50cf933ecb1821f202576b76e8d, migration160. Original verified rollback
+  retained; fresh paired encrypted recovery required for the next installation.
+- Provider configuration accepted. User test reached the exact callback at
+  06:59:57 UTC and received HTTP400 with33-byte JSON response. No authenticated
+  event persisted. This alone does not prove the rejected field. Add bounded
+  static rejection-reason diagnostics only after authentication, then reproduce;
+  never relax authentication or identity checks to obtain a successful response.
+
 ## DEV255 approved CRM Test installation — 1 November 2026
 
 - Exact user-approved origin commit `c4a6a04de892e50cf933ecb1821f202576b76e8d`

@@ -1,4 +1,5 @@
 import {Router} from '../lib/http-kit.js';
+import {randomUUID} from 'node:crypto';
 import {verifySandboxRelay,verifySandboxBasic} from '../whatsapp-sandbox.js';
 import {sandboxSetupAllowed,sandboxEnvironmentAllowed,saveSandboxConnection,sandboxStatus,setSandboxPaused,loadSandboxConnection,sendSandboxTest,receiveSandboxEvents,configureSandboxWebhook} from '../whatsapp-sandbox-store.js';
 
@@ -39,14 +40,22 @@ export function createWhatsAppSandboxInboxRoutes({transaction,env=process.env}) 
   const probe=basic&&env.WHATSAPP_SANDBOX_NATIVE_PROBE_ENABLED==='true';
   if(!sandboxSetupAllowed(env)||!sandboxEnvironmentAllowed(env)||(env.WHATSAPP_SANDBOX_CALLBACK_APPROVED!=='true'&&!probe))return res.status(503).json({error:'SANDBOX_INGRESS_DISABLED'});
   if(typeof req.rawBody!=='string'||Buffer.byteLength(req.rawBody)>256*1024)return res.status(400).json({error:'SANDBOX_EVENT_INVALID'});
+  let verified;
   try{
    const result=await transaction(async c=>{
     const row=await loadSandboxConnection(c,env,{lock:true});
     const authenticated=basic?verifySandboxBasic({authorization:req.headers.authorization,secret:row.credentials.relaySecret}):verifySandboxRelay({rawBody:req.rawBody,timestamp:req.headers['x-nysa-timestamp'],signature:req.headers['x-nysa-signature'],secret:row.credentials.relaySecret});
     if(!authenticated)throw Object.assign(new Error('SANDBOX_AUTH_DENIED'),{statusCode:401});
+    verified={id:row.id,revision:row.revision};
     return receiveSandboxEvents({body:req.body,env,authMode:basic?'basic':'relay'},c);
    });res.json(result);
-  }catch(e){respondError(res,e);}
+  }catch(e){
+   const reasons=['envelope','alternate_identity','message_id','timestamp_format','timestamp_range','changes','change_value','event_array','text_format','delivery_status'];
+   if(verified&&reasons.includes(e.sandboxDiagnostic)){
+    try{await transaction(c=>c.query('INSERT INTO wa_sandbox_audit(id,connection_id,action,details) VALUES($1,$2,$3,$4)',[randomUUID(),verified.id,'callback_rejected',JSON.stringify({revision:verified.revision,reason:e.sandboxDiagnostic})]));}catch{}
+   }
+   respondError(res,e);
+  }
  });
  return r;
 }

@@ -50,3 +50,18 @@ test('native header probe can receive authenticated tests while outbound remains
  assert.equal((await fetch(url,{method:'POST',body,headers:{authorization}})).status,200);
  const send=await fetch(base+'/api/admin/whatsapp-sandbox/send-test',{method:'POST',body:'{}',headers:{'x-nysa-sandbox-action':'1'}});assert.equal(send.status,503);
 });
+
+test('authenticated rejection records only an allowlisted reason after rollback; unauthenticated requests never audit',async t=>{
+ const secret='synthetic-native-secret-'.repeat(3),key='a'.repeat(64);
+ const env={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SANDBOX_SETUP_ENABLED:'true',WHATSAPP_SANDBOX_AUTH_MODE:'basic',WHATSAPP_SANDBOX_NATIVE_PROBE_ENABLED:'true',LEAD_CONNECTION_KEY:key};
+ const row={id:'synthetic',revision:1,encrypted_credentials:sealLeadEvidence({recipientKind:'phone',recipient:'+919900000001',relaySecret:secret},key)};
+ const audits=[];let transactions=0;
+ const transaction=async fn=>{transactions++;return fn({query:async(sql,args)=>{if(sql.startsWith('SELECT *'))return {rows:[row]};if(sql.startsWith('INSERT INTO wa_sandbox_audit')){audits.push(args);return {rows:[]};}throw Error('Unexpected query');}});};
+ const base=await appFor(t,{env,transaction}),url=base+'/api/providers/whatsapp-sandbox/events',body=JSON.stringify({privateMessage:'do not record this'});
+ assert.equal((await fetch(url,{method:'POST',body})).status,401);assert.equal(audits.length,0);
+ const authorization='Basic '+Buffer.from('nysa-sandbox:'+secret).toString('base64');
+ const r=await fetch(url,{method:'POST',body,headers:{authorization}});
+ assert.equal(r.status,400);assert.deepEqual(await r.json(),{error:'SANDBOX_EVENT_INVALID'});
+ assert.equal(audits.length,1);assert.deepEqual(JSON.parse(audits[0][3]),{revision:1,reason:'envelope'});
+ assert.equal(transactions,3);assert.ok(!JSON.stringify(audits).includes('do not record this'));assert.ok(!JSON.stringify(audits).includes(secret));
+});
