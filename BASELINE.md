@@ -1,5 +1,58 @@
 # CRM Development Baseline
 
+## WA-001 Stage B decision-independent foundation — 1 November 2026
+
+- Source baseline: repository HEAD `0d8ce08a7d9c1143d6e0f931196e5f43a65beaa9`
+  on branch `codex/dev256-sandbox-callback-fix`; installed CRM Test remains
+  `2.1.0-dev.257` from origin commit
+  `b4a12928aa3678757d5c725a7f1d3861707c9c9c`, migration 160. The working
+  tree contained only the Stage A close-out evidence changes listed by Git.
+- Authorized development scope: a one-page decision addendum plus isolated
+  Stage B source work for recipient import and duplicate handling, reusable
+  audience segments, 360dialog template catalogue synchronization, and an
+  Agent-draft / Manager-or-Director-approval campaign flow. This increment
+  must remain draft-only and must not dispatch provider messages.
+- Open activation decisions remain external to this increment: dedicated
+  staging SIM/number, inbound-enquiry scope, opt-in sources and evidence,
+  sending hours/frequency/spend/Meta-tier limits, languages and AI provider.
+  Existing CRM workflows, production, website, REM, live number and provider
+  configuration remain unchanged.
+- Development rollback is the source baseline above. The hosted rollback point
+  remains the verified DEV257 recovery set and exact-root worker evidence from
+  Stage A. A fresh paired backup, GitHub-origin package and exact candidate
+  approval are required before any CRM Test deployment.
+- Increment 1 verification completed locally: focused Stage B domain tests 7/7;
+  full governed regression 1,529 passed, 95 intentionally skipped, zero failed;
+  migrations 001-161 passed in a clean isolated PostgreSQL fixture with 295
+  public tables and 11 WhatsApp tables; and the Stage A durable PostgreSQL test
+  passed 9/9. No hosted environment or provider configuration was changed.
+
+## WA-001 Stage A sandbox outbound acceptance — 1 November 2026
+
+- CRM Test DEV257 only. The user approved temporary sandbox callback and send
+  activation with a local request budget of five and a single fixed test
+  recipient. Production, the live receiver, REM and the website were excluded.
+- One 360dialog predefined sandbox template and one verified-conversation text
+  reply were each submitted once. Both were accepted and reached final `read`
+  status; no retry occurred. Two of five local request reservations were used.
+- The sandbox predefined template contains 360dialog test disclaimer/privacy
+  wording. It is not an NYSA template and is not suitable for production. The
+  live rollout must use NYSA-branded templates approved in Meta/WhatsApp Manager.
+- The approved phone then sent `STOP`. CORE durably recorded one opt-out and
+  automatically paused sandbox sending. The protected Admin screen reports two
+  accepted/read attempts, one opt-out, one verified reply and three unused local
+  reservations.
+- Pre-close hosted verification at `2026-11-01T08:40:13.220Z` confirmed DEV257
+  origin `b4a12928aa3678757d5c725a7f1d3861707c9c9c`, green database readiness,
+  exactly one exact-root command/cwd-verified worker (`1244645`), two attempts,
+  one verified inbound reply and paused connection state. Following explicit
+  close-out approval, both sandbox activation flags were returned to false and
+  the non-active request budget to ten. The controlled restart completed at
+  `2026-11-01T08:41:00.167Z`; database readiness was green and exactly one
+  exact-root worker (`1373531`) served readiness. The connection remains paused,
+  the opt-out and audit evidence remain recorded, and production/main/REM/website
+  are unchanged.
+
 ## DEV257 dual-identity correction baseline — 1 November 2026
 
 - Target CRM Test only, installed DEV256 origin e9af2be, migrations160,
