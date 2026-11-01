@@ -47,8 +47,10 @@ test('sandbox durable lifecycle, quota, encryption and concurrent idempotency on
  }await new Promise(resolve=>setTimeout(resolve,20));return new Response(JSON.stringify({messages:[{id:'wamid.synthetic:'+calls}]}),{status:201});};
  const send=body=>sendSandboxTest({body,actorId,env,transaction,fetchImpl});
  const payload={actionKey:randomUUID(),confirmed:true,type:'template',templateName:'disclaimer'};
+ let firstAttemptId;
  await t.test('concurrent same-action sends submit exactly once and survive a fresh transaction',async()=>{
   const results=await Promise.all([send(payload),send(payload)]);assert.equal(calls,1);assert.equal(results[0].attemptId,results[1].attemptId);
+  firstAttemptId=results[0].attemptId;
   assert.equal((await transaction(c=>sandboxStatus(c,env))).attempts[0].delivery_state,'read');
   const again=await send(payload);assert.equal(again.state,'accepted');assert.equal(calls,1);
   await assert.rejects(()=>send({...payload,templateName:'first_welcome_messsage',parameters:['Synthetic']}),/ACTION_CONFLICT/);
@@ -61,12 +63,18 @@ test('sandbox durable lifecycle, quota, encryption and concurrent idempotency on
   const changed=structuredClone(body);changed.entry[0].changes[0].value.messages[0].text.body='Altered';
   await assert.rejects(()=>transaction(c=>receiveSandboxEvents({body:changed,env},c)),/EVENT_CONFLICT/);
  });
+ await t.test('text reply uses durable inbound time and rejects a browser-supplied window',async()=>{
+  const request={actionKey:randomUUID(),confirmed:true,type:'text',text:'Synthetic requested reply'};
+  await assert.rejects(()=>send({...request,lastInboundAt:new Date().toISOString()}),/SEND_INVALID/);
+  await assert.rejects(()=>sendSandboxTest({body:request,actorId,env:{...env,WHATSAPP_SANDBOX_CALLBACK_APPROVED:'false'},transaction,fetchImpl}),/SANDBOX_DISABLED/);
+  assert.equal((await send(request)).state,'accepted');
+ });
  await t.test('out-of-order callbacks preserve read state and receipt can precede stored outcome',async()=>{
   for(const status of ['read','sent','delivered','failed']){
    const body={entry:[{changes:[{field:'messages',value:{statuses:[{id:'wamid.synthetic:1',recipient_id:recipient.slice(1),status,timestamp:String(Math.floor(Date.now()/1000))}]}}]}]};
    await transaction(c=>receiveSandboxEvents({body,env},c));
   }
-  const status=await transaction(c=>sandboxStatus(c,env));assert.equal(status.attempts[0].delivery_state,'read');
+  const status=await transaction(c=>sandboxStatus(c,env));assert.equal(status.attempts.find(x=>x.id===firstAttemptId).delivery_state,'read');
  });
  await t.test('quota serializes different requests and same-key credential rotation cannot reset it',async()=>{
   const results=await Promise.allSettled(Array.from({length:3},()=>send({...payload,actionKey:randomUUID()})));
