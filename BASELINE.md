@@ -1,5 +1,35 @@
 # CRM Development Baseline
 
+## WA-001 DEV259a approved implementation extension — 1 November 2026
+
+- Reproducible source rollback point: clean, GitHub-advertised team-scope
+  correction commit `d7b34a3cab372bfcfa8b0fc4c7ccb57383f7c862` on branch
+  `codex/wa001-stage-b-foundation`.
+  Development is isolated on `codex/wa001-dev259a`; the target is CRM Test
+  only. No hosted application, database, configuration, WhatsApp provider,
+  website, REM or production state is changed by this source work.
+- Approved extension: Meta-normalized template names; separate Internal and
+  Meta statuses; Manager/Director creator auto-approval (Meta remains Not
+  submitted); CSV and explicit-`Recipients`-sheet XLSX imports; maintained
+  source/provenance and consent values; purchased-list evidence without an
+  automatic marketing exclusion; reusable segments; draft-only campaigns;
+  materials; opt-out/suppression foundations; and the owner-scoped
+  conversation inbox with separate 24-hour reply and 72-hour CTWA pricing
+  indicators plus Manager/Director assignment controls.
+- Candidate remains `2.1.0-dev.259` and adds migration
+  `164_whatsapp_dev259a_workspaces.sql`. It adds no send endpoint, provider
+  submission, automated follow-up, AI response, live-number dependency or
+  calling workflow. Conversation-message records have a 12-month retention
+  field; actual connected-number ingestion remains a separately approved
+  release.
+- Source acceptance completed so far: focused WhatsApp checks pass, the
+  generated XLSX contract parses successfully and the governed release suite
+  passes 1,539 with 96 intentional fixture-gated skips and zero failures. A
+  local PostgreSQL fixture is not listening in this worktree, so migration 164
+  execution and authenticated database lifecycle verification remain mandatory
+  before CRM Test installation. Exact origin packaging, provenance, fresh
+  rollback backup and exact-candidate approval also remain mandatory.
+
 ## WA-001 DEV259 team-scope correction — 1 November 2026
 
 - Source rollback point: clean, GitHub-advertised DEV259 commit

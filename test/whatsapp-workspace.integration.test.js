@@ -59,15 +59,16 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     assert.equal(approved.version.metaStatus,'not_submitted');
 
     const rows=[
-      {name:'Synthetic Prospect One',phone:'+971500000741',email:'prospect-one@example.invalid',source:'synthetic_test',consentStatus:'documented',consentEvidenceRef:'synthetic-consent-1',tags:['investor'],requirements:{areas:['Dubai Marina'],businessType:'Sale',budgetMax:2500000}},
-      {name:'Synthetic Prospect Duplicate',phone:'+971500000741',email:'prospect-two@example.invalid',source:'synthetic_test',consentStatus:'not_documented',tags:['investor']}
+      {name:'Synthetic Prospect One',phone:'+971500000741',email:'prospect-one@example.invalid',source:'synthetic_test',consentStatus:'verified',consentEvidenceRef:'synthetic-consent-1',tags:['investor'],requirements:{areas:['Dubai Marina'],businessType:'Sale',budgetMax:2500000}},
+      {name:'Synthetic Prospect Duplicate',phone:'+971500000741',email:'prospect-two@example.invalid',source:'synthetic_test',consentStatus:'evidence_pending',tags:['investor']}
     ];
-    const preview=await request('/crm/whatsapp-workspace/recipient-imports/preview',{method:'POST',body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows}});
+    const source={sourceType:'event'};
+    const preview=await request('/crm/whatsapp-workspace/recipient-imports/preview',{method:'POST',body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows,...source}});
     assert.deepEqual(preview.counts,{ready:1,review_required:1,invalid:0});
-    const committed=await request('/crm/whatsapp-workspace/recipient-imports/commit',{method:'POST',status:201,body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows,previewHash:preview.previewHash,reviewToken:preview.reviewToken,decisions:[{rowNumber:2,disposition:'excluded'}]}});
+    const committed=await request('/crm/whatsapp-workspace/recipient-imports/commit',{method:'POST',status:201,body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows,...source,previewHash:preview.previewHash,reviewToken:preview.reviewToken,decisions:[{rowNumber:2,disposition:'excluded'}]}});
     ids.batch=committed.batch.id;assert.equal(committed.includedCount,1);
 
-    const segment=await request('/crm/whatsapp-workspace/segments',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} consented`,description:'Synthetic documented recipients',definition:{batchIds:[ids.batch],consentStatus:'documented',tagsAny:['investor']}}});
+    const segment=await request('/crm/whatsapp-workspace/segments',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} consented`,description:'Synthetic verified recipients',definition:{batchIds:[ids.batch],consentStatus:'verified',tagsAny:['investor']}}});
     ids.segment=segment.segment.id;
     const material=await request('/crm/whatsapp-workspace/materials',{method:'POST',status:201,body:{teamId:teams.main,title:`${prefix} brochure`,materialType:'brochure',description:'Synthetic metadata-only catalogue item'}});
     ids.material=material.material.id;assert.equal(material.material.storageKey,null);

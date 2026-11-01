@@ -17,7 +17,14 @@ Scope: WA-001 Stage B, number-independent Template Library increment
   `https://nysarealty.com/go/{{1}}`; no redirect endpoint or click tracking is
   activated in this increment.
 - Every named header/body variable requires an approval sample.
-- Template names accept lowercase letters, numbers and underscores only.
+- Template names are normalized for Meta while the user types and before the
+  draft is saved: trim, convert to lowercase, replace spaces/hyphens and other
+  unsupported runs with one underscore, collapse repeated underscores, and
+  remove leading/trailing underscores. The form displays the resulting Meta
+  name for review (for example, `Marina Launch - EN` becomes
+  `marina_launch_en`). The normalized result must still be non-empty, unique in
+  its governed scope and contain lowercase letters, numbers and underscores
+  only; unsupported input is never sent to Meta unchanged.
 - Character limits and counters are header 60, body 1,024 and footer 60.
 - The live WhatsApp-style preview renders sample-substituted content, selected
   header media, footer, buttons and the resolved dynamic URL example.

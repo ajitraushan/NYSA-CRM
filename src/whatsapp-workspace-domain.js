@@ -18,15 +18,19 @@ const stable=value=>{
 
 export const workspaceHash=value=>crypto.createHash('sha256').update(JSON.stringify(stable(value))).digest('hex');
 
+export function normalizeMetaTemplateName(value){
+  return String(value??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'').slice(0,512);
+}
+
 export function validateTemplateDraft(value={}){
   const rawName=String(value.name??'').trim(),rawHeader=String(value.headerText??'').trim(),rawBody=String(value.bodyText??'').trim(),rawFooter=String(value.footerText??'').trim();
-  const name=clean(rawName,512),languageCode=clean(value.languageCode,20),category=clean(value.category,30).toLowerCase(),headerType=clean(value.headerType,20).toLowerCase()||'none',headerText=headerType==='text'?clean(rawHeader,60)||null:null,headerMaterialId=headerType==='image'||headerType==='video'||headerType==='document'?clean(value.headerMaterialId,36)||null:null,bodyText=clean(rawBody,1024),footerText=clean(rawFooter,60)||null;
+  const name=normalizeMetaTemplateName(rawName),languageCode=clean(value.languageCode,20),category=clean(value.category,30).toLowerCase(),headerType=clean(value.headerType,20).toLowerCase()||'none',headerText=headerType==='text'?clean(rawHeader,60)||null:null,headerMaterialId=headerType==='image'||headerType==='video'||headerType==='document'?clean(value.headerMaterialId,36)||null:null,bodyText=clean(rawBody,1024),footerText=clean(rawFooter,60)||null;
   const variableNames=[...new Set((Array.isArray(value.variableNames)?value.variableNames:String(value.variableNames||'').split(',')).map(item=>clean(item,40).toLowerCase()).filter(Boolean))];
   const inputSamples=value.variableSamples&&typeof value.variableSamples==='object'&&!Array.isArray(value.variableSamples)?value.variableSamples:{},variableSamples=Object.fromEntries(variableNames.map(item=>[item,clean(inputSamples[item],200)]));
   const inputButtons=Array.isArray(value.buttons)?value.buttons:[],buttons=inputButtons.map(item=>({type:clean(item?.type,20).toLowerCase(),text:clean(item?.text,25),url:clean(item?.url,2000)||null,sampleValue:clean(item?.sampleValue,500)||null}));
   const errors=[];
   if(name.length<3)errors.push('Template name must contain at least 3 characters');
-  if(rawName.length>512||!TEMPLATE_NAME.test(name))errors.push('Template name may contain lowercase letters, numbers and underscores only');
+  if(rawName.length>512||!TEMPLATE_NAME.test(name))errors.push('Template name could not be normalized to Meta format');
   if(!LANGUAGE.test(languageCode))errors.push('Language must use a code such as en or en_US');
   if(!CATEGORY.has(category))errors.push('Template category is invalid');
   if(!HEADER_TYPE.has(headerType))errors.push('Header type is invalid');
@@ -86,7 +90,7 @@ export function validateCampaignDraft(value={}){
 
 export function validateRecipientImport(value={}){
   const originalFileName=clean(value.originalFileName,240),rows=Array.isArray(value.rows)?value.rows:[],review=reviewWhatsAppRecipientRows(rows,{existingPhones:value.existingPhones||new Map()}),errors=[];
-  if(!originalFileName.toLowerCase().endsWith('.csv'))errors.push('Recipient import must be a CSV file');
+  if(!/\.(csv|xlsx)$/i.test(originalFileName))errors.push('Recipient import must be a CSV or XLSX file');
   return{valid:errors.length===0&&review.rows.length>0,errors,originalFileName,review,fileHash:workspaceHash(rows)};
 }
 

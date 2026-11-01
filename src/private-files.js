@@ -12,6 +12,7 @@ const TYPES={
   'video/quicktime':{extensions:['.mov'],magic:b=>b.length>=12&&b.subarray(4,8).toString('ascii')==='ftyp'&&b.subarray(8,12).toString('ascii')==='qt  '},
   'application/pdf':{extensions:['.pdf'],magic:b=>b.subarray(0,5).toString()==='%PDF-'},
   'text/plain':{extensions:['.txt'],magic:b=>!b.subarray(0,1024).includes(0)},
+  'text/csv':{extensions:['.csv'],magic:b=>!b.subarray(0,1024).includes(0)},
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document':{extensions:['.docx'],magic:b=>b[0]===0x50&&b[1]===0x4b},
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':{extensions:['.xlsx'],magic:b=>b[0]===0x50&&b[1]===0x4b}
 };

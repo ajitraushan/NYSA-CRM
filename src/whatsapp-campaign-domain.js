@@ -2,7 +2,9 @@ import crypto from 'node:crypto';
 
 export const WA_STAGE_B_MAX_IMPORT_ROWS=5000;
 export const WA_TEMPLATE_FRESHNESS_MS=5*60*1000;
-const CONSENT=new Set(['documented','not_documented','withdrawn']);
+export const WA_CONSENT_STATUSES=Object.freeze(['verified','evidence_pending','withdrawn','denied']);
+export const WA_SOURCE_TYPES=Object.freeze(['existing_crm','website_ctwa','property_portal','event','referral','purchased_list','other']);
+const CONSENT=new Set(WA_CONSENT_STATUSES);
 const TEMPLATE_STATUS=new Set(['approved','pending','rejected','paused','disabled','unknown']);
 const CAMPAIGN_STATUS=new Set(['draft','pending_approval','approved','returned','retired']);
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
@@ -37,9 +39,9 @@ export function reviewWhatsAppRecipientRows(rows,{existingPhones=new Map()}={}){
     if(!name)errors.push('Name is required');
     if(!phone)errors.push('Phone must be an E.164 number with country code');
     if(clean(source?.email)&&!normalizedEmail)errors.push('Email is invalid');
-    const consentStatus=CONSENT.has(clean(source?.consentStatus,30))?clean(source?.consentStatus,30):'not_documented';
+    const consentStatus=CONSENT.has(clean(source?.consentStatus,30))?clean(source?.consentStatus,30):'evidence_pending';
     const consentEvidenceRef=clean(source?.consentEvidenceRef,160)||null;
-    if(consentStatus==='documented'&&!consentEvidenceRef)errors.push('Documented consent requires an evidence reference');
+    if(consentStatus==='verified'&&!consentEvidenceRef)errors.push('Verified consent requires an evidence reference');
     const requirements=source?.requirements&&typeof source.requirements==='object'&&!Array.isArray(source.requirements)?stable(source.requirements):{};
     const tags=Array.isArray(source?.tags)?[...new Set(source.tags.map(item=>clean(item,80)).filter(Boolean))].sort():[];
     const duplicateInFile=phone&&firstByPhone.has(phone)?firstByPhone.get(phone):null;
@@ -82,10 +84,14 @@ export function recipientMatchesSegment(recipient,definition){
 
 export function recipientEligibility(recipient){
   if(!normalizeWhatsAppPhone(recipient?.phone))return{eligible:false,reason:'invalid_phone'};
-  if(recipient?.suppressed===true||recipient?.consentStatus==='withdrawn')return{eligible:false,reason:'suppressed'};
-  if(recipient?.consentStatus!=='documented'||!clean(recipient?.consentEvidenceRef,160))return{eligible:false,reason:'consent_not_documented'};
+  if(recipient?.suppressed===true||['withdrawn','denied'].includes(recipient?.consentStatus))return{eligible:false,reason:'suppressed'};
+  if(recipient?.consentStatus!=='verified'||!clean(recipient?.consentEvidenceRef,160))return{eligible:false,reason:'consent_not_verified'};
   return{eligible:true,reason:'eligible'};
 }
+
+const OPT_OUT_KEYWORDS=new Set(['stop','stop promotions','unsubscribe','توقف','إيقاف','إلغاء الاشتراك','أوقف الرسائل','لا أريد رسائل']);
+export function normalizeOptOutText(value){return clean(value,160).normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase('und');}
+export function isWhatsAppOptOut(value){return OPT_OUT_KEYWORDS.has(normalizeOptOutText(value));}
 
 export function normalize360dialogTemplates(payload,{syncedAt=new Date().toISOString()}={}){
   const items=Array.isArray(payload)?payload:Array.isArray(payload?.waba_templates)?payload.waba_templates:Array.isArray(payload?.data)?payload.data:[];

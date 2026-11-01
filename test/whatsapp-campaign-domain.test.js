@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {
   WA_STAGE_B_MAX_IMPORT_ROWS,assertStageBDispatchDisabled,campaignCommand,normalize360dialogTemplates,
   normalizeAudienceSegmentDefinition,normalizeWhatsAppPhone,recipientEligibility,recipientMatchesSegment,
-  reviewWhatsAppRecipientRows,templateEligibility
+  isWhatsAppOptOut,reviewWhatsAppRecipientRows,templateEligibility
 } from '../src/whatsapp-campaign-domain.js';
 
 test('Stage B recipient review requires name and E.164 phone and never invents consent',()=>{
   const result=reviewWhatsAppRecipientRows([{name:'Prospect One',phone:'+971 50 000 0001',email:'ONE@EXAMPLE.TEST',requirements:{businessType:'Sale'}}]);
   assert.equal(result.counts.ready,1);assert.equal(result.rows[0].phone,'+971500000001');assert.equal(result.rows[0].email,'one@example.test');
-  assert.equal(result.rows[0].consentStatus,'not_documented');assert.deepEqual(recipientEligibility(result.rows[0]),{eligible:false,reason:'consent_not_documented'});
+  assert.equal(result.rows[0].consentStatus,'evidence_pending');assert.deepEqual(recipientEligibility(result.rows[0]),{eligible:false,reason:'consent_not_verified'});
   assert.throws(()=>reviewWhatsAppRecipientRows(new Array(WA_STAGE_B_MAX_IMPORT_ROWS+1).fill({name:'x',phone:'+971500000001'})),/1 to 5000/);
 });
 
@@ -21,17 +21,19 @@ test('Stage B duplicate review identifies within-file and existing matches witho
   assert.equal(result.rows[1].duplicateInFile,1);assert.equal(result.rows[2].existingMatch.id,'customer-1');
 });
 
-test('documented consent requires evidence and STOP state remains ineligible',()=>{
-  const invalid=reviewWhatsAppRecipientRows([{name:'A',phone:'+971500000003',consentStatus:'documented'}]);
+test('verified consent requires evidence and opt-out states remain ineligible',()=>{
+  const invalid=reviewWhatsAppRecipientRows([{name:'A',phone:'+971500000003',consentStatus:'verified'}]);
   assert.equal(invalid.rows[0].action,'invalid');
   assert.deepEqual(recipientEligibility({phone:'+971500000003',consentStatus:'withdrawn',consentEvidenceRef:'evt-1'}),{eligible:false,reason:'suppressed'});
-  assert.deepEqual(recipientEligibility({phone:'+971500000003',consentStatus:'documented',consentEvidenceRef:'agreement-1'}),{eligible:true,reason:'eligible'});
+  assert.deepEqual(recipientEligibility({phone:'+971500000003',consentStatus:'verified',consentEvidenceRef:'agreement-1'}),{eligible:true,reason:'eligible'});
+  for(const value of ['STOP','Stop promotions','UNSUBSCRIBE','توقف','إلغاء الاشتراك'])assert.equal(isWhatsAppOptOut(value),true);
+  assert.equal(isWhatsAppOptOut('please stop by tomorrow'),false);
 });
 
 test('saved audience definitions accept only bounded governed filters',()=>{
-  const definition=normalizeAudienceSegmentDefinition({sources:['event'],tagsAny:['investor'],areasAny:['Dubai Marina'],consentStatus:'documented',budgetMin:1000000});
-  assert.equal(recipientMatchesSegment({source:'event',tags:['investor'],consentStatus:'documented',requirements:{areas:['Dubai Marina'],budgetMax:2500000}},definition),true);
-  assert.equal(recipientMatchesSegment({source:'event',tags:['investor'],consentStatus:'not_documented',requirements:{areas:['Dubai Marina'],budgetMax:2500000}},definition),false);
+  const definition=normalizeAudienceSegmentDefinition({sources:['event'],tagsAny:['investor'],areasAny:['Dubai Marina'],consentStatus:'verified',budgetMin:1000000});
+  assert.equal(recipientMatchesSegment({source:'event',tags:['investor'],consentStatus:'verified',requirements:{areas:['Dubai Marina'],budgetMax:2500000}},definition),true);
+  assert.equal(recipientMatchesSegment({source:'event',tags:['investor'],consentStatus:'evidence_pending',requirements:{areas:['Dubai Marina'],budgetMax:2500000}},definition),false);
   assert.throws(()=>normalizeAudienceSegmentDefinition({sql:'1=1'}),/Unsupported segment filter/);
 });
 

@@ -22,6 +22,12 @@ Implemented source foundations:
 - migration 161 for import batches, staged recipients, segments, template
   catalogue, campaign drafts/revisions and a dedicated audit trail.
 
+The approved recipient-import contract is maintained in
+`RECIPIENT_UPLOAD_SPECIFICATION.md`. DEV259a implements it in source: recipient
+source type is a controlled upload-level selection, purchased lists are
+explicitly identified without automatic rejection, and provenance remains
+separate from consent eligibility. The candidate is not yet deployed.
+
 ## Verification
 
 - Focused domain tests: 7 passed, 0 failed.
@@ -89,3 +95,22 @@ Implemented source foundations:
 Any CRM Test installation still requires a committed and GitHub-advertised
 candidate, mandatory origin-only package, verified provenance, fresh paired
 recovery and exact deployment approval. Sending remains disabled.
+
+## DEV259a approved extension
+
+- CSV and XLSX imports share the same contract. XLSX reads only `Recipients`;
+  the downloadable template also carries `Instructions` and maintained
+  dropdown values.
+- Consent states are `verified`, `evidence_pending`, `withdrawn` and `denied`.
+  Source provenance, including purchased-list acquisition evidence, is stored
+  separately and never manufactures recipient consent.
+- Template names are normalized to Meta's lowercase underscore format. Agent
+  work is submitted for internal review; Manager/Director-created versions are
+  internally auto-approved while Meta remains `Not submitted`.
+- The number-independent inbox is owner-scoped for Agents and team/company
+  scoped for Managers/Directors. It displays separate 24-hour reply and
+  72-hour CTWA pricing indicators, unread notifications and governed
+  reassignment/takeover controls; sending is unavailable.
+- Migration 164 adds provenance, suppression and 12-month-retention fields plus
+  conversation, message, notification and assignment-history records. It adds
+  no provider submission or dispatch table.
