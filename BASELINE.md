@@ -1,5 +1,40 @@
 # CRM Development Baseline
 
+## DEV262 CRM Test simulated WhatsApp provider — 3 November 2026
+
+- Authorized scope is source implementation and synthetic verification of the
+  attached CRM Test WhatsApp-provider-stub specification. Target release is
+  `2.1.0-dev.262`; branch `codex/dev262-whatsapp-provider-stub`; reproducible
+  source/rollback point is GitHub-advertised commit
+  `4905e89d1812391bdd8cc80a5fc2a51cae7efbf6`. No hosted deployment,
+  configuration activation or external connector operation is authorized by
+  this development request.
+- Installed CRM Test baseline is DEV261. Production, website, REM, Meta,
+  360dialog, live numbers, live API keys, AI and calling remain outside scope
+  and must not be changed. Authenticated DEV261 browser acceptance is a
+  separate deployment close-out item; this source work does not rewrite that
+  evidence.
+- DEV262 is default-off and startup must fail closed if simulation is enabled
+  anywhere except `LEAD_RESPONSE_ENVIRONMENT=crm-test`, if the provider URL is
+  not the exact loopback stub route, or if live WhatsApp credentials coexist.
+  The initial bounded synthetic range is `+971509000000` through
+  `+971509999999`. Simulator controls and load-run cleanup are Administrator
+  only; existing Agent/Manager/Director workspace ownership remains unchanged.
+- DEV262 adds migration 166. All simulated conversations, messages, provider
+  events and load runs are explicitly marked and filterable; payload evidence
+  is stored as hashes, not customer content. The local provider supports
+  template outcomes, message identifiers, sent/delivered/read/failed events,
+  inbound text/media/button shapes, CTWA markers, opt-out processing,
+  idempotent replay, 23/25/71/73-hour window tests, controlled provider faults,
+  repeatable load generation and one-run cleanup.
+- Before any later CRM Test deployment: commit and advertise the exact source
+  through GitHub origin, package only with the mandatory detached-origin
+  builder, verify package provenance, use the versioned direct-node operator
+  from outside the app root, take and verify the scoped app/database rollback
+  set in the same run, and require readiness plus exactly one verified
+  exact-root worker. Any external network dependency or non-synthetic recipient
+  fails acceptance.
+
 ## DEV261 WhatsApp workspace runtime blocker — 2 November 2026
 
 - Target is CRM Test only. The user reports DEV260 `2.1.0-dev.260` is

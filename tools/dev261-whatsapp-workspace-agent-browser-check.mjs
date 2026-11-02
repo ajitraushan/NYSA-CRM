@@ -26,8 +26,9 @@ const sections=[
 
 await fs.rm(evidenceDir,{recursive:true,force:true});
 await fs.mkdir(evidenceDir,{recursive:true});
+const userDataDir=await fs.mkdtemp(path.join(os.tmpdir(),'nysa-dev261-chrome-'));
 
-const browser=await puppeteer.launch({executablePath,headless:true,args:['--no-sandbox','--disable-gpu','--no-first-run']});
+const browser=await puppeteer.launch({executablePath,headless:true,userDataDir,args:['--no-sandbox','--disable-gpu','--no-first-run']});
 const consoleErrors=[];
 const pageErrors=[];
 const results=[];
@@ -36,11 +37,11 @@ try{
   await page.setViewport({width:1440,height:1000,deviceScaleFactor:1});
   page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
   page.on('pageerror',error=>pageErrors.push(error.message));
-  await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><title>DEV261 Agent workspace check</title><style>${baseStyle}</style></head><body><main id="view" class="main"></main></body></html>`);
+  await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><title>DEV262 Agent workspace check</title><style>${baseStyle}</style></head><body><main id="view" class="main"></main></body></html>`);
   await page.addStyleTag({path:path.resolve(root,'public/ui-design-system.css')});
   await page.evaluate(()=>{
     const id=value=>`${String(value).padStart(8,'0')}-0000-4000-8000-000000000000`;
-    window.__DEV261_AGENT_FIXTURE__=true;
+    window.__DEV262_AGENT_FIXTURE__=true;
     window.ME={id:id(1),jobRole:'sales_agent',displayName:'Synthetic Agent'};
     window.$=selector=>document.querySelector(selector);
     window.fmtDate=value=>value?'2 Nov 2026':'—';
@@ -79,7 +80,7 @@ try{
   assert.deepEqual(pageErrors,[],'The actual release bundle raised a browser page error');
   assert.deepEqual(consoleErrors,[],'The actual release bundle wrote a console error');
   const evidence={
-    candidate:'DEV261 pre-approval source',
+    candidate:'DEV262 pre-approval source',
     role:'Sales Agent',
     synthetic:true,
     releaseFile:path.relative(root,releaseFile).replaceAll('\\','/'),
@@ -94,4 +95,5 @@ try{
   console.log(JSON.stringify(evidence));
 }finally{
   await browser.close();
+  await fs.rm(userDataDir,{recursive:true,force:true,maxRetries:5,retryDelay:200}).catch(()=>{});
 }

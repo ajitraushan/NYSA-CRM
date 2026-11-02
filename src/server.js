@@ -47,6 +47,8 @@ import { createLeadChannelInboxRoutes } from './routes/lead-channel-inbox.js';
 import { createNativeLeadWhatsAppRoutes } from './lead-whatsapp.js';
 import { createWhatsAppSandboxAdminRoutes, createWhatsAppSandboxInboxRoutes } from './routes/whatsapp-sandbox.js';
 import whatsappWorkspaceRoutes from './routes/whatsapp-workspace.js';
+import {createWhatsAppSimulatedProviderRoutes,createWhatsAppSimulationControlRoutes} from './routes/whatsapp-simulated-provider.js';
+import {assertSimulatedProviderEnvironment} from './whatsapp-simulated-provider.js';
 import { leadConnectionEnvironment } from './lead-integration-connections.js';
 import { requireAuth } from './auth.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
@@ -74,6 +76,8 @@ app.mount('/api', createNativeLeadWhatsAppRoutes({transaction,loadEnvironment:lo
 app.mount('/api', createWhatsAppSandboxAdminRoutes({requireAuth,transaction}));
 app.mount('/api', createWhatsAppSandboxInboxRoutes({transaction}));
 app.mount('/api', whatsappWorkspaceRoutes);
+app.mount('/api', createWhatsAppSimulatedProviderRoutes());
+app.mount('/api', createWhatsAppSimulationControlRoutes());
 app.mount('/api', listingIntakeRoutes);
 app.mount('/api', listingMappingRoutes);
 app.mount('/api', crmRoutes);
@@ -116,6 +120,7 @@ const shutdown = createShutdownHandler({
 
 async function start() {
   writeRuntimeEvent('starting');
+  assertSimulatedProviderEnvironment();
   await migrate();
   startAdviceWorker();
   startWebIntakeWorker({transaction});

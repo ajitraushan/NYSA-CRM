@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { Router } from '../lib/http-kit.js';
 import { one, execute, transaction, uuid, audit, checkDatabaseReadiness } from '../db.js';
 import { hashPassword, verifyPassword, createSession, destroySession, requireAuth, publicBroker } from '../auth.js';
+import {simulatedProviderConfig} from '../whatsapp-simulated-provider.js';
 
 const r = Router();
 const require = createRequire(import.meta.url);
@@ -13,7 +14,8 @@ const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
 
 r.get('/health', (req, res) => {
-  res.json({ ok: true, process: 'ready', version: applicationVersion });
+  const simulation=simulatedProviderConfig();
+  res.json({ ok: true, process: 'ready', version: applicationVersion, ...(simulation.enabled?{whatsappProvider:'simulated'}:{}) });
 });
 
 r.get('/readiness', async (req, res) => {

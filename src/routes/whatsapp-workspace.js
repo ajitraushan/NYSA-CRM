@@ -7,6 +7,7 @@ import {campaignCommand,classifyWhatsAppSuppression,recipientEligibility,recipie
 import {displayMetaStatus,normalizeSegmentDraft,normalizeWhatsAppPhone,recipientDecision,validateCampaignDraft,validateMaterialDraft,validateRecipientImport,validateTemplateDraft,workspaceHash} from '../whatsapp-workspace-domain.js';
 import {decodeAndValidateFile,readPrivate,removePrivate,savePrivate} from '../private-files.js';
 import {inspectWhatsAppRecipientFile,parseWhatsAppRecipientFile,validateRecipientBatchMetadata} from '../whatsapp-recipient-import.js';
+import {simulatedProviderConfig} from '../whatsapp-simulated-provider.js';
 
 const r=Router(),operational=new Set(['sales_agent','manager','director']),creator=new Set(['sales_agent','manager','director']);
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
@@ -110,7 +111,7 @@ function inboxScope(broker,params){
 r.get('/crm/whatsapp-workspace',async(req,res)=>{
   const result=await transaction(async client=>{
     const params=[],where=scope('t',req.broker,params),templates=await many(`SELECT t.id,t.template_reference,t.name,t.owner_team_id,t.lifecycle_status,t.name_locked_at,t.created_at,team.name AS team_name,
-      v.id AS version_id,v.version_number,v.language_code,v.category,v.header_type,v.header_text,v.header_material_id,v.body_text,v.footer_text,v.variable_names,v.variable_samples,v.buttons,v.internal_status,v.meta_status,v.prepared_by,v.submitted_at,v.reviewed_by,v.reviewed_at,v.review_reason,v.updated_at,
+      v.id AS version_id,v.version_number,v.language_code,v.category,v.header_type,v.header_text,v.header_material_id,v.body_text,v.footer_text,v.variable_names,v.variable_samples,v.buttons,v.internal_status,v.meta_status,v.simulated_provider_status,v.simulated_provider_status_at,v.simulated_provider_reason,v.prepared_by,v.submitted_at,v.reviewed_by,v.reviewed_at,v.review_reason,v.updated_at,
       hm.title AS header_material_title,hm.media_type AS header_material_media_type,hm.file_name AS header_material_file_name,
       creator.name AS prepared_by_name,reviewer.name AS reviewed_by_name
       FROM wa_message_templates t JOIN teams team ON team.id=t.owner_team_id
@@ -122,7 +123,11 @@ r.get('/crm/whatsapp-workspace',async(req,res)=>{
     const recipientParams=[],batchWhere=scope('b',req.broker,recipientParams),batches=await many(`SELECT b.*,team.name AS team_name,u.name AS created_by_name FROM wa_recipient_import_batches b LEFT JOIN teams team ON team.id=b.owner_team_id JOIN brokers u ON u.id=b.created_by WHERE ${batchWhere} ORDER BY b.created_at DESC LIMIT 100`,recipientParams,client);
     const campaignParams=[],campaignWhere=scope('c',req.broker,campaignParams),campaigns=await many(`SELECT c.*,s.name AS segment_name,t.name AS template_name,v.version_number AS template_version_number,v.meta_status,team.name AS team_name,p.name AS prepared_by_name,d.name AS decision_by_name,
       (SELECT COUNT(*)::int FROM wa_campaign_materials cm WHERE cm.campaign_id=c.id) AS material_count,
-      (SELECT COALESCE(array_agg(cm.material_id),ARRAY[]::uuid[]) FROM wa_campaign_materials cm WHERE cm.campaign_id=c.id) AS material_ids
+      (SELECT COALESCE(array_agg(cm.material_id),ARRAY[]::uuid[]) FROM wa_campaign_materials cm WHERE cm.campaign_id=c.id) AS material_ids,
+      (SELECT COUNT(*)::int FROM wa_campaign_approval_recipients ar WHERE ar.campaign_id=c.id AND ar.revision=c.approved_revision AND ar.simulated_provider_message_id IS NOT NULL) AS simulated_sent_count,
+      (SELECT COUNT(*)::int FROM wa_campaign_approval_recipients ar WHERE ar.campaign_id=c.id AND ar.revision=c.approved_revision AND ar.simulated_status IN ('delivered','read')) AS simulated_delivered_count,
+      (SELECT COUNT(*)::int FROM wa_campaign_approval_recipients ar WHERE ar.campaign_id=c.id AND ar.revision=c.approved_revision AND ar.simulated_status='read') AS simulated_read_count,
+      (SELECT COUNT(*)::int FROM wa_campaign_approval_recipients ar WHERE ar.campaign_id=c.id AND ar.revision=c.approved_revision AND ar.simulated_status='failed') AS simulated_failed_count
       FROM wa_campaign_drafts c JOIN wa_audience_segments s ON s.id=c.segment_id JOIN wa_message_template_versions v ON v.id=c.template_version_id JOIN wa_message_templates t ON t.id=v.template_id JOIN teams team ON team.id=c.owner_team_id JOIN brokers p ON p.id=c.prepared_by LEFT JOIN brokers d ON d.id=c.decision_by
       WHERE ${campaignWhere} ORDER BY c.updated_at DESC`,campaignParams,client);
     const countParams=[],countWhere=scope('b',req.broker,countParams),recipients=await many(`SELECT r.*,b.owner_team_id,b.batch_reference FROM wa_campaign_recipients r JOIN wa_recipient_import_batches b ON b.id=r.batch_id WHERE ${countWhere}`,countParams,client);
@@ -136,8 +141,9 @@ r.get('/crm/whatsapp-workspace',async(req,res)=>{
       (SELECT body FROM wa_conversation_messages m WHERE m.conversation_id=c.id ORDER BY m.occurred_at DESC LIMIT 1) AS last_message
       FROM wa_conversations c JOIN teams team ON team.id=c.owner_team_id LEFT JOIN brokers agent ON agent.id=c.owner_agent_id
       WHERE ${conversationWhere} ORDER BY c.last_activity_at DESC LIMIT 200`,[...inboxParams,req.broker.id],client);
-    const now=Date.now();for(const item of conversations){item.replyWindowOpen=Boolean(item.lastCustomerMessageAt&&now-Date.parse(item.lastCustomerMessageAt)<=24*60*60*1000);item.ctwaFreeWindowOpen=Boolean(item.sourceType==='ctwa'&&item.ctwaEntryAt&&now-Date.parse(item.ctwaEntryAt)<=72*60*60*1000);}
-    return{teams:await accessibleTeams(req.broker,client),templates:templates.map(item=>({...item,metaStatusLabel:displayMetaStatus(item.metaStatus)})),materials,segments,batches,campaigns:campaigns.map(item=>({...item,metaStatusLabel:displayMetaStatus(item.metaStatus)})),conversations,reviewQueue,permissions:{canCreate:creator.has(req.broker.jobRole),canReview:['manager','director'].includes(req.broker.jobRole),canReassign:['manager','director'].includes(req.broker.jobRole)},provider:{connected:process.env.WHATSAPP_STAGE_B_TEST_NUMBER_CONNECTED==='true',submissionEnabled:false,sendingEnabled:false,status:'Not submitted'}};
+    const now=Date.now();for(const item of conversations){item.replyWindowOpen=Boolean(item.lastCustomerMessageAt&&now-Date.parse(item.lastCustomerMessageAt)<=24*60*60*1000);item.ctwaFreeWindowOpen=Boolean(['ctwa','website_ctwa'].includes(item.sourceType)&&item.ctwaEntryAt&&now-Date.parse(item.ctwaEntryAt)<=72*60*60*1000);}
+    const simulation=simulatedProviderConfig();
+    return{teams:await accessibleTeams(req.broker,client),templates:templates.map(item=>({...item,metaStatusLabel:displayMetaStatus(item.metaStatus)})),materials,segments,batches,campaigns:campaigns.map(item=>({...item,metaStatusLabel:displayMetaStatus(item.metaStatus)})),conversations,reviewQueue,permissions:{canCreate:creator.has(req.broker.jobRole),canReview:['manager','director'].includes(req.broker.jobRole),canReassign:['manager','director'].includes(req.broker.jobRole)},provider:{connected:process.env.WHATSAPP_STAGE_B_TEST_NUMBER_CONNECTED==='true',submissionEnabled:simulation.enabled,sendingEnabled:simulation.enabled,status:simulation.enabled?'Simulated':'Not submitted',simulated:simulation.enabled,badge:simulation.enabled?'SIMULATED':null,externalNetwork:false}};
   });
   res.setHeader('Cache-Control','no-store');res.json(result);
 });
@@ -233,10 +239,10 @@ r.post('/crm/whatsapp-workspace/recipient-suppressions',async(req,res)=>{
 r.get('/crm/whatsapp-workspace/conversations/:id',async(req,res)=>{
   const params=[req.params.id],where=inboxScope(req.broker,params),conversation=await one(`SELECT c.*,team.name AS team_name,agent.name AS owner_agent_name,locker.name AS reply_lock_owner_name,l.lead_reference,l.title AS lead_title FROM wa_conversations c JOIN teams team ON team.id=c.owner_team_id LEFT JOIN brokers agent ON agent.id=c.owner_agent_id LEFT JOIN brokers locker ON locker.id=c.reply_lock_owner_id LEFT JOIN leads l ON l.id=c.lead_id WHERE c.id=$1 AND ${where}`,params);
   if(!conversation)return res.status(404).json({error:'Conversation not found or outside your inbox scope'});
-  const messages=await many('SELECT id,direction,message_type,body,occurred_at FROM wa_conversation_messages WHERE conversation_id=$1 ORDER BY occurred_at ASC LIMIT 500',[conversation.id]);
+  const messages=await many('SELECT id,direction,message_type,body,occurred_at,simulated,provider_message_id,provider_status,provider_status_at FROM wa_conversation_messages WHERE conversation_id=$1 ORDER BY occurred_at ASC LIMIT 500',[conversation.id]);
   const agents=['manager','director'].includes(req.broker.jobRole)?await many(`SELECT DISTINCT b.id,b.name FROM brokers b WHERE b.status='active' AND b.job_role='sales_agent' AND (b.team_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=$1 AND tm.broker_id=b.id AND tm.ends_at IS NULL) OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=$1 AND ur.broker_id=b.id AND ur.status='active' AND ur.ends_at IS NULL)) ORDER BY b.name`,[conversation.ownerTeamId]):[];
   await execute('UPDATE wa_inbox_notifications SET read_at=NOW() WHERE conversation_id=$1 AND broker_id=$2 AND read_at IS NULL',[conversation.id,req.broker.id]);
-  const now=Date.now();res.json({conversation:{...conversation,replyWindowOpen:Boolean(conversation.lastCustomerMessageAt&&now-Date.parse(conversation.lastCustomerMessageAt)<=24*60*60*1000),ctwaFreeWindowOpen:Boolean(conversation.sourceType==='ctwa'&&conversation.ctwaEntryAt&&now-Date.parse(conversation.ctwaEntryAt)<=72*60*60*1000)},messages,agents,sendingEnabled:false});
+  const now=Date.now(),simulation=simulatedProviderConfig();res.json({conversation:{...conversation,replyWindowOpen:Boolean(conversation.lastCustomerMessageAt&&now-Date.parse(conversation.lastCustomerMessageAt)<=24*60*60*1000),ctwaFreeWindowOpen:Boolean(['ctwa','website_ctwa'].includes(conversation.sourceType)&&conversation.ctwaEntryAt&&now-Date.parse(conversation.ctwaEntryAt)<=72*60*60*1000)},messages,agents,sendingEnabled:Boolean(simulation.enabled&&conversation.simulated),simulationEnabled:simulation.enabled});
 });
 
 r.post('/crm/whatsapp-workspace/conversations/:id/reply-lock',async(req,res)=>{
