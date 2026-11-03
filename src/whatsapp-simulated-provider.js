@@ -102,7 +102,7 @@ export function buildSimulatedOutbound({to,type='text',text='',templateVersionId
 }
 
 export function buildSimulatedInbound({from,name='Synthetic WhatsApp Prospect',text='Hello from the simulator',teamId,agentId=null,actorId,sourceType='other',ctwa=false,button=null,media=null,eventId=crypto.randomUUID(),occurredAt=new Date().toISOString(),simulationRunId=null},config=simulatedProviderConfig()){
-  return {id:eventId,type:'inbound_message',simulation:true,from:assertSyntheticWhatsAppPhone(from,config),name:String(name).slice(0,160),text:String(text||'').slice(0,4096),team_id:teamId,agent_id:agentId,actor_id:actorId,source_type:ctwa?'website_ctwa':sourceType,ctwa_referral:ctwa?{source_url:'https://example.invalid/synthetic-ctwa',headline:'Synthetic CTWA'}:null,button:button||null,media:media||null,occurred_at:occurredAt,simulation_run_id:simulationRunId};
+  return {id:eventId,type:'inbound_message',simulation:true,from:assertSyntheticWhatsAppPhone(from,config),name:String(name).slice(0,160),text:String(text||'').slice(0,4096),team_id:teamId,agent_id:agentId,actor_id:actorId,source_type:ctwa?'ctwa':sourceType,ctwa_referral:ctwa?{source_url:'https://example.invalid/synthetic-ctwa',headline:'Synthetic CTWA'}:null,button:button||null,media:media||null,occurred_at:occurredAt,simulation_run_id:simulationRunId};
 }
 
 export function simulationBadge(value){return value?'SIMULATED':null;}

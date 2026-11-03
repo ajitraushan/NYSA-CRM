@@ -1,5 +1,28 @@
 # CRM Development Baseline
 
+## DEV263 in-process WhatsApp simulator correction — 4 November 2026
+
+- Target is CRM Test only. Installed baseline is DEV262 with migration 166 and
+  303 tables. Production, website, REM, Meta, 360dialog, live WhatsApp
+  credentials and live messaging are unchanged and outside this correction.
+- Read-only inspection of the CRM Test application error log confirmed that the
+  failed simulated template submission and simulated inbound request both ended
+  in `TypeError: fetch failed`, caused by `ECONNREFUSED 127.0.0.1:3000`. The
+  application was trying to call its own simulator route over a loopback HTTP
+  port that LiteSpeed/lsnode does not expose to the worker.
+- DEV263 removes that internal network dependency. Workspace, campaign and
+  administrative simulator actions call the same isolated simulator service in
+  process. The authenticated HTTP simulator boundary remains available for
+  explicit test harness calls; its scope, token and synthetic-recipient guards
+  are unchanged. Live-provider code is not relaxed or reused.
+- The correction also aligns synthetic CTWA source data with the migration-165
+  `ctwa` constraint and gives simulator failures a persistent, accessible UI
+  alert instead of relying only on a transient toast.
+- No schema or migration is added. Rollback is application-only to DEV262; the
+  database must not be automatically restored. Any hosted release must use the
+  approved canonical four-phase operator (stage, backup, install, smoke), with
+  separate approval for each phase and the mandatory exact-root worker checks.
+
 ## DEV262 phased CRM Test operator preparation — 4 November 2026
 
 - Scope is local, version-controlled deployment-tool preparation only. No CRM

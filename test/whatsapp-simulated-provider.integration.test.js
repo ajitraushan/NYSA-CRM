@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 const enabled=process.env.NYSA_WA_SIM_DB_TEST==='local-synthetic';
 const uuid=()=>crypto.randomUUID();
 
-test('DEV262 simulated provider crosses outbound HTTP and inbound webhook on the guarded PostgreSQL fixture',{skip:!enabled,timeout:120000},async()=>{
+test('DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable',{skip:!enabled,timeout:120000},async()=>{
   assert.equal(process.env.PGDATABASE,'nysa_test_fixture');
   assert.equal(process.env.PGUSER,'nysa_test_user');
   assert.ok(['127.0.0.1','localhost'].includes(process.env.PGHOST));
@@ -34,9 +34,9 @@ test('DEV262 simulated provider crosses outbound HTTP and inbound webhook on the
     for(const [role,id] of Object.entries(people))await db.execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[crypto.createHash('sha256').update(tokens[role]).digest('hex'),id]);
     const app=createApp();app.mount('/api',workspace);app.mount('/api',createWhatsAppSimulatedProviderRoutes());app.mount('/api',createWhatsAppSimulationControlRoutes());
     server=await new Promise((resolve,reject)=>{const listening=app.listen({port:0,host:'127.0.0.1'},()=>resolve(listening));listening.once('error',reject);});
-    process.env.PORT=String(server.address().port);process.env.WHATSAPP_SIMULATED_PROVIDER_URL=`http://127.0.0.1:${server.address().port}/api/providers/whatsapp-simulated`;
+    process.env.PORT=String(server.address().port);process.env.WHATSAPP_SIMULATED_PROVIDER_URL='http://127.0.0.1:9/api/providers/whatsapp-simulated';
     await request('/admin/whatsapp-simulation/control',{method:'POST',body:{paused:false,faultMode:'none'}});
-    const inbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'Please send details',ctwa:true,eventId:'dev262-inbound-1'}});
+    const inbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'Please send details',ctwa:true,eventId:'dev262-inbound-1'}});
     assert.equal(inbound.simulation,true);assert.ok(inbound.conversationId);created.conversations.push(inbound.conversationId);
     const agentWorkspace=await request('/crm/whatsapp-workspace',{as:'agent'});assert.equal(agentWorkspace.provider.simulated,true);assert.equal(agentWorkspace.conversations[0].simulated,true);
     await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}/simulated-send`,{method:'POST',as:'agent',status:202,body:{text:'Synthetic reply from CORE'}});
@@ -54,7 +54,7 @@ test('DEV262 simulated provider crosses outbound HTTP and inbound webhook on the
     const replay=await request(`/providers/whatsapp-simulated/events/${process.env.WHATSAPP_SIMULATED_PROVIDER_TOKEN}`,{method:'POST',auth:false,status:200,body:duplicate});
     assert.equal(first.duplicate,false);assert.equal(replay.duplicate,true);created.conversations.push(first.conversationId);
 
-    const stop=await request('/admin/whatsapp-simulation/inbound',{method:'POST',body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'STOP',eventId:'dev262-stop-1'}});assert.equal(stop.suppressionType,'opt_out');
+    const stop=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'STOP',eventId:'dev262-stop-1'}});assert.equal(stop.suppressionType,'opt_out');
     const suppression=await db.one("SELECT suppression_type FROM wa_contact_suppressions WHERE normalized_phone='+971509000001'");assert.equal(suppression.suppressionType,'opt_out');
     await request(`/admin/whatsapp-simulation/conversations/${inbound.conversationId}/backdate`,{method:'POST',body:{hours:25}});
     const closed=await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}`,{as:'agent'});assert.equal(closed.conversation.replyWindowOpen,false);
@@ -63,15 +63,19 @@ test('DEV262 simulated provider crosses outbound HTTP and inbound webhook on the
     await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}/simulated-send`,{method:'POST',as:'agent',status:429,body:{templateVersionId:template.version.id}});
     await request('/admin/whatsapp-simulation/control',{method:'POST',body:{paused:false,faultMode:'none'}});
     const run=await request('/admin/whatsapp-simulation/runs',{method:'POST',status:201,body:{seed:'repeatable-dev262',conversations:1,messages:0,optOuts:0,rate:5,configuration:{teams:[{teamId:team,agentIds:[people.agent]},{teamId:team,agentIds:[people.agent]},{teamId:team,agentIds:[people.agent,people.agent,people.agent,people.agent,people.agent,people.agent,people.agent,people.agent]}]}}});created.runs.push(run.run.id);
-    const runInbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',body:{from:'+971509000003',name:'Synthetic Cleanup',teamId:team,agentId:people.agent,text:'cleanup me',eventId:'dev262-run-1',simulationRunId:run.run.id}});created.conversations.push(runInbound.conversationId);
+    const runInbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000003',name:'Synthetic Cleanup',teamId:team,agentId:people.agent,text:'cleanup me',eventId:'dev262-run-1',simulationRunId:run.run.id}});created.conversations.push(runInbound.conversationId);
     const cleanup=await request(`/admin/whatsapp-simulation/runs/${run.run.id}/cleanup`,{method:'POST',body:{}});assert.equal(cleanup.cleanup.conversations,1);
   }finally{
     if(server){server.close();server.closeAllConnections?.();}
+    await db.execute('UPDATE wa_simulated_provider_control SET paused=TRUE,fault_mode=\'none\',updated_by=NULL,updated_at=NOW() WHERE singleton=TRUE');
     await db.execute("DELETE FROM wa_contact_suppressions WHERE normalized_phone LIKE '+971509%'");
     await db.execute('DELETE FROM wa_simulated_provider_events WHERE actor_id=ANY($1::uuid[]) OR simulation_run_id=ANY($2::uuid[])',[Object.values(people),created.runs]);
     if(created.conversations.length){const linked=await db.many('SELECT lead_id,contact_id FROM wa_conversations WHERE id=ANY($1::uuid[])',[created.conversations]);await db.execute('DELETE FROM wa_conversations WHERE id=ANY($1::uuid[])',[created.conversations]);const leadIds=linked.map(item=>item.leadId).filter(Boolean),contactIds=linked.map(item=>item.contactId).filter(Boolean);if(leadIds.length)await db.execute('DELETE FROM leads WHERE id=ANY($1::uuid[])',[leadIds]);if(contactIds.length)await db.execute('DELETE FROM contacts WHERE id=ANY($1::uuid[])',[contactIds]);}
+    const remainingContacts=await db.many("SELECT id FROM contacts WHERE created_by=ANY($1::uuid[]) AND notes LIKE 'DEV262 synthetic WhatsApp simulation record%'",[Object.values(people)]);
+    if(remainingContacts.length){const contactIds=remainingContacts.map(item=>item.id);await db.execute('DELETE FROM wa_conversations WHERE contact_id=ANY($1::uuid[])',[contactIds]);await db.execute('DELETE FROM leads WHERE contact_id=ANY($1::uuid[])',[contactIds]);await db.execute('DELETE FROM contacts WHERE id=ANY($1::uuid[])',[contactIds]);}
     if(created.templates.length){await db.execute('DELETE FROM wa_message_template_versions WHERE template_id=ANY($1::uuid[])',[created.templates]);await db.execute('DELETE FROM wa_message_templates WHERE id=ANY($1::uuid[])',[created.templates]);}
     if(created.runs.length)await db.execute('DELETE FROM wa_simulation_runs WHERE id=ANY($1::uuid[])',[created.runs]);
+    await db.execute('DELETE FROM wa_campaign_audit WHERE actor_id=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM audit_log WHERE performed_by=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM sessions WHERE broker_id=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM team_memberships WHERE team_id=$1',[team]);await db.execute('UPDATE brokers SET team_id=NULL WHERE id=ANY($1::uuid[])',[Object.values(people)]);

@@ -34,7 +34,7 @@ test('provider messages and inbound callbacks are visibly simulated and determin
   const config=simulatedProviderConfig(enabledEnv),actorId='00000000-0000-4000-8000-000000000001',teamId='00000000-0000-4000-8000-000000000002';
   const outbound=buildSimulatedOutbound({to:'+971509000001',text:'Synthetic hello',actorId,conversationId:'00000000-0000-4000-8000-000000000003'},config);
   const inbound=buildSimulatedInbound({from:'+971509000001',text:'Synthetic reply',actorId,teamId,eventId:'event-1',ctwa:true},config);
-  assert.equal(outbound.simulation,true);assert.equal(inbound.simulation,true);assert.equal(inbound.source_type,'website_ctwa');
+  assert.equal(outbound.simulation,true);assert.equal(inbound.simulation,true);assert.equal(inbound.source_type,'ctwa');
   assert.deepEqual(simulationStatusSequence(),['sent','delivered','read']);
   assert.deepEqual(simulationStatusSequence({failure:true}),['sent','failed']);
   assert.equal(simulatedPayloadHash({b:2,a:1}),simulatedPayloadHash({a:1,b:2}));
@@ -61,11 +61,13 @@ test('DEV262 source wires an isolated provider, webhook, audit, badges, generato
   assert.match(server,/assertSimulatedProviderEnvironment\(\)/);
   assert.match(route,/providers\/whatsapp-simulated\/events\/:token/);
   assert.match(route,/simulated-submit/);assert.match(route,/campaigns\/:id\/simulated-send/);assert.match(route,/conversations\/:id\/simulated-send/);
+  assert.match(route,/submitInProcess/);assert.match(route,/acceptSimulatedEvent/);assert.doesNotMatch(route,/\bfetch\s*\(/);
   assert.match(route,/timeout/);assert.match(route,/rate_limited/);assert.match(route,/server_error/);assert.match(route,/invalid_number/);assert.match(route,/invalid_payload/);assert.match(route,/template_paused/);
   assert.match(store,/provider_event_id.*UNIQUE|ON CONFLICT\(provider_event_id\)/s);
   assert.match(store,/wa_contact_suppressions/);assert.match(store,/ctwa_entry_at/);assert.match(store,/cleanupAllSimulatedRecords/);assert.match(store,/ensureSimulatedCampaignConversation/);
   assert.match(migration,/simulated BOOLEAN NOT NULL DEFAULT FALSE/);assert.match(migration,/payload_hash/);assert.match(migration,/wa_simulation_runs/);
   assert.match(ui,/SIMULATED PROVIDER/);assert.match(ui,/data-template-simulate/);assert.match(ui,/data-campaign-simulate/);assert.match(ui,/wa-simulated-reply/);
+  assert.match(ui,/id="wa-action-error"/);assert.match(ui,/role="alert"/);assert.match(ui,/showActionError\(error\)/);
   assert.match(load,/requestedConversations/);assert.match(load,/requestedMessages/);assert.match(load,/requestedOptOuts/);assert.match(load,/workers/);assert.match(load,/hoursBack/);assert.match(load,/unread/);
   assert.doesNotMatch(route,/waba-sandbox\.360dialog\.io|graph\.facebook\.com|waba\.360dialog\.io/);
 });

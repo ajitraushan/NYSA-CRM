@@ -37,7 +37,8 @@ try{
   await page.setViewport({width:1440,height:1000,deviceScaleFactor:1});
   page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
   page.on('pageerror',error=>pageErrors.push(error.message));
-  await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><title>DEV262 Agent workspace check</title><style>${baseStyle}</style></head><body><main id="view" class="main"></main></body></html>`);
+  page.on('dialog',dialog=>void dialog.accept());
+  await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><title>DEV263 Agent workspace check</title><style>${baseStyle}</style></head><body><main id="view" class="main"></main></body></html>`);
   await page.addStyleTag({path:path.resolve(root,'public/ui-design-system.css')});
   await page.evaluate(()=>{
     const id=value=>`${String(value).padStart(8,'0')}-0000-4000-8000-000000000000`;
@@ -47,10 +48,11 @@ try{
     window.fmtDate=value=>value?'2 Nov 2026':'—';
     window.toast=()=>{};
     window.api=async url=>{
+      if(url.includes('/simulated-submit'))throw new Error('Synthetic provider rejection shown to the user');
       if(url!=='/crm/whatsapp-workspace')throw new Error(`Unexpected synthetic request: ${url}`);
       return {
         teams:[{id:id(10),name:'Synthetic Secondary Sales'}],
-        templates:[{id:id(20),versionId:id(21),templateReference:'WA-TPL-SYNTH',name:'synthetic_launch',ownerTeamId:id(10),teamName:'Synthetic Secondary Sales',versionNumber:1,languageCode:'en',category:'marketing',headerType:'none',bodyText:'Hello {{first_name}}',footerText:'Reply STOP to opt out',variableNames:['first_name'],variableSamples:{first_name:'Amina'},buttons:[{type:'quick_reply',text:'Stop promotions'}],internalStatus:'draft',metaStatus:'not_submitted',metaStatusLabel:'Not submitted',preparedByName:'Synthetic Agent'}],
+        templates:[{id:id(20),versionId:id(21),templateReference:'WA-TPL-SYNTH',name:'synthetic_launch',ownerTeamId:id(10),teamName:'Synthetic Secondary Sales',versionNumber:1,languageCode:'en',category:'marketing',headerType:'none',bodyText:'Hello {{first_name}}',footerText:'Reply STOP to opt out',variableNames:['first_name'],variableSamples:{first_name:'Amina'},buttons:[{type:'quick_reply',text:'Stop promotions'}],internalStatus:'approved',simulatedProviderStatus:'not_submitted',metaStatus:'not_submitted',metaStatusLabel:'Not submitted',preparedByName:'Synthetic Agent'}],
         materials:[{id:id(30),materialReference:'WA-MAT-SYNTH',title:'Synthetic brochure',materialType:'brochure',ownerTeamId:id(10),teamName:'Synthetic Secondary Sales',status:'active',createdByName:'Synthetic Agent'}],
         segments:[{id:id(40),name:'Synthetic audience',description:'Synthetic verified recipients',definition:{consentStatus:'verified'},ownerTeamId:id(10),teamName:'Synthetic Secondary Sales',status:'active',recipientCount:1,createdByName:'Synthetic Agent'}],
         batches:[{id:id(50),batchReference:'WA-RCP-SYNTH',originalFileName:'synthetic.xlsx',fileFormat:'xlsx',sourceType:'existing_crm',ownerTeamId:id(10),teamName:'Synthetic Secondary Sales',rowCount:1,readyCount:1,reviewCount:0,invalidCount:0,status:'committed',createdByName:'Synthetic Agent'}],
@@ -58,7 +60,7 @@ try{
         conversations:[{id:id(70),conversationReference:'WA-CON-SYNTH',displayName:'Synthetic Prospect',lastMessage:'Synthetic inbound message',ownerAgentName:'Synthetic Agent',teamName:'Synthetic Secondary Sales',responderMode:'human',replyWindowOpen:true,ctwaFreeWindowOpen:false,sourceType:'website',unreadCount:1}],
         reviewQueue:{templates:[],campaigns:[]},
         permissions:{canCreate:true,canReview:false,canReassign:false},
-        provider:{connected:false,submissionEnabled:false,sendingEnabled:false,status:'Not submitted'}
+        provider:{connected:false,submissionEnabled:false,sendingEnabled:false,simulated:true,status:'Not submitted'}
       };
     };
   });
@@ -66,6 +68,10 @@ try{
   await page.evaluate(()=>window.renderWhatsAppWorkspace());
   await page.waitForSelector('[data-wa-section="templates"]');
   assert.equal(await page.$('[data-wa-section="reviews"]'),null,'Agent must not receive the review section');
+  await page.click('[data-template-simulate]');
+  await page.waitForFunction(()=>document.querySelector('#wa-action-error')?.textContent.includes('Synthetic provider rejection shown to the user'));
+  const visibleActionError=await page.$eval('#wa-action-error',element=>({visible:getComputedStyle(element).display!=='none',role:element.getAttribute('role'),text:element.textContent.trim()}));
+  assert.equal(visibleActionError.visible,true);assert.equal(visibleActionError.role,'alert');assert.match(visibleActionError.text,/Synthetic provider rejection shown to the user/);
   for(const [key,expectedHeading] of sections){
     await page.click(`[data-wa-section="${key}"]`);
     await page.waitForFunction(heading=>document.querySelector('#wa-workspace-panel h3')?.textContent.trim()===heading,{},expectedHeading);
@@ -80,13 +86,14 @@ try{
   assert.deepEqual(pageErrors,[],'The actual release bundle raised a browser page error');
   assert.deepEqual(consoleErrors,[],'The actual release bundle wrote a console error');
   const evidence={
-    candidate:'DEV262 pre-approval source',
+    candidate:'DEV263 pre-approval source',
     role:'Sales Agent',
     synthetic:true,
     releaseFile:path.relative(root,releaseFile).replaceAll('\\','/'),
     releaseSha256,
     loadedFromTrackedReleaseFile:true,
     sections:results,
+    visibleActionError,
     pageErrors,
     consoleErrors,
     checkedAt:new Date().toISOString()

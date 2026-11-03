@@ -3,7 +3,7 @@ import {Router} from '../lib/http-kit.js';
 import {requireAuth} from '../auth.js';
 import {audit,execute,many,one,transaction,uuid} from '../db.js';
 import {
-  assertSimulatedProviderEnvironment,assertSimulatedProviderUrl,assertSyntheticWhatsAppPhone,buildSimulatedInbound,buildSimulatedOutbound,
+  assertSimulatedProviderEnvironment,assertSyntheticWhatsAppPhone,buildSimulatedInbound,buildSimulatedOutbound,
   normalizeBackdateHours,normalizeSimulationFault,normalizeSimulationRate,simulatedPayloadHash,simulatedProviderConfig,simulationStatusSequence
 } from '../whatsapp-simulated-provider.js';
 import {
@@ -14,6 +14,15 @@ const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const operational=new Set(['sales_agent','manager','director']);
 const reportCallbackFailure=()=>console.error(JSON.stringify({component:'whatsapp-simulator',event:'callback-delivery-failed'}));
+
+function providerFailure(message,statusCode,details={}){
+  return Object.assign(new Error(message),{statusCode,responseBody:{error:message,...details}});
+}
+
+function sendProviderFailure(res,error){
+  const status=Number(error?.statusCode)||500;
+  res.status(status).json(error?.responseBody||{error:status===500?'Simulated provider request failed':error.message});
+}
 
 function equalSecret(a,b){
   const x=Buffer.from(String(a||'')),y=Buffer.from(String(b||''));
@@ -33,11 +42,56 @@ function requireInternalToken(req,res,config,{pathToken=null}={}){
   return true;
 }
 async function control(){return one('SELECT * FROM wa_simulated_provider_control WHERE singleton=TRUE');}
-async function postCallback(config,payload,delayMs=25){
+async function acceptSimulatedEvent(payload){
+  if(!payload||typeof payload!=='object'||Array.isArray(payload))throw providerFailure('Simulator event body must be an object',400);
+  let result;
+  if(payload.type==='inbound_message')result=await ingestSimulatedInbound(payload);
+  else if(payload.type==='message_status')result=await applySimulatedMessageStatus(payload);
+  else if(payload.type==='template_status')result=await applySimulatedTemplateStatus(payload);
+  else throw providerFailure('Unsupported simulator event type',400);
+  return {statusCode:result.duplicate?200:202,body:{accepted:true,simulation:true,...result}};
+}
+
+async function postCallback(payload,delayMs=25){
   await wait(delayMs);
-  const url=assertSimulatedProviderUrl(`${config.baseUrl}/events/${encodeURIComponent(config.callbackToken)}`,config);
-  const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(5000)});
-  if(!response.ok)throw new Error(`Simulator callback returned HTTP ${response.status}`);
+  return acceptSimulatedEvent(payload);
+}
+
+async function submitSimulatedMessage(config,body){
+  const state=await control();
+  if(state?.paused)throw providerFailure('Simulator sending is paused',423,{code:'SIMULATOR_PAUSED'});
+  const fault=state?.faultMode||'none';
+  if(fault==='timeout'){await wait(150);throw providerFailure('Simulated provider timeout',504);}
+  if(fault==='rate_limited')throw providerFailure('Simulated provider rate limit',429,{retryAfter:30});
+  if(fault==='server_error')throw providerFailure('Simulated provider server error',503);
+  if(fault==='invalid_number')throw providerFailure('Simulated provider rejected the recipient number',400,{code:'SIMULATED_INVALID_NUMBER'});
+  if(fault==='invalid_payload')return {unexpected:true};
+  let phone;
+  try{phone=assertSyntheticWhatsAppPhone(body?.to,config);}catch(error){throw providerFailure(error.message,error.statusCode||409,{code:error.code});}
+  if(!body?.conversation_id||!body?.actor_id)throw providerFailure('conversation_id and actor_id are required',400);
+  const idempotencyKey=clean(body?.idempotency_key||body?.correlation_id,240);
+  if(!idempotencyKey)throw providerFailure('A simulator idempotency key is required',400);
+  const providerMessageId=`wamid.sim.${crypto.createHash('sha256').update(idempotencyKey).digest('hex').slice(0,24)}`;
+  const result={messages:[{id:providerMessageId}],simulation:true,to:phone};
+  const sequence=simulationStatusSequence({failure:Boolean(body?.simulate_failure)});
+  sequence.forEach((status,index)=>void postCallback({
+    id:`status:${providerMessageId}:${status}`,type:'message_status',message_id:providerMessageId,status,actor_id:body.actor_id,
+    simulation_run_id:body.simulation_run_id||null,occurred_at:new Date(Date.now()+(index+1)*1000).toISOString()
+  },500+(index*250)).catch(reportCallbackFailure));
+  return result;
+}
+
+async function submitSimulatedTemplate(body){
+  const state=await control();
+  if(state?.paused)throw providerFailure('Simulator sending is paused',423,{code:'SIMULATOR_PAUSED'});
+  if(state?.faultMode==='template_paused')throw providerFailure('Simulated template is paused',409,{code:'SIMULATED_TEMPLATE_PAUSED'});
+  const requested=clean(body?.outcome,20)||'approved';
+  if(!['approved','rejected','pending'].includes(requested))throw providerFailure('Template outcome must be approved, rejected or pending',400);
+  if(!body?.template_version_id||!body?.actor_id)throw providerFailure('template_version_id and actor_id are required',400);
+  const submissionId=`watsim.${crypto.randomBytes(10).toString('hex')}`;
+  void postCallback({id:`template:${submissionId}:pending`,type:'template_status',template_version_id:body.template_version_id,status:'pending',actor_id:body.actor_id,occurred_at:new Date().toISOString()},500).catch(reportCallbackFailure);
+  if(requested!=='pending')void postCallback({id:`template:${submissionId}:${requested}`,type:'template_status',template_version_id:body.template_version_id,status:requested,reason:requested==='rejected'?clean(body?.reason,500)||'Rejected by configured simulator rule':null,actor_id:body.actor_id,occurred_at:new Date(Date.now()+1000).toISOString()},750).catch(reportCallbackFailure);
+  return {id:submissionId,status:'pending',simulation:true};
 }
 
 export function createWhatsAppSimulatedProviderRoutes(){
@@ -48,50 +102,15 @@ export function createWhatsAppSimulatedProviderRoutes(){
   });
   r.post('/providers/whatsapp-simulated/messages',async(req,res)=>{
     const config=requireSimulation(req,res);if(!config||!requireInternalToken(req,res,config))return;
-    const state=await control();
-    if(state?.paused)return res.status(423).json({error:'Simulator sending is paused',code:'SIMULATOR_PAUSED'});
-    const fault=state?.faultMode||'none';
-    if(fault==='timeout'){await wait(150);return res.status(504).json({error:'Simulated provider timeout'});}
-    if(fault==='rate_limited')return res.status(429).json({error:'Simulated provider rate limit',retryAfter:30});
-    if(fault==='server_error')return res.status(503).json({error:'Simulated provider server error'});
-    if(fault==='invalid_number')return res.status(400).json({error:'Simulated provider rejected the recipient number',code:'SIMULATED_INVALID_NUMBER'});
-    if(fault==='invalid_payload')return res.status(200).json({unexpected:true});
-    let phone;
-    try{phone=assertSyntheticWhatsAppPhone(req.body?.to,config);}catch(error){return res.status(error.statusCode||409).json({error:error.message,code:error.code});}
-    if(!req.body?.conversation_id||!req.body?.actor_id)return res.status(400).json({error:'conversation_id and actor_id are required'});
-    const idempotencyKey=clean(req.body?.idempotency_key||req.body?.correlation_id,240);
-    if(!idempotencyKey)return res.status(400).json({error:'A simulator idempotency key is required'});
-    const providerMessageId=`wamid.sim.${crypto.createHash('sha256').update(idempotencyKey).digest('hex').slice(0,24)}`;
-    const result={messages:[{id:providerMessageId}],simulation:true,to:phone};
-    const sequence=simulationStatusSequence({failure:Boolean(req.body?.simulate_failure)});
-    sequence.forEach((status,index)=>void postCallback(config,{
-      id:`status:${providerMessageId}:${status}`,type:'message_status',message_id:providerMessageId,status,actor_id:req.body.actor_id,
-      simulation_run_id:req.body.simulation_run_id||null,occurred_at:new Date(Date.now()+(index+1)*1000).toISOString()
-    },500+(index*250)).catch(reportCallbackFailure));
-    res.status(202).json(result);
+    try{res.status(202).json(await submitSimulatedMessage(config,req.body));}catch(error){sendProviderFailure(res,error);}
   });
   r.post('/providers/whatsapp-simulated/templates',async(req,res)=>{
     const config=requireSimulation(req,res);if(!config||!requireInternalToken(req,res,config))return;
-    const state=await control();
-    if(state?.paused)return res.status(423).json({error:'Simulator sending is paused',code:'SIMULATOR_PAUSED'});
-    if(state?.faultMode==='template_paused')return res.status(409).json({error:'Simulated template is paused',code:'SIMULATED_TEMPLATE_PAUSED'});
-    const requested=clean(req.body?.outcome,20)||'approved';
-    if(!['approved','rejected','pending'].includes(requested))return res.status(400).json({error:'Template outcome must be approved, rejected or pending'});
-    if(!req.body?.template_version_id||!req.body?.actor_id)return res.status(400).json({error:'template_version_id and actor_id are required'});
-    const submissionId=`watsim.${crypto.randomBytes(10).toString('hex')}`;
-    void postCallback(config,{id:`template:${submissionId}:pending`,type:'template_status',template_version_id:req.body.template_version_id,status:'pending',actor_id:req.body.actor_id,occurred_at:new Date().toISOString()},500).catch(reportCallbackFailure);
-    if(requested!=='pending')void postCallback(config,{id:`template:${submissionId}:${requested}`,type:'template_status',template_version_id:req.body.template_version_id,status:requested,reason:requested==='rejected'?clean(req.body?.reason,500)||'Rejected by configured simulator rule':null,actor_id:req.body.actor_id,occurred_at:new Date(Date.now()+1000).toISOString()},750).catch(reportCallbackFailure);
-    res.status(202).json({id:submissionId,status:'pending',simulation:true});
+    try{res.status(202).json(await submitSimulatedTemplate(req.body));}catch(error){sendProviderFailure(res,error);}
   });
   r.post('/providers/whatsapp-simulated/events/:token',async(req,res)=>{
     const config=requireSimulation(req,res);if(!config||!requireInternalToken(req,res,config,{pathToken:req.params.token}))return;
-    if(!req.body||typeof req.body!=='object'||Array.isArray(req.body))return res.status(400).json({error:'Simulator event body must be an object'});
-    let result;
-    if(req.body.type==='inbound_message')result=await ingestSimulatedInbound(req.body);
-    else if(req.body.type==='message_status')result=await applySimulatedMessageStatus(req.body);
-    else if(req.body.type==='template_status')result=await applySimulatedTemplateStatus(req.body);
-    else return res.status(400).json({error:'Unsupported simulator event type'});
-    res.status(result.duplicate?200:202).json({accepted:true,simulation:true,...result});
+    try{const result=await acceptSimulatedEvent(req.body);res.status(result.statusCode).json(result.body);}catch(error){sendProviderFailure(res,error);}
   });
   return r;
 }
@@ -104,12 +123,16 @@ async function scopedConversation(id,broker){
   return one(`SELECT c.* FROM wa_conversations c WHERE ${where} AND c.simulated=TRUE`,params);
 }
 
-async function submitLocal(config,path,body){
-  const url=assertSimulatedProviderUrl(`${config.baseUrl}/${path}`,config);
-  const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json','x-nysa-simulation-token':config.callbackToken},body:JSON.stringify(body),signal:AbortSignal.timeout(6000)});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw Object.assign(new Error(data.error||`Simulated provider returned HTTP ${response.status}`),{statusCode:response.status,responseBody:data});
-  return data;
+async function submitInProcess(config,path,body){
+  if(path==='messages')return submitSimulatedMessage(config,body);
+  if(path==='templates')return submitSimulatedTemplate(body);
+  const eventPrefix='events/';
+  if(path.startsWith(eventPrefix)){
+    const token=decodeURIComponent(path.slice(eventPrefix.length));
+    if(!equalSecret(token,config.callbackToken))throw providerFailure('Invalid simulator callback credential',401);
+    return (await acceptSimulatedEvent(body)).body;
+  }
+  throw providerFailure('Unsupported in-process simulator operation',404);
 }
 
 export function createWhatsAppSimulationControlRoutes(){
@@ -141,7 +164,7 @@ export function createWhatsAppSimulationControlRoutes(){
     const config=requireSimulation(req,res);if(!config)return;
     let payload;
     try{payload=buildSimulatedInbound({...req.body,actorId:req.broker.id},config);}catch(error){return res.status(error.statusCode||400).json({error:error.message,code:error.code});}
-    const data=await submitLocal(config,`events/${encodeURIComponent(config.callbackToken)}`,payload);
+    const data=await submitInProcess(config,`events/${encodeURIComponent(config.callbackToken)}`,payload);
     res.status(202).json(data);
   });
   r.post('/admin/whatsapp-simulation/runs',async(req,res)=>{
@@ -213,7 +236,7 @@ export function createWhatsAppSimulationControlRoutes(){
     if(!version)return res.status(404).json({error:'Template version not found'});
     if(version.internalStatus!=='approved')return res.status(409).json({error:'Internal approval is required before simulated provider submission'});
     if(req.broker.jobRole==='sales_agent'&&String(req.broker.teamId)!==String(version.ownerTeamId))return res.status(403).json({error:'Template is outside your team'});
-    const result=await submitLocal(config,'templates',{template_version_id:version.id,actor_id:req.broker.id,outcome:req.body?.outcome||'approved',payload_hash:version.contentHash});
+    const result=await submitInProcess(config,'templates',{template_version_id:version.id,actor_id:req.broker.id,outcome:req.body?.outcome||'approved',payload_hash:version.contentHash});
     await execute(`UPDATE wa_message_template_versions SET simulated_provider_status='pending',simulated_provider_status_at=NOW(),updated_at=NOW() WHERE id=$1`,[version.id]);
     res.status(202).json({submission:result,simulation:true});
   });
@@ -229,7 +252,7 @@ export function createWhatsAppSimulationControlRoutes(){
     if(templateVersionId){const template=await one(`SELECT v.id,v.body_text,v.simulated_provider_status,t.owner_team_id FROM wa_message_template_versions v JOIN wa_message_templates t ON t.id=v.template_id WHERE v.id=$1`,[templateVersionId]);if(!template||template.simulatedProviderStatus!=='approved'||String(template.ownerTeamId)!==String(conversation.ownerTeamId))return res.status(409).json({error:'Select a simulated-approved template from this team'});}
     let payload;
     try{payload=buildSimulatedOutbound({to:conversation.normalizedPhone,type:templateVersionId?'template':'text',text,templateVersionId,actorId:req.broker.id,conversationId:conversation.id},config);payload.idempotency_key=clean(req.body?.idempotencyKey,240)||payload.correlation_id;}catch(error){return res.status(error.statusCode||400).json({error:error.message,code:error.code});}
-    const response=await submitLocal(config,'messages',payload),providerMessageId=response.messages?.[0]?.id;
+    const response=await submitInProcess(config,'messages',payload),providerMessageId=response.messages?.[0]?.id;
     if(!providerMessageId)return res.status(502).json({error:'Simulated provider response did not contain a message id'});
     const recorded=await recordSimulatedOutbound({providerMessageId,conversationId:conversation.id,templateVersionId,text,type:templateVersionId?'template':'text',actorId:req.broker.id,payload});
     res.status(202).json({provider:response,message:recorded,simulation:true});
@@ -255,7 +278,7 @@ export function createWhatsAppSimulationControlRoutes(){
         const idempotencyKey=`campaign:${campaign.id}:${campaign.approvedRevision}:${recipient.normalizedPhone}`;
         const payload=buildSimulatedOutbound({to:recipient.normalizedPhone,type:'template',text:recipient.renderedMessage,templateVersionId:campaign.templateVersionId,actorId:req.broker.id,conversationId:conversation.id,correlationId:idempotencyKey},config);
         payload.idempotency_key=idempotencyKey;payload.campaign_id=campaign.id;payload.campaign_revision=campaign.approvedRevision;
-        const provider=await submitLocal(config,'messages',payload),providerMessageId=provider.messages?.[0]?.id;
+        const provider=await submitInProcess(config,'messages',payload),providerMessageId=provider.messages?.[0]?.id;
         if(!providerMessageId)throw Object.assign(new Error('Simulated provider response did not contain a message id'),{statusCode:502});
         const recorded=await recordSimulatedOutbound({providerMessageId,conversationId:conversation.id,templateVersionId:campaign.templateVersionId,text:recipient.renderedMessage,type:'template',actorId:req.broker.id,payload});
         const recovered=recorded.duplicate?await one('SELECT provider_status,provider_status_at FROM wa_conversation_messages WHERE provider_message_id=$1 AND simulated=TRUE',[providerMessageId]):null;
