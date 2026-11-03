@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {inspectWorkers,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
+import {resolveScopedBackupPath,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
 
 process.umask(0o077);
 
@@ -101,8 +102,7 @@ function databaseEnvironment(environment){
   return {...process.env,PGHOST:environment.PGHOST||'localhost',PGPORT:String(environment.PGPORT||5432),PGDATABASE:config.expectedDatabase,PGUSER:config.expectedRole,PGPASSWORD:environment.PGPASSWORD||''};
 }
 function scopedBackupDirectory(){
-  const resolved=path.resolve(args['backup-path']),preparationRoot='/home/nysareal/crm-release-preparation';
-  if(!resolved.startsWith(`${preparationRoot}${path.sep}`)||resolved===config.root||resolved.startsWith(`${config.root}${path.sep}`))throw Error('Scoped backup path is outside the CRM Test preparation boundary');
+  const resolved=resolveScopedBackupPath(args['backup-path'],{appRoot:config.root});
   if(fs.existsSync(resolved))throw Error('Scoped backup directory must not pre-exist');
   fs.mkdirSync(resolved,{recursive:true,mode:0o700});
   return resolved;
@@ -130,9 +130,9 @@ async function createAndVerifyScopedBackup(environment){
   const appPrefix=`${path.basename(config.root)}/`,appIncluded=entries.includes(`${appPrefix}package.json`)&&entries.includes(`${appPrefix}RUNTIME_MANIFEST.sha256`);
   const dumpList=run('pg_restore',['--list',databaseDump],10*60_000,{env:databaseEnv}).toString(),dumpTables=new Set();
   for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
-  const dumpTableNames=[...dumpTables].sort(),dumpCanonical=`${dumpTableNames.join('\n')}\n`,databaseIncluded=dumpTables.has('schema_migrations')&&dumpTableNames.length===liveTableCount&&dumpCanonical===observedCanonical;
+  const dumpTableNames=[...dumpTables].sort(),tableSetVerification=verifyScopedBackupTableNames(liveTableNames,dumpTableNames),databaseIncluded=dumpTables.has('schema_migrations')&&tableSetVerification.matches;
   if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
-  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:crypto.createHash('sha256').update(dumpCanonical).digest('hex'),contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:tableSetVerification.dumpNamesSha256,backupTableSetVerification:tableSetVerification,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
   fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
   write('SCOPED_BACKUP_VERIFIED.json',receipt);
   return receipt;
