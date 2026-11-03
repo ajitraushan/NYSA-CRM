@@ -42,9 +42,18 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
 
 ## Mandatory deployment operator controls
 
-- Deployment operators and their tests must be versioned in the governed GitHub
-  repository. Do not create or maintain an unreviewed release-local operator on
-  hosting as the only source of deployment logic.
+- For CRM Test, the only permitted operator source is
+  `tools/crm-test-direct-node-release-operator.mjs` from an exact, advertised
+  GitHub commit. Never create, copy, rename or generate a release-specific
+  operator locally or on hosting (for example, `DEV262_OPERATOR.mjs`).
+- Before every run, verify and record that the operator's origin commit and
+  SHA-256 on hosting exactly match GitHub. Demonstrate in a non-mutating test
+  that the full scoped-backup path is passed as an operator input. Release
+  details such as version, package and backup path must be parameters, not a
+  derived operator copy.
+- Any operator change requires a new GitHub commit, operator tests and separate
+  approval before use. The application candidate approval does not authorize a
+  changed operator.
 - A deployment operator must not modify the installed application's
   `package.json`, runtime manifest or any other governed runtime file merely to
   make itself runnable. Invoke it directly with the approved Node.js executable

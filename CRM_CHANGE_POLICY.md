@@ -25,6 +25,16 @@ incomplete and must not proceed to deployment.
 - Keep deployment operators and their meaningful tests in the governed GitHub
   repository. The reviewed source, exact commit and operator hash must be part
   of deployment evidence.
+- CRM Test may run only the canonical
+  `tools/crm-test-direct-node-release-operator.mjs` from the exact approved,
+  GitHub-advertised commit. Creating, copying, renaming or generating a
+  release-specific operator locally or on hosting is prohibited. Version,
+  package and full scoped-backup path are explicit runtime parameters.
+- Before execution, compare the canonical operator's hosting SHA-256 and origin
+  commit with GitHub and retain the result. A non-mutating operator test must
+  show the complete scoped-backup path being accepted and resolved. Any change
+  to the canonical operator requires its own commit, tests and separate
+  approval; approval of an application package does not approve operator code.
 - Run deployment tooling outside the installed application root. Never add a
   release-only script to the live application's `package.json` or otherwise
   mutate governed runtime files to make the operator executable.
