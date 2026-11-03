@@ -66,6 +66,11 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
 - Backup paths, freshness limits and environment identities must be explicit
   operator inputs or approved configuration, not unexplained release-specific
   assumptions. Record the resolved values in the evidence.
+- Before requesting approval for a hosted run, verify and record that all
+  operator output paths are absent, including the candidate staging directory,
+  scoped-backup directory and evidence/output directory. A pre-existing output
+  path fails pre-run acceptance; do not delete, rename, overwrite or reuse it
+  without separate explicit approval.
 - Do not launch a browser on shared hosting when the platform cannot support it.
   Record the check as deferred and run it remotely against the deployed target
   before acceptance.
