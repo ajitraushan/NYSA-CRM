@@ -51,18 +51,25 @@ incomplete and must not proceed to deployment.
   smoke/report. No command may combine those approvals. Phase B creates an
   archive of the exact CRM Test application root plus a database-only dump of
   the exact CRM Test database; both files' size, SHA-256 and contents must be
-  verified before Phase C. Rollback may restore only those scoped targets.
+  verified before Phase C. The database dump is retained for a separately
+  approved recovery and is never consumed by automatic application rollback.
   Full-account cPanel backups are reserved for production releases or
   separately scheduled account backups.
 - Phase D must allow a bounded 30-60 second settle/retry window and retain every
   HTTP attempt's timestamp, status, safe body snippet and server header. A
   failed smoke check on an otherwise healthy application stops and reports; it
   must not trigger an automatic rollback.
-- Any approved rollback must restore the original selector environment, then
-  prove the domain serves NYSA CORE at `/`, health and readiness are green for
-  the restored version, and exactly one command/CWD-verified exact-root worker
-  remains. If any rollback acceptance check fails, stop and report without
-  further repair attempts.
+- Automatic install/start recovery is application-only: restore the previous
+  application files and original selector environment, but never execute a
+  database restore. Database restoration is a separate, exact, explicitly
+  approved operation. Automatic application rollback is allowed only before
+  readiness has returned green with one command/CWD-verified worker. Once that
+  readiness boundary is crossed, later table, runtime or worker-verification
+  failures preserve the running candidate and evidence and stop/report.
+- Any approved rollback must prove the domain serves NYSA CORE at `/`, health
+  and readiness are green for the restored version, and exactly one
+  command/CWD-verified exact-root worker remains. If any rollback acceptance
+  check fails, stop and report without further repair attempts.
 - Run environment-dependent browser/PDF checks where the required runtime is
   supported. If shared hosting cannot launch a browser, defer that check
   explicitly to a remote post-deployment test; do not hang the hosted stage.

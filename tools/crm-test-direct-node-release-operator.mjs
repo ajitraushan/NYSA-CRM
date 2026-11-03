@@ -179,15 +179,14 @@ function loadVerifiedBackup(){
   if(!Number.isFinite(ageMinutes)||ageMinutes<0||ageMinutes>Number(config.backupFreshnessMinutes))throw Error(`Scoped backup is outside the approved freshness window: ${ageMinutes.toFixed(1)} minutes`);
   return receipt;
 }
-function restoreScopedBackup(receipt,environment){
-  if(!receipt?.app?.path||!receipt?.database?.path)throw Error('Verified scoped rollback receipt is unavailable');
+function restoreApplicationBackup(receipt){
+  if(!receipt?.app?.path)throw Error('Verified application rollback receipt is unavailable');
   const parent=path.dirname(config.root),failedRoot=`${config.root}.failed-${Date.now()}`;
   if(fs.existsSync(failedRoot))throw Error('Rollback quarantine path already exists');
   fs.renameSync(config.root,failedRoot);
   try{run('tar',['-xzf',receipt.app.path,'-C',parent],30*60_000);}
   catch(error){if(fs.existsSync(config.root))fs.rmSync(config.root,{recursive:true,force:true});fs.renameSync(failedRoot,config.root);throw error;}
-  run('pg_restore',['--clean','--if-exists','--no-owner','--no-privileges','--exit-on-error','--dbname',config.expectedDatabase,receipt.database.path],30*60_000,{env:databaseEnvironment(environment)});
-  return {appRestoredFrom:receipt.app.path,databaseRestoredFrom:receipt.database.path,failedRuntimeRetained:failedRoot};
+  return {appRestoredFrom:receipt.app.path,databaseRestorePerformed:false,failedRuntimeRetained:failedRoot};
 }
 function privateRegistrationFile(){return evidencePath('ORIGINAL_REGISTRATION_PRIVATE.json');}
 function writeOriginalRegistration(original){
@@ -221,9 +220,9 @@ async function verifyDomainBaseline(version){
   const worker=await readiness(version),workers=inspectWorkers(config.root);if(workers.length!==1)throw Error('Rollback exact-root worker count is not one');
   return {checks,worker,workers};
 }
-async function rollbackAfterInstallFailure({receipt,environment,report}){
+async function rollbackAfterInstallFailure({receipt,report}){
   try{
-    await stop();report.scopedRestore=restoreScopedBackup(receipt,environment);report.selectorEnvironmentRestore=restoreOriginalEnvironment();selector('start');report.rollbackVerification=await verifyDomainBaseline(config.baselineVersion);report.result='ROLLED_BACK_AND_DOMAIN_VERIFIED';
+    await stop();report.applicationRestore=restoreApplicationBackup(receipt);report.selectorEnvironmentRestore=restoreOriginalEnvironment();selector('start');report.rollbackVerification=await verifyDomainBaseline(config.baselineVersion);report.databaseRestorePerformed=false;report.databaseStatePreserved=true;report.result='ROLLED_BACK_APPLICATION_AND_DOMAIN_VERIFIED';
   }catch(error){report.rollbackError=safeError(error);if(error.checks)report.rollbackDomainChecks=error.checks;report.result='ROLLBACK_REQUIRES_ATTENTION';}
 }
 
@@ -254,19 +253,23 @@ async function backupPhase(){
 }
 
 async function installPhase(){
-  assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');assertReceipt('BACKUP_RESULT.json','SCOPED_BACKUP_VERIFIED');requireAbsent('INSTALL_RESULT.json');const report={...baseReport,result:'FAILED'};let mutated=false,environment,backup;
+  assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');assertReceipt('BACKUP_RESULT.json','SCOPED_BACKUP_VERIFIED');requireAbsent('INSTALL_RESULT.json');const report={...baseReport,result:'FAILED'};let mutated=false,readinessAccepted=false,environment,backup;
   try{
     backup=loadVerifiedBackup();const original=registration();environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();const candidateNames=validateCandidateDirectory();writeOriginalRegistration(original);report.workersBefore=inspectWorkers(config.root);report.workerStop=await stop();if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
     const pool=poolFor(environment);try{await ledger(pool,config.baselineMigrationCount);const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename),before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);const changed=[];for(const name of [...candidateNames,'RUNTIME_MANIFEST.sha256']){remaining();const source=path.join(config.candidate,name),target=path.join(config.root,name);if(fs.existsSync(target)&&hash(source)===hash(target))continue;changed.push({name,existed:fs.existsSync(target)});fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);mutated=true;}write('CHANGED_RUNTIME.json',changed);runtimeNames(config.root);report.changedFiles=changed.length;await ledger(pool,config.baselineMigrationCount);const after=await fingerprint(pool,tables);if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed before application start');report.originalTablesPreserved=tables.length;}finally{await pool.end();}
     const nextEnvironment=simulatorEnvironment(environment);mutated=true;selector('set',['--env-vars',JSON.stringify(nextEnvironment)]);report.simulatorEnvironment={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SIMULATED_PROVIDER_ENABLED:'true',WHATSAPP_SIMULATED_PROVIDER_URL:'loopback',WHATSAPP_SIMULATED_PROVIDER_TOKEN:'server-generated and withheld',WHATSAPP_SIMULATED_PHONE_PREFIX:'+971509',WHATSAPP_SIMULATED_PHONE_SUFFIX_DIGITS:'6'};
-    process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version);report.runtimeFiles=runtimeNames(config.root).length;
+    process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version);readinessAccepted=true;report.readinessAcceptedAt=new Date().toISOString();report.runtimeFiles=runtimeNames(config.root).length;
     const verificationPool=poolFor(nextEnvironment);try{report.ledger=await ledger(verificationPool,config.expectedMigrationCount);const comparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});const{observedNames,...receipt}=comparison;report.postDeploymentTableComparison=receipt;if(!comparison.matches)throw Error('Post-deployment table-name mismatch');}finally{await verificationPool.end();}
     report.workersAfter=inspectWorkers(config.root);if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');report.result='INSTALLED_STARTED_AND_READY';
   }catch(error){
     report.safeError=safeError(error);
-    let shouldRollback=mutated;
-    if(!shouldRollback&&backup&&environment){try{shouldRollback=registration().app_status==='stopped'||inspectWorkers(config.root).length===0;}catch{shouldRollback=true;}}
-    if(shouldRollback&&backup&&environment)await rollbackAfterInstallFailure({receipt:backup,environment,report});
+    report.readinessAccepted=readinessAccepted;
+    if(readinessAccepted)report.result='POST_READINESS_CHECK_FAILED_APP_PRESERVED';
+    else{
+      let shouldRollback=mutated;
+      if(!shouldRollback&&backup&&environment){try{shouldRollback=registration().app_status==='stopped'||inspectWorkers(config.root).length===0;}catch{shouldRollback=true;}}
+      if(shouldRollback&&backup&&environment)await rollbackAfterInstallFailure({receipt:backup,report});
+    }
     process.exitCode=1;
   }
   report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('INSTALL_RESULT.json',report);console.log(JSON.stringify(report));

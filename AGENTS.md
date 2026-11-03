@@ -87,10 +87,16 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
   30-60 second window, including timestamp, status, safe body snippet and server
   header. A smoke failure on a healthy application stops and reports; it does
   not automatically roll back.
-- Any rollback must restore the original selector environment and finish with
-  the domain serving NYSA CORE at `/`, green health/readiness for the restored
-  version and exactly one command/CWD-verified exact-root worker. If those
-  acceptance checks fail, stop and report without further repair attempts.
+- Automatic install/start recovery is application-only: restore the prior
+  application files and original selector environment, never the database.
+  Database restore is a separate explicitly approved action. Automatic
+  application rollback is permitted only before readiness has returned green
+  with one verified worker. After that acceptance point, any later failure must
+  preserve the running application and evidence and stop/report.
+- Any rollback must finish with the domain serving NYSA CORE at `/`, green
+  health/readiness for the restored version and exactly one
+  command/CWD-verified exact-root worker. If those acceptance checks fail, stop
+  and report without further repair attempts.
 
 ## Mandatory release packaging
 

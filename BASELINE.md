@@ -11,12 +11,16 @@
   smoke/report. Each phase writes a commit-, version- and config-bound receipt
   required by the next phase. The smoke phase is read-only, retries within a
   configured 30-60 second total window and records every response.
-- An install-phase failure may use only the verified scoped app/database backup.
-  Rollback acceptance additionally requires restoration of the original
-  CloudLinux selector environment, health/readiness for the baseline version,
-  `/` visibly serving NYSA CORE and exactly one command/CWD-verified exact-root
-  worker. Failure of any of those checks ends in a report requiring attention;
-  no further automatic fix is allowed.
+- Before readiness acceptance, an install/start failure may automatically
+  restore only the prior application files and original CloudLinux selector
+  environment. It must not run `pg_restore` or otherwise change the database;
+  database restoration remains a separate explicitly approved action. After
+  readiness is green with one verified worker, later table/runtime/worker
+  failures preserve the running candidate and evidence and stop/report.
+  Application rollback acceptance still requires health/readiness for the
+  baseline version, `/` visibly serving NYSA CORE and exactly one
+  command/CWD-verified exact-root worker. Failure of any acceptance check ends
+  in a report requiring attention with no further automatic fix.
 - Migration 166 currently grants its simulated-provider tables to the CRM Test
   role `nysareal_nysar2app`. Production uses `nysareal_nysacrmapp`. Every future
   production release containing migration 166 must render and verify that role

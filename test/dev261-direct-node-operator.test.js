@@ -49,12 +49,23 @@ test('backup phase verifies an exact scoped app and PostgreSQL rollback set befo
   assert.doesNotMatch(source,/mysqldump|--password/);
   assert.match(source,/crm-test-app\.tar\.gz/);
   assert.match(source,/SCOPED_BACKUP_VERIFIED\.json/);
-  assert.match(source,/ROLLED_BACK_AND_DOMAIN_VERIFIED/);
+  assert.match(source,/ROLLED_BACK_APPLICATION_AND_DOMAIN_VERIFIED/);
   assert.doesNotMatch(source,/fullbackup_to_homedir|Approved full backup/);
   assert.match(source,/STAGE_RESULT\.json/);
   assert.match(source,/BACKUP_RESULT\.json/);
   assert.match(source,/SCOPED_BACKUP_VERIFIED/);
   assert.match(source,/inspectWorkers\(config\.root\)/);
+});
+
+test('automatic rollback is application-only and never changes the database',()=>{
+  const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  const restore=source.slice(source.indexOf('function restoreApplicationBackup'),source.indexOf('function privateRegistrationFile'));
+  assert.match(restore,/tar',\['-xzf',receipt\.app\.path/);
+  assert.match(restore,/databaseRestorePerformed:false/);
+  assert.doesNotMatch(restore,/pg_restore|receipt\.database|--dbname|--clean/);
+  assert.doesNotMatch(source,/pg_restore',\['--clean'/);
+  assert.match(source,/databaseRestorePerformed=false/);
+  assert.match(source,/databaseStatePreserved=true/);
 });
 
 test('install rollback restores selector environment and proves the domain serves CORE',()=>{
@@ -69,6 +80,22 @@ test('install rollback restores selector environment and proves the domain serve
   assert.doesNotMatch(source,/catch\{report\.result='ROLLBACK_REQUIRES_ATTENTION'/);
 });
 
+test('readiness acceptance prevents every later automatic rollback',()=>{
+  const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  const install=source.slice(source.indexOf('async function installPhase()'),source.indexOf('async function smokePhase()'));
+  const accepted=install.indexOf('readinessAccepted=true');
+  const postChecks=install.indexOf('postDeploymentTableComparison');
+  const catchBoundary=install.indexOf("if(readinessAccepted)report.result='POST_READINESS_CHECK_FAILED_APP_PRESERVED'");
+  const rollbackBranch=install.indexOf('else{',catchBoundary);
+  const rollbackCall=install.indexOf('rollbackAfterInstallFailure',rollbackBranch);
+  assert.ok(accepted>0,'readiness acceptance latch is present');
+  assert.ok(postChecks>accepted,'table checks occur after readiness acceptance');
+  assert.ok(catchBoundary>postChecks,'failure boundary is evaluated after post-readiness checks');
+  assert.ok(rollbackCall>rollbackBranch,'rollback call exists only in the pre-readiness else branch');
+  assert.match(install,/report\.readinessAccepted=readinessAccepted/);
+  assert.match(install,/POST_READINESS_CHECK_FAILED_APP_PRESERVED/);
+});
+
 test('settled smoke is bounded, records each attempt and never auto-rolls back',()=>{
   const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
   assert.match(source,/Number\(config\.smokeWindowSeconds\)<30/);
@@ -79,7 +106,7 @@ test('settled smoke is bounded, records each attempt and never auto-rolls back',
   assert.match(source,/server:response\.headers\.get\('server'\)/);
   assert.match(source,/SMOKE_FAILED_HEALTHY_APP_PRESERVED/);
   const smoke=source.slice(source.indexOf('async function smokePhase()'));
-  assert.doesNotMatch(smoke,/restoreScopedBackup|rollbackAfterInstallFailure|selector\('stop'/);
+  assert.doesNotMatch(smoke,/restoreApplicationBackup|rollbackAfterInstallFailure|selector\('stop'/);
 });
 
 test('migration 166 production role mapping is an explicit release gate',()=>{
