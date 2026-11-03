@@ -47,8 +47,22 @@ try{
     window.$=selector=>document.querySelector(selector);
     window.fmtDate=value=>value?'2 Nov 2026':'—';
     window.toast=()=>{};
+    window.__DEV263_FAULTS__=[
+      'Simulated provider timeout',
+      'Simulated provider rate limit',
+      'Simulated provider server error',
+      'Simulated provider rejected the recipient number',
+      'Simulated provider response did not contain a message id',
+      'Simulated template is paused'
+    ];
+    window.__DEV263_FAULT_CALLS__=[];
     window.api=async url=>{
-      if(url.includes('/simulated-submit'))throw new Error('Synthetic provider rejection shown to the user');
+      if(url.includes('/simulated-submit')){
+        const message=window.__DEV263_FAULTS__[window.__DEV263_FAULT_CALLS__.length];
+        if(!message)throw new Error('Unexpected duplicate simulator submission');
+        window.__DEV263_FAULT_CALLS__.push(message);
+        throw new Error(message);
+      }
       if(url!=='/crm/whatsapp-workspace')throw new Error(`Unexpected synthetic request: ${url}`);
       return {
         teams:[{id:id(10),name:'Synthetic Secondary Sales'}],
@@ -68,10 +82,15 @@ try{
   await page.evaluate(()=>window.renderWhatsAppWorkspace());
   await page.waitForSelector('[data-wa-section="templates"]');
   assert.equal(await page.$('[data-wa-section="reviews"]'),null,'Agent must not receive the review section');
-  await page.click('[data-template-simulate]');
-  await page.waitForFunction(()=>document.querySelector('#wa-action-error')?.textContent.includes('Synthetic provider rejection shown to the user'));
-  const visibleActionError=await page.$eval('#wa-action-error',element=>({visible:getComputedStyle(element).display!=='none',role:element.getAttribute('role'),text:element.textContent.trim()}));
-  assert.equal(visibleActionError.visible,true);assert.equal(visibleActionError.role,'alert');assert.match(visibleActionError.text,/Synthetic provider rejection shown to the user/);
+  const faultBanners=[];
+  for(const message of await page.evaluate(()=>window.__DEV263_FAULTS__)){
+    await page.click('[data-template-simulate]');
+    await page.waitForFunction(expected=>document.querySelector('#wa-action-error')?.textContent.includes(expected),{},message);
+    const banner=await page.$eval('#wa-action-error',element=>({visible:getComputedStyle(element).display!=='none',role:element.getAttribute('role'),text:element.textContent.trim()}));
+    assert.equal(banner.visible,true);assert.equal(banner.role,'alert');assert.match(banner.text,new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    faultBanners.push({fault:message,status:'passed',...banner});
+  }
+  assert.equal(await page.evaluate(()=>window.__DEV263_FAULT_CALLS__.length),6,'Each fault must trigger exactly one request');
   for(const [key,expectedHeading] of sections){
     await page.click(`[data-wa-section="${key}"]`);
     await page.waitForFunction(heading=>document.querySelector('#wa-workspace-panel h3')?.textContent.trim()===heading,{},expectedHeading);
@@ -93,7 +112,7 @@ try{
     releaseSha256,
     loadedFromTrackedReleaseFile:true,
     sections:results,
-    visibleActionError,
+    faultBanners,
     pageErrors,
     consoleErrors,
     checkedAt:new Date().toISOString()

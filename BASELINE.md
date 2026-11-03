@@ -18,10 +18,19 @@
 - The correction also aligns synthetic CTWA source data with the migration-165
   `ctwa` constraint and gives simulator failures a persistent, accessible UI
   alert instead of relying only on a transient toast.
-- No schema or migration is added. Rollback is application-only to DEV262; the
-  database must not be automatically restored. Any hosted release must use the
-  approved canonical four-phase operator (stage, backup, install, smoke), with
-  separate approval for each phase and the mandatory exact-root worker checks.
+- Full local flow verification with the configured loopback port deliberately
+  unreachable found that the application accepted the `invalid_number` fault
+  but migration 166's check constraint did not. DEV263 therefore adds forward
+  migration 167 to align the persisted fault whitelist; it adds no table or
+  column. The same verification covers approved/rejected/pending templates,
+  CTWA/button/media inbound, success and failure callbacks, frozen campaign
+  recipients, all six fault presentations, 23/25/71/73-hour windows and both
+  run-specific and global cleanup.
+- Rollback is application-only to DEV262; the database must not be
+  automatically restored. Any hosted release must use the approved canonical
+  four-phase operator (stage, backup, install, smoke), with separate approval
+  for each phase and the mandatory exact-root worker checks. Deployment must
+  expect migration 167 after install while preserving the 303-table baseline.
 
 ## DEV262 phased CRM Test operator preparation — 4 November 2026
 

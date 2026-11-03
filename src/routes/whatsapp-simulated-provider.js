@@ -251,7 +251,11 @@ export function createWhatsAppSimulationControlRoutes(){
     if(replyOpen&&!text&&!templateVersionId)return res.status(400).json({error:'Enter reply text or select a template'});
     if(templateVersionId){const template=await one(`SELECT v.id,v.body_text,v.simulated_provider_status,t.owner_team_id FROM wa_message_template_versions v JOIN wa_message_templates t ON t.id=v.template_id WHERE v.id=$1`,[templateVersionId]);if(!template||template.simulatedProviderStatus!=='approved'||String(template.ownerTeamId)!==String(conversation.ownerTeamId))return res.status(409).json({error:'Select a simulated-approved template from this team'});}
     let payload;
-    try{payload=buildSimulatedOutbound({to:conversation.normalizedPhone,type:templateVersionId?'template':'text',text,templateVersionId,actorId:req.broker.id,conversationId:conversation.id},config);payload.idempotency_key=clean(req.body?.idempotencyKey,240)||payload.correlation_id;}catch(error){return res.status(error.statusCode||400).json({error:error.message,code:error.code});}
+    try{
+      payload=buildSimulatedOutbound({to:conversation.normalizedPhone,type:templateVersionId?'template':'text',text,templateVersionId,actorId:req.broker.id,conversationId:conversation.id},config);
+      payload.idempotency_key=clean(req.body?.idempotencyKey,240)||payload.correlation_id;
+      payload.simulate_failure=req.body?.simulateFailure===true;
+    }catch(error){return res.status(error.statusCode||400).json({error:error.message,code:error.code});}
     const response=await submitInProcess(config,'messages',payload),providerMessageId=response.messages?.[0]?.id;
     if(!providerMessageId)return res.status(502).json({error:'Simulated provider response did not contain a message id'});
     const recorded=await recordSimulatedOutbound({providerMessageId,conversationId:conversation.id,templateVersionId,text,type:templateVersionId?'template':'text',actorId:req.broker.id,payload});

@@ -1,0 +1,99 @@
+{
+  "candidate": "DEV263 pre-approval source",
+  "role": "Sales Agent",
+  "synthetic": true,
+  "releaseFile": "public/whatsapp-workspace-ui.js",
+  "releaseSha256": "9c7aac3bd463ce5940f289773b1a399417cef31e388aba3b4b3750428e7d395b",
+  "loadedFromTrackedReleaseFile": true,
+  "sections": [
+    {
+      "section": "templates",
+      "heading": "Template library",
+      "status": "passed",
+      "textLength": 1239,
+      "screenshot": "01-templates.png"
+    },
+    {
+      "section": "recipients",
+      "heading": "Recipient import",
+      "status": "passed",
+      "textLength": 1060,
+      "screenshot": "02-recipients.png"
+    },
+    {
+      "section": "segments",
+      "heading": "Reusable audience segments",
+      "status": "passed",
+      "textLength": 544,
+      "screenshot": "03-segments.png"
+    },
+    {
+      "section": "campaigns",
+      "heading": "Draft-only campaign composer",
+      "status": "passed",
+      "textLength": 852,
+      "screenshot": "04-campaigns.png"
+    },
+    {
+      "section": "inbox",
+      "heading": "Conversation inbox",
+      "status": "passed",
+      "textLength": 424,
+      "screenshot": "05-inbox.png"
+    },
+    {
+      "section": "materials",
+      "heading": "Materials catalogue",
+      "status": "passed",
+      "textLength": 523,
+      "screenshot": "06-materials.png"
+    }
+  ],
+  "faultBanners": [
+    {
+      "fault": "Simulated provider timeout",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated provider timeout"
+    },
+    {
+      "fault": "Simulated provider rate limit",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated provider rate limit"
+    },
+    {
+      "fault": "Simulated provider server error",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated provider server error"
+    },
+    {
+      "fault": "Simulated provider rejected the recipient number",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated provider rejected the recipient number"
+    },
+    {
+      "fault": "Simulated provider response did not contain a message id",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated provider response did not contain a message id"
+    },
+    {
+      "fault": "Simulated template is paused",
+      "status": "passed",
+      "visible": true,
+      "role": "alert",
+      "text": "Action failed. Simulated template is paused"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "checkedAt": "2026-11-03T21:54:34.496Z"
+}

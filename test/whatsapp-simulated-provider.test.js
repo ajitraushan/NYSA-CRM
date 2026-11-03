@@ -55,6 +55,7 @@ test('DEV262 source wires an isolated provider, webhook, audit, badges, generato
   const route=fs.readFileSync(new URL('../src/routes/whatsapp-simulated-provider.js',import.meta.url),'utf8');
   const store=fs.readFileSync(new URL('../src/whatsapp-simulated-provider-store.js',import.meta.url),'utf8');
   const migration=fs.readFileSync(new URL('../src/migrations/166_whatsapp_simulated_provider_stub.sql',import.meta.url),'utf8');
+  const faultMigration=fs.readFileSync(new URL('../src/migrations/167_whatsapp_simulator_fault_contract.sql',import.meta.url),'utf8');
   const ui=fs.readFileSync(new URL('../public/whatsapp-workspace-ui.js',import.meta.url),'utf8');
   const server=fs.readFileSync(new URL('../src/server.js',import.meta.url),'utf8');
   const load=fs.readFileSync(new URL('../tools/whatsapp-simulation-load.mjs',import.meta.url),'utf8');
@@ -63,9 +64,11 @@ test('DEV262 source wires an isolated provider, webhook, audit, badges, generato
   assert.match(route,/simulated-submit/);assert.match(route,/campaigns\/:id\/simulated-send/);assert.match(route,/conversations\/:id\/simulated-send/);
   assert.match(route,/submitInProcess/);assert.match(route,/acceptSimulatedEvent/);assert.doesNotMatch(route,/\bfetch\s*\(/);
   assert.match(route,/timeout/);assert.match(route,/rate_limited/);assert.match(route,/server_error/);assert.match(route,/invalid_number/);assert.match(route,/invalid_payload/);assert.match(route,/template_paused/);
+  assert.match(route,/simulate_failure=req\.body\?\.simulateFailure===true/);
   assert.match(store,/provider_event_id.*UNIQUE|ON CONFLICT\(provider_event_id\)/s);
   assert.match(store,/wa_contact_suppressions/);assert.match(store,/ctwa_entry_at/);assert.match(store,/cleanupAllSimulatedRecords/);assert.match(store,/ensureSimulatedCampaignConversation/);
   assert.match(migration,/simulated BOOLEAN NOT NULL DEFAULT FALSE/);assert.match(migration,/payload_hash/);assert.match(migration,/wa_simulation_runs/);
+  assert.match(faultMigration,/invalid_number/);assert.match(faultMigration,/wa_simulated_provider_control_fault_mode_check/);
   assert.match(ui,/SIMULATED PROVIDER/);assert.match(ui,/data-template-simulate/);assert.match(ui,/data-campaign-simulate/);assert.match(ui,/wa-simulated-reply/);
   assert.match(ui,/id="wa-action-error"/);assert.match(ui,/role="alert"/);assert.match(ui,/showActionError\(error\)/);
   assert.match(load,/requestedConversations/);assert.match(load,/requestedMessages/);assert.match(load,/requestedOptOuts/);assert.match(load,/workers/);assert.match(load,/hoursBack/);assert.match(load,/unread/);
