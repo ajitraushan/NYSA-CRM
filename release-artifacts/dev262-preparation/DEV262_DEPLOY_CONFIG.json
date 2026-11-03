@@ -11,7 +11,7 @@
   "commit": "c2a62a8cc519a85e1c712abd71ab9f7adf61fefe",
   "archiveHash": "0f1538d252110170ebebf85845be7b8ee66a0c4726c03397337099640d2d20ae",
   "manifestHash": "85abbc7b6c4922a93be3bcf40e23b9e3945b02b3a84933ecc99351a6344e05f4",
-  "operatorCommit": "b2ffa66b9ec55180927b9c434d27f4550142213f",
+  "operatorCommit": "6256d8a7349e8fa758a9692aba1b1409962f3bef",
   "expectedDatabase": "nysareal_nysa_dev247_smoke",
   "expectedRole": "nysareal_nysar2app",
   "baselineMigrationCount": 165,
@@ -627,5 +627,7 @@
   ],
   "expectedTestPassed": 1548,
   "totalTimeoutMinutes": 45,
+  "backupFreshnessMinutes": 90,
+  "smokeWindowSeconds": 60,
   "cleanupPaths": []
 }
