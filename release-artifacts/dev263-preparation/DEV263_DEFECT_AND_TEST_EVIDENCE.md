@@ -72,3 +72,19 @@ while collecting this evidence.
   exact CRM Test application root. Do not retry a failed phase without new
   approval.
 - Keep the simulator paused unless a later exact test authorizes otherwise.
+
+## Origin candidate
+
+- Version: `2.1.0-dev.263`
+- GitHub-advertised app commit:
+  `61d6ef0fa08d59c06146308995dce7c0d682b394`
+- Source tree: `e72a3ead0a71695c5aa101d4c851e59649b40944`
+- Package SHA-256:
+  `82a559d406dda90e0c621ad18199d6f96c881997869413d56a34e5a02e632d63`
+- Manifest SHA-256:
+  `5477de958039b18ce837d4d466d1bd324946ae0de4a6a0c878aaf018d7708431`
+- Mandatory provenance verification: passed.
+- Canonical operator commit:
+  `6256d8a7349e8fa758a9692aba1b1409962f3bef`
+- Canonical operator SHA-256:
+  `3ffdb5cd00eb21820ca474b214e6847b584e46b0e588ef2a8e2dde8e6aee2a3b`
