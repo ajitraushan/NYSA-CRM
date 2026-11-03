@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import {resolveScopedBackupPath,verifyScopedBackupTableNames} from '../tools/crm-test-backup-verification.mjs';
+
+const sha256=value=>crypto.createHash('sha256').update(value).digest('hex');
 
 test('canonical operator requires four separately approved phases and chained receipts',()=>{
   const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
@@ -116,6 +119,28 @@ test('migration 166 production role mapping is an explicit release gate',()=>{
   assert.match(baseline,/Production uses `nysareal_nysacrmapp`/);
   assert.match(baseline,/record original\/rendered migration hashes/);
   assert.match(baseline,/mandatory production-release approval item/);
+});
+
+test('DEV262 accepts migration 166 as the installed baseline without applying a new migration',()=>{
+  const config=JSON.parse(fs.readFileSync(new URL('../release-artifacts/dev262-preparation/DEV262_DEPLOY_CONFIG.json',import.meta.url),'utf8'));
+  const operator=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  const server=fs.readFileSync(new URL('../src/server.js',import.meta.url),'utf8');
+  const database=fs.readFileSync(new URL('../src/db.js',import.meta.url),'utf8');
+  const install=operator.slice(operator.indexOf('async function installPhase()'),operator.indexOf('async function smokePhase()'));
+
+  assert.equal(config.baselineMigrationCount,166);
+  assert.equal(config.expectedMigrationCount,166);
+  assert.equal(config.expectedTableCount,303);
+  assert.equal(config.expectedPostTableCount,303);
+  assert.deepEqual(config.expectedTableNames,config.expectedPostTableNames);
+  assert.equal(sha256(`${config.expectedTableNames.join('\n')}\n`),'69e336181d98d9965ac6916b032a6bdb1496951917ecf912831f769738dbfeec');
+  assert.deepEqual(config.expectedTableNames.filter(name=>name.startsWith('wa_simulat')),['wa_simulated_provider_control','wa_simulated_provider_events','wa_simulation_runs']);
+
+  assert.match(install,/await ledger\(pool,config\.baselineMigrationCount\)/);
+  assert.match(install,/await ledger\(verificationPool,config\.expectedMigrationCount\)/);
+  assert.doesNotMatch(install,/src\/migrations|INSERT INTO schema_migrations|\bpg_restore\b/);
+  assert.match(server,/await migrate\(\)/);
+  assert.match(database,/if \(applied\.has\(file\)\) continue/);
 });
 
 test('canonical operator completes full scoped-backup table verification with exact live and dump names',()=>{

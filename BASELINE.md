@@ -27,6 +27,14 @@
   mapping explicitly, record original/rendered migration hashes and refuse the
   raw CRM Test grant. This is a mandatory production-release approval item, not
   part of CRM Test workflow behavior.
+- A read-only live reconciliation on 4 November 2026 confirmed that CRM Test is
+  already at migration 166 with 303 public tables. The ordered table-name list
+  has SHA-256
+  `69e336181d98d9965ac6916b032a6bdb1496951917ecf912831f769738dbfeec`.
+  DEV262 therefore uses 166/303 as both its pre-install and post-install
+  expectation. Application startup still invokes the standard migration runner,
+  which skips migration 166 because that version is already recorded; no new
+  migration is expected to run.
 
 ## DEV262 CRM Test simulated WhatsApp provider — 3 November 2026
 
