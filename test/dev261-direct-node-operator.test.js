@@ -143,6 +143,21 @@ test('DEV262 accepts migration 166 as the installed baseline without applying a 
   assert.match(database,/if \(applied\.has\(file\)\) continue/);
 });
 
+test('DEV263 advances the migration ledger to 167 without changing the verified table set',()=>{
+  const config=JSON.parse(fs.readFileSync(new URL('../release-artifacts/dev263-preparation/DEV263_DEPLOY_CONFIG.json',import.meta.url),'utf8'));
+  const migration=fs.readFileSync(new URL('../src/migrations/167_whatsapp_simulator_fault_contract.sql',import.meta.url),'utf8');
+
+  assert.equal(config.commit,'4eb1758c98ed1822ea451de7c90b4266a96a64d0');
+  assert.equal(config.baselineMigrationCount,166);
+  assert.equal(config.expectedMigrationCount,167);
+  assert.equal(config.expectedTableCount,303);
+  assert.equal(config.expectedPostTableCount,303);
+  assert.deepEqual(config.expectedTableNames,config.expectedPostTableNames);
+  assert.match(migration,/ALTER TABLE wa_simulated_provider_control/);
+  assert.match(migration,/invalid_number/);
+  assert.doesNotMatch(migration,/CREATE TABLE/);
+});
+
 test('canonical operator completes full scoped-backup table verification with exact live and dump names',()=>{
   const live=['customers','schema_migrations','wa_messages'];
   const exact=verifyScopedBackupTableNames(live,['wa_messages','customers','schema_migrations']);
