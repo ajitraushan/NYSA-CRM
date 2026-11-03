@@ -45,12 +45,24 @@ incomplete and must not proceed to deployment.
   and actual hashes.
 - Parameterize and record the approved backup path and freshness rule. Do not
   rely on a hidden hard-coded filename, timestamp or environment identity.
-- CRM Test deployments must create a scoped rollback set in the same bounded
-  operator run: an archive of the exact CRM Test application root plus a
-  database-only dump of the exact CRM Test database. Verify both files' size,
-  SHA-256 and contents before mutation; rollback may restore only those scoped
-  targets. Full-account cPanel backups are reserved for production releases or
+- CRM Test deployments use separately invoked and separately approved canonical
+  operator phases: (A) non-mutating stage/package verification, (B) scoped
+  backup and verification, (C) quiesce/install/configure/start, and (D) settled
+  smoke/report. No command may combine those approvals. Phase B creates an
+  archive of the exact CRM Test application root plus a database-only dump of
+  the exact CRM Test database; both files' size, SHA-256 and contents must be
+  verified before Phase C. Rollback may restore only those scoped targets.
+  Full-account cPanel backups are reserved for production releases or
   separately scheduled account backups.
+- Phase D must allow a bounded 30-60 second settle/retry window and retain every
+  HTTP attempt's timestamp, status, safe body snippet and server header. A
+  failed smoke check on an otherwise healthy application stops and reports; it
+  must not trigger an automatic rollback.
+- Any approved rollback must restore the original selector environment, then
+  prove the domain serves NYSA CORE at `/`, health and readiness are green for
+  the restored version, and exactly one command/CWD-verified exact-root worker
+  remains. If any rollback acceptance check fails, stop and report without
+  further repair attempts.
 - Run environment-dependent browser/PDF checks where the required runtime is
   supported. If shared hosting cannot launch a browser, defer that check
   explicitly to a remote post-deployment test; do not hang the hosted stage.

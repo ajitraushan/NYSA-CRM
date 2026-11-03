@@ -1,5 +1,29 @@
 # CRM Development Baseline
 
+## DEV262 phased CRM Test operator preparation — 4 November 2026
+
+- Scope is local, version-controlled deployment-tool preparation only. No CRM
+  Test, production, website, REM, Meta or 360dialog hosting state may change
+  until the exact operator commit and SHA-256 receive separate approval.
+- The canonical operator is being changed from one combined transaction to
+  four separate commands and approvals: stage/package verification, scoped
+  backup verification, quiesce/install/simulator-environment/start, and settled
+  smoke/report. Each phase writes a commit-, version- and config-bound receipt
+  required by the next phase. The smoke phase is read-only, retries within a
+  configured 30-60 second total window and records every response.
+- An install-phase failure may use only the verified scoped app/database backup.
+  Rollback acceptance additionally requires restoration of the original
+  CloudLinux selector environment, health/readiness for the baseline version,
+  `/` visibly serving NYSA CORE and exactly one command/CWD-verified exact-root
+  worker. Failure of any of those checks ends in a report requiring attention;
+  no further automatic fix is allowed.
+- Migration 166 currently grants its simulated-provider tables to the CRM Test
+  role `nysareal_nysar2app`. Production uses `nysareal_nysacrmapp`. Every future
+  production release containing migration 166 must render and verify that role
+  mapping explicitly, record original/rendered migration hashes and refuse the
+  raw CRM Test grant. This is a mandatory production-release approval item, not
+  part of CRM Test workflow behavior.
+
 ## DEV262 CRM Test simulated WhatsApp provider — 3 November 2026
 
 - Authorized scope is source implementation and synthetic verification of the

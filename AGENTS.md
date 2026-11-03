@@ -78,6 +78,19 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
   times. On a failure, timeout or stall, stop and report the exact completed
   phase and safe error; do not retry or broaden the operation without new
   approval.
+- CRM Test uses four separately invoked and separately approved canonical
+  operator phases: stage/package verification, scoped backup verification,
+  quiesce/install/configure/start, and settled smoke/report. Never combine the
+  four approvals into one command. Bind each phase receipt to the exact commit,
+  version and configuration hash before allowing the next phase.
+- Settled smoke is read-only and must retain every attempt during a bounded
+  30-60 second window, including timestamp, status, safe body snippet and server
+  header. A smoke failure on a healthy application stops and reports; it does
+  not automatically roll back.
+- Any rollback must restore the original selector environment and finish with
+  the domain serving NYSA CORE at `/`, green health/readiness for the restored
+  version and exactly one command/CWD-verified exact-root worker. If those
+  acceptance checks fail, stop and report without further repair attempts.
 
 ## Mandatory release packaging
 

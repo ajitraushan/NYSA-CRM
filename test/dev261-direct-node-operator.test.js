@@ -3,13 +3,26 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {resolveScopedBackupPath,verifyScopedBackupTableNames} from '../tools/crm-test-backup-verification.mjs';
 
-test('DEV261 operator creates and verifies a scoped app/database rollback in the same direct-node run',()=>{
+test('canonical operator requires four separately approved phases and chained receipts',()=>{
+  const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  assert.match(source,/new Set\(\['stage','backup','install','smoke'\]\)/);
+  assert.match(source,/args\.approved!==`\$\{config\.commit\}:\$\{args\.phase\}`/);
+  assert.match(source,/if\(args\.phase==='stage'\)await stagePhase\(\)/);
+  assert.match(source,/else if\(args\.phase==='backup'\)await backupPhase\(\)/);
+  assert.match(source,/else if\(args\.phase==='install'\)await installPhase\(\)/);
+  assert.match(source,/else await smokePhase\(\)/);
+  assert.match(source,/assertReceipt\('STAGE_RESULT\.json','STAGED_AND_VERIFIED'\)/);
+  assert.match(source,/assertReceipt\('BACKUP_RESULT\.json','SCOPED_BACKUP_VERIFIED'\)/);
+  assert.match(source,/assertReceipt\('INSTALL_RESULT\.json','INSTALLED_STARTED_AND_READY'\)/);
+  assert.doesNotMatch(source,/mode:'stage-and-deploy-once'/);
+});
+
+test('backup phase verifies an exact scoped app and PostgreSQL rollback set before install',()=>{
   const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
   assert.match(source,/args\['backup-path'\]/);
   assert.doesNotMatch(source,/const backup\s*=\s*['"]\/home\/nysareal\/backup-/);
-  assert.match(source,/mode:'stage-and-deploy-once'/);
   assert.match(source,/totalTimeoutMinutes/);
-  assert.match(source,/createAndVerifyScopedBackup\(environment\)/);
+  assert.match(source,/createAndVerifyScopedBackup\(environment,report\)/);
   assert.match(source,/pg_dump/);
   assert.match(source,/pg_dump',\['--version'\]/);
   assert.match(source,/server_version_num/);
@@ -24,7 +37,7 @@ test('DEV261 operator creates and verifies a scoped app/database rollback in the
   assert.match(source,/baselineMigrationCount/);
   assert.match(source,/expectedPostTableCount/);
   assert.match(source,/expectedPostTableNames/);
-  assert.match(source,/ledger\(stagePool,config\.baselineMigrationCount\)/);
+  assert.match(source,/ledger\(pool,config\.baselineMigrationCount\)/);
   assert.match(source,/ledger\(verificationPool,config\.expectedMigrationCount\)/);
   assert.match(source,/postDeploymentTableComparison/);
   assert.match(source,/compareTableNames\(livePool,\{expectedNames:config\.expectedTableNames,expectedCount:config\.expectedTableCount/);
@@ -36,12 +49,46 @@ test('DEV261 operator creates and verifies a scoped app/database rollback in the
   assert.doesNotMatch(source,/mysqldump|--password/);
   assert.match(source,/crm-test-app\.tar\.gz/);
   assert.match(source,/SCOPED_BACKUP_VERIFIED\.json/);
-  assert.match(source,/ROLLED_BACK_SCOPED_APP_AND_DATABASE/);
+  assert.match(source,/ROLLED_BACK_AND_DOMAIN_VERIFIED/);
   assert.doesNotMatch(source,/fullbackup_to_homedir|Approved full backup/);
   assert.match(source,/STAGE_RESULT\.json/);
-  assert.match(source,/DEPLOYED_TECHNICAL_CHECKS_PASSED/);
-  assert.match(source,/report\.cleanup=cleanAfterHealth/);
+  assert.match(source,/BACKUP_RESULT\.json/);
+  assert.match(source,/SCOPED_BACKUP_VERIFIED/);
   assert.match(source,/inspectWorkers\(config\.root\)/);
+});
+
+test('install rollback restores selector environment and proves the domain serves CORE',()=>{
+  const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  assert.match(source,/ORIGINAL_REGISTRATION_PRIVATE\.json/);
+  assert.match(source,/selector\('set',\['--env-vars',JSON\.stringify\(saved\.env_vars\)\]\)/);
+  assert.match(source,/\['\/api\/health',200/);
+  assert.match(source,/\['\/api\/readiness',200,\{expectedVersion:version\}\]/);
+  assert.match(source,/\['\/',200,\{requireCore:true\}\]/);
+  assert.match(source,/NYSA\\s\+CORE/);
+  assert.match(source,/ROLLBACK_REQUIRES_ATTENTION/);
+  assert.doesNotMatch(source,/catch\{report\.result='ROLLBACK_REQUIRES_ATTENTION'/);
+});
+
+test('settled smoke is bounded, records each attempt and never auto-rolls back',()=>{
+  const source=fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs',import.meta.url),'utf8');
+  assert.match(source,/Number\(config\.smokeWindowSeconds\)<30/);
+  assert.match(source,/Number\(config\.smokeWindowSeconds\)>60/);
+  assert.match(source,/report\.attempts\.push\(attempt\)/);
+  assert.match(source,/actualStatus:response\.status/);
+  assert.match(source,/bodySnippet:sanitizeSnippet\(text\)/);
+  assert.match(source,/server:response\.headers\.get\('server'\)/);
+  assert.match(source,/SMOKE_FAILED_HEALTHY_APP_PRESERVED/);
+  const smoke=source.slice(source.indexOf('async function smokePhase()'));
+  assert.doesNotMatch(smoke,/restoreScopedBackup|rollbackAfterInstallFailure|selector\('stop'/);
+});
+
+test('migration 166 production role mapping is an explicit release gate',()=>{
+  const migration=fs.readFileSync(new URL('../src/migrations/166_whatsapp_simulated_provider_stub.sql',import.meta.url),'utf8');
+  const baseline=fs.readFileSync(new URL('../BASELINE.md',import.meta.url),'utf8');
+  assert.match(migration,/TO nysareal_nysar2app;/);
+  assert.match(baseline,/Production uses `nysareal_nysacrmapp`/);
+  assert.match(baseline,/record original\/rendered migration hashes/);
+  assert.match(baseline,/mandatory production-release approval item/);
 });
 
 test('canonical operator completes full scoped-backup table verification with exact live and dump names',()=>{

@@ -9,6 +9,9 @@ import {resolveScopedBackupPath,verifyScopedBackupTableNames} from './crm-test-b
 
 process.umask(0o077);
 
+const PHASES=new Set(['stage','backup','install','smoke']);
+const sleep=milliseconds=>new Promise(resolve=>setTimeout(resolve,milliseconds));
+
 function argumentsOf(values){
   const result={};
   for(let index=0;index<values.length;index+=2){
@@ -21,19 +24,21 @@ function argumentsOf(values){
 
 const args=argumentsOf(process.argv.slice(2));
 if(process.platform!=='linux')throw Error('Hosted Linux operator required');
-if(!args.config||!args['backup-path']||!args.approved)throw Error('Config, backup path and exact approval are required');
+if(!args.config||!args['backup-path']||!args.approved||!args.phase)throw Error('Config, backup path, phase and exact phase approval are required');
+if(!PHASES.has(args.phase))throw Error('Unknown operator phase');
 const config=JSON.parse(fs.readFileSync(args.config,'utf8'));
-const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','baselineMigrationCount','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedPostTableCount','expectedPostTableNames','expectedTestPassed','totalTimeoutMinutes'];
+const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','baselineMigrationCount','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedPostTableCount','expectedPostTableNames','expectedTestPassed','totalTimeoutMinutes','backupFreshnessMinutes','smokeWindowSeconds'];
 for(const key of required)if(config[key]===undefined||config[key]===null||config[key]==='')throw Error(`Missing operator configuration: ${key}`);
-if(args.approved!==config.commit||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit mismatch');
+if(args.approved!==`${config.commit}:${args.phase}`||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit and phase mismatch');
 if(!path.isAbsolute(args['backup-path']))throw Error('Backup path must be absolute');
 if(config.root!=='/home/nysareal/nysa-core-dashboard-dd6262a-stage'||config.domain!=='crm-test.nysarealty.com')throw Error('CRM Test target identity mismatch');
+if(Number(config.smokeWindowSeconds)<30||Number(config.smokeWindowSeconds)>60)throw Error('Smoke retry window must be between 30 and 60 seconds');
 
 const startedAt=Date.now();
 const deadline=startedAt+Number(config.totalTimeoutMinutes)*60_000;
 const remaining=()=>{
   const value=deadline-Date.now();
-  if(value<=0)throw Error('Operator total time limit exceeded');
+  if(value<=0)throw Error('Operator phase time limit exceeded');
   return value;
 };
 const commandTimeout=preferred=>Math.max(1000,Math.min(preferred,remaining()));
@@ -43,7 +48,11 @@ const hashStream=file=>new Promise((resolve,reject)=>{
   const digest=crypto.createHash('sha256'),stream=fs.createReadStream(file);
   stream.on('error',reject);digest.on('error',reject);stream.on('data',chunk=>digest.update(chunk));stream.on('end',()=>resolve(digest.digest('hex')));
 });
-const write=(name,value)=>fs.writeFileSync(path.join(config.base,name),`${JSON.stringify(value,null,2)}\n`);
+const evidencePath=name=>path.join(config.base,name);
+const write=(name,value,options={})=>fs.writeFileSync(evidencePath(name),`${JSON.stringify(value,null,2)}\n`,{mode:0o600,...options});
+const read=name=>JSON.parse(fs.readFileSync(evidencePath(name),'utf8'));
+const requireAbsent=name=>{if(fs.existsSync(evidencePath(name)))throw Error(`${name} must not pre-exist`);};
+const safeError=error=>String(error?.message||'').startsWith('Command failed:')?'External command failed':String(error?.message||'Unknown failure').slice(0,240);
 
 function registration(){
   const json=JSON.parse(run('cloudlinux-selector',['get','--json','--interpreter','nodejs','--domain',config.domain])),found=[];
@@ -52,7 +61,7 @@ function registration(){
   if(found.length!==1||found[0].domain!==config.domain)throw Error('Registration identity mismatch');
   return found[0];
 }
-function selector(action){run('cloudlinux-selector',[action,'--json','--interpreter','nodejs','--domain',config.domain,'--app-root',path.basename(config.root)],5*60_000);}
+function selector(action,extra=[]){run('cloudlinux-selector',[action,'--json','--interpreter','nodejs','--domain',config.domain,'--app-root',path.basename(config.root),...extra],5*60_000);}
 const assertStopped=async()=>registration().app_status==='stopped';
 async function stop(){
   try{selector('stop');}catch(error){if(!await assertStopped())throw error;}
@@ -94,12 +103,36 @@ async function readiness(expectedVersion){
   for(let attempt=0;attempt<25;attempt++){
     remaining();
     try{return await verifyReadinessWorker({root:config.root,expectedVersion});}
-    catch(error){last=error;await new Promise(resolve=>setTimeout(resolve,500));}
+    catch(error){last=error;await sleep(500);}
   }
   throw last;
 }
 function databaseEnvironment(environment){
   return {...process.env,PGHOST:environment.PGHOST||'localhost',PGPORT:String(environment.PGPORT||5432),PGDATABASE:config.expectedDatabase,PGUSER:config.expectedRole,PGPASSWORD:environment.PGPASSWORD||''};
+}
+function validateRegistration(environment){
+  if(environment.PGDATABASE!==config.expectedDatabase||environment.PGUSER!==config.expectedRole)throw Error('CRM Test registration database drift');
+  if(environment.WHATSAPP_SANDBOX_ENABLED!=='false'||environment.WHATSAPP_SANDBOX_CALLBACK_APPROVED!=='false')throw Error('WhatsApp sandbox flags are not closed');
+}
+function validateBaseline(){
+  if(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).version!==config.baselineVersion)throw Error('Installed baseline version drift');
+  if(JSON.parse(fs.readFileSync(path.join(config.root,'RELEASE_PROVENANCE.json'))).commit!==config.baselineCommit)throw Error('Installed baseline provenance drift');
+}
+function validateCandidatePackage(){
+  if(hash(config.zip)!==config.archiveHash||hash(config.manifest)!==config.manifestHash)throw Error('Candidate archive or manifest hash mismatch');
+  const manifestData=JSON.parse(fs.readFileSync(config.manifest));
+  if(manifestData.commit!==config.commit||manifestData.packageSha256!==config.archiveHash||manifestData.version!==config.version||manifestData.testReceipt.failed!==0||manifestData.testReceipt.passed!==Number(config.expectedTestPassed))throw Error('Candidate test or provenance receipt mismatch');
+  return manifestData;
+}
+function validateCandidateDirectory(){
+  const provenance=JSON.parse(fs.readFileSync(path.join(config.candidate,'RELEASE_PROVENANCE.json'),'utf8'));
+  if(provenance.commit!==config.commit||provenance.version!==config.version||provenance.migrationCount!==Number(config.expectedMigrationCount)||provenance.testReceipt.failed!==0)throw Error('Candidate provenance mismatch');
+  return runtimeNames(config.candidate);
+}
+function assertReceipt(name,result){
+  const receipt=read(name);
+  if(receipt.result!==result||receipt.commit!==config.commit||receipt.version!==config.version||receipt.configSha256!==hash(args.config))throw Error(`${name} does not authorize this phase`);
+  return receipt;
 }
 function scopedBackupDirectory(){
   const resolved=resolveScopedBackupPath(args['backup-path'],{appRoot:config.root});
@@ -107,23 +140,24 @@ function scopedBackupDirectory(){
   fs.mkdirSync(resolved,{recursive:true,mode:0o700});
   return resolved;
 }
-async function createAndVerifyScopedBackup(environment){
+async function createAndVerifyScopedBackup(environment,report){
   const directory=scopedBackupDirectory(),appArchive=path.join(directory,'crm-test-app.tar.gz'),databaseDump=path.join(directory,`${config.expectedDatabase}.dump`),databaseEnv=databaseEnvironment(environment);
   const livePool=poolFor(environment);let liveTableNames,serverVersionNumber;
   try{
     report.tableComparison=await compareTableNames(livePool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'pre-deployment'});
     liveTableNames=report.tableComparison.observedNames;
     serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
-  }
-  finally{await livePool.end();}
+  }finally{await livePool.end();}
   const {observedNames:ignoredObservedNames,...tableComparisonReceipt}=report.tableComparison;report.tableComparison=tableComparisonReceipt;
   if(!report.tableComparison.matches)throw Error(`Live CRM Test table-name drift: expected ${report.tableComparison.expectedCount}, observed ${report.tableComparison.observedCount}, extra ${report.tableComparison.extra.length}, missing ${report.tableComparison.missing.length}`);
   const liveTableCount=liveTableNames.length;
   const pgDumpVersion=run('pg_dump',['--version'],60_000,{env:databaseEnv}).toString().trim(),pgRestoreVersion=run('pg_restore',['--version'],60_000,{env:databaseEnv}).toString().trim();
   const clientMajor=Number(pgDumpVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),restoreMajor=Number(pgRestoreVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),serverMajor=Math.floor(serverVersionNumber/10_000);
   if(!clientMajor||!restoreMajor||!serverMajor||clientMajor<serverMajor||restoreMajor<serverMajor)throw Error('PostgreSQL backup client is older than the CRM Test server');
+  const manifestBefore=hash(path.join(config.root,'RUNTIME_MANIFEST.sha256'));
   run('tar',['-czf',appArchive,'-C',path.dirname(config.root),path.basename(config.root)],30*60_000);
   run('pg_dump',['--format=custom','--no-owner','--no-privileges','--file',databaseDump,config.expectedDatabase],30*60_000,{env:databaseEnv});
+  if(hash(path.join(config.root,'RUNTIME_MANIFEST.sha256'))!==manifestBefore)throw Error('Installed runtime changed while the scoped backup was created');
   const appStat=fs.statSync(appArchive),databaseStat=fs.statSync(databaseDump);
   if(!appStat.isFile()||appStat.size<1024*1024||!databaseStat.isFile()||databaseStat.size<4096)throw Error('Scoped rollback backup is empty or incomplete');
   const entries=run('tar',['-tzf',appArchive],30*60_000).toString();
@@ -132,9 +166,17 @@ async function createAndVerifyScopedBackup(environment){
   for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
   const dumpTableNames=[...dumpTables].sort(),tableSetVerification=verifyScopedBackupTableNames(liveTableNames,dumpTableNames),databaseIncluded=dumpTables.has('schema_migrations')&&tableSetVerification.matches;
   if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
-  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:tableSetVerification.dumpNamesSha256,backupTableSetVerification:tableSetVerification,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded,runtimeManifestSha256:manifestBefore},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:tableSetVerification.dumpNamesSha256,backupTableSetVerification:tableSetVerification,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
   fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
-  write('SCOPED_BACKUP_VERIFIED.json',receipt);
+  return receipt;
+}
+function loadVerifiedBackup(){
+  const directory=resolveScopedBackupPath(args['backup-path'],{appRoot:config.root}),receiptFile=path.join(directory,'SCOPED_BACKUP_VERIFIED.json');
+  if(!fs.existsSync(receiptFile))throw Error('Verified scoped backup receipt is unavailable');
+  const receipt=JSON.parse(fs.readFileSync(receiptFile,'utf8'));
+  if(receipt.directory!==directory||receipt.database.name!==config.expectedDatabase||hash(receipt.app.path)!==receipt.app.sha256||hash(receipt.database.path)!==receipt.database.sha256||!receipt.app.contentsVerified||!receipt.database.contentsVerified)throw Error('Scoped backup receipt or content mismatch');
+  const ageMinutes=(Date.now()-Date.parse(receipt.verifiedAt))/60_000;
+  if(!Number.isFinite(ageMinutes)||ageMinutes<0||ageMinutes>Number(config.backupFreshnessMinutes))throw Error(`Scoped backup is outside the approved freshness window: ${ageMinutes.toFixed(1)} minutes`);
   return receipt;
 }
 function restoreScopedBackup(receipt,environment){
@@ -147,115 +189,101 @@ function restoreScopedBackup(receipt,environment){
   run('pg_restore',['--clean','--if-exists','--no-owner','--no-privileges','--exit-on-error','--dbname',config.expectedDatabase,receipt.database.path],30*60_000,{env:databaseEnvironment(environment)});
   return {appRestoredFrom:receipt.app.path,databaseRestoredFrom:receipt.database.path,failedRuntimeRetained:failedRoot};
 }
-function validateCleanupPath(value,currentBackup){
-  const resolved=path.resolve(value);
-  if(resolved===path.resolve(currentBackup))throw Error('Current rollback backup cannot be cleaned');
-  const oldBackup=/^\/home\/nysareal\/[^/]*DEV260-OLD[^/]*\.tar\.gz$/i.test(resolved);
-  const oldPackage=resolved.startsWith('/home/nysareal/crm-release-preparation/20261101-dev260/')&&/package\.json/i.test(path.basename(resolved));
-  if(!oldBackup&&!oldPackage)throw Error(`Cleanup path is outside the DEV260 allowlist: ${resolved}`);
-  return resolved;
+function privateRegistrationFile(){return evidencePath('ORIGINAL_REGISTRATION_PRIVATE.json');}
+function writeOriginalRegistration(original){
+  if(fs.existsSync(privateRegistrationFile()))throw Error('Original selector registration receipt must not pre-exist');
+  fs.writeFileSync(privateRegistrationFile(),`${JSON.stringify({domain:config.domain,root:config.root,appStatus:original.app_status,env_vars:original.env_vars||{}},null,2)}\n`,{mode:0o600});
 }
-function cleanAfterHealth(currentBackup){
-  const cleaned=[];
-  for(const value of config.cleanupPaths||[]){
-    const target=validateCleanupPath(value,currentBackup);
-    if(!fs.existsSync(target)){cleaned.push({path:target,status:'already absent'});continue;}
-    if(!fs.statSync(target).isFile())throw Error(`Cleanup target is not a file: ${target}`);
-    fs.rmSync(target);cleaned.push({path:target,status:'removed'});
-  }
-  return cleaned;
+function restoreOriginalEnvironment(){
+  const saved=JSON.parse(fs.readFileSync(privateRegistrationFile(),'utf8'));
+  if(saved.domain!==config.domain||saved.root!==config.root)throw Error('Original selector environment identity mismatch');
+  selector('set',['--env-vars',JSON.stringify(saved.env_vars)]);
+  return {domain:saved.domain,root:saved.root,appStatus:saved.appStatus,environmentRestored:true};
+}
+function simulatorEnvironment(original){
+  const liveKeys=['WHATSAPP_API_KEY','META_WHATSAPP_ACCESS_TOKEN','LEAD_WHATSAPP_API_KEY','D360_API_KEY'];
+  if(liveKeys.some(name=>String(original[name]||'').trim()))throw Error('Live WhatsApp credential is present; simulator environment refused');
+  const port=String(original.PORT||'3000');
+  return {...original,LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SIMULATED_PROVIDER_ENABLED:'true',WHATSAPP_SIMULATED_PROVIDER_URL:`http://127.0.0.1:${port}/api/providers/whatsapp-simulated`,WHATSAPP_SIMULATED_PROVIDER_TOKEN:crypto.randomBytes(32).toString('hex'),WHATSAPP_SIMULATED_PHONE_PREFIX:'+971509',WHATSAPP_SIMULATED_PHONE_SUFFIX_DIGITS:'6'};
+}
+function sanitizeSnippet(value){return String(value).replace(/[\r\n\t]+/g,' ').replace(/Bearer\s+\S+/gi,'Bearer [REDACTED]').slice(0,256);}
+async function requestEvidence(url,expected,{requireCore=false,expectedVersion=null,timeoutMs=5000}={}){
+  const started=new Date().toISOString(),startedMs=Date.now();
+  try{
+    const response=await fetch(`https://${config.domain}${url}`,{redirect:'manual',signal:AbortSignal.timeout(Math.max(1,Math.min(timeoutMs,remaining())))}),text=await response.text();
+    let semanticMatch=true;if(requireCore)semanticMatch=/NYSA\s+CORE/i.test(text);if(expectedVersion)semanticMatch=semanticMatch&&text.includes(expectedVersion);
+    return {url,startedAt:started,completedAt:new Date().toISOString(),durationMs:Date.now()-startedMs,expectedStatus:expected,actualStatus:response.status,server:response.headers.get('server')||null,contentType:response.headers.get('content-type')||null,bodySnippet:sanitizeSnippet(text),bodySha256:crypto.createHash('sha256').update(text).digest('hex'),passed:response.status===expected&&semanticMatch};
+  }catch(error){return {url,startedAt:started,completedAt:new Date().toISOString(),durationMs:Date.now()-startedMs,expectedStatus:expected,errorName:error.name,errorCode:error.code||null,safeError:safeError(error),passed:false};}
+}
+async function verifyDomainBaseline(version){
+  const checks=[];for(const specification of [['/api/health',200,{}],['/api/readiness',200,{expectedVersion:version}],['/',200,{requireCore:true}]])checks.push(await requestEvidence(specification[0],specification[1],specification[2]));
+  if(checks.some(check=>!check.passed))throw Object.assign(Error('Rollback domain verification failed'),{checks});
+  const worker=await readiness(version),workers=inspectWorkers(config.root);if(workers.length!==1)throw Error('Rollback exact-root worker count is not one');
+  return {checks,worker,workers};
+}
+async function rollbackAfterInstallFailure({receipt,environment,report}){
+  try{
+    await stop();report.scopedRestore=restoreScopedBackup(receipt,environment);report.selectorEnvironmentRestore=restoreOriginalEnvironment();selector('start');report.rollbackVerification=await verifyDomainBaseline(config.baselineVersion);report.result='ROLLED_BACK_AND_DOMAIN_VERIFIED';
+  }catch(error){report.rollbackError=safeError(error);if(error.checks)report.rollbackDomainChecks=error.checks;report.result='ROLLBACK_REQUIRES_ATTENTION';}
 }
 
 fs.mkdirSync(config.base,{recursive:true,mode:0o700});
-let changed=false,stopped=false,restore=[],environment;
-const report={mode:'stage-and-deploy-once',root:config.root,domain:config.domain,commit:config.commit,version:config.version,startedAt:new Date(startedAt).toISOString(),productionMutation:false,websiteMutation:false,remMutation:false};
-try{
-  const original=registration();environment=original.env_vars||{};
-  if(environment.PGDATABASE!==config.expectedDatabase||environment.PGUSER!==config.expectedRole)throw Error('CRM Test registration database drift');
-  if(environment.WHATSAPP_SANDBOX_ENABLED!=='false'||environment.WHATSAPP_SANDBOX_CALLBACK_APPROVED!=='false')throw Error('WhatsApp sending flags are not closed');
-  if(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).version!==config.baselineVersion)throw Error('Installed baseline version drift');
-  if(JSON.parse(fs.readFileSync(path.join(config.root,'RELEASE_PROVENANCE.json'))).commit!==config.baselineCommit)throw Error('Installed baseline provenance drift');
-  if(hash(config.zip)!==config.archiveHash||hash(config.manifest)!==config.manifestHash)throw Error('Candidate archive or manifest hash mismatch');
-  const manifestData=JSON.parse(fs.readFileSync(config.manifest));
-  if(manifestData.commit!==config.commit||manifestData.packageSha256!==config.archiveHash||manifestData.version!==config.version||manifestData.testReceipt.failed!==0||manifestData.testReceipt.passed!==Number(config.expectedTestPassed))throw Error('Candidate test or provenance receipt mismatch');
-  const entries=run('unzip',['-Z1',config.zip]).toString().trim().split('\n');
-  if(entries.length!==manifestData.entryCount||entries.some(entry=>entry.startsWith('/')||entry.includes('\\')||entry.split('/').includes('..')))throw Error('Unsafe candidate archive');
-  if(fs.existsSync(config.candidate))throw Error('Candidate staging directory must not pre-exist');
-  fs.mkdirSync(config.candidate,{mode:0o700});
-  run('unzip',['-q',config.zip,'-d',config.candidate],5*60_000);
-  const provenance=JSON.parse(fs.readFileSync(path.join(config.candidate,'RELEASE_PROVENANCE.json'),'utf8'));
-  if(provenance.commit!==config.commit||provenance.version!==config.version||provenance.migrationCount!==Number(config.expectedMigrationCount)||provenance.testReceipt.failed!==0)throw Error('Candidate provenance mismatch');
-  report.candidateFiles=runtimeNames(config.candidate).length;
-  if(JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.candidate,'package.json'))).dependencies)!==JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).dependencies))throw Error('Unapproved dependency change');
-  const dependencies=fs.realpathSync(path.join(config.root,'node_modules'));
-  if(dependencies!==`/home/nysareal/nodevenv/${path.basename(config.root)}/24/lib/node_modules`)throw Error('Dependency identity mismatch');
-  fs.symlinkSync(dependencies,path.join(config.candidate,'node_modules'),'dir');
-  process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');
-  process.chdir(config.candidate);
-  const {verifyApprovedDocumentRuntime:verifyCandidatePdfs}=await import(pathToFileURL(path.join(config.candidate,'src/approved-document-runtime-smoke.js')));
-  report.candidatePdfFormats=await verifyCandidatePdfs();
-  const stagePool=poolFor(environment);try{report.stageLedger=await ledger(stagePool,config.baselineMigrationCount);}finally{await stagePool.end();}
-  report.workersBefore=inspectWorkers(config.root);
-  write('STAGE_RESULT.json',{...report,result:'STAGED_AND_VERIFIED',completedAt:new Date().toISOString()});
+const baseReport={phase:args.phase,root:config.root,domain:config.domain,commit:config.commit,version:config.version,configSha256:hash(args.config),backupPath:path.resolve(args['backup-path']),startedAt:new Date(startedAt).toISOString(),productionMutation:false,websiteMutation:false,remMutation:false};
 
-  report.workerStop=await stop();
-  stopped=true;
-  if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
-  report.backup=await createAndVerifyScopedBackup(environment);
-  const pool=poolFor(environment);
+async function stagePhase(){
+  requireAbsent('STAGE_RESULT.json');const report={...baseReport,result:'FAILED'};
   try{
-    await ledger(pool,config.baselineMigrationCount);
-    const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename);
-    const before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);
-    for(const name of [...runtimeNames(config.candidate),'RUNTIME_MANIFEST.sha256']){
-      remaining();
-      const source=path.join(config.candidate,name),target=path.join(config.root,name);
-      if(fs.existsSync(target)&&hash(source)===hash(target))continue;
-      restore.push({name,existed:fs.existsSync(target)});
-      fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);changed=true;
-    }
-    write('CHANGED_RUNTIME.json',restore);runtimeNames(config.root);report.changedFiles=restore.length;
-    await ledger(pool,config.baselineMigrationCount);
-    const after=await fingerprint(pool,tables);
-    if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed');
-    report.originalTablesPreserved=tables.length;
-  }finally{await pool.end();}
-  process.chdir(config.root);
-  const {verifyApprovedDocumentRuntime:verifyInstalledPdfs}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));
-  report.installedPdfFormats=await verifyInstalledPdfs();
-  selector('start');report.readiness=await readiness(config.version);stopped=false;
-  report.runtimeFiles=runtimeNames(config.root).length;
-  const verificationPool=poolFor(environment);try{
-    report.ledger=await ledger(verificationPool,config.expectedMigrationCount);
-    const postComparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});
-    const {observedNames,...postReceipt}=postComparison;report.postDeploymentTableComparison=postReceipt;
-    if(!postComparison.matches)throw Error(`Post-deployment CRM Test table-name drift: expected ${postComparison.expectedCount}, observed ${postComparison.observedCount}, extra ${postComparison.extra.length}, missing ${postComparison.missing.length}`);
-  }finally{await verificationPool.end();}
-  report.http=[];
-  for(const[url,status]of[['/',200],['/api/me',401],['/api/crm/whatsapp-workspace',401],['/api/crm/dashboard',401],['/api/crm/tasks',401]]){
-    remaining();
-    const response=await fetch(`https://${config.domain}${url}`,{signal:AbortSignal.timeout(Math.min(10_000,remaining()))});await response.arrayBuffer();
-    if(response.status!==status)throw Error('Access or static smoke regression');
-    report.http.push({url,status});
-  }
-  report.workersAfter=inspectWorkers(config.root);
-  if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');
-  report.sandboxSendingEnabled=false;report.callbackApproval=false;
-  report.result='DEPLOYED_TECHNICAL_CHECKS_PASSED';
-  report.cleanup=cleanAfterHealth(report.backup.directory);
-}catch(error){
-  report.result='FAILED';report.errorName=error.name;report.errorCode=error.code||null;report.safeError=String(error.message||'').startsWith('Command failed:')?'External command failed':String(error.message||'').slice(0,240);
-  if(changed){
-    try{
-      await stop();
-      report.scopedRestore=restoreScopedBackup(report.backup,environment);
-      selector('start');report.rollback=await readiness(config.baselineVersion);stopped=false;report.result='ROLLED_BACK_SCOPED_APP_AND_DATABASE';
-    }catch{report.result='ROLLBACK_REQUIRES_ATTENTION';}
-  }else if(stopped){
-    try{selector('start');report.rollback=await readiness(config.baselineVersion);stopped=false;report.result='STOPPED_BEFORE_MUTATION_BASELINE_RESTARTED';}
-    catch{report.result='BASELINE_RESTART_REQUIRES_ATTENTION';}
-  }
-  process.exitCode=1;
-}finally{
-  report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('DEPLOY_RESULT.json',report);console.log(JSON.stringify(report));
+    const original=registration(),environment=original.env_vars||{};validateRegistration(environment);validateBaseline();const manifestData=validateCandidatePackage(),entries=run('unzip',['-Z1',config.zip]).toString().trim().split('\n');
+    if(entries.length!==manifestData.entryCount||entries.some(entry=>entry.startsWith('/')||entry.includes('\\')||entry.split('/').includes('..')))throw Error('Unsafe candidate archive');
+    if(fs.existsSync(config.candidate))throw Error('Candidate staging directory must not pre-exist');fs.mkdirSync(config.candidate,{mode:0o700});run('unzip',['-q',config.zip,'-d',config.candidate],5*60_000);
+    const candidateNames=validateCandidateDirectory();report.candidateFiles=candidateNames.length;
+    if(JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.candidate,'package.json'))).dependencies)!==JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).dependencies))throw Error('Unapproved dependency change');
+    const dependencies=fs.realpathSync(path.join(config.root,'node_modules'));if(dependencies!==`/home/nysareal/nodevenv/${path.basename(config.root)}/24/lib/node_modules`)throw Error('Dependency identity mismatch');fs.symlinkSync(dependencies,path.join(config.candidate,'node_modules'),'dir');
+    process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');process.chdir(config.candidate);const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.candidate,'src/approved-document-runtime-smoke.js')));report.candidatePdfFormats=await verifyApprovedDocumentRuntime();
+    const pool=poolFor(environment);try{report.stageLedger=await ledger(pool,config.baselineMigrationCount);const comparison=await compareTableNames(pool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'stage'});const{observedNames,...receipt}=comparison;report.tableComparison=receipt;if(!comparison.matches)throw Error('Stage table-name baseline mismatch');}finally{await pool.end();}
+    report.workers=inspectWorkers(config.root);report.result='STAGED_AND_VERIFIED';
+  }catch(error){report.safeError=safeError(error);process.exitCode=1;}
+  report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('STAGE_RESULT.json',report);console.log(JSON.stringify(report));
 }
+
+async function backupPhase(){
+  assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');requireAbsent('BACKUP_RESULT.json');const report={...baseReport,result:'FAILED'};
+  try{const original=registration(),environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();validateCandidateDirectory();const pool=poolFor(environment);try{report.ledger=await ledger(pool,config.baselineMigrationCount);}finally{await pool.end();}report.backup=await createAndVerifyScopedBackup(environment,report);report.result='SCOPED_BACKUP_VERIFIED';}
+  catch(error){report.safeError=safeError(error);process.exitCode=1;}
+  report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('BACKUP_RESULT.json',report);console.log(JSON.stringify(report));
+}
+
+async function installPhase(){
+  assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');assertReceipt('BACKUP_RESULT.json','SCOPED_BACKUP_VERIFIED');requireAbsent('INSTALL_RESULT.json');const report={...baseReport,result:'FAILED'};let mutated=false,environment,backup;
+  try{
+    backup=loadVerifiedBackup();const original=registration();environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();const candidateNames=validateCandidateDirectory();writeOriginalRegistration(original);report.workersBefore=inspectWorkers(config.root);report.workerStop=await stop();if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
+    const pool=poolFor(environment);try{await ledger(pool,config.baselineMigrationCount);const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename),before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);const changed=[];for(const name of [...candidateNames,'RUNTIME_MANIFEST.sha256']){remaining();const source=path.join(config.candidate,name),target=path.join(config.root,name);if(fs.existsSync(target)&&hash(source)===hash(target))continue;changed.push({name,existed:fs.existsSync(target)});fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);mutated=true;}write('CHANGED_RUNTIME.json',changed);runtimeNames(config.root);report.changedFiles=changed.length;await ledger(pool,config.baselineMigrationCount);const after=await fingerprint(pool,tables);if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed before application start');report.originalTablesPreserved=tables.length;}finally{await pool.end();}
+    const nextEnvironment=simulatorEnvironment(environment);mutated=true;selector('set',['--env-vars',JSON.stringify(nextEnvironment)]);report.simulatorEnvironment={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SIMULATED_PROVIDER_ENABLED:'true',WHATSAPP_SIMULATED_PROVIDER_URL:'loopback',WHATSAPP_SIMULATED_PROVIDER_TOKEN:'server-generated and withheld',WHATSAPP_SIMULATED_PHONE_PREFIX:'+971509',WHATSAPP_SIMULATED_PHONE_SUFFIX_DIGITS:'6'};
+    process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version);report.runtimeFiles=runtimeNames(config.root).length;
+    const verificationPool=poolFor(nextEnvironment);try{report.ledger=await ledger(verificationPool,config.expectedMigrationCount);const comparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});const{observedNames,...receipt}=comparison;report.postDeploymentTableComparison=receipt;if(!comparison.matches)throw Error('Post-deployment table-name mismatch');}finally{await verificationPool.end();}
+    report.workersAfter=inspectWorkers(config.root);if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');report.result='INSTALLED_STARTED_AND_READY';
+  }catch(error){
+    report.safeError=safeError(error);
+    let shouldRollback=mutated;
+    if(!shouldRollback&&backup&&environment){try{shouldRollback=registration().app_status==='stopped'||inspectWorkers(config.root).length===0;}catch{shouldRollback=true;}}
+    if(shouldRollback&&backup&&environment)await rollbackAfterInstallFailure({receipt:backup,environment,report});
+    process.exitCode=1;
+  }
+  report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('INSTALL_RESULT.json',report);console.log(JSON.stringify(report));
+}
+
+async function smokePhase(){
+  assertReceipt('INSTALL_RESULT.json','INSTALLED_STARTED_AND_READY');requireAbsent('SMOKE_RESULT.json');const report={...baseReport,result:'FAILED',attempts:[]};
+  try{
+    const original=registration(),environment=original.env_vars||{};validateRegistration(environment);if(environment.LEAD_RESPONSE_ENVIRONMENT!=='crm-test'||environment.WHATSAPP_SIMULATED_PROVIDER_ENABLED!=='true'||!String(environment.WHATSAPP_SIMULATED_PROVIDER_TOKEN||'').match(/^.{32,}$/)||!String(environment.WHATSAPP_SIMULATED_PROVIDER_URL||'').startsWith('http://127.0.0.1:'))throw Error('CRM Test simulator environment is incomplete');
+    const specifications=[['/',200,{requireCore:true}],['/api/health',200,{}],['/api/readiness',200,{expectedVersion:config.version}],['/api/me',401,{}],['/api/crm/whatsapp-workspace',401,{}],['/api/crm/dashboard',401,{}],['/api/crm/tasks',401,{}],['/api/providers/whatsapp-simulated/health',401,{}]],pending=new Map(specifications.map(item=>[item[0],item])),smokeDeadline=Date.now()+Number(config.smokeWindowSeconds)*1000;await sleep(Math.min(5000,Math.max(0,smokeDeadline-Date.now())));let round=0;
+    while(pending.size&&Date.now()<smokeDeadline){round+=1;for(const[url,specification]of [...pending]){const attempt=await requestEvidence(specification[0],specification[1],{...specification[2],timeoutMs:Math.min(5000,smokeDeadline-Date.now())});attempt.round=round;report.attempts.push(attempt);if(attempt.passed)pending.delete(url);if(Date.now()>=smokeDeadline)break;}if(pending.size&&Date.now()<smokeDeadline)await sleep(Math.min(5000,smokeDeadline-Date.now()));}
+    report.smokeWindowSeconds=Number(config.smokeWindowSeconds);report.pending=[...pending.keys()];report.workers=inspectWorkers(config.root);if(report.workers.length!==1)throw Error('Settled-smoke exact-root worker count is not one');if(pending.size){report.result='SMOKE_FAILED_HEALTHY_APP_PRESERVED';process.exitCode=1;}else report.result='SETTLED_SMOKE_PASSED';
+  }catch(error){report.safeError=safeError(error);process.exitCode=1;}
+  report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('SMOKE_RESULT.json',report);console.log(JSON.stringify(report));
+}
+
+if(args.phase==='stage')await stagePhase();
+else if(args.phase==='backup')await backupPhase();
+else if(args.phase==='install')await installPhase();
+else await smokePhase();
