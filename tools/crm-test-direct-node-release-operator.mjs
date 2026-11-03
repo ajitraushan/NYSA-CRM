@@ -22,7 +22,7 @@ const args=argumentsOf(process.argv.slice(2));
 if(process.platform!=='linux')throw Error('Hosted Linux operator required');
 if(!args.config||!args['backup-path']||!args.approved)throw Error('Config, backup path and exact approval are required');
 const config=JSON.parse(fs.readFileSync(args.config,'utf8'));
-const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedTestPassed','totalTimeoutMinutes'];
+const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','baselineMigrationCount','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedPostTableCount','expectedPostTableNames','expectedTestPassed','totalTimeoutMinutes'];
 for(const key of required)if(config[key]===undefined||config[key]===null||config[key]==='')throw Error(`Missing operator configuration: ${key}`);
 if(args.approved!==config.commit||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit mismatch');
 if(!path.isAbsolute(args['backup-path']))throw Error('Backup path must be absolute');
@@ -68,10 +68,17 @@ function poolFor(environment){
   const {Pool}=createRequire(path.join(config.root,'package.json'))('pg');
   return new Pool({host:environment.PGHOST||'localhost',port:Number(environment.PGPORT||5432),database:environment.PGDATABASE,user:environment.PGUSER,password:environment.PGPASSWORD,max:1});
 }
-async function ledger(pool){
+async function ledger(pool,expectedMigrationCount){
   const row=(await pool.query('SELECT current_database() AS db,current_user AS role,COUNT(*)::int AS count FROM schema_migrations')).rows[0];
-  if(row.db!==config.expectedDatabase||row.role!==config.expectedRole||row.count!==Number(config.expectedMigrationCount))throw Error('CRM Test database identity or ledger mismatch');
+  if(row.db!==config.expectedDatabase||row.role!==config.expectedRole||row.count!==Number(expectedMigrationCount))throw Error(`CRM Test database identity or ledger mismatch: expected ${expectedMigrationCount}, observed ${row.count}`);
   return row;
+}
+async function compareTableNames(pool,{expectedNames,expectedCount,label}){
+  if(!Array.isArray(expectedNames)||expectedNames.length!==Number(expectedCount)||new Set(expectedNames).size!==expectedNames.length||expectedNames.some((name,index)=>!/^[a-z0-9_]+$/.test(name)||(index>0&&expectedNames[index-1]>=name)))throw Error(`Expected ${label} CRM Test table-name baseline is invalid`);
+  const sql="SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",observedNames=(await pool.query(sql)).rows.map(row=>row.tablename);
+  const expectedCanonical=`${expectedNames.join('\n')}\n`,observedCanonical=`${observedNames.join('\n')}\n`;
+  const extra=observedNames.filter(name=>!expectedNames.includes(name)),missing=expectedNames.filter(name=>!observedNames.includes(name));
+  return {sql,label,expectedCount:Number(expectedCount),observedCount:observedNames.length,expectedNamesSha256:crypto.createHash('sha256').update(expectedCanonical).digest('hex'),observedNamesSha256:crypto.createHash('sha256').update(observedCanonical).digest('hex'),extra,missing,matches:observedNames.length===Number(expectedCount)&&extra.length===0&&missing.length===0&&expectedCanonical===observedCanonical,observedNames};
 }
 async function fingerprint(pool,tables){
   const result={};
@@ -102,18 +109,15 @@ function scopedBackupDirectory(){
 }
 async function createAndVerifyScopedBackup(environment){
   const directory=scopedBackupDirectory(),appArchive=path.join(directory,'crm-test-app.tar.gz'),databaseDump=path.join(directory,`${config.expectedDatabase}.dump`),databaseEnv=databaseEnvironment(environment);
-  const tableNamesSql="SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",livePool=poolFor(environment);let liveTableNames,serverVersionNumber;
+  const livePool=poolFor(environment);let liveTableNames,serverVersionNumber;
   try{
-    liveTableNames=(await livePool.query(tableNamesSql)).rows.map(row=>row.tablename);
+    report.tableComparison=await compareTableNames(livePool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'pre-deployment'});
+    liveTableNames=report.tableComparison.observedNames;
     serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
   }
   finally{await livePool.end();}
-  const expectedTableNames=config.expectedTableNames;
-  if(!Array.isArray(expectedTableNames)||expectedTableNames.length!==Number(config.expectedTableCount)||new Set(expectedTableNames).size!==expectedTableNames.length||expectedTableNames.some((name,index)=>!/^[a-z0-9_]+$/.test(name)||(index>0&&expectedTableNames[index-1]>=name)))throw Error('Expected CRM Test table-name baseline is invalid');
-  const expectedCanonical=`${expectedTableNames.join('\n')}\n`,observedCanonical=`${liveTableNames.join('\n')}\n`;
-  const extra=liveTableNames.filter(name=>!expectedTableNames.includes(name)),missing=expectedTableNames.filter(name=>!liveTableNames.includes(name));
-  report.tableComparison={sql:tableNamesSql,expectedCount:Number(config.expectedTableCount),observedCount:liveTableNames.length,expectedNamesSha256:crypto.createHash('sha256').update(expectedCanonical).digest('hex'),observedNamesSha256:crypto.createHash('sha256').update(observedCanonical).digest('hex'),extra,missing,matches:liveTableNames.length===Number(config.expectedTableCount)&&extra.length===0&&missing.length===0&&expectedCanonical===observedCanonical};
-  if(!report.tableComparison.matches)throw Error(`Live CRM Test table-name drift: expected ${report.tableComparison.expectedCount}, observed ${report.tableComparison.observedCount}, extra ${extra.length}, missing ${missing.length}`);
+  const {observedNames:ignoredObservedNames,...tableComparisonReceipt}=report.tableComparison;report.tableComparison=tableComparisonReceipt;
+  if(!report.tableComparison.matches)throw Error(`Live CRM Test table-name drift: expected ${report.tableComparison.expectedCount}, observed ${report.tableComparison.observedCount}, extra ${report.tableComparison.extra.length}, missing ${report.tableComparison.missing.length}`);
   const liveTableCount=liveTableNames.length;
   const pgDumpVersion=run('pg_dump',['--version'],60_000,{env:databaseEnv}).toString().trim(),pgRestoreVersion=run('pg_restore',['--version'],60_000,{env:databaseEnv}).toString().trim();
   const clientMajor=Number(pgDumpVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),restoreMajor=Number(pgRestoreVersion.match(/PostgreSQL\)\s+(\d+)(?:\.\d+)?/)?.[1]),serverMajor=Math.floor(serverVersionNumber/10_000);
@@ -190,7 +194,7 @@ try{
   process.chdir(config.candidate);
   const {verifyApprovedDocumentRuntime:verifyCandidatePdfs}=await import(pathToFileURL(path.join(config.candidate,'src/approved-document-runtime-smoke.js')));
   report.candidatePdfFormats=await verifyCandidatePdfs();
-  const stagePool=poolFor(environment);try{report.stageLedger=await ledger(stagePool);}finally{await stagePool.end();}
+  const stagePool=poolFor(environment);try{report.stageLedger=await ledger(stagePool,config.baselineMigrationCount);}finally{await stagePool.end();}
   report.workersBefore=inspectWorkers(config.root);
   write('STAGE_RESULT.json',{...report,result:'STAGED_AND_VERIFIED',completedAt:new Date().toISOString()});
 
@@ -200,7 +204,7 @@ try{
   report.backup=await createAndVerifyScopedBackup(environment);
   const pool=poolFor(environment);
   try{
-    await ledger(pool);
+    await ledger(pool,config.baselineMigrationCount);
     const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename);
     const before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);
     for(const name of [...runtimeNames(config.candidate),'RUNTIME_MANIFEST.sha256']){
@@ -211,7 +215,7 @@ try{
       fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);changed=true;
     }
     write('CHANGED_RUNTIME.json',restore);runtimeNames(config.root);report.changedFiles=restore.length;
-    await ledger(pool);
+    await ledger(pool,config.baselineMigrationCount);
     const after=await fingerprint(pool,tables);
     if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed');
     report.originalTablesPreserved=tables.length;
@@ -221,7 +225,12 @@ try{
   report.installedPdfFormats=await verifyInstalledPdfs();
   selector('start');report.readiness=await readiness(config.version);stopped=false;
   report.runtimeFiles=runtimeNames(config.root).length;
-  const verificationPool=poolFor(environment);try{report.ledger=await ledger(verificationPool);}finally{await verificationPool.end();}
+  const verificationPool=poolFor(environment);try{
+    report.ledger=await ledger(verificationPool,config.expectedMigrationCount);
+    const postComparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});
+    const {observedNames,...postReceipt}=postComparison;report.postDeploymentTableComparison=postReceipt;
+    if(!postComparison.matches)throw Error(`Post-deployment CRM Test table-name drift: expected ${postComparison.expectedCount}, observed ${postComparison.observedCount}, extra ${postComparison.extra.length}, missing ${postComparison.missing.length}`);
+  }finally{await verificationPool.end();}
   report.http=[];
   for(const[url,status]of[['/',200],['/api/me',401],['/api/crm/whatsapp-workspace',401],['/api/crm/dashboard',401],['/api/crm/tasks',401]]){
     remaining();

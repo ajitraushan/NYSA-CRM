@@ -19,7 +19,13 @@ test('DEV261 operator creates and verifies a scoped app/database rollback in the
   assert.match(source,/dumpTableNamesSha256/);
   assert.match(source,/expectedTableCount/);
   assert.match(source,/expectedTableNames/);
-  assert.match(source,/tableComparison=\{sql:tableNamesSql,expectedCount:Number\(config\.expectedTableCount\),observedCount:liveTableNames\.length/);
+  assert.match(source,/baselineMigrationCount/);
+  assert.match(source,/expectedPostTableCount/);
+  assert.match(source,/expectedPostTableNames/);
+  assert.match(source,/ledger\(stagePool,config\.baselineMigrationCount\)/);
+  assert.match(source,/ledger\(verificationPool,config\.expectedMigrationCount\)/);
+  assert.match(source,/postDeploymentTableComparison/);
+  assert.match(source,/compareTableNames\(livePool,\{expectedNames:config\.expectedTableNames,expectedCount:config\.expectedTableCount/);
   assert.match(source,/expectedNamesSha256/);
   assert.match(source,/observedNamesSha256/);
   assert.match(source,/extra,missing,matches/);
