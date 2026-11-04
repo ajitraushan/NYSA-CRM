@@ -26,9 +26,14 @@
 - Read-only pre-recovery checks found zero exceptions across 15 governed-data
   checks covering Lead transitions/follow-ups, booking expiry evidence,
   bilateral acceptance, commission/payout overlap and slabs, and leave/task
-  approval rules. The October Lead counter is 2,091 while the highest durable
-  October reference is 209, so the allocator can be restored without reducing
-  or reusing a number.
+  approval rules. A follow-up live reconciliation corrected an earlier
+  transcription error: the October Lead counter is 209, not 2,091. It exactly
+  matches 209 retained October references (sequence 1 through 209), so there is
+  no counter gap to explain. All 45 distinct functions required by the 108
+  final triggers are present. The bounded drift window contains no retained
+  audit-log entry and no row carrying a creation/edit/update/recorded timestamp;
+  this is evidence of no recorded activity, not proof against an undetectable
+  mutation that left no durable timestamp or was later removed.
 - DEV264 adds forward migration 168. It raises counters only when necessary,
   recreates all 108 triggers from their final definitions, does not replace any
   trigger function (including the migration-061 Lead-reference function), is

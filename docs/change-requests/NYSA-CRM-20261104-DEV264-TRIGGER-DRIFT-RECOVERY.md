@@ -24,7 +24,12 @@ the database without a generated `lead_reference`. Read-only inspection found:
 - `public.nysa_assign_lead_reference` present with the migration-061 final body;
 - `public.lead_month_number_counters` present;
 - highest durable reference `NYSA-LD-202610-000209`;
-- counter period `202610` at 2,091, safely above 209.
+- counter period `202610` at 209, exactly matching 209 retained October Lead
+  references with sequence values 1 through 209. The earlier value 2,091 was a
+  transcription error, not a database gap.
+
+A second read-only reconciliation found all 45 distinct PostgreSQL functions
+required by the 108 final triggers. None is missing.
 
 This is a database-wide schema-drift recovery. It is not limited to WhatsApp or
 the Lead allocator.
@@ -42,6 +47,14 @@ trigger. The observed shape—tables and trigger functions retained, with every
 post-data trigger object absent—is consistent with a PostgreSQL restore or
 schema rebuild that did not restore trigger archive entries. That is the
 strongest supported explanation, but it is not presented as certainty.
+
+The bounded window contains no `audit_log` entry and no surviving row whose
+`created_at`, `updated_at`, `edited_at`, `recorded_at` or `timestamp` value falls
+inside that window. This finds no retained evidence of application writes. It
+cannot establish that no write occurred: an update to an immutable record with
+no retained update timestamp, or a row later removed, is not reconstructable
+from the current database. The 15 compatibility checks below therefore remain
+the actionable safety boundary rather than a claim of complete forensic proof.
 
 The prevention is explicit and testable:
 
