@@ -112,3 +112,92 @@ read `CRM_CHANGE_POLICY.md` and `BASELINE.md` in full.
   source-control gate.
 - Before deployment, run `npm run release:verify-package -- <zip> <manifest>
   <manifest-sha256-file>`. Missing or mismatched provenance fails closed.
+
+## Mandatory evidence, environment parity and state continuity
+
+Added after DEV263: CRM Test had lost all 108 database triggers, yet the
+deployment was signed off because checks compared only the migration ledger
+and table counts. These rules are acceptance criteria for every task.
+
+### 1. Session start: confirm the source of truth
+
+- Before any release work, read the current handoff/state document supplied by
+  the owner and restate, with evidence, the installed version, installed commit,
+  database identity, migration count, table count and trigger count for the
+  target environment.
+- Never derive the "installed baseline" (version, commit, hashes) from memory,
+  a previous session, a branch name or the working tree. Take it from the
+  installed `RELEASE_PROVENANCE.json` or the last accepted deployment receipt,
+  and cite the file and value.
+- If any value differs from the handoff document, stop and report the
+  difference before preparing a candidate. Do not "correct" either side.
+
+### 2. Every claim needs evidence and a stated scope
+
+- Each claim in a report (passed, fixed, restored, unchanged, safe) must cite
+  its evidence: command and output excerpt, query and result, file and line,
+  or hash. A claim without evidence is reported as "not verified".
+- State what a check did NOT cover. "All 4 phases passed" must list what the
+  phases compared, and name important properties they did not compare.
+- Distinguish clearly between: verified on the hosted environment, verified on
+  a local fixture, and inferred from code. Never present an inference as a
+  hosted result.
+- Report skipped tests by name and reason. A skipped test is not a pass.
+
+### 3. Test against the real environment's shape, not only a fresh build
+
+- A freshly migrated database is not evidence that a hosted database behaves the
+  same way. For every change touching data paths, also test against a fixture
+  that reproduces the target environment's actual schema (from a read-only
+  schema-only dump or the recorded schema contract), including known drift.
+- Every new write path needs an integration test for its plainest, most common
+  input, not only the feature-specific path (for example, plain inbound, not
+  only CTWA-first).
+- When code relies on a database object (trigger, function, default,
+  constraint, sequence, extension), the test must assert that object exists and
+  works, not just that the application call succeeds.
+
+### 4. Schema contract, not counts
+
+- Preflight and post-install checks must compare the full database contract
+  against an approved, hashed expectation: table names, migration ledger,
+  triggers (name, table, function, enabled state), trigger functions, and,
+  as they are added to the contract, constraints, indexes and sequences.
+- Counts alone (migrations, tables) are never sufficient evidence of schema
+  health.
+- Any difference blocks deployment. Do not proceed on the assumption that a
+  migration will repair drift unless that exact repair is the approved change.
+- Before a migration attaches to existing database objects (functions,
+  sequences, counter tables), verify read-only that those objects exist on the
+  target with the expected definitions, and include the results in the approval
+  packet.
+
+### 5. Read-only diagnosis before any fix
+
+- On any hosted failure: stop, collect the hosted error log entry for the exact
+  request time, identify the exact exception (code, object, statement), and
+  reproduce it locally with the exact deployed package before proposing a fix.
+- Diagnosis queries must be read-only, listed in the report with their
+  results, and run only with the owner's approval for that environment.
+  Production queries always need separate explicit approval.
+- When a root cause is environmental drift, assess its full scope (all
+  objects of that kind, the time window, data written during the window) before
+  proposing a narrow fix.
+
+### 6. Approval packet consistency
+
+- Before asking for approval, cross-check that every identity value agrees
+  across the deploy config, origin manifest, package hash files, handoff
+  document and change-request report: version, candidate commit, baseline
+  commit, package/manifest/config SHA-256, contract hashes, database identity
+  and expected counts. Include the cross-check table in the packet.
+- A value that appears in only one artifact must be explained with its source.
+- State config-file hashes in both the as-committed (LF) and on-disk forms when
+  they differ, and say which one the operator checks.
+
+### 7. Handoff at session end
+
+- Update the handoff/state document with: installed version and commit per
+  environment, database contract hashes, open defects, pending approvals, test
+  data present, and simulator/worker states. Facts not written down are treated
+  as unknown by the next session.
