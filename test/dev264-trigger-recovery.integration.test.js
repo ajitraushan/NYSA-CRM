@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import pg from 'pg';
-import {ingestSimulatedInbound} from '../src/whatsapp-simulated-provider-store.js';
 
 const enabled=process.env.NYSA_TRIGGER_RECOVERY_TEST==='local-synthetic';
 const {Pool}=pg;
@@ -17,6 +16,7 @@ test('DEV264 restores the triggerless CRM Test shape idempotently and enforces L
   const actor=uuid(),agent=uuid(),team=uuid();
   let leadId,contactId;
   try{
+    const {ingestSimulatedInbound}=await import('../src/whatsapp-simulated-provider-store.js');
     const identity=(await pool.query('SELECT current_database() AS database,current_user AS role')).rows[0];
     assert.deepEqual(identity,{database:'nysa_test_fixture',role:'nysa_test_user'});
     await pool.query(`SET search_path TO ${schema},public`);
