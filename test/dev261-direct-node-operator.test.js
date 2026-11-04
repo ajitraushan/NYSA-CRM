@@ -35,6 +35,10 @@ test('backup phase verifies an exact scoped app and PostgreSQL rollback set befo
   assert.match(source,/tableSetVerification=verifyScopedBackupTableNames\(liveTableNames,dumpTableNames\)/);
   assert.match(source,/databaseIncluded=.*tableSetVerification\.matches/);
   assert.match(source,/dumpTableNamesSha256/);
+  assert.match(source,/dumpTriggerContractVerified/);
+  assert.match(source,/dumpTriggerCount/);
+  assert.match(source,/missingDumpTriggers/);
+  assert.match(source,/extraDumpTriggers/);
   assert.match(source,/expectedTableCount/);
   assert.match(source,/expectedTableNames/);
   assert.match(source,/baselineMigrationCount/);

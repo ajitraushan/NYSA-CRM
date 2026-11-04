@@ -1,5 +1,53 @@
 # CRM Development Baseline
 
+## DEV264 governed-trigger recovery candidate — 4 November 2026
+
+- Target is CRM Test only. Installed baseline remains DEV263, migration 167,
+  303 public tables and zero user-defined triggers. DEV263 UAT is not accepted.
+  Production, website, REM, Meta, 360dialog and live messaging are unchanged.
+- The failed plain simulated inbound reached the Lead insert and PostgreSQL
+  rejected a null `lead_reference` (`23502`) because
+  `leads_assign_reference` was absent. Read-only reconciliation then found that
+  every user trigger was absent, while the trigger functions, tables and the
+  migration ledger remained present. This is database-wide schema drift rather
+  than a simulator-only defect.
+- The exact final contract generated from migrations 001-167 is 108 enabled
+  triggers across 93 tables. Its canonical SHA-256 is
+  `a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073`.
+  The governed catalogue records table, trigger, function, timing/events and
+  source migration for every entry.
+- Retained evidence bounds the loss between the 108-trigger backup captured
+  1 November 2026 at 21:51:12 Dubai time and the first known zero-trigger
+  scoped backup captured 2 November 2026 at 02:35:36 Dubai time. The exact
+  mutating command was not retained. The uniform loss of post-data trigger
+  objects while functions and tables survived is consistent with a restore or
+  schema rebuild that omitted trigger entries; this remains an evidence-based
+  inference, not a claim that a specific unrecorded command has been proven.
+- Read-only pre-recovery checks found zero exceptions across 15 governed-data
+  checks covering Lead transitions/follow-ups, booking expiry evidence,
+  bilateral acceptance, commission/payout overlap and slabs, and leave/task
+  approval rules. The October Lead counter is 2,091 while the highest durable
+  October reference is 209, so the allocator can be restored without reducing
+  or reusing a number.
+- DEV264 adds forward migration 168. It raises counters only when necessary,
+  recreates all 108 triggers from their final definitions, does not replace any
+  trigger function (including the migration-061 Lead-reference function), is
+  idempotent, and fails if the resulting exact trigger contract differs.
+- The canonical four-phase CRM Test operator is extended to block stage,
+  backup and install when the live trigger contract, the 15 governed-data
+  checks or Lead counters differ from the approved baseline. It also verifies
+  trigger entries in the scoped PostgreSQL dump and the complete post-migration
+  contract. All hosted-worker and deployment controls in `AGENTS.md` and
+  `CRM_CHANGE_POLICY.md` remain mandatory. No hosted run is authorized by this
+  source preparation.
+- Local verification rebuilt all 168 migrations as the restricted fixture role,
+  reproduced zero triggers, restored the full contract twice, passed plain
+  inbound/stage/follow-up behavior and passed the complete simulator flow with
+  loopback unavailable. The governed release suite ran 1,652 tests: 1,556
+  passed, 96 were intentionally fixture-gated and zero failed. Its 307-file
+  selection hash is
+  `da9473dc9fb79bcbf57b9f9b8976637dd3567e0a2835b3eedf1e6cebe8d0da83`.
+
 ## DEV263 in-process WhatsApp simulator correction — 4 November 2026
 
 - Target is CRM Test only. Installed baseline is DEV262 with migration 166 and

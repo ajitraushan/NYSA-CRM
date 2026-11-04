@@ -80,6 +80,8 @@ test('DEV263 simulated provider uses in-process actions when the configured loop
     await db.execute('DELETE FROM sessions WHERE broker_id=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM team_memberships WHERE team_id=$1',[team]);await db.execute('UPDATE brokers SET team_id=NULL WHERE id=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM teams WHERE id=$1',[team]);await db.execute('DELETE FROM brokers WHERE id=ANY($1::uuid[])',[Object.values(people)]);
-    await db.closeDatabase();
+    // The governed release runner executes integration files in one process.
+    // Leave the shared singleton pool open for the remaining files; the
+    // process closes its idle clients after the configured test timeout.
   }
 });

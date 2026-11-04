@@ -84,7 +84,20 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
       if(outcome==='rejected')assert.match(row.simulatedProviderReason,/Rejected by configured simulator rule/);
     }
 
-    // 2. Inbound CTWA, button and media shapes.
+    // 2. A brand-new plain inbound with agentId must create its Lead before any
+    // CTWA conversation exists. This is the exact hosted UAT path that exposed
+    // a missing leads_assign_reference trigger.
+    const plainPhone=syntheticPhone(0);
+    const plain=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:plainPhone,name:'Synthetic Plain Prospect',teamId:team,agentId:people.agent,text:'Plain inbound before CTWA',eventId:`${runKey}-inbound-plain`}});
+    const plainLead=await db.one('SELECT lead_reference,assigned_team_id,assigned_to FROM leads WHERE id=$1',[plain.leadId]);
+    assert.match(plainLead.leadReference,/^NYSA-LD-[0-9]{6}-[0-9]{6}$/);
+    assert.equal(plainLead.assignedTeamId,team);
+    assert.equal(plainLead.assignedTo,people.agent);
+    const plainSource=await db.one('SELECT source_type,ctwa_entry_at FROM wa_conversations WHERE id=$1',[plain.conversationId]);
+    assert.equal(plainSource.sourceType,'other');
+    assert.equal(plainSource.ctwaEntryAt,null);
+
+    // 3. Inbound CTWA, button and media shapes.
     const phone=syntheticPhone(1);
     const ctwa=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:phone,name:'Synthetic CTWA Prospect',teamId:team,agentId:people.agent,text:'CTWA enquiry',ctwa:true,eventId:`${runKey}-inbound-ctwa`}});
     await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:phone,name:'Synthetic CTWA Prospect',teamId:team,agentId:people.agent,text:'',button:{id:'send_brochure',text:'Send brochure'},eventId:`${runKey}-inbound-button`}});
@@ -94,7 +107,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     const source=await db.one('SELECT source_type,ctwa_entry_at FROM wa_conversations WHERE id=$1',[ctwa.conversationId]);
     assert.equal(source.sourceType,'ctwa');assert.ok(source.ctwaEntryAt);
 
-    // 3. Successful and failed conversation status callbacks.
+    // 4. Successful and failed conversation status callbacks.
     const success=await request(`/crm/whatsapp-workspace/conversations/${ctwa.conversationId}/simulated-send`,{method:'POST',as:'agent',status:202,body:{text:'Synthetic successful reply',idempotencyKey:`${runKey}-success-reply`}});
     const successStatuses=[];
     for(let i=0;i<15;i++){
@@ -114,7 +127,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     }
     assert.deepEqual(failedStatuses,['accepted','sent','failed']);
 
-    // 4. Frozen campaign recipients receive independent statuses and a repeat launch does not duplicate sends.
+    // 5. Frozen campaign recipients receive independent statuses and a repeat launch does not duplicate sends.
     const rows=[
       {name:'Synthetic Campaign One',phone:syntheticPhone(2),email:'one@example.invalid',source:'synthetic_test',consentStatus:'verified',consentEvidenceRef:'dev263-consent-1',tags:['dev263']},
       {name:'Synthetic Campaign Two',phone:syntheticPhone(3),email:'two@example.invalid',source:'synthetic_test',consentStatus:'verified',consentEvidenceRef:'dev263-consent-2',tags:['dev263']}
@@ -138,7 +151,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     const repeatLaunch=await request(`/crm/whatsapp-workspace/campaigns/${campaign.campaign.id}/simulated-send`,{method:'POST',as:'manager',status:202,body:{}});
     assert.deepEqual({accepted:repeatLaunch.accepted,unchanged:repeatLaunch.unchanged,failed:repeatLaunch.failed},{accepted:0,unchanged:2,failed:0});
 
-    // 5. Every fault returns a visible-safe API error and creates no outbound message.
+    // 6. Every fault returns a visible-safe API error and creates no outbound message.
     const faultExpectations=[['timeout',504,/timeout/i],['rate_limited',429,/rate limit/i],['server_error',503,/server error/i],['invalid_number',400,/recipient number/i],['invalid_payload',502,/message id/i]];
     for(const [fault,status,errorPattern] of faultExpectations){
       await setFault(fault);
@@ -159,7 +172,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     assert.equal(afterTemplateEvents.count,beforeTemplateEvents.count);
     await setFault('none');
 
-    // 6. Reply and CTWA pricing windows at all maintained boundaries.
+    // 7. Reply and CTWA pricing windows at all maintained boundaries.
     const windows=new Map([[23,[true,true]],[25,[false,true]],[71,[false,true]],[73,[false,false]]]);
     for(const [hours,[replyWindowOpen,ctwaFreeWindowOpen]] of windows){
       await request(`/admin/whatsapp-simulation/conversations/${ctwa.conversationId}/backdate`,{method:'POST',body:{hours}});
@@ -168,7 +181,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
       assert.equal(detail.conversation.ctwaFreeWindowOpen,ctwaFreeWindowOpen,`${hours}h CTWA window`);
     }
 
-    // 7. Run cleanup and global cleanup leave no simulated runtime records.
+    // 8. Run cleanup and global cleanup leave no simulated runtime records.
     const run=await request('/admin/whatsapp-simulation/runs',{method:'POST',status:201,body:{seed:`dev263-cleanup-${runKey}`,conversations:1,messages:0,optOuts:0,rate:5,configuration:{}}});
     created.runs.push(run.run.id);
     const runInbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:syntheticPhone(4),name:'Synthetic Cleanup',teamId:team,agentId:people.agent,text:'cleanup me',eventId:`${runKey}-run-cleanup`,simulationRunId:run.run.id}});
@@ -177,7 +190,7 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     assert.equal(runCleanup.cleanup.conversations,1);
     assert.equal((await db.one('SELECT status FROM wa_simulation_runs WHERE id=$1',[run.run.id])).status,'cleaned');
     const cleanup=await request('/admin/whatsapp-simulation/cleanup',{method:'POST',body:{}});
-    assert.ok(cleanup.cleanup.conversations>=3);
+    assert.ok(cleanup.cleanup.conversations>=4);
     assert.equal((await db.one('SELECT COUNT(*)::int AS count FROM wa_conversations WHERE simulated=TRUE')).count,0);
     assert.equal((await db.one('SELECT COUNT(*)::int AS count FROM wa_conversation_messages WHERE simulated=TRUE')).count,0);
     assert.equal((await db.one("SELECT COUNT(*)::int AS count FROM wa_message_template_versions WHERE simulated_provider_status<>'not_submitted'")).count,0);
@@ -202,6 +215,8 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     await db.execute('UPDATE brokers SET team_id=NULL WHERE id=ANY($1::uuid[])',[Object.values(people)]).catch(()=>{});
     await db.execute('DELETE FROM teams WHERE id=$1',[team]).catch(()=>{});
     await db.execute('DELETE FROM brokers WHERE id=ANY($1::uuid[])',[Object.values(people)]).catch(()=>{});
-    await db.closeDatabase();
+    // The governed release runner executes integration files in one process.
+    // Leave the shared singleton pool open for the remaining files; the
+    // process closes its idle clients after the configured test timeout.
   }
 });

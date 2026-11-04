@@ -5,7 +5,8 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {inspectWorkers,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
-import {resolveScopedBackupPath,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
+import {parsePgRestoreListContracts,resolveScopedBackupPath,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
+import {compareDatabaseTriggerContract,normalizeExpectedTriggerContract} from './database-trigger-contract.mjs';
 
 process.umask(0o077);
 
@@ -27,12 +28,14 @@ if(process.platform!=='linux')throw Error('Hosted Linux operator required');
 if(!args.config||!args['backup-path']||!args.approved||!args.phase)throw Error('Config, backup path, phase and exact phase approval are required');
 if(!PHASES.has(args.phase))throw Error('Unknown operator phase');
 const config=JSON.parse(fs.readFileSync(args.config,'utf8'));
-const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','baselineMigrationCount','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedPostTableCount','expectedPostTableNames','expectedTestPassed','totalTimeoutMinutes','backupFreshnessMinutes','smokeWindowSeconds'];
+const required=['root','domain','base','candidate','zip','manifest','version','baselineVersion','baselineCommit','commit','archiveHash','manifestHash','expectedDatabase','expectedRole','baselineMigrationCount','expectedMigrationCount','expectedTableCount','expectedTableNames','expectedPostTableCount','expectedPostTableNames','baselineTriggers','expectedTriggerCount','expectedTriggerContractSha256','expectedTriggerDriftDataChecks','expectedTestPassed','totalTimeoutMinutes','backupFreshnessMinutes','smokeWindowSeconds'];
 for(const key of required)if(config[key]===undefined||config[key]===null||config[key]==='')throw Error(`Missing operator configuration: ${key}`);
 if(args.approved!==`${config.commit}:${args.phase}`||!/^[a-f0-9]{40}$/.test(config.commit))throw Error('Exact approved commit and phase mismatch');
 if(!path.isAbsolute(args['backup-path']))throw Error('Backup path must be absolute');
 if(config.root!=='/home/nysareal/nysa-core-dashboard-dd6262a-stage'||config.domain!=='crm-test.nysarealty.com')throw Error('CRM Test target identity mismatch');
 if(Number(config.smokeWindowSeconds)<30||Number(config.smokeWindowSeconds)>60)throw Error('Smoke retry window must be between 30 and 60 seconds');
+normalizeExpectedTriggerContract(config.baselineTriggers,{label:'baseline trigger'});
+if(!Array.isArray(config.expectedTriggerDriftDataChecks))throw Error('Expected trigger-drift data-check baseline must be an array');
 
 const startedAt=Date.now();
 const deadline=startedAt+Number(config.totalTimeoutMinutes)*60_000;
@@ -90,6 +93,44 @@ async function compareTableNames(pool,{expectedNames,expectedCount,label}){
   const extra=observedNames.filter(name=>!expectedNames.includes(name)),missing=expectedNames.filter(name=>!observedNames.includes(name));
   return {sql,label,expectedCount:Number(expectedCount),observedCount:observedNames.length,expectedNamesSha256:crypto.createHash('sha256').update(expectedCanonical).digest('hex'),observedNamesSha256:crypto.createHash('sha256').update(observedCanonical).digest('hex'),extra,missing,matches:observedNames.length===Number(expectedCount)&&extra.length===0&&missing.length===0&&expectedCanonical===observedCanonical,observedNames};
 }
+function candidateTriggerContract(){
+  const file=path.join(config.candidate,'src/database-trigger-contract.json'),contract=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(contract.schema!=='nysa.database-trigger-contract.v1'||contract.triggerCount!==Number(config.expectedTriggerCount)||contract.canonicalSha256!==config.expectedTriggerContractSha256)throw Error('Candidate trigger contract identity mismatch');
+  if(crypto.createHash('sha256').update(JSON.stringify(contract.triggers)).digest('hex')!==contract.canonicalSha256)throw Error('Candidate trigger contract content hash mismatch');
+  const triggers=normalizeExpectedTriggerContract(contract.triggers,{label:'candidate trigger'});
+  if(triggers.length!==contract.triggerCount)throw Error('Candidate trigger contract count mismatch');
+  return triggers;
+}
+async function triggerComparison(pool,expected,label){
+  const comparison=await compareDatabaseTriggerContract(pool,expected,{label});
+  const{observedTriggers,...receipt}=comparison;
+  if(!comparison.matches)throw Object.assign(Error(`${label} trigger-contract mismatch: expected ${comparison.expectedCount}, observed ${comparison.observedCount}, missing ${comparison.missing.length}, extra ${comparison.extra.length}, wrong function ${comparison.wrongFunction.length}, wrong enabled ${comparison.wrongEnabled.length}`),{triggerComparison:receipt});
+  return receipt;
+}
+async function triggerDriftDataComparison(pool,label){
+  const source=path.join(config.candidate,'src/trigger-drift-data-checks.js');
+  if(!fs.existsSync(source))throw Error('Candidate trigger-drift data-check module is unavailable');
+  const module=await import(`${pathToFileURL(source).href}?commit=${config.commit}`);
+  const observed=await module.runTriggerDriftDataChecks(pool),comparison=module.compareTriggerDriftDataChecks(config.expectedTriggerDriftDataChecks,observed,{label});
+  if(!comparison.matches)throw Object.assign(Error(`${label} governed-data mismatch: ${comparison.differences.length} check(s) differ`),{triggerDriftDataComparison:comparison});
+  return comparison;
+}
+async function leadCounterComparison(pool,{requireSafe=true}={}){
+  const sql=`WITH refs AS (
+      SELECT substring(lead_reference FROM '^NYSA-LD-([0-9]{6})-[0-9]{6}$') AS period_code,
+             MAX(right(lead_reference,6)::int)::int AS max_reference_number
+        FROM leads
+       WHERE lead_reference ~ '^NYSA-LD-[0-9]{6}-[0-9]{6}$'
+       GROUP BY 1
+    )
+    SELECT refs.period_code,refs.max_reference_number,COALESCE(c.last_value,0)::int AS counter_value,
+           (COALESCE(c.last_value,0)>=refs.max_reference_number) AS safe
+      FROM refs LEFT JOIN lead_month_number_counters c USING(period_code)
+     ORDER BY refs.period_code`;
+  const rows=(await pool.query(sql)).rows,mismatches=rows.filter(row=>!row.safe),result={sql,rows,mismatches,safe:mismatches.length===0};
+  if(requireSafe&&!result.safe)throw Object.assign(Error(`Lead reference counter is behind existing references for ${mismatches.length} period(s)`),{leadCounterComparison:result});
+  return result;
+}
 async function fingerprint(pool,tables){
   const result={};
   for(const table of tables){
@@ -145,6 +186,9 @@ async function createAndVerifyScopedBackup(environment,report){
   const livePool=poolFor(environment);let liveTableNames,serverVersionNumber;
   try{
     report.tableComparison=await compareTableNames(livePool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'pre-deployment'});
+    report.triggerComparison=await triggerComparison(livePool,config.baselineTriggers,'pre-deployment');
+    report.triggerDriftDataComparison=await triggerDriftDataComparison(livePool,'pre-deployment');
+    report.leadCounterComparison=await leadCounterComparison(livePool);
     liveTableNames=report.tableComparison.observedNames;
     serverVersionNumber=Number((await livePool.query('SHOW server_version_num')).rows[0].server_version_num);
   }finally{await livePool.end();}
@@ -162,11 +206,11 @@ async function createAndVerifyScopedBackup(environment,report){
   if(!appStat.isFile()||appStat.size<1024*1024||!databaseStat.isFile()||databaseStat.size<4096)throw Error('Scoped rollback backup is empty or incomplete');
   const entries=run('tar',['-tzf',appArchive],30*60_000).toString();
   const appPrefix=`${path.basename(config.root)}/`,appIncluded=entries.includes(`${appPrefix}package.json`)&&entries.includes(`${appPrefix}RUNTIME_MANIFEST.sha256`);
-  const dumpList=run('pg_restore',['--list',databaseDump],10*60_000,{env:databaseEnv}).toString(),dumpTables=new Set();
-  for(const line of dumpList.split(/\r?\n/)){const match=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);if(match)dumpTables.add(match[1]);}
-  const dumpTableNames=[...dumpTables].sort(),tableSetVerification=verifyScopedBackupTableNames(liveTableNames,dumpTableNames),databaseIncluded=dumpTables.has('schema_migrations')&&tableSetVerification.matches;
-  if(!appIncluded||!databaseIncluded)throw Error('Scoped rollback backup content verification failed');
-  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded,runtimeManifestSha256:manifestBefore},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:tableSetVerification.dumpNamesSha256,backupTableSetVerification:tableSetVerification,contentsVerified:databaseIncluded},verifiedAt:new Date().toISOString()};
+  const dumpList=run('pg_restore',['--list',databaseDump],10*60_000,{env:databaseEnv}).toString(),parsedDump=parsePgRestoreListContracts(dumpList),dumpTableNames=parsedDump.tableNames,dumpTriggerKeys=new Set(parsedDump.triggerKeys);
+  const tableSetVerification=verifyScopedBackupTableNames(liveTableNames,dumpTableNames),databaseIncluded=dumpTableNames.includes('schema_migrations')&&tableSetVerification.matches;
+  const expectedTriggerKeys=new Set(normalizeExpectedTriggerContract(config.baselineTriggers,{label:'backup trigger'}).map(item=>`${item.table}\0${item.name}`)),missingDumpTriggers=[...expectedTriggerKeys].filter(key=>!dumpTriggerKeys.has(key)),extraDumpTriggers=[...dumpTriggerKeys].filter(key=>!expectedTriggerKeys.has(key)),dumpTriggerContractVerified=missingDumpTriggers.length===0&&extraDumpTriggers.length===0;
+  if(!appIncluded||!databaseIncluded||!dumpTriggerContractVerified)throw Error('Scoped rollback backup content verification failed');
+  const receipt={scope:'CRM Test application root and database only',directory,createdAt:new Date().toISOString(),app:{path:appArchive,bytes:appStat.size,sha256:await hashStream(appArchive),contentsVerified:appIncluded,runtimeManifestSha256:manifestBefore},database:{path:databaseDump,name:config.expectedDatabase,format:'PostgreSQL custom',bytes:databaseStat.size,sha256:await hashStream(databaseDump),consistentSnapshot:'PostgreSQL pg_dump MVCC snapshot',pgDumpVersion,pgRestoreVersion,serverVersionNumber,clientCompatible:clientMajor>=serverMajor&&restoreMajor>=serverMajor,tableComparison:report.tableComparison,triggerComparison:report.triggerComparison,triggerDriftDataComparison:report.triggerDriftDataComparison,leadCounterComparison:report.leadCounterComparison,liveTableCount,dumpTableCount:dumpTableNames.length,dumpTableNamesSha256:tableSetVerification.dumpNamesSha256,backupTableSetVerification:tableSetVerification,liveTriggerCount:expectedTriggerKeys.size,dumpTriggerCount:dumpTriggerKeys.size,dumpTriggerContractVerified,missingDumpTriggers,extraDumpTriggers,contentsVerified:databaseIncluded&&dumpTriggerContractVerified},verifiedAt:new Date().toISOString()};
   fs.writeFileSync(path.join(directory,'SCOPED_BACKUP_VERIFIED.json'),`${JSON.stringify(receipt,null,2)}\n`,{mode:0o600});
   return receipt;
 }
@@ -239,16 +283,17 @@ async function stagePhase(){
     if(JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.candidate,'package.json'))).dependencies)!==JSON.stringify(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).dependencies))throw Error('Unapproved dependency change');
     const dependencies=fs.realpathSync(path.join(config.root,'node_modules'));if(dependencies!==`/home/nysareal/nodevenv/${path.basename(config.root)}/24/lib/node_modules`)throw Error('Dependency identity mismatch');fs.symlinkSync(dependencies,path.join(config.candidate,'node_modules'),'dir');
     process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');process.chdir(config.candidate);const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.candidate,'src/approved-document-runtime-smoke.js')));report.candidatePdfFormats=await verifyApprovedDocumentRuntime();
-    const pool=poolFor(environment);try{report.stageLedger=await ledger(pool,config.baselineMigrationCount);const comparison=await compareTableNames(pool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'stage'});const{observedNames,...receipt}=comparison;report.tableComparison=receipt;if(!comparison.matches)throw Error('Stage table-name baseline mismatch');}finally{await pool.end();}
+    const expectedCandidateTriggers=candidateTriggerContract();report.candidateTriggerCount=expectedCandidateTriggers.length;
+    const pool=poolFor(environment);try{report.stageLedger=await ledger(pool,config.baselineMigrationCount);const comparison=await compareTableNames(pool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'stage'});const{observedNames,...receipt}=comparison;report.tableComparison=receipt;if(!comparison.matches)throw Error('Stage table-name baseline mismatch');report.triggerComparison=await triggerComparison(pool,config.baselineTriggers,'stage');report.triggerDriftDataComparison=await triggerDriftDataComparison(pool,'stage');report.leadCounterComparison=await leadCounterComparison(pool);}finally{await pool.end();}
     report.workers=inspectWorkers(config.root);report.result='STAGED_AND_VERIFIED';
-  }catch(error){report.safeError=safeError(error);process.exitCode=1;}
+  }catch(error){report.safeError=safeError(error);if(error.triggerComparison)report.triggerComparison=error.triggerComparison;if(error.triggerDriftDataComparison)report.triggerDriftDataComparison=error.triggerDriftDataComparison;if(error.leadCounterComparison)report.leadCounterComparison=error.leadCounterComparison;process.exitCode=1;}
   report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('STAGE_RESULT.json',report);console.log(JSON.stringify(report));
 }
 
 async function backupPhase(){
   assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');requireAbsent('BACKUP_RESULT.json');const report={...baseReport,result:'FAILED'};
-  try{const original=registration(),environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();validateCandidateDirectory();const pool=poolFor(environment);try{report.ledger=await ledger(pool,config.baselineMigrationCount);}finally{await pool.end();}report.backup=await createAndVerifyScopedBackup(environment,report);report.result='SCOPED_BACKUP_VERIFIED';}
-  catch(error){report.safeError=safeError(error);process.exitCode=1;}
+  try{const original=registration(),environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();validateCandidateDirectory();candidateTriggerContract();const pool=poolFor(environment);try{report.ledger=await ledger(pool,config.baselineMigrationCount);report.triggerComparison=await triggerComparison(pool,config.baselineTriggers,'backup');report.triggerDriftDataComparison=await triggerDriftDataComparison(pool,'backup');report.leadCounterComparison=await leadCounterComparison(pool);}finally{await pool.end();}report.backup=await createAndVerifyScopedBackup(environment,report);report.result='SCOPED_BACKUP_VERIFIED';}
+  catch(error){report.safeError=safeError(error);if(error.triggerComparison)report.triggerComparison=error.triggerComparison;if(error.triggerDriftDataComparison)report.triggerDriftDataComparison=error.triggerDriftDataComparison;if(error.leadCounterComparison)report.leadCounterComparison=error.leadCounterComparison;process.exitCode=1;}
   report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('BACKUP_RESULT.json',report);console.log(JSON.stringify(report));
 }
 
@@ -256,13 +301,17 @@ async function installPhase(){
   assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');assertReceipt('BACKUP_RESULT.json','SCOPED_BACKUP_VERIFIED');requireAbsent('INSTALL_RESULT.json');const report={...baseReport,result:'FAILED'};let mutated=false,readinessAccepted=false,environment,backup;
   try{
     backup=loadVerifiedBackup();const original=registration();environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();const candidateNames=validateCandidateDirectory();writeOriginalRegistration(original);report.workersBefore=inspectWorkers(config.root);report.workerStop=await stop();if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
-    const pool=poolFor(environment);try{await ledger(pool,config.baselineMigrationCount);const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename),before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);const changed=[];for(const name of [...candidateNames,'RUNTIME_MANIFEST.sha256']){remaining();const source=path.join(config.candidate,name),target=path.join(config.root,name);if(fs.existsSync(target)&&hash(source)===hash(target))continue;changed.push({name,existed:fs.existsSync(target)});fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);mutated=true;}write('CHANGED_RUNTIME.json',changed);runtimeNames(config.root);report.changedFiles=changed.length;await ledger(pool,config.baselineMigrationCount);const after=await fingerprint(pool,tables);if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed before application start');report.originalTablesPreserved=tables.length;}finally{await pool.end();}
+    const expectedCandidateTriggers=candidateTriggerContract();
+    const pool=poolFor(environment);try{await ledger(pool,config.baselineMigrationCount);report.preInstallTriggerComparison=await triggerComparison(pool,config.baselineTriggers,'pre-install');report.preInstallTriggerDriftDataComparison=await triggerDriftDataComparison(pool,'pre-install');report.preInstallLeadCounterComparison=await leadCounterComparison(pool);const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename),before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);const changed=[];for(const name of [...candidateNames,'RUNTIME_MANIFEST.sha256']){remaining();const source=path.join(config.candidate,name),target=path.join(config.root,name);if(fs.existsSync(target)&&hash(source)===hash(target))continue;changed.push({name,existed:fs.existsSync(target)});fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);mutated=true;}write('CHANGED_RUNTIME.json',changed);runtimeNames(config.root);report.changedFiles=changed.length;await ledger(pool,config.baselineMigrationCount);const after=await fingerprint(pool,tables);if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed before application start');report.originalTablesPreserved=tables.length;}finally{await pool.end();}
     const nextEnvironment=simulatorEnvironment(environment);mutated=true;selector('set',['--env-vars',JSON.stringify(nextEnvironment)]);report.simulatorEnvironment={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SIMULATED_PROVIDER_ENABLED:'true',WHATSAPP_SIMULATED_PROVIDER_URL:'loopback',WHATSAPP_SIMULATED_PROVIDER_TOKEN:'server-generated and withheld',WHATSAPP_SIMULATED_PHONE_PREFIX:'+971509',WHATSAPP_SIMULATED_PHONE_SUFFIX_DIGITS:'6'};
     process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version);readinessAccepted=true;report.readinessAcceptedAt=new Date().toISOString();report.runtimeFiles=runtimeNames(config.root).length;
-    const verificationPool=poolFor(nextEnvironment);try{report.ledger=await ledger(verificationPool,config.expectedMigrationCount);const comparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});const{observedNames,...receipt}=comparison;report.postDeploymentTableComparison=receipt;if(!comparison.matches)throw Error('Post-deployment table-name mismatch');}finally{await verificationPool.end();}
+    const verificationPool=poolFor(nextEnvironment);try{report.ledger=await ledger(verificationPool,config.expectedMigrationCount);const comparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});const{observedNames,...receipt}=comparison;report.postDeploymentTableComparison=receipt;if(!comparison.matches)throw Error('Post-deployment table-name mismatch');report.postDeploymentTriggerComparison=await triggerComparison(verificationPool,expectedCandidateTriggers,'post-deployment');report.postDeploymentTriggerDriftDataComparison=await triggerDriftDataComparison(verificationPool,'post-deployment');report.postDeploymentLeadCounterComparison=await leadCounterComparison(verificationPool);}finally{await verificationPool.end();}
     report.workersAfter=inspectWorkers(config.root);if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');report.result='INSTALLED_STARTED_AND_READY';
   }catch(error){
     report.safeError=safeError(error);
+    if(error.triggerComparison)report.failedTriggerComparison=error.triggerComparison;
+    if(error.triggerDriftDataComparison)report.failedTriggerDriftDataComparison=error.triggerDriftDataComparison;
+    if(error.leadCounterComparison)report.failedLeadCounterComparison=error.leadCounterComparison;
     report.readinessAccepted=readinessAccepted;
     if(readinessAccepted)report.result='POST_READINESS_CHECK_FAILED_APP_PRESERVED';
     else{

@@ -23,6 +23,18 @@ export function verifyScopedBackupTableNames(liveTableNames,dumpTableNames){
   };
 }
 
+export function parsePgRestoreListContracts(value){
+  if(typeof value!=='string')throw Error('pg_restore list output must be text');
+  const tables=new Set(),triggers=new Set();
+  for(const line of value.split(/\r?\n/)){
+    const tableMatch=line.match(/;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+/);
+    if(tableMatch)tables.add(tableMatch[1]);
+    const triggerMatch=line.match(/;\s+\d+\s+\d+\s+TRIGGER\s+public\s+(\S+)\s+(\S+)\s+/);
+    if(triggerMatch)triggers.add(`${triggerMatch[1]}\0${triggerMatch[2]}`);
+  }
+  return {tableNames:[...tables].sort(),triggerKeys:[...triggers].sort()};
+}
+
 export function resolveScopedBackupPath(value,{preparationRoot='/home/nysareal/crm-release-preparation',appRoot}={}){
   if(typeof value!=='string'||!path.posix.isAbsolute(value))throw Error('Backup path must be absolute');
   const resolved=path.posix.resolve(value),boundary=path.posix.resolve(preparationRoot),application=path.posix.resolve(appRoot||'/home/nysareal/nysa-core-dashboard-dd6262a-stage');
