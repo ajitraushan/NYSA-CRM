@@ -1,0 +1,74 @@
+{
+  "schema": "nysa.trigger-drift-readonly-evidence.v1",
+  "observedAt": "2026-11-04",
+  "environment": "CRM Test",
+  "database": "nysareal_nysa_dev247_smoke",
+  "readOnly": true,
+  "installedVersion": "2.1.0-dev.263",
+  "installedCommit": "4eb1758c98ed1822ea451de7c90b4266a96a64d0",
+  "migrationCount": 167,
+  "tableCount": 303,
+  "expectedTriggerCount": 108,
+  "expectedTriggerTableCount": 93,
+  "expectedTriggerContractSha256": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+  "observedTriggerCount": 0,
+  "missingTriggerCount": 108,
+  "extraTriggerCount": 0,
+  "leadReference": {
+    "maximumObserved": "NYSA-LD-202610-000209",
+    "periodCode": "202610",
+    "maximumSequence": 209,
+    "counterValue": 209,
+    "safe": true
+  },
+  "requiredTriggerFunctions": {
+    "expectedDistinct": 45,
+    "observedDistinct": 45,
+    "missing": []
+  },
+  "driftWindowWriteEvidence": {
+    "auditLogRows": 0,
+    "survivingRowsWithMutationTimestamps": 0,
+    "forensicLimitation": "Current durable rows cannot prove that no untimestamped or later-removed mutation occurred."
+  },
+  "governedDataChecks": [
+    {"name": "active_agent_adjustment_invalid_slab_sets", "count": 0},
+    {"name": "active_agent_adjustment_overlap_pairs", "count": 0},
+    {"name": "active_commission_policy_invalid_slab_sets", "count": 0},
+    {"name": "active_commission_policy_overlap_pairs", "count": 0},
+    {"name": "booking_bilateral_acceptance_incomplete", "count": 0},
+    {"name": "booking_extension_without_exact_evidence", "count": 0},
+    {"name": "booking_initial_term_over_seven_days", "count": 0},
+    {"name": "booking_term_over_fourteen_days", "count": 0},
+    {"name": "deal_bilateral_acceptance_incomplete", "count": 0},
+    {"name": "invalid_lead_stage_history", "count": 0},
+    {"name": "leave_approval_task_assignment_mismatch", "count": 0},
+    {"name": "leave_self_approval_decisions", "count": 0},
+    {"name": "offer_bilateral_acceptance_incomplete", "count": 0},
+    {"name": "terminal_leads_with_open_followups", "count": 0},
+    {"name": "terminal_leads_with_stale_next_followup", "count": 0}
+  ],
+  "driftWindow": {
+    "lastKnownTriggerCompleteBackupDubai": "2026-11-01T21:51:12+04:00",
+    "firstKnownZeroTriggerBackupDubai": "2026-11-02T02:35:36+04:00",
+    "exactMutatingCommandRetained": false
+  },
+  "hostedMutationPerformed": false,
+  "productionQueryExecuted": false,
+  "candidate": {
+    "version": "2.1.0-dev.264",
+    "commit": "8d9be904149bec1b9b6d56dd8a39f17c2789fd12",
+    "packageSha256": "2bc93ff0b98ae9734a80054ca89577f07c7295b0326239d1d3f37d4b7ca1cd75",
+    "manifestSha256": "02f9f6f2efa4c7dd1a4ecdc7111bebd2a489366c5d3cb4b75bfe8fd5b449c5b5"
+  },
+  "localVerification": {
+    "migrationCount": 168,
+    "governedTestFilesIncluded": 307,
+    "historicalArtifactFilesExcluded": 93,
+    "tests": 1652,
+    "passed": 1556,
+    "skipped": 96,
+    "failed": 0,
+    "selectionSha256": "da9473dc9fb79bcbf57b9f9b8976637dd3567e0a2835b3eedf1e6cebe8d0da83"
+  }
+}
