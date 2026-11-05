@@ -1,0 +1,10 @@
+✔ DEV265 exact drift restoration, audit actor, idempotency and cascade contract (2092.8343ms)
+✔ DEV265 preflight rejects any schema state other than the exact baseline or canonical contract (430.7331ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2639.1938

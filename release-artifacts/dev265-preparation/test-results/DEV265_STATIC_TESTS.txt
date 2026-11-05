@@ -1,0 +1,14 @@
+✔ DEV265 baseline is the exact Step 3 ACTUAL export contract (2.1929ms)
+✔ DEV265 migration generator proves the 33/371 index split (136.9193ms)
+✔ DEV265 migration is fail-closed, narrow, audited and idempotent by construction (42.8265ms)
+✔ DEV265 full-schema verifier reports missing, extra and changed objects (24.841ms)
+✔ DEV265 schema-contract generator preserves logical records and is deterministic (265.9748ms)
+✔ DEV265 committed schema contracts match their manifest (11.345ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 364.9656

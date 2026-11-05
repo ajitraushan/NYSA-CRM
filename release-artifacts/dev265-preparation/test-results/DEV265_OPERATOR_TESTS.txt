@@ -1,0 +1,28 @@
+✔ canonical operator requires four separately approved phases and chained receipts (1.2171ms)
+✔ backup phase verifies an exact scoped app and PostgreSQL rollback set before install (0.8563ms)
+✔ automatic rollback is application-only and never changes the database (1.0047ms)
+✔ install rollback restores selector environment and proves the domain serves CORE (0.4965ms)
+✔ readiness acceptance prevents every later automatic rollback (0.4678ms)
+✔ settled smoke is bounded, records each attempt and never auto-rolls back (0.3802ms)
+✔ migration 166 production role mapping is an explicit release gate (0.6523ms)
+✔ DEV262 accepts migration 166 as the installed baseline without applying a new migration (3.4067ms)
+✔ DEV263 advances the migration ledger to 167 without changing the verified table set (3.1515ms)
+✔ canonical operator completes full scoped-backup table verification with exact live and dump names (0.4575ms)
+✔ canonical operator accepts the complete scoped-backup path as a parameter without creating it (0.4674ms)
+✔ DEV264 publishes the exact final migration trigger catalogue (2.8634ms)
+✔ migration 168 restores triggers only, reconciles counters upward and verifies the full contract (0.7887ms)
+✔ trigger comparison reports names, functions and enabled-state drift (8.7633ms)
+✔ scoped backup verification reads table and trigger entries from pg_restore output (0.3629ms)
+✔ canonical operator blocks trigger drift before backup/install and verifies the candidate contract after readiness (0.7207ms)
+✔ the pre-restore data scan is read-only and covers affected governed domains (1.2102ms)
+✔ DEV265 operator binds both full-schema manifests and checks every deployment phase (0.6683ms)
+✔ DEV265 operator records the full-schema result in the scoped backup and failure evidence (0.1354ms)
+✔ DEV265 operator retains the governed rollback boundary (0.9433ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.5837
