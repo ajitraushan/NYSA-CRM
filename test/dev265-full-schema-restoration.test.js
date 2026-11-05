@@ -65,6 +65,10 @@ test('DEV265 migration is fail-closed, narrow, audited and idempotent by constru
   assert.match(sql, /975 foreign keys, each preceded by an explicit orphan check/);
   assert.match(sql, /371 standalone indexes/);
   assert.match(sql, /idempotent canonical preflight/);
+  assert.doesNotMatch(sql, /conname name|tgname name|sequencename name/,
+    'catalog aliases must remain explicit and PostgreSQL 13 compatible');
+  assert.match(sql, /conname::text AS object_name/);
+  assert.match(sql, /tgname::text AS trigger_name/);
   assert.doesNotMatch(sql, /DROP TABLE|DROP SCHEMA|TRUNCATE/i);
 });
 
