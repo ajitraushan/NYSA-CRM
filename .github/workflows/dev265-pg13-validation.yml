@@ -73,9 +73,8 @@ jobs:
             node --test --test-concurrency=1 test/dev265-full-schema-restoration.integration.test.js
           } 2>&1 | tee release-artifacts/dev265-preparation/pg13-validation/DEV265_DB_INTEGRATION_PG13.txt
       - name: Reset fixture database for exact DEV264 comparison
-        env: { PGPASSWORD: postgres-fixture-admin }
         run: |
-          psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+          PGPASSWORD=postgres-fixture-admin psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
           DROP DATABASE nysa_test_fixture WITH (FORCE);
           CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
           SQL
