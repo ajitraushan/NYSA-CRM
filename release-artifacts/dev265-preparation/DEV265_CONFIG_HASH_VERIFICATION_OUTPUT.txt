@@ -1,0 +1,48 @@
+{
+  "schema": "nysa.dev265.config-hash-verification.v1",
+  "generatedAt": "2026-11-05T21:30:18.445Z",
+  "config": "release-artifacts/dev265-preparation/DEV265_DEPLOY_CONFIG.json",
+  "configSha256": "3a8ae3c2c3e5e005bbe5d7c068286154aa6cc8bb733d3ec1dd74e96bd9e45520",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.265-origin.zip",
+      "actual": "e809353434e3a1687f5a7e678325b95fcf36820085155f8b21338c2c3a7973d0",
+      "configured": "e809353434e3a1687f5a7e678325b95fcf36820085155f8b21338c2c3a7973d0",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.265-origin.manifest.json",
+      "actual": "bfa912882f60a692d6f6f6fbc69298932178a14f34204eae20c04527b8ec67ed",
+      "configured": "bfa912882f60a692d6f6f6fbc69298932178a14f34204eae20c04527b8ec67ed",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "src/database-schema-baseline/manifest.json",
+      "actual": "4b3a04e9136193de9ec7413e51962381ffb9576eb71b062b7c263c50452390a9",
+      "configured": "4b3a04e9136193de9ec7413e51962381ffb9576eb71b062b7c263c50452390a9",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "src/database-schema-contract/manifest.json",
+      "actual": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "configured": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "embeddedChecks": {
+    "expectedTriggerContractSha256": {
+      "file": "src/database-trigger-contract.json",
+      "configured": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+      "actual": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+      "is64Hex": true,
+      "matches": true,
+      "comparison": "canonicalSha256 and SHA-256(JSON.stringify(triggers))"
+    }
+  }
+}

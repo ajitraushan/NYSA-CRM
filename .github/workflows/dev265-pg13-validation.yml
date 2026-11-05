@@ -1,0 +1,123 @@
+name: dev265-pg13-validation
+on:
+  push:
+    branches: ['codex/dev265-schema-contract-restoration']
+    paths:
+      - '.github/workflows/dev265-pg13-validation.yml'
+      - 'src/migrations/169_restore_full_schema_contract.sql'
+      - 'src/database-schema-baseline/**'
+      - 'src/database-schema-contract/**'
+      - 'src/database-trigger-contract.json'
+      - 'src/database-full-schema-contract.js'
+      - 'tools/dev265-*.mjs'
+      - 'tools/local-postgres-fixture/**'
+      - 'test/dev158_business_conditions_section3.integration.test.js'
+      - 'test/dev159-uat067-068-real-db.integration.test.js'
+      - 'test/dev265-*.test.js'
+  workflow_dispatch:
+
+jobs:
+  postgres-13-23:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13.23
+        env:
+          POSTGRES_PASSWORD: postgres-fixture-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: nysa_test_fixture
+      PGUSER: nysa_test_user
+      PGPASSWORD: nysa_test_password
+      NYSA_FIXTURE_SCHEMA: '1'
+      NYSA_RUN_DB_INTEGRATION: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - run: npm ci
+      - name: Create restricted fixture database
+        env: { PGPASSWORD: postgres-fixture-admin }
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+          CREATE ROLE nysa_test_user LOGIN PASSWORD 'nysa_test_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+          CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
+          SQL
+      - name: Rebuild DEV265 canonical fixture and reproduce accepted drift
+        run: |
+          node tools/local-postgres-fixture/rebuild.mjs
+          psql -X -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; ALTER SCHEMA nysa_test_user RENAME TO public;'
+          psql -X -v ON_ERROR_STOP=1 -c "DELETE FROM schema_migrations WHERE version='169_restore_full_schema_contract.sql';"
+          node tools/dev265-fixture-drift.mjs --apply
+      - name: PostgreSQL 13.23 Phase C rehearsal
+        run: |
+          mkdir -p release-artifacts/dev265-preparation/pg13-validation
+          {
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node tools/dev265-phase-c-rehearsal.mjs --output release-artifacts/dev265-preparation/pg13-validation/PHASE_C_REHEARSAL_PG13.json
+          } 2>&1 | tee release-artifacts/dev265-preparation/pg13-validation/PHASE_C_REHEARSAL_PG13.txt
+      - name: PostgreSQL 13.23 exact-drift integration
+        run: |
+          {
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node --test --test-concurrency=1 test/dev265-full-schema-restoration.integration.test.js
+          } 2>&1 | tee release-artifacts/dev265-preparation/pg13-validation/DEV265_DB_INTEGRATION_PG13.txt
+      - name: Reset fixture database for exact DEV264 comparison
+        env: { PGPASSWORD: postgres-fixture-admin }
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+          DROP DATABASE nysa_test_fixture WITH (FORCE);
+          CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
+          SQL
+          git worktree add --detach /tmp/nysa-dev264 8d9be904149bec1b9b6d56dd8a39f17c2789fd12
+          cd /tmp/nysa-dev264
+          npm ci
+          node tools/local-postgres-fixture/rebuild.mjs
+          psql -X -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; ALTER SCHEMA nysa_test_user RENAME TO public;'
+      - name: Confirm DEV264 Offer failures are identical
+        run: |
+          mkdir -p release-artifacts/dev265-preparation/pg13-validation
+          set +e
+          (
+            cd /tmp/nysa-dev264
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node --test --test-concurrency=1 test/dev158_business_conditions_section3.integration.test.js
+          ) > release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV158_OFFER_PG13.txt 2>&1
+          dev158_status=$?
+          (
+            cd /tmp/nysa-dev264
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node --test --test-concurrency=1 test/dev159-uat067-068-real-db.integration.test.js
+          ) > release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV159_OFFER_PG13.txt 2>&1
+          dev159_status=$?
+          set -e
+          test "$dev158_status" -ne 0
+          test "$dev159_status" -ne 0
+          grep -F "Acceptance evidence reference is required for this party and exact revision" release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV158_OFFER_PG13.txt
+          grep -F "This Offer Inventory has no active unexpired assignment to the Opportunity" release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV158_OFFER_PG13.txt
+          grep -F "UAT-067 Negotiation acceptance must succeed through the real route" release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV159_OFFER_PG13.txt
+          grep -F "409 !== 200" release-artifacts/dev265-preparation/pg13-validation/DEV264_DEV159_OFFER_PG13.txt
+          node - <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const files=['DEV264_DEV158_OFFER_PG13.txt','DEV264_DEV159_OFFER_PG13.txt'];
+          const root='release-artifacts/dev265-preparation/pg13-validation';
+          const receipt={schema:'nysa.dev265.dev264-offer-defect-comparison.v1',baselineCommit:'8d9be904149bec1b9b6d56dd8a39f17c2789fd12',postgresqlVersion:'13.23',matchesDEV265Diagnostic:true,files:{}};
+          for(const file of files){const bytes=fs.readFileSync(`${root}/${file}`);receipt.files[file]={sha256:crypto.createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length};}
+          fs.writeFileSync(`${root}/DEV264_OFFER_DEFECT_COMPARISON.json`,JSON.stringify(receipt,null,2)+'\n');
+          NODE
+      - name: Hash PostgreSQL 13.23 evidence
+        run: sha256sum release-artifacts/dev265-preparation/pg13-validation/* | tee release-artifacts/dev265-preparation/pg13-validation/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev265-pg13-validation
+          path: release-artifacts/dev265-preparation/pg13-validation/
+          if-no-files-found: error

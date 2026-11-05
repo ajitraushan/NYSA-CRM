@@ -10,7 +10,7 @@
   "baselineCommit": "8d9be904149bec1b9b6d56dd8a39f17c2789fd12",
   "commit": "d4541b7a0bd4b70e3a2642c27a387c4e7c192225",
   "archiveHash": "e809353434e3a1687f5a7e678325b95fcf36820085155f8b21338c2c3a7973d0",
-  "manifestHash": "bfa912882f60a692d6f6fbc69298932178a14f34204eae20c04527b8ec67ed",
+  "manifestHash": "bfa912882f60a692d6f6f6fbc69298932178a14f34204eae20c04527b8ec67ed",
   "operatorCommit": "7c276374857112dad6d0d3729461a152704418d0",
   "expectedDatabase": "nysareal_nysa_dev247_smoke",
   "expectedRole": "nysareal_nysar2app",
