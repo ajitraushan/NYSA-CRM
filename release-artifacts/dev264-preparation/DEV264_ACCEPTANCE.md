@@ -32,8 +32,10 @@ later release. This acceptance does not authorise another deployment.
   represented as passes.
 - Layer 3 WhatsApp simulator UAT passed W-01 through W-15.
 - Layer 4 passed in the approved reduced scope.
-- The packaged governed suite ran 1,652 tests: 1,556 passed, 96 intentionally
-  fixture-gated and zero failed.
+- The exact packaged run executed 1,652 tests: 1,553 passed, 99 skipped and zero
+  failed. Three of those skips were database-fixture-gated in the package
+  environment. The separate database-enabled governed run executed the same
+  1,652 tests: 1,556 passed, 96 intentionally fixture-gated and zero failed.
 - Deferred cases D-01 through D-12, WN-01 through WN-16 and WL-01 through
   WL-05 remain recorded in the DEV264 E2E test plan and are not silently
   converted to passes by this acceptance.
