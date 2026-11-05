@@ -53,9 +53,10 @@ jobs:
           SQL
       - name: Rebuild DEV265 canonical fixture and reproduce accepted drift
         run: |
+          mv src/migrations/169_restore_full_schema_contract.sql /tmp/169_restore_full_schema_contract.sql
           node tools/local-postgres-fixture/rebuild.mjs
+          mv /tmp/169_restore_full_schema_contract.sql src/migrations/169_restore_full_schema_contract.sql
           psql -X -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; ALTER SCHEMA nysa_test_user RENAME TO public;'
-          psql -X -v ON_ERROR_STOP=1 -c "DELETE FROM schema_migrations WHERE version='169_restore_full_schema_contract.sql';"
           node tools/dev265-fixture-drift.mjs --apply
       - name: PostgreSQL 13.23 Phase C rehearsal
         run: |
