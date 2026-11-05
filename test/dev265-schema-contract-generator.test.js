@@ -51,6 +51,26 @@ function runGenerator(input, output) {
   return JSON.parse(result.stdout);
 }
 
+function runActualGenerator(input, output) {
+  for (const file of fs.readdirSync(input)) {
+    if (file.startsWith('EXPECTED_')) fs.copyFileSync(path.join(input, file), path.join(input, file.replace('EXPECTED_', 'ACTUAL_')));
+  }
+  const result = spawnSync(process.execPath, [
+    generator,
+    '--input', input,
+    '--source-prefix', 'ACTUAL',
+    '--output-dir', output,
+    '--trigger-contract', triggerContract,
+    '--source-commit', '8d9be904149bec1b9b6d56dd8a39f17c2789fd12',
+    '--postgresql-version', '13.23',
+    '--migration-count', '168',
+    '--latest-migration', '168_restore_governed_trigger_contract.sql',
+    '--write',
+  ], { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+
 test('DEV265 schema-contract generator preserves logical records and is deterministic', () => {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'nysa-dev265-contract-'));
   try {
@@ -60,9 +80,12 @@ test('DEV265 schema-contract generator preserves logical records and is determin
     const normalizedDefinition = writeFixture(input);
     const first = runGenerator(input, outputOne);
     const second = runGenerator(input, outputTwo);
+    const actual = runActualGenerator(input, path.join(temporary, 'output-actual'));
 
     assert.deepEqual(first.contracts, second.contracts);
     assert.deepEqual(first.triggers, second.triggers);
+    assert.deepEqual(first.contracts, actual.contracts);
+    assert.equal(actual.generatedFrom.sourcePrefix, 'ACTUAL');
 
     const constraints = JSON.parse(fs.readFileSync(path.join(outputOne, 'constraints.json'), 'utf8'));
     assert.equal(constraints.count, 2);
@@ -89,6 +112,7 @@ test('DEV265 committed schema contracts match their manifest', () => {
   assert.equal(manifest.generatedFrom.sourceCommit, '8d9be904149bec1b9b6d56dd8a39f17c2789fd12');
   assert.equal(manifest.generatedFrom.postgresqlVersion, '13.23');
   assert.equal(manifest.generatedFrom.migrationCount, 168);
+  assert.equal(manifest.generatedFrom.sourcePrefix, undefined);
 
   const expectedCounts = {
     constraints: 2704,

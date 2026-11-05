@@ -37,6 +37,8 @@ function parseArgs(argv) {
   if (!/^[0-9a-f]{40}$/.test(options.sourceCommit)) fail('source commit must be a full lowercase SHA-1');
   options.migrationCount = Number.parseInt(options.migrationCount, 10);
   if (!Number.isInteger(options.migrationCount) || options.migrationCount < 1) fail('migration count must be a positive integer');
+  options.sourcePrefix = options.sourcePrefix || 'EXPECTED';
+  if (!/^[A-Z][A-Z0-9_]*$/.test(options.sourcePrefix)) fail('source prefix must contain uppercase letters, numbers and underscores only');
   return options;
 }
 
@@ -173,11 +175,11 @@ const outputDir = path.resolve(options.outputDir);
 const triggerContractPath = path.resolve(options.triggerContract);
 
 const inputs = {
-  constraints: path.join(inputDir, 'EXPECTED_constraints.txt'),
-  indexes: path.join(inputDir, 'EXPECTED_indexes.txt'),
-  columns: path.join(inputDir, 'EXPECTED_columns.txt'),
-  functions: path.join(inputDir, 'EXPECTED_function_defs.hex.txt'),
-  sequencesViews: path.join(inputDir, 'EXPECTED_sequences_views.txt'),
+  constraints: path.join(inputDir, `${options.sourcePrefix}_constraints.txt`),
+  indexes: path.join(inputDir, `${options.sourcePrefix}_indexes.txt`),
+  columns: path.join(inputDir, `${options.sourcePrefix}_columns.txt`),
+  functions: path.join(inputDir, `${options.sourcePrefix}_function_defs.hex.txt`),
+  sequencesViews: path.join(inputDir, `${options.sourcePrefix}_sequences_views.txt`),
 };
 for (const file of [...Object.values(inputs), triggerContractPath]) {
   if (!fs.existsSync(file)) fail(`Required contract source is missing: ${file}`);
@@ -213,6 +215,7 @@ const manifest = {
     postgresqlVersion: options.postgresqlVersion,
     migrationCount: options.migrationCount,
     latestMigration: options.latestMigration,
+    ...(options.sourcePrefix === 'EXPECTED' ? {} : { sourcePrefix: options.sourcePrefix }),
     sourceFiles: Object.fromEntries(Object.entries(inputs).map(([name, file]) => [name, {
       file: path.basename(file),
       sha256: sha256File(file),

@@ -1,0 +1,71 @@
+{
+  "schema": "nysa.database-schema-contract.v1",
+  "generatedFrom": {
+    "sourceCommit": "8d9be904149bec1b9b6d56dd8a39f17c2789fd12",
+    "postgresqlVersion": "13.23",
+    "migrationCount": 168,
+    "latestMigration": "168_restore_governed_trigger_contract.sql",
+    "sourcePrefix": "ACTUAL",
+    "sourceFiles": {
+      "constraints": {
+        "file": "ACTUAL_constraints.txt",
+        "sha256": "caafa66bc5eb558facaf02bcb4cebdf10cc2fa89261ba2c3fadc907dc0c34a52"
+      },
+      "indexes": {
+        "file": "ACTUAL_indexes.txt",
+        "sha256": "754e56f705db9271a504216ed41b9daaba9e58c12a9a5f857a553fff1c6c510d"
+      },
+      "columns": {
+        "file": "ACTUAL_columns.txt",
+        "sha256": "150b934f2ae10d5919bf96015ad87e7f0bc8d931876a23754b2fea47660a043f"
+      },
+      "functions": {
+        "file": "ACTUAL_function_defs.hex.txt",
+        "sha256": "b32e48a948acfc071e7f0298b07974440722c2f5f32077c38a94c58739d8cbf3"
+      },
+      "sequencesViews": {
+        "file": "ACTUAL_sequences_views.txt",
+        "sha256": "3584692018940889010888c5003784255d706f3ac7593edab52c7ba57b36dfad"
+      }
+    }
+  },
+  "contracts": {
+    "constraints": {
+      "file": "constraints.json",
+      "count": 1696,
+      "canonicalSha256": "8bf0dfbe864d584050971b9dc95ab5586bcd98d43e0ffd0f448943886600a1e6",
+      "fileSha256": "9dd45178077abc337e52562e68d731b92b505824e2215f158ebf674016809eb0"
+    },
+    "indexes": {
+      "file": "indexes.json",
+      "count": 552,
+      "canonicalSha256": "92f6bf4eb6f5554a6cf1bafd80b360c58759441e605cce660e7b84eab3744bbf",
+      "fileSha256": "fd83ff0385b32f087fe328021bb7d40c144148bba7770c2955eb8b7423dfa471"
+    },
+    "columns": {
+      "file": "columns.json",
+      "count": 4043,
+      "canonicalSha256": "3f6bc04421b6fdf9da71742e540a3a59c466e695aa6df9b95c60735e776adde2",
+      "fileSha256": "ee9f3f4c797b7d2b4387621e58b650cf2d307907a04fac69d3f4de5e62c015af"
+    },
+    "functions": {
+      "file": "functions.json",
+      "count": 50,
+      "canonicalSha256": "0e549674e17946ba5776ad45f29c5be537cfa68fe55319a9ee7da18aea4adb85",
+      "fileSha256": "1289a5b5714be1bb4aa0cbef9de8a04db5337c929fd6f214ecd60f715b20391d"
+    },
+    "sequencesViews": {
+      "file": "sequences-views.json",
+      "count": 7,
+      "canonicalSha256": "e824808d94586694e26e84f4c268452bfa56d7df371d064c00f7263786fcdb7e",
+      "fileSha256": "33a173bb3e1bd8fe928e09b703fc9d713c9ef9c389fbb365ad1175e47a01100d"
+    }
+  },
+  "triggers": {
+    "file": "database-trigger-contract.json",
+    "triggerCount": 108,
+    "tableCount": 93,
+    "canonicalSha256": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+    "fileSha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4"
+  }
+}

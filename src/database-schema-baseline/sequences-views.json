@@ -1,0 +1,40 @@
+{
+  "schema": "nysa.database-schema-contract.v1",
+  "objectType": "sequencesViews",
+  "count": 7,
+  "canonicalSha256": "e824808d94586694e26e84f4c268452bfa56d7df371d064c00f7263786fcdb7e",
+  "countsByKind": {
+    "sequence": 2,
+    "view": 5
+  },
+  "entries": [
+    {
+      "kind": "sequence",
+      "name": "agent_payout_advices_advice_number_seq"
+    },
+    {
+      "kind": "sequence",
+      "name": "listing_inventory_reference_seq"
+    },
+    {
+      "kind": "view",
+      "name": "opportunity_commission_confirmations"
+    },
+    {
+      "kind": "view",
+      "name": "opportunity_commission_proofs"
+    },
+    {
+      "kind": "view",
+      "name": "opportunity_commission_receipts"
+    },
+    {
+      "kind": "view",
+      "name": "r2_opportunity_reconciliation"
+    },
+    {
+      "kind": "view",
+      "name": "r2_release_candidate_reconciliation"
+    }
+  ]
+}

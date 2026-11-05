@@ -1,0 +1,2768 @@
+{
+  "schema": "nysa.database-schema-contract.v1",
+  "objectType": "indexes",
+  "count": 552,
+  "canonicalSha256": "92f6bf4eb6f5554a6cf1bafd80b360c58759441e605cce660e7b84eab3744bbf",
+  "entries": [
+    {
+      "table": "activities",
+      "name": "activities_pkey",
+      "definition": "CREATE UNIQUE INDEX activities_pkey ON public.activities USING btree (id)"
+    },
+    {
+      "table": "activity_calendar_events",
+      "name": "activity_calendar_events_activity_id_provider_key",
+      "definition": "CREATE UNIQUE INDEX activity_calendar_events_activity_id_provider_key ON public.activity_calendar_events USING btree (activity_id, provider)"
+    },
+    {
+      "table": "activity_calendar_events",
+      "name": "activity_calendar_events_pkey",
+      "definition": "CREATE UNIQUE INDEX activity_calendar_events_pkey ON public.activity_calendar_events USING btree (id)"
+    },
+    {
+      "table": "activity_calendar_events",
+      "name": "activity_calendar_events_provider_external_event_id_key",
+      "definition": "CREATE UNIQUE INDEX activity_calendar_events_provider_external_event_id_key ON public.activity_calendar_events USING btree (provider, external_event_id)"
+    },
+    {
+      "table": "activity_corrections",
+      "name": "activity_corrections_pkey",
+      "definition": "CREATE UNIQUE INDEX activity_corrections_pkey ON public.activity_corrections USING btree (id)"
+    },
+    {
+      "table": "agent_area_assignments",
+      "name": "agent_area_assignments_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_area_assignments_pkey ON public.agent_area_assignments USING btree (id)"
+    },
+    {
+      "table": "agent_employment_versions",
+      "name": "agent_employment_versions_employment_id_version_no_key",
+      "definition": "CREATE UNIQUE INDEX agent_employment_versions_employment_id_version_no_key ON public.agent_employment_versions USING btree (employment_id, version_no)"
+    },
+    {
+      "table": "agent_employment_versions",
+      "name": "agent_employment_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_employment_versions_pkey ON public.agent_employment_versions USING btree (id)"
+    },
+    {
+      "table": "agent_employments",
+      "name": "agent_employments_broker_id_key",
+      "definition": "CREATE UNIQUE INDEX agent_employments_broker_id_key ON public.agent_employments USING btree (broker_id)"
+    },
+    {
+      "table": "agent_employments",
+      "name": "agent_employments_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_employments_pkey ON public.agent_employments USING btree (id)"
+    },
+    {
+      "table": "agent_payout_adjustment_slabs",
+      "name": "agent_payout_adjustment_slabs_adjustment_version_id_display_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_adjustment_slabs_adjustment_version_id_display_key ON public.agent_payout_adjustment_slabs USING btree (adjustment_version_id, display_order)"
+    },
+    {
+      "table": "agent_payout_adjustment_slabs",
+      "name": "agent_payout_adjustment_slabs_adjustment_version_id_lower_a_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_adjustment_slabs_adjustment_version_id_lower_a_key ON public.agent_payout_adjustment_slabs USING btree (adjustment_version_id, lower_amount)"
+    },
+    {
+      "table": "agent_payout_adjustment_slabs",
+      "name": "agent_payout_adjustment_slabs_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_adjustment_slabs_pkey ON public.agent_payout_adjustment_slabs USING btree (id)"
+    },
+    {
+      "table": "agent_payout_adjustment_versions",
+      "name": "agent_payout_adjustment_versi_agent_id_currency_version_num_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_adjustment_versi_agent_id_currency_version_num_key ON public.agent_payout_adjustment_versions USING btree (agent_id, currency, version_number)"
+    },
+    {
+      "table": "agent_payout_adjustment_versions",
+      "name": "agent_payout_adjustment_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_adjustment_versions_pkey ON public.agent_payout_adjustment_versions USING btree (id)"
+    },
+    {
+      "table": "agent_payout_advices",
+      "name": "agent_payout_advices_advice_number_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_advices_advice_number_key ON public.agent_payout_advices USING btree (advice_number)"
+    },
+    {
+      "table": "agent_payout_advices",
+      "name": "agent_payout_advices_batch_id_agent_id_currency_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_advices_batch_id_agent_id_currency_key ON public.agent_payout_advices USING btree (batch_id, agent_id, currency)"
+    },
+    {
+      "table": "agent_payout_advices",
+      "name": "agent_payout_advices_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_advices_pkey ON public.agent_payout_advices USING btree (id)"
+    },
+    {
+      "table": "agent_payout_calculation_bands",
+      "name": "agent_payout_calculation_bands_calculation_id_display_order_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculation_bands_calculation_id_display_order_key ON public.agent_payout_calculation_bands USING btree (calculation_id, display_order)"
+    },
+    {
+      "table": "agent_payout_calculation_bands",
+      "name": "agent_payout_calculation_bands_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculation_bands_pkey ON public.agent_payout_calculation_bands USING btree (id)"
+    },
+    {
+      "table": "agent_payout_calculations",
+      "name": "agent_payout_calculations_credit_line_id_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculations_credit_line_id_key ON public.agent_payout_calculations USING btree (credit_line_id)"
+    },
+    {
+      "table": "agent_payout_calculations",
+      "name": "agent_payout_calculations_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculations_idempotency_key_key ON public.agent_payout_calculations USING btree (idempotency_key)"
+    },
+    {
+      "table": "agent_payout_calculations",
+      "name": "agent_payout_calculations_payout_reference_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculations_payout_reference_key ON public.agent_payout_calculations USING btree (payout_reference)"
+    },
+    {
+      "table": "agent_payout_calculations",
+      "name": "agent_payout_calculations_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_calculations_pkey ON public.agent_payout_calculations USING btree (id)"
+    },
+    {
+      "table": "agent_payout_decision_events",
+      "name": "agent_payout_decision_events_calculation_id_request_fingerp_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_decision_events_calculation_id_request_fingerp_key ON public.agent_payout_decision_events USING btree (calculation_id, request_fingerprint)"
+    },
+    {
+      "table": "agent_payout_decision_events",
+      "name": "agent_payout_decision_events_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_decision_events_pkey ON public.agent_payout_decision_events USING btree (id)"
+    },
+    {
+      "table": "agent_payout_release_events",
+      "name": "agent_payout_release_events_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_release_events_idempotency_key_key ON public.agent_payout_release_events USING btree (idempotency_key)"
+    },
+    {
+      "table": "agent_payout_release_events",
+      "name": "agent_payout_release_events_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_payout_release_events_pkey ON public.agent_payout_release_events USING btree (id)"
+    },
+    {
+      "table": "agent_payout_release_events",
+      "name": "agent_payout_release_events_release_reference_key",
+      "definition": "CREATE UNIQUE INDEX agent_payout_release_events_release_reference_key ON public.agent_payout_release_events USING btree (release_reference)"
+    },
+    {
+      "table": "agent_social_media_payout_status_versions",
+      "name": "agent_social_media_payout_status_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX agent_social_media_payout_status_versions_pkey ON public.agent_social_media_payout_status_versions USING btree (id)"
+    },
+    {
+      "table": "ai_assistance_runs",
+      "name": "ai_assistance_runs_pkey",
+      "definition": "CREATE UNIQUE INDEX ai_assistance_runs_pkey ON public.ai_assistance_runs USING btree (id)"
+    },
+    {
+      "table": "approved_document_drafts",
+      "name": "approved_document_drafts_pkey",
+      "definition": "CREATE UNIQUE INDEX approved_document_drafts_pkey ON public.approved_document_drafts USING btree (id)"
+    },
+    {
+      "table": "approved_document_issuances",
+      "name": "approved_document_issuances_document_version_id_key",
+      "definition": "CREATE UNIQUE INDEX approved_document_issuances_document_version_id_key ON public.approved_document_issuances USING btree (document_version_id)"
+    },
+    {
+      "table": "approved_document_issuances",
+      "name": "approved_document_issuances_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX approved_document_issuances_idempotency_key_key ON public.approved_document_issuances USING btree (idempotency_key)"
+    },
+    {
+      "table": "approved_document_issuances",
+      "name": "approved_document_issuances_pkey",
+      "definition": "CREATE UNIQUE INDEX approved_document_issuances_pkey ON public.approved_document_issuances USING btree (id)"
+    },
+    {
+      "table": "areas",
+      "name": "areas_pkey",
+      "definition": "CREATE UNIQUE INDEX areas_pkey ON public.areas USING btree (id)"
+    },
+    {
+      "table": "areas",
+      "name": "areas_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX areas_stable_code_key ON public.areas USING btree (stable_code)"
+    },
+    {
+      "table": "audit_log",
+      "name": "audit_log_pkey",
+      "definition": "CREATE UNIQUE INDEX audit_log_pkey ON public.audit_log USING btree (id)"
+    },
+    {
+      "table": "booking_number_counters",
+      "name": "booking_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX booking_number_counters_pkey ON public.booking_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "booking_reservation_extensions",
+      "name": "booking_reservation_extensions_pkey",
+      "definition": "CREATE UNIQUE INDEX booking_reservation_extensions_pkey ON public.booking_reservation_extensions USING btree (id)"
+    },
+    {
+      "table": "booking_status_history",
+      "name": "booking_status_history_pkey",
+      "definition": "CREATE UNIQUE INDEX booking_status_history_pkey ON public.booking_status_history USING btree (id)"
+    },
+    {
+      "table": "bookings",
+      "name": "bookings_booking_reference_key",
+      "definition": "CREATE UNIQUE INDEX bookings_booking_reference_key ON public.bookings USING btree (booking_reference)"
+    },
+    {
+      "table": "bookings",
+      "name": "bookings_pkey",
+      "definition": "CREATE UNIQUE INDEX bookings_pkey ON public.bookings USING btree (id)"
+    },
+    {
+      "table": "brokers",
+      "name": "brokers_pkey",
+      "definition": "CREATE UNIQUE INDEX brokers_pkey ON public.brokers USING btree (id)"
+    },
+    {
+      "table": "business_line_kpis",
+      "name": "business_line_kpis_pkey",
+      "definition": "CREATE UNIQUE INDEX business_line_kpis_pkey ON public.business_line_kpis USING btree (business_line_id, metric_code)"
+    },
+    {
+      "table": "business_lines",
+      "name": "business_lines_code_key",
+      "definition": "CREATE UNIQUE INDEX business_lines_code_key ON public.business_lines USING btree (code)"
+    },
+    {
+      "table": "business_lines",
+      "name": "business_lines_pkey",
+      "definition": "CREATE UNIQUE INDEX business_lines_pkey ON public.business_lines USING btree (id)"
+    },
+    {
+      "table": "calendar_connections",
+      "name": "calendar_connections_pkey",
+      "definition": "CREATE UNIQUE INDEX calendar_connections_pkey ON public.calendar_connections USING btree (id)"
+    },
+    {
+      "table": "calendar_connections",
+      "name": "calendar_connections_provider_key",
+      "definition": "CREATE UNIQUE INDEX calendar_connections_provider_key ON public.calendar_connections USING btree (provider)"
+    },
+    {
+      "table": "calendly_bookings",
+      "name": "calendly_bookings_booking_reference_key",
+      "definition": "CREATE UNIQUE INDEX calendly_bookings_booking_reference_key ON public.calendly_bookings USING btree (booking_reference)"
+    },
+    {
+      "table": "calendly_bookings",
+      "name": "calendly_bookings_event_ref_invitee_ref_key",
+      "definition": "CREATE UNIQUE INDEX calendly_bookings_event_ref_invitee_ref_key ON public.calendly_bookings USING btree (event_ref, invitee_ref)"
+    },
+    {
+      "table": "calendly_bookings",
+      "name": "calendly_bookings_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_bookings_pkey ON public.calendly_bookings USING btree (id)"
+    },
+    {
+      "table": "calendly_connections",
+      "name": "calendly_connections_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_connections_pkey ON public.calendly_connections USING btree (id)"
+    },
+    {
+      "table": "calendly_event_type_mappings",
+      "name": "calendly_event_type_mappings_calendly_connection_id_event_t_key",
+      "definition": "CREATE UNIQUE INDEX calendly_event_type_mappings_calendly_connection_id_event_t_key ON public.calendly_event_type_mappings USING btree (calendly_connection_id, event_type_ref, mapping_version)"
+    },
+    {
+      "table": "calendly_event_type_mappings",
+      "name": "calendly_event_type_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_event_type_mappings_pkey ON public.calendly_event_type_mappings USING btree (id)"
+    },
+    {
+      "table": "calendly_host_mappings",
+      "name": "calendly_host_mappings_calendly_connection_id_calendly_user_key",
+      "definition": "CREATE UNIQUE INDEX calendly_host_mappings_calendly_connection_id_calendly_user_key ON public.calendly_host_mappings USING btree (calendly_connection_id, calendly_user_ref, version)"
+    },
+    {
+      "table": "calendly_host_mappings",
+      "name": "calendly_host_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_host_mappings_pkey ON public.calendly_host_mappings USING btree (id)"
+    },
+    {
+      "table": "calendly_oauth_states",
+      "name": "calendly_oauth_states_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_oauth_states_pkey ON public.calendly_oauth_states USING btree (state_hash)"
+    },
+    {
+      "table": "calendly_projection_events",
+      "name": "calendly_projection_events_booking_id_projection_type_key",
+      "definition": "CREATE UNIQUE INDEX calendly_projection_events_booking_id_projection_type_key ON public.calendly_projection_events USING btree (booking_id, projection_type)"
+    },
+    {
+      "table": "calendly_projection_events",
+      "name": "calendly_projection_events_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_projection_events_pkey ON public.calendly_projection_events USING btree (id)"
+    },
+    {
+      "table": "calendly_projection_events",
+      "name": "calendly_projection_events_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX calendly_projection_events_request_fingerprint_key ON public.calendly_projection_events USING btree (request_fingerprint)"
+    },
+    {
+      "table": "calendly_provider_event_processing",
+      "name": "calendly_provider_event_processi_provider_event_id_sequence_key",
+      "definition": "CREATE UNIQUE INDEX calendly_provider_event_processi_provider_event_id_sequence_key ON public.calendly_provider_event_processing USING btree (provider_event_id, sequence)"
+    },
+    {
+      "table": "calendly_provider_event_processing",
+      "name": "calendly_provider_event_processing_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_provider_event_processing_pkey ON public.calendly_provider_event_processing USING btree (id)"
+    },
+    {
+      "table": "calendly_provider_events",
+      "name": "calendly_provider_events_calendly_connection_id_event_famil_key",
+      "definition": "CREATE UNIQUE INDEX calendly_provider_events_calendly_connection_id_event_famil_key ON public.calendly_provider_events USING btree (calendly_connection_id, event_family, event_ref, invitee_ref)"
+    },
+    {
+      "table": "calendly_provider_events",
+      "name": "calendly_provider_events_calendly_connection_id_provider_ev_key",
+      "definition": "CREATE UNIQUE INDEX calendly_provider_events_calendly_connection_id_provider_ev_key ON public.calendly_provider_events USING btree (calendly_connection_id, provider_event_ref)"
+    },
+    {
+      "table": "calendly_provider_events",
+      "name": "calendly_provider_events_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_provider_events_pkey ON public.calendly_provider_events USING btree (id)"
+    },
+    {
+      "table": "calendly_scheduling_intents",
+      "name": "calendly_scheduling_intents_correlation_ref_key",
+      "definition": "CREATE UNIQUE INDEX calendly_scheduling_intents_correlation_ref_key ON public.calendly_scheduling_intents USING btree (correlation_ref)"
+    },
+    {
+      "table": "calendly_scheduling_intents",
+      "name": "calendly_scheduling_intents_intent_reference_key",
+      "definition": "CREATE UNIQUE INDEX calendly_scheduling_intents_intent_reference_key ON public.calendly_scheduling_intents USING btree (intent_reference)"
+    },
+    {
+      "table": "calendly_scheduling_intents",
+      "name": "calendly_scheduling_intents_pkey",
+      "definition": "CREATE UNIQUE INDEX calendly_scheduling_intents_pkey ON public.calendly_scheduling_intents USING btree (id)"
+    },
+    {
+      "table": "campaign_external_mappings",
+      "name": "campaign_external_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX campaign_external_mappings_pkey ON public.campaign_external_mappings USING btree (id)"
+    },
+    {
+      "table": "checklist_template_items",
+      "name": "checklist_template_items_pkey",
+      "definition": "CREATE UNIQUE INDEX checklist_template_items_pkey ON public.checklist_template_items USING btree (id)"
+    },
+    {
+      "table": "checklist_template_items",
+      "name": "checklist_template_items_template_id_display_order_key",
+      "definition": "CREATE UNIQUE INDEX checklist_template_items_template_id_display_order_key ON public.checklist_template_items USING btree (template_id, display_order)"
+    },
+    {
+      "table": "checklist_template_items",
+      "name": "checklist_template_items_template_id_item_code_key",
+      "definition": "CREATE UNIQUE INDEX checklist_template_items_template_id_item_code_key ON public.checklist_template_items USING btree (template_id, item_code)"
+    },
+    {
+      "table": "checklist_templates",
+      "name": "checklist_templates_pkey",
+      "definition": "CREATE UNIQUE INDEX checklist_templates_pkey ON public.checklist_templates USING btree (id)"
+    },
+    {
+      "table": "checklist_templates",
+      "name": "checklist_templates_template_code_version_no_key",
+      "definition": "CREATE UNIQUE INDEX checklist_templates_template_code_version_no_key ON public.checklist_templates USING btree (template_code, version_no)"
+    },
+    {
+      "table": "classification_catalogue_versions",
+      "name": "classification_catalogue_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX classification_catalogue_versions_pkey ON public.classification_catalogue_versions USING btree (id)"
+    },
+    {
+      "table": "classification_catalogue_versions",
+      "name": "classification_catalogue_versions_version_code_key",
+      "definition": "CREATE UNIQUE INDEX classification_catalogue_versions_version_code_key ON public.classification_catalogue_versions USING btree (version_code)"
+    },
+    {
+      "table": "classification_dimensions",
+      "name": "classification_dimensions_catalogue_version_id_dimension_co_key",
+      "definition": "CREATE UNIQUE INDEX classification_dimensions_catalogue_version_id_dimension_co_key ON public.classification_dimensions USING btree (catalogue_version_id, dimension_code)"
+    },
+    {
+      "table": "classification_dimensions",
+      "name": "classification_dimensions_pkey",
+      "definition": "CREATE UNIQUE INDEX classification_dimensions_pkey ON public.classification_dimensions USING btree (id)"
+    },
+    {
+      "table": "classification_legacy_exceptions",
+      "name": "classification_legacy_excepti_lead_id_source_field_reason_c_key",
+      "definition": "CREATE UNIQUE INDEX classification_legacy_excepti_lead_id_source_field_reason_c_key ON public.classification_legacy_exceptions USING btree (lead_id, source_field, reason_code)"
+    },
+    {
+      "table": "classification_legacy_exceptions",
+      "name": "classification_legacy_exceptions_pkey",
+      "definition": "CREATE UNIQUE INDEX classification_legacy_exceptions_pkey ON public.classification_legacy_exceptions USING btree (id)"
+    },
+    {
+      "table": "classification_mappings",
+      "name": "classification_mappings_catalogue_version_id_source_dimensi_key",
+      "definition": "CREATE UNIQUE INDEX classification_mappings_catalogue_version_id_source_dimensi_key ON public.classification_mappings USING btree (catalogue_version_id, source_dimension_code, source_value_code, target_context)"
+    },
+    {
+      "table": "classification_mappings",
+      "name": "classification_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX classification_mappings_pkey ON public.classification_mappings USING btree (id)"
+    },
+    {
+      "table": "classification_values",
+      "name": "classification_values_dimension_id_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX classification_values_dimension_id_stable_code_key ON public.classification_values USING btree (dimension_id, stable_code)"
+    },
+    {
+      "table": "classification_values",
+      "name": "classification_values_pkey",
+      "definition": "CREATE UNIQUE INDEX classification_values_pkey ON public.classification_values USING btree (id)"
+    },
+    {
+      "table": "comments",
+      "name": "comments_pkey",
+      "definition": "CREATE UNIQUE INDEX comments_pkey ON public.comments USING btree (id)"
+    },
+    {
+      "table": "commission_invoice_number_counters",
+      "name": "commission_invoice_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_invoice_number_counters_pkey ON public.commission_invoice_number_counters USING btree (invoice_year)"
+    },
+    {
+      "table": "commission_payment_batch_items",
+      "name": "commission_payment_batch_items_batch_id_calculation_id_key",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batch_items_batch_id_calculation_id_key ON public.commission_payment_batch_items USING btree (batch_id, calculation_id)"
+    },
+    {
+      "table": "commission_payment_batch_items",
+      "name": "commission_payment_batch_items_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batch_items_pkey ON public.commission_payment_batch_items USING btree (id)"
+    },
+    {
+      "table": "commission_payment_batches",
+      "name": "commission_payment_batches_batch_reference_key",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batches_batch_reference_key ON public.commission_payment_batches USING btree (batch_reference)"
+    },
+    {
+      "table": "commission_payment_batches",
+      "name": "commission_payment_batches_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batches_idempotency_key_key ON public.commission_payment_batches USING btree (idempotency_key)"
+    },
+    {
+      "table": "commission_payment_batches",
+      "name": "commission_payment_batches_payment_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batches_payment_idempotency_key_key ON public.commission_payment_batches USING btree (payment_idempotency_key)"
+    },
+    {
+      "table": "commission_payment_batches",
+      "name": "commission_payment_batches_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_payment_batches_pkey ON public.commission_payment_batches USING btree (id)"
+    },
+    {
+      "table": "commission_payout_policy_slabs",
+      "name": "commission_payout_policy_slab_policy_version_id_display_ord_key",
+      "definition": "CREATE UNIQUE INDEX commission_payout_policy_slab_policy_version_id_display_ord_key ON public.commission_payout_policy_slabs USING btree (policy_version_id, display_order)"
+    },
+    {
+      "table": "commission_payout_policy_slabs",
+      "name": "commission_payout_policy_slab_policy_version_id_lower_amoun_key",
+      "definition": "CREATE UNIQUE INDEX commission_payout_policy_slab_policy_version_id_lower_amoun_key ON public.commission_payout_policy_slabs USING btree (policy_version_id, lower_amount)"
+    },
+    {
+      "table": "commission_payout_policy_slabs",
+      "name": "commission_payout_policy_slabs_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_payout_policy_slabs_pkey ON public.commission_payout_policy_slabs USING btree (id)"
+    },
+    {
+      "table": "commission_payout_policy_versions",
+      "name": "commission_payout_policy_version_policy_code_version_number_key",
+      "definition": "CREATE UNIQUE INDEX commission_payout_policy_version_policy_code_version_number_key ON public.commission_payout_policy_versions USING btree (policy_code, version_number)"
+    },
+    {
+      "table": "commission_payout_policy_versions",
+      "name": "commission_payout_policy_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_payout_policy_versions_pkey ON public.commission_payout_policy_versions USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_adjustment_requests",
+      "name": "commission_receivable_adjustment_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_adjustment_requests_pkey ON public.commission_receivable_adjustment_requests USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_collections",
+      "name": "commission_receivable_collections_commission_receipt_id_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_collections_commission_receipt_id_key ON public.commission_receivable_collections USING btree (commission_receipt_id)"
+    },
+    {
+      "table": "commission_receivable_collections",
+      "name": "commission_receivable_collections_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_collections_pkey ON public.commission_receivable_collections USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_invoices",
+      "name": "commission_receivable_invoice_schedule_id_instalment_number_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_invoice_schedule_id_instalment_number_key ON public.commission_receivable_invoices USING btree (schedule_id, instalment_number)"
+    },
+    {
+      "table": "commission_receivable_invoices",
+      "name": "commission_receivable_invoices_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_invoices_pkey ON public.commission_receivable_invoices USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_requests",
+      "name": "commission_receivable_requests_actor_id_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_requests_actor_id_idempotency_key_key ON public.commission_receivable_requests USING btree (actor_id, idempotency_key)"
+    },
+    {
+      "table": "commission_receivable_requests",
+      "name": "commission_receivable_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_requests_pkey ON public.commission_receivable_requests USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_reversals",
+      "name": "commission_receivable_reversals_collection_id_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_reversals_collection_id_key ON public.commission_receivable_reversals USING btree (collection_id)"
+    },
+    {
+      "table": "commission_receivable_reversals",
+      "name": "commission_receivable_reversals_commission_receipt_id_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_reversals_commission_receipt_id_key ON public.commission_receivable_reversals USING btree (commission_receipt_id)"
+    },
+    {
+      "table": "commission_receivable_reversals",
+      "name": "commission_receivable_reversals_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_reversals_pkey ON public.commission_receivable_reversals USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_schedules",
+      "name": "commission_receivable_schedules_pkey",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_schedules_pkey ON public.commission_receivable_schedules USING btree (id)"
+    },
+    {
+      "table": "commission_receivable_schedules",
+      "name": "commission_receivable_schedules_schedule_reference_key",
+      "definition": "CREATE UNIQUE INDEX commission_receivable_schedules_schedule_reference_key ON public.commission_receivable_schedules USING btree (schedule_reference)"
+    },
+    {
+      "table": "communication_policy_decisions",
+      "name": "communication_policy_decisions_evidence_hash_key",
+      "definition": "CREATE UNIQUE INDEX communication_policy_decisions_evidence_hash_key ON public.communication_policy_decisions USING btree (evidence_hash)"
+    },
+    {
+      "table": "communication_policy_decisions",
+      "name": "communication_policy_decisions_pkey",
+      "definition": "CREATE UNIQUE INDEX communication_policy_decisions_pkey ON public.communication_policy_decisions USING btree (id)"
+    },
+    {
+      "table": "companies",
+      "name": "companies_pkey",
+      "definition": "CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id)"
+    },
+    {
+      "table": "company_contacts",
+      "name": "company_contacts_pkey",
+      "definition": "CREATE UNIQUE INDEX company_contacts_pkey ON public.company_contacts USING btree (id)"
+    },
+    {
+      "table": "company_identity_documents",
+      "name": "company_identity_documents_company_id_document_type_key",
+      "definition": "CREATE UNIQUE INDEX company_identity_documents_company_id_document_type_key ON public.company_identity_documents USING btree (company_id, document_type)"
+    },
+    {
+      "table": "company_identity_documents",
+      "name": "company_identity_documents_pkey",
+      "definition": "CREATE UNIQUE INDEX company_identity_documents_pkey ON public.company_identity_documents USING btree (id)"
+    },
+    {
+      "table": "consent_evidence",
+      "name": "consent_evidence_pkey",
+      "definition": "CREATE UNIQUE INDEX consent_evidence_pkey ON public.consent_evidence USING btree (id)"
+    },
+    {
+      "table": "contact_channels",
+      "name": "contact_channels_pkey",
+      "definition": "CREATE UNIQUE INDEX contact_channels_pkey ON public.contact_channels USING btree (id)"
+    },
+    {
+      "table": "contact_roles",
+      "name": "contact_roles_pkey",
+      "definition": "CREATE UNIQUE INDEX contact_roles_pkey ON public.contact_roles USING btree (id)"
+    },
+    {
+      "table": "contacts",
+      "name": "contacts_pkey",
+      "definition": "CREATE UNIQUE INDEX contacts_pkey ON public.contacts USING btree (id)"
+    },
+    {
+      "table": "controlled_value_consumers",
+      "name": "controlled_value_consumers_pkey",
+      "definition": "CREATE UNIQUE INDEX controlled_value_consumers_pkey ON public.controlled_value_consumers USING btree (id)"
+    },
+    {
+      "table": "controlled_value_consumers",
+      "name": "controlled_value_consumers_value_set_id_consumer_code_key",
+      "definition": "CREATE UNIQUE INDEX controlled_value_consumers_value_set_id_consumer_code_key ON public.controlled_value_consumers USING btree (value_set_id, consumer_code)"
+    },
+    {
+      "table": "customer_action_suggestions",
+      "name": "customer_action_suggestions_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_action_suggestions_pkey ON public.customer_action_suggestions USING btree (id)"
+    },
+    {
+      "table": "customer_change_requests",
+      "name": "customer_change_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_change_requests_pkey ON public.customer_change_requests USING btree (id)"
+    },
+    {
+      "table": "customer_document_requirement_versions",
+      "name": "customer_document_requirement_requirement_code_version_numb_key",
+      "definition": "CREATE UNIQUE INDEX customer_document_requirement_requirement_code_version_numb_key ON public.customer_document_requirement_versions USING btree (requirement_code, version_number)"
+    },
+    {
+      "table": "customer_document_requirement_versions",
+      "name": "customer_document_requirement_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_document_requirement_versions_pkey ON public.customer_document_requirement_versions USING btree (id)"
+    },
+    {
+      "table": "customer_evidence_facts",
+      "name": "customer_evidence_facts_intake_event_id_fact_code_key",
+      "definition": "CREATE UNIQUE INDEX customer_evidence_facts_intake_event_id_fact_code_key ON public.customer_evidence_facts USING btree (intake_event_id, fact_code)"
+    },
+    {
+      "table": "customer_evidence_facts",
+      "name": "customer_evidence_facts_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_evidence_facts_pkey ON public.customer_evidence_facts USING btree (id)"
+    },
+    {
+      "table": "customer_identity_documents",
+      "name": "customer_identity_documents_contact_id_document_type_key",
+      "definition": "CREATE UNIQUE INDEX customer_identity_documents_contact_id_document_type_key ON public.customer_identity_documents USING btree (contact_id, document_type)"
+    },
+    {
+      "table": "customer_identity_documents",
+      "name": "customer_identity_documents_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_identity_documents_pkey ON public.customer_identity_documents USING btree (id)"
+    },
+    {
+      "table": "customer_response_task_provenance",
+      "name": "customer_response_task_provenance_match_feedback_id_key",
+      "definition": "CREATE UNIQUE INDEX customer_response_task_provenance_match_feedback_id_key ON public.customer_response_task_provenance USING btree (match_feedback_id)"
+    },
+    {
+      "table": "customer_response_task_provenance",
+      "name": "customer_response_task_provenance_pkey",
+      "definition": "CREATE UNIQUE INDEX customer_response_task_provenance_pkey ON public.customer_response_task_provenance USING btree (id)"
+    },
+    {
+      "table": "customer_response_task_provenance",
+      "name": "customer_response_task_provenance_response_evidence_hash_key",
+      "definition": "CREATE UNIQUE INDEX customer_response_task_provenance_response_evidence_hash_key ON public.customer_response_task_provenance USING btree (response_evidence_hash)"
+    },
+    {
+      "table": "customer_response_task_provenance",
+      "name": "customer_response_task_provenance_task_id_key",
+      "definition": "CREATE UNIQUE INDEX customer_response_task_provenance_task_id_key ON public.customer_response_task_provenance USING btree (task_id)"
+    },
+    {
+      "table": "dashboard_metric_snapshots",
+      "name": "dashboard_metric_snapshots_metric_code_scope_type_scope_id__key",
+      "definition": "CREATE UNIQUE INDEX dashboard_metric_snapshots_metric_code_scope_type_scope_id__key ON public.dashboard_metric_snapshots USING btree (metric_code, scope_type, scope_id, snapshot_date)"
+    },
+    {
+      "table": "dashboard_metric_snapshots",
+      "name": "dashboard_metric_snapshots_pkey",
+      "definition": "CREATE UNIQUE INDEX dashboard_metric_snapshots_pkey ON public.dashboard_metric_snapshots USING btree (id)"
+    },
+    {
+      "table": "dashboard_target_revisions",
+      "name": "dashboard_target_revisions_pkey",
+      "definition": "CREATE UNIQUE INDEX dashboard_target_revisions_pkey ON public.dashboard_target_revisions USING btree (id)"
+    },
+    {
+      "table": "dashboard_target_revisions",
+      "name": "dashboard_target_revisions_target_id_revision_key",
+      "definition": "CREATE UNIQUE INDEX dashboard_target_revisions_target_id_revision_key ON public.dashboard_target_revisions USING btree (target_id, revision)"
+    },
+    {
+      "table": "dashboard_targets",
+      "name": "dashboard_targets_pkey",
+      "definition": "CREATE UNIQUE INDEX dashboard_targets_pkey ON public.dashboard_targets USING btree (id)"
+    },
+    {
+      "table": "deal_agent_credit_lines",
+      "name": "deal_agent_credit_lines_credit_version_id_agent_id_key",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_lines_credit_version_id_agent_id_key ON public.deal_agent_credit_lines USING btree (credit_version_id, agent_id)"
+    },
+    {
+      "table": "deal_agent_credit_lines",
+      "name": "deal_agent_credit_lines_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_lines_pkey ON public.deal_agent_credit_lines USING btree (id)"
+    },
+    {
+      "table": "deal_agent_credit_versions",
+      "name": "deal_agent_credit_versions_credit_reference_key",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_versions_credit_reference_key ON public.deal_agent_credit_versions USING btree (credit_reference)"
+    },
+    {
+      "table": "deal_agent_credit_versions",
+      "name": "deal_agent_credit_versions_deal_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_versions_deal_id_version_number_key ON public.deal_agent_credit_versions USING btree (deal_id, version_number)"
+    },
+    {
+      "table": "deal_agent_credit_versions",
+      "name": "deal_agent_credit_versions_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_versions_idempotency_key_key ON public.deal_agent_credit_versions USING btree (idempotency_key)"
+    },
+    {
+      "table": "deal_agent_credit_versions",
+      "name": "deal_agent_credit_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_agent_credit_versions_pkey ON public.deal_agent_credit_versions USING btree (id)"
+    },
+    {
+      "table": "deal_cancellation_requests",
+      "name": "deal_cancellation_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_cancellation_requests_pkey ON public.deal_cancellation_requests USING btree (id)"
+    },
+    {
+      "table": "deal_checklist_items",
+      "name": "deal_checklist_items_deal_checklist_id_template_item_id_key",
+      "definition": "CREATE UNIQUE INDEX deal_checklist_items_deal_checklist_id_template_item_id_key ON public.deal_checklist_items USING btree (deal_checklist_id, template_item_id)"
+    },
+    {
+      "table": "deal_checklist_items",
+      "name": "deal_checklist_items_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_checklist_items_pkey ON public.deal_checklist_items USING btree (id)"
+    },
+    {
+      "table": "deal_checklists",
+      "name": "deal_checklists_deal_id_key",
+      "definition": "CREATE UNIQUE INDEX deal_checklists_deal_id_key ON public.deal_checklists USING btree (deal_id)"
+    },
+    {
+      "table": "deal_checklists",
+      "name": "deal_checklists_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_checklists_pkey ON public.deal_checklists USING btree (id)"
+    },
+    {
+      "table": "deal_commission_expectation_components",
+      "name": "deal_commission_expectation_c_expectation_version_id_repres_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_c_expectation_version_id_repres_key ON public.deal_commission_expectation_components USING btree (expectation_version_id, represented_side)"
+    },
+    {
+      "table": "deal_commission_expectation_components",
+      "name": "deal_commission_expectation_components_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_components_pkey ON public.deal_commission_expectation_components USING btree (id)"
+    },
+    {
+      "table": "deal_commission_expectation_versions",
+      "name": "deal_commission_expectation_v_deal_id_source_context_finger_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_v_deal_id_source_context_finger_key ON public.deal_commission_expectation_versions USING btree (deal_id, source_context_fingerprint)"
+    },
+    {
+      "table": "deal_commission_expectation_versions",
+      "name": "deal_commission_expectation_versions_deal_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_versions_deal_id_version_number_key ON public.deal_commission_expectation_versions USING btree (deal_id, version_number)"
+    },
+    {
+      "table": "deal_commission_expectation_versions",
+      "name": "deal_commission_expectation_versions_expectation_reference_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_versions_expectation_reference_key ON public.deal_commission_expectation_versions USING btree (expectation_reference)"
+    },
+    {
+      "table": "deal_commission_expectation_versions",
+      "name": "deal_commission_expectation_versions_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_versions_idempotency_key_key ON public.deal_commission_expectation_versions USING btree (idempotency_key)"
+    },
+    {
+      "table": "deal_commission_expectation_versions",
+      "name": "deal_commission_expectation_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_expectation_versions_pkey ON public.deal_commission_expectation_versions USING btree (id)"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "deal_commission_proofs_deal_id_id_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_proofs_deal_id_id_key ON public.deal_commission_proofs USING btree (deal_id, id)"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "deal_commission_proofs_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_proofs_pkey ON public.deal_commission_proofs USING btree (id)"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "deal_commission_proofs_proof_reference_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_proofs_proof_reference_key ON public.deal_commission_proofs USING btree (proof_reference)"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "deal_commission_proofs_storage_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_proofs_storage_key_key ON public.deal_commission_proofs USING btree (storage_key)"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "deal_commission_proofs_uploaded_by_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_proofs_uploaded_by_idempotency_key_key ON public.deal_commission_proofs USING btree (uploaded_by, idempotency_key)"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "deal_commission_receipt_confirmation_confirmation_reference_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipt_confirmation_confirmation_reference_key ON public.deal_commission_receipt_confirmations USING btree (confirmation_reference)"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "deal_commission_receipt_confirmation_deal_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipt_confirmation_deal_id_version_number_key ON public.deal_commission_receipt_confirmations USING btree (deal_id, version_number)"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "deal_commission_receipt_confirmations_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipt_confirmations_idempotency_key_key ON public.deal_commission_receipt_confirmations USING btree (idempotency_key)"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "deal_commission_receipt_confirmations_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipt_confirmations_pkey ON public.deal_commission_receipt_confirmations USING btree (id)"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "deal_commission_receipts_currency_normalized_finance_refere_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipts_currency_normalized_finance_refere_key ON public.deal_commission_receipts USING btree (currency, normalized_finance_reference, entry_type)"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "deal_commission_receipts_deal_id_evidence_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipts_deal_id_evidence_fingerprint_key ON public.deal_commission_receipts USING btree (deal_id, evidence_fingerprint)"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "deal_commission_receipts_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipts_idempotency_key_key ON public.deal_commission_receipts USING btree (idempotency_key)"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "deal_commission_receipts_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipts_pkey ON public.deal_commission_receipts USING btree (id)"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "deal_commission_receipts_receipt_reference_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_receipts_receipt_reference_key ON public.deal_commission_receipts USING btree (receipt_reference)"
+    },
+    {
+      "table": "deal_commission_variance_decisions",
+      "name": "deal_commission_variance_decisions_confirmation_id_key",
+      "definition": "CREATE UNIQUE INDEX deal_commission_variance_decisions_confirmation_id_key ON public.deal_commission_variance_decisions USING btree (confirmation_id)"
+    },
+    {
+      "table": "deal_commission_variance_decisions",
+      "name": "deal_commission_variance_decisions_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_commission_variance_decisions_pkey ON public.deal_commission_variance_decisions USING btree (id)"
+    },
+    {
+      "table": "deal_document_compliance_snapshots",
+      "name": "deal_document_compliance_snapshots_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_document_compliance_snapshots_pkey ON public.deal_document_compliance_snapshots USING btree (id)"
+    },
+    {
+      "table": "deal_document_compliance_snapshots",
+      "name": "deal_document_compliance_snapshots_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX deal_document_compliance_snapshots_request_fingerprint_key ON public.deal_document_compliance_snapshots USING btree (request_fingerprint)"
+    },
+    {
+      "table": "deal_document_requirement_instances",
+      "name": "deal_document_requirement_ins_snapshot_id_deal_party_id_req_key",
+      "definition": "CREATE UNIQUE INDEX deal_document_requirement_ins_snapshot_id_deal_party_id_req_key ON public.deal_document_requirement_instances USING btree (snapshot_id, deal_party_id, requirement_version_id)"
+    },
+    {
+      "table": "deal_document_requirement_instances",
+      "name": "deal_document_requirement_instances_instance_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX deal_document_requirement_instances_instance_fingerprint_key ON public.deal_document_requirement_instances USING btree (instance_fingerprint)"
+    },
+    {
+      "table": "deal_document_requirement_instances",
+      "name": "deal_document_requirement_instances_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_document_requirement_instances_pkey ON public.deal_document_requirement_instances USING btree (id)"
+    },
+    {
+      "table": "deal_inventory_linkages",
+      "name": "deal_inventory_linkages_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_inventory_linkages_pkey ON public.deal_inventory_linkages USING btree (id)"
+    },
+    {
+      "table": "deal_number_counters",
+      "name": "deal_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_number_counters_pkey ON public.deal_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "deal_parties",
+      "name": "deal_parties_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_parties_pkey ON public.deal_parties USING btree (id)"
+    },
+    {
+      "table": "deal_status_history",
+      "name": "deal_status_history_pkey",
+      "definition": "CREATE UNIQUE INDEX deal_status_history_pkey ON public.deal_status_history USING btree (id)"
+    },
+    {
+      "table": "deals",
+      "name": "deals_booking_id_key",
+      "definition": "CREATE UNIQUE INDEX deals_booking_id_key ON public.deals USING btree (booking_id)"
+    },
+    {
+      "table": "deals",
+      "name": "deals_deal_reference_key",
+      "definition": "CREATE UNIQUE INDEX deals_deal_reference_key ON public.deals USING btree (deal_reference)"
+    },
+    {
+      "table": "deals",
+      "name": "deals_opportunity_id_key",
+      "definition": "CREATE UNIQUE INDEX deals_opportunity_id_key ON public.deals USING btree (opportunity_id)"
+    },
+    {
+      "table": "deals",
+      "name": "deals_pkey",
+      "definition": "CREATE UNIQUE INDEX deals_pkey ON public.deals USING btree (id)"
+    },
+    {
+      "table": "developer_brokerage_arrangement_versions",
+      "name": "developer_brokerage_arrangeme_partner_version_id_version_nu_key",
+      "definition": "CREATE UNIQUE INDEX developer_brokerage_arrangeme_partner_version_id_version_nu_key ON public.developer_brokerage_arrangement_versions USING btree (partner_version_id, version_number)"
+    },
+    {
+      "table": "developer_brokerage_arrangement_versions",
+      "name": "developer_brokerage_arrangement_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX developer_brokerage_arrangement_versions_pkey ON public.developer_brokerage_arrangement_versions USING btree (id)"
+    },
+    {
+      "table": "dld_community_mapping_versions",
+      "name": "dld_community_mapping_version_source_dataset_ref_normalized_key",
+      "definition": "CREATE UNIQUE INDEX dld_community_mapping_version_source_dataset_ref_normalized_key ON public.dld_community_mapping_versions USING btree (source_dataset_ref, normalized_source_identity, version_number)"
+    },
+    {
+      "table": "dld_community_mapping_versions",
+      "name": "dld_community_mapping_versions_id_community_id_key",
+      "definition": "CREATE UNIQUE INDEX dld_community_mapping_versions_id_community_id_key ON public.dld_community_mapping_versions USING btree (id, community_id)"
+    },
+    {
+      "table": "dld_community_mapping_versions",
+      "name": "dld_community_mapping_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX dld_community_mapping_versions_pkey ON public.dld_community_mapping_versions USING btree (id)"
+    },
+    {
+      "table": "dld_market_observations",
+      "name": "dld_market_observations_observation_reference_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_observations_observation_reference_key ON public.dld_market_observations USING btree (observation_reference)"
+    },
+    {
+      "table": "dld_market_observations",
+      "name": "dld_market_observations_pkey",
+      "definition": "CREATE UNIQUE INDEX dld_market_observations_pkey ON public.dld_market_observations USING btree (id)"
+    },
+    {
+      "table": "dld_market_observations",
+      "name": "dld_market_observations_source_dataset_ref_source_record_re_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_observations_source_dataset_ref_source_record_re_key ON public.dld_market_observations USING btree (source_dataset_ref, source_record_ref)"
+    },
+    {
+      "table": "dld_market_observations",
+      "name": "dld_market_observations_source_row_id_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_observations_source_row_id_key ON public.dld_market_observations USING btree (source_row_id)"
+    },
+    {
+      "table": "dld_market_source_batches",
+      "name": "dld_market_source_batches_batch_reference_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_batches_batch_reference_key ON public.dld_market_source_batches USING btree (batch_reference)"
+    },
+    {
+      "table": "dld_market_source_batches",
+      "name": "dld_market_source_batches_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_batches_idempotency_key_key ON public.dld_market_source_batches USING btree (idempotency_key)"
+    },
+    {
+      "table": "dld_market_source_batches",
+      "name": "dld_market_source_batches_pkey",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_batches_pkey ON public.dld_market_source_batches USING btree (id)"
+    },
+    {
+      "table": "dld_market_source_batches",
+      "name": "dld_market_source_batches_source_dataset_ref_source_file_sh_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_batches_source_dataset_ref_source_file_sh_key ON public.dld_market_source_batches USING btree (source_dataset_ref, source_file_sha256)"
+    },
+    {
+      "table": "dld_market_source_rows",
+      "name": "dld_market_source_rows_batch_id_source_row_number_key",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_rows_batch_id_source_row_number_key ON public.dld_market_source_rows USING btree (batch_id, source_row_number)"
+    },
+    {
+      "table": "dld_market_source_rows",
+      "name": "dld_market_source_rows_pkey",
+      "definition": "CREATE UNIQUE INDEX dld_market_source_rows_pkey ON public.dld_market_source_rows USING btree (id)"
+    },
+    {
+      "table": "document_compliance_evidence_review_events",
+      "name": "document_compliance_evidence_review_events_evidence_id_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_review_events_evidence_id_key ON public.document_compliance_evidence_review_events USING btree (evidence_id)"
+    },
+    {
+      "table": "document_compliance_evidence_review_events",
+      "name": "document_compliance_evidence_review_events_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_review_events_pkey ON public.document_compliance_evidence_review_events USING btree (id)"
+    },
+    {
+      "table": "document_compliance_evidence_versions",
+      "name": "document_compliance_evidence_versions_document_version_id_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_versions_document_version_id_key ON public.document_compliance_evidence_versions USING btree (document_version_id)"
+    },
+    {
+      "table": "document_compliance_evidence_versions",
+      "name": "document_compliance_evidence_versions_evidence_reference_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_versions_evidence_reference_key ON public.document_compliance_evidence_versions USING btree (evidence_reference)"
+    },
+    {
+      "table": "document_compliance_evidence_versions",
+      "name": "document_compliance_evidence_versions_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_versions_idempotency_key_key ON public.document_compliance_evidence_versions USING btree (idempotency_key)"
+    },
+    {
+      "table": "document_compliance_evidence_versions",
+      "name": "document_compliance_evidence_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_evidence_versions_pkey ON public.document_compliance_evidence_versions USING btree (id)"
+    },
+    {
+      "table": "document_compliance_followup_task_links",
+      "name": "document_compliance_followup__requirement_instance_id_follo_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_followup__requirement_instance_id_follo_key ON public.document_compliance_followup_task_links USING btree (requirement_instance_id, followup_reason, reminder_offset_days, cycle_number)"
+    },
+    {
+      "table": "document_compliance_followup_task_links",
+      "name": "document_compliance_followup_task_links_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_followup_task_links_pkey ON public.document_compliance_followup_task_links USING btree (id)"
+    },
+    {
+      "table": "document_compliance_followup_task_links",
+      "name": "document_compliance_followup_task_links_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_followup_task_links_request_fingerprint_key ON public.document_compliance_followup_task_links USING btree (request_fingerprint)"
+    },
+    {
+      "table": "document_compliance_followup_task_links",
+      "name": "document_compliance_followup_task_links_task_id_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_followup_task_links_task_id_key ON public.document_compliance_followup_task_links USING btree (task_id)"
+    },
+    {
+      "table": "document_compliance_official_evidence_links",
+      "name": "document_compliance_official__requirement_instance_id_offic_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_official__requirement_instance_id_offic_key ON public.document_compliance_official_evidence_links USING btree (requirement_instance_id, official_evidence_id)"
+    },
+    {
+      "table": "document_compliance_official_evidence_links",
+      "name": "document_compliance_official_evidence_link_link_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_official_evidence_link_link_fingerprint_key ON public.document_compliance_official_evidence_links USING btree (link_fingerprint)"
+    },
+    {
+      "table": "document_compliance_official_evidence_links",
+      "name": "document_compliance_official_evidence_links_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_official_evidence_links_pkey ON public.document_compliance_official_evidence_links USING btree (id)"
+    },
+    {
+      "table": "document_compliance_requirement_versions",
+      "name": "document_compliance_requireme_requirement_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_requireme_requirement_id_version_number_key ON public.document_compliance_requirement_versions USING btree (requirement_id, version_number)"
+    },
+    {
+      "table": "document_compliance_requirement_versions",
+      "name": "document_compliance_requirement_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_requirement_versions_pkey ON public.document_compliance_requirement_versions USING btree (id)"
+    },
+    {
+      "table": "document_compliance_requirements",
+      "name": "document_compliance_requirements_pkey",
+      "definition": "CREATE UNIQUE INDEX document_compliance_requirements_pkey ON public.document_compliance_requirements USING btree (id)"
+    },
+    {
+      "table": "document_compliance_requirements",
+      "name": "document_compliance_requirements_requirement_code_key",
+      "definition": "CREATE UNIQUE INDEX document_compliance_requirements_requirement_code_key ON public.document_compliance_requirements USING btree (requirement_code)"
+    },
+    {
+      "table": "document_links",
+      "name": "document_links_document_id_entity_type_entity_id_key",
+      "definition": "CREATE UNIQUE INDEX document_links_document_id_entity_type_entity_id_key ON public.document_links USING btree (document_id, entity_type, entity_id)"
+    },
+    {
+      "table": "document_links",
+      "name": "document_links_pkey",
+      "definition": "CREATE UNIQUE INDEX document_links_pkey ON public.document_links USING btree (id)"
+    },
+    {
+      "table": "document_templates",
+      "name": "document_templates_pkey",
+      "definition": "CREATE UNIQUE INDEX document_templates_pkey ON public.document_templates USING btree (id)"
+    },
+    {
+      "table": "document_templates",
+      "name": "document_templates_template_type_version_key",
+      "definition": "CREATE UNIQUE INDEX document_templates_template_type_version_key ON public.document_templates USING btree (template_type, version)"
+    },
+    {
+      "table": "document_versions",
+      "name": "document_versions_document_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX document_versions_document_id_version_number_key ON public.document_versions USING btree (document_id, version_number)"
+    },
+    {
+      "table": "document_versions",
+      "name": "document_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX document_versions_pkey ON public.document_versions USING btree (id)"
+    },
+    {
+      "table": "documents",
+      "name": "documents_document_reference_key",
+      "definition": "CREATE UNIQUE INDEX documents_document_reference_key ON public.documents USING btree (document_reference)"
+    },
+    {
+      "table": "documents",
+      "name": "documents_pkey",
+      "definition": "CREATE UNIQUE INDEX documents_pkey ON public.documents USING btree (id)"
+    },
+    {
+      "table": "email_drafts",
+      "name": "email_drafts_pkey",
+      "definition": "CREATE UNIQUE INDEX email_drafts_pkey ON public.email_drafts USING btree (id)"
+    },
+    {
+      "table": "email_message_evidence",
+      "name": "email_message_evidence_attempt_reference_key",
+      "definition": "CREATE UNIQUE INDEX email_message_evidence_attempt_reference_key ON public.email_message_evidence USING btree (attempt_reference)"
+    },
+    {
+      "table": "email_message_evidence",
+      "name": "email_message_evidence_pkey",
+      "definition": "CREATE UNIQUE INDEX email_message_evidence_pkey ON public.email_message_evidence USING btree (id)"
+    },
+    {
+      "table": "email_message_state_events",
+      "name": "email_message_state_events_message_evidence_id_sequence_key",
+      "definition": "CREATE UNIQUE INDEX email_message_state_events_message_evidence_id_sequence_key ON public.email_message_state_events USING btree (message_evidence_id, sequence)"
+    },
+    {
+      "table": "email_message_state_events",
+      "name": "email_message_state_events_pkey",
+      "definition": "CREATE UNIQUE INDEX email_message_state_events_pkey ON public.email_message_state_events USING btree (id)"
+    },
+    {
+      "table": "email_outbox",
+      "name": "email_outbox_message_evidence_id_dispatch_generation_key",
+      "definition": "CREATE UNIQUE INDEX email_outbox_message_evidence_id_dispatch_generation_key ON public.email_outbox USING btree (message_evidence_id, dispatch_generation)"
+    },
+    {
+      "table": "email_outbox",
+      "name": "email_outbox_pkey",
+      "definition": "CREATE UNIQUE INDEX email_outbox_pkey ON public.email_outbox USING btree (id)"
+    },
+    {
+      "table": "email_projection_events",
+      "name": "email_projection_events_activity_id_key",
+      "definition": "CREATE UNIQUE INDEX email_projection_events_activity_id_key ON public.email_projection_events USING btree (activity_id)"
+    },
+    {
+      "table": "email_projection_events",
+      "name": "email_projection_events_message_evidence_id_projection_type_key",
+      "definition": "CREATE UNIQUE INDEX email_projection_events_message_evidence_id_projection_type_key ON public.email_projection_events USING btree (message_evidence_id, projection_type)"
+    },
+    {
+      "table": "email_projection_events",
+      "name": "email_projection_events_pkey",
+      "definition": "CREATE UNIQUE INDEX email_projection_events_pkey ON public.email_projection_events USING btree (id)"
+    },
+    {
+      "table": "email_provider_event_processing",
+      "name": "email_provider_event_processing_pkey",
+      "definition": "CREATE UNIQUE INDEX email_provider_event_processing_pkey ON public.email_provider_event_processing USING btree (id)"
+    },
+    {
+      "table": "email_provider_event_processing",
+      "name": "email_provider_event_processing_provider_event_id_sequence_key",
+      "definition": "CREATE UNIQUE INDEX email_provider_event_processing_provider_event_id_sequence_key ON public.email_provider_event_processing USING btree (provider_event_id, sequence)"
+    },
+    {
+      "table": "email_provider_events",
+      "name": "email_provider_events_mailbox_connection_id_provider_event__key",
+      "definition": "CREATE UNIQUE INDEX email_provider_events_mailbox_connection_id_provider_event__key ON public.email_provider_events USING btree (mailbox_connection_id, provider_event_ref)"
+    },
+    {
+      "table": "email_provider_events",
+      "name": "email_provider_events_pkey",
+      "definition": "CREATE UNIQUE INDEX email_provider_events_pkey ON public.email_provider_events USING btree (id)"
+    },
+    {
+      "table": "email_sync_checkpoints",
+      "name": "email_sync_checkpoints_mailbox_connection_id_folder_scope_key",
+      "definition": "CREATE UNIQUE INDEX email_sync_checkpoints_mailbox_connection_id_folder_scope_key ON public.email_sync_checkpoints USING btree (mailbox_connection_id, folder_scope)"
+    },
+    {
+      "table": "email_sync_checkpoints",
+      "name": "email_sync_checkpoints_pkey",
+      "definition": "CREATE UNIQUE INDEX email_sync_checkpoints_pkey ON public.email_sync_checkpoints USING btree (id)"
+    },
+    {
+      "table": "email_threads",
+      "name": "email_threads_pkey",
+      "definition": "CREATE UNIQUE INDEX email_threads_pkey ON public.email_threads USING btree (id)"
+    },
+    {
+      "table": "email_threads",
+      "name": "email_threads_thread_reference_key",
+      "definition": "CREATE UNIQUE INDEX email_threads_thread_reference_key ON public.email_threads USING btree (thread_reference)"
+    },
+    {
+      "table": "external_company_roles",
+      "name": "external_company_roles_pkey",
+      "definition": "CREATE UNIQUE INDEX external_company_roles_pkey ON public.external_company_roles USING btree (id)"
+    },
+    {
+      "table": "external_listing_preparation_versions",
+      "name": "external_listing_preparation__publication_id_revision_numbe_key",
+      "definition": "CREATE UNIQUE INDEX external_listing_preparation__publication_id_revision_numbe_key ON public.external_listing_preparation_versions USING btree (publication_id, revision_number)"
+    },
+    {
+      "table": "external_listing_preparation_versions",
+      "name": "external_listing_preparation_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX external_listing_preparation_versions_pkey ON public.external_listing_preparation_versions USING btree (id)"
+    },
+    {
+      "table": "external_listing_publications",
+      "name": "external_listing_publications_pkey",
+      "definition": "CREATE UNIQUE INDEX external_listing_publications_pkey ON public.external_listing_publications USING btree (id)"
+    },
+    {
+      "table": "external_portal_field_mappings",
+      "name": "external_portal_field_mapping_mapping_version_id_source_fie_key",
+      "definition": "CREATE UNIQUE INDEX external_portal_field_mapping_mapping_version_id_source_fie_key ON public.external_portal_field_mappings USING btree (mapping_version_id, source_field)"
+    },
+    {
+      "table": "external_portal_field_mappings",
+      "name": "external_portal_field_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX external_portal_field_mappings_pkey ON public.external_portal_field_mappings USING btree (id)"
+    },
+    {
+      "table": "external_portal_mapping_versions",
+      "name": "external_portal_mapping_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX external_portal_mapping_versions_pkey ON public.external_portal_mapping_versions USING btree (id)"
+    },
+    {
+      "table": "external_portal_mapping_versions",
+      "name": "external_portal_mapping_versions_portal_code_version_code_key",
+      "definition": "CREATE UNIQUE INDEX external_portal_mapping_versions_portal_code_version_code_key ON public.external_portal_mapping_versions USING btree (portal_code, version_code)"
+    },
+    {
+      "table": "external_portal_permit_evidence_versions",
+      "name": "external_portal_permit_eviden_listing_id_portal_code_permit_key",
+      "definition": "CREATE UNIQUE INDEX external_portal_permit_eviden_listing_id_portal_code_permit_key ON public.external_portal_permit_evidence_versions USING btree (listing_id, portal_code, permit_number, file_hash)"
+    },
+    {
+      "table": "external_portal_permit_evidence_versions",
+      "name": "external_portal_permit_evidence_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX external_portal_permit_evidence_versions_pkey ON public.external_portal_permit_evidence_versions USING btree (id)"
+    },
+    {
+      "table": "financial_scenarios",
+      "name": "financial_scenarios_pkey",
+      "definition": "CREATE UNIQUE INDEX financial_scenarios_pkey ON public.financial_scenarios USING btree (id)"
+    },
+    {
+      "table": "integration_oauth_states",
+      "name": "integration_oauth_states_pkey",
+      "definition": "CREATE UNIQUE INDEX integration_oauth_states_pkey ON public.integration_oauth_states USING btree (state_hash)"
+    },
+    {
+      "table": "inventory_agent_assignment_history",
+      "name": "inventory_agent_assignment_history_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_agent_assignment_history_pkey ON public.inventory_agent_assignment_history USING btree (id)"
+    },
+    {
+      "table": "inventory_agreements",
+      "name": "inventory_agreements_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_agreements_pkey ON public.inventory_agreements USING btree (id)"
+    },
+    {
+      "table": "inventory_assignment_events",
+      "name": "inventory_assignment_events_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_assignment_events_pkey ON public.inventory_assignment_events USING btree (id)"
+    },
+    {
+      "table": "inventory_assignment_expiry_changes",
+      "name": "inventory_assignment_expiry_changes_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_assignment_expiry_changes_pkey ON public.inventory_assignment_expiry_changes USING btree (id)"
+    },
+    {
+      "table": "inventory_assignments",
+      "name": "inventory_assignments_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_assignments_pkey ON public.inventory_assignments USING btree (id)"
+    },
+    {
+      "table": "inventory_buildings",
+      "name": "inventory_buildings_community_id_normalized_label_key",
+      "definition": "CREATE UNIQUE INDEX inventory_buildings_community_id_normalized_label_key ON public.inventory_buildings USING btree (community_id, normalized_label)"
+    },
+    {
+      "table": "inventory_buildings",
+      "name": "inventory_buildings_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_buildings_pkey ON public.inventory_buildings USING btree (id)"
+    },
+    {
+      "table": "inventory_buildings",
+      "name": "inventory_buildings_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX inventory_buildings_stable_code_key ON public.inventory_buildings USING btree (stable_code)"
+    },
+    {
+      "table": "inventory_counterparties",
+      "name": "inventory_counterparties_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_counterparties_pkey ON public.inventory_counterparties USING btree (id)"
+    },
+    {
+      "table": "inventory_market_intelligence_review_events",
+      "name": "inventory_market_intelligence_review_events_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_market_intelligence_review_events_pkey ON public.inventory_market_intelligence_review_events USING btree (id)"
+    },
+    {
+      "table": "inventory_market_intelligence_review_events",
+      "name": "inventory_market_intelligence_review_events_snapshot_id_key",
+      "definition": "CREATE UNIQUE INDEX inventory_market_intelligence_review_events_snapshot_id_key ON public.inventory_market_intelligence_review_events USING btree (snapshot_id)"
+    },
+    {
+      "table": "inventory_market_intelligence_snapshots",
+      "name": "inventory_market_intelligence_listing_id_report_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX inventory_market_intelligence_listing_id_report_fingerprint_key ON public.inventory_market_intelligence_snapshots USING btree (listing_id, report_fingerprint)"
+    },
+    {
+      "table": "inventory_market_intelligence_snapshots",
+      "name": "inventory_market_intelligence_snapshots_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_market_intelligence_snapshots_pkey ON public.inventory_market_intelligence_snapshots USING btree (id)"
+    },
+    {
+      "table": "inventory_market_intelligence_snapshots",
+      "name": "inventory_market_intelligence_snapshots_snapshot_reference_key",
+      "definition": "CREATE UNIQUE INDEX inventory_market_intelligence_snapshots_snapshot_reference_key ON public.inventory_market_intelligence_snapshots USING btree (snapshot_reference)"
+    },
+    {
+      "table": "inventory_match_candidate_assessments",
+      "name": "inventory_match_candidate_ass_candidate_id_declaration_kind_key",
+      "definition": "CREATE UNIQUE INDEX inventory_match_candidate_ass_candidate_id_declaration_kind_key ON public.inventory_match_candidate_assessments USING btree (candidate_id, declaration_kind, declaration_index, sequence_no)"
+    },
+    {
+      "table": "inventory_match_candidate_assessments",
+      "name": "inventory_match_candidate_assessment_previous_assessment_id_key",
+      "definition": "CREATE UNIQUE INDEX inventory_match_candidate_assessment_previous_assessment_id_key ON public.inventory_match_candidate_assessments USING btree (previous_assessment_id)"
+    },
+    {
+      "table": "inventory_match_candidate_assessments",
+      "name": "inventory_match_candidate_assessments_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_match_candidate_assessments_pkey ON public.inventory_match_candidate_assessments USING btree (id)"
+    },
+    {
+      "table": "inventory_match_decisions",
+      "name": "inventory_match_decisions_candidate_id_sequence_no_key",
+      "definition": "CREATE UNIQUE INDEX inventory_match_decisions_candidate_id_sequence_no_key ON public.inventory_match_decisions USING btree (candidate_id, sequence_no)"
+    },
+    {
+      "table": "inventory_match_decisions",
+      "name": "inventory_match_decisions_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_match_decisions_pkey ON public.inventory_match_decisions USING btree (id)"
+    },
+    {
+      "table": "inventory_match_decisions",
+      "name": "inventory_match_decisions_previous_decision_id_key",
+      "definition": "CREATE UNIQUE INDEX inventory_match_decisions_previous_decision_id_key ON public.inventory_match_decisions USING btree (previous_decision_id)"
+    },
+    {
+      "table": "inventory_match_feedback",
+      "name": "inventory_match_feedback_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_match_feedback_pkey ON public.inventory_match_feedback USING btree (id)"
+    },
+    {
+      "table": "inventory_matching_candidates",
+      "name": "inventory_matching_candidates_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_matching_candidates_pkey ON public.inventory_matching_candidates USING btree (id)"
+    },
+    {
+      "table": "inventory_matching_candidates",
+      "name": "inventory_matching_candidates_run_id_listing_id_key",
+      "definition": "CREATE UNIQUE INDEX inventory_matching_candidates_run_id_listing_id_key ON public.inventory_matching_candidates USING btree (run_id, listing_id)"
+    },
+    {
+      "table": "inventory_matching_runs",
+      "name": "inventory_matching_runs_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_matching_runs_pkey ON public.inventory_matching_runs USING btree (id)"
+    },
+    {
+      "table": "inventory_organization_link_events",
+      "name": "inventory_organization_link_events_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_organization_link_events_pkey ON public.inventory_organization_link_events USING btree (id)"
+    },
+    {
+      "table": "inventory_reopen_requests",
+      "name": "inventory_reopen_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_reopen_requests_pkey ON public.inventory_reopen_requests USING btree (id)"
+    },
+    {
+      "table": "inventory_verification_requests",
+      "name": "inventory_verification_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX inventory_verification_requests_pkey ON public.inventory_verification_requests USING btree (id)"
+    },
+    {
+      "table": "invitations",
+      "name": "invitations_code_key",
+      "definition": "CREATE UNIQUE INDEX invitations_code_key ON public.invitations USING btree (code)"
+    },
+    {
+      "table": "invitations",
+      "name": "invitations_pkey",
+      "definition": "CREATE UNIQUE INDEX invitations_pkey ON public.invitations USING btree (id)"
+    },
+    {
+      "table": "lead_assignments",
+      "name": "lead_assignments_lead_id_sequence_no_key",
+      "definition": "CREATE UNIQUE INDEX lead_assignments_lead_id_sequence_no_key ON public.lead_assignments USING btree (lead_id, sequence_no)"
+    },
+    {
+      "table": "lead_assignments",
+      "name": "lead_assignments_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_assignments_pkey ON public.lead_assignments USING btree (id)"
+    },
+    {
+      "table": "lead_conversions",
+      "name": "lead_conversions_lead_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_conversions_lead_id_key ON public.lead_conversions USING btree (lead_id)"
+    },
+    {
+      "table": "lead_conversions",
+      "name": "lead_conversions_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_conversions_pkey ON public.lead_conversions USING btree (id)"
+    },
+    {
+      "table": "lead_email_mailbox_cursors",
+      "name": "lead_email_mailbox_cursors_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_email_mailbox_cursors_pkey ON public.lead_email_mailbox_cursors USING btree (connection_ref)"
+    },
+    {
+      "table": "lead_follow_up_cases",
+      "name": "lead_follow_up_cases_lead_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_cases_lead_id_key ON public.lead_follow_up_cases USING btree (lead_id)"
+    },
+    {
+      "table": "lead_follow_up_cases",
+      "name": "lead_follow_up_cases_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_cases_pkey ON public.lead_follow_up_cases USING btree (id)"
+    },
+    {
+      "table": "lead_follow_up_cases",
+      "name": "lead_follow_up_cases_source_inbox_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_cases_source_inbox_id_key ON public.lead_follow_up_cases USING btree (source_inbox_id)"
+    },
+    {
+      "table": "lead_follow_up_events",
+      "name": "lead_follow_up_events_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_events_pkey ON public.lead_follow_up_events USING btree (id)"
+    },
+    {
+      "table": "lead_follow_up_events",
+      "name": "lead_follow_up_events_provider_connection_ref_provider_even_key",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_events_provider_connection_ref_provider_even_key ON public.lead_follow_up_events USING btree (provider_connection_ref, provider_event_ref)"
+    },
+    {
+      "table": "lead_follow_up_jobs",
+      "name": "lead_follow_up_jobs_case_id_generation_step_key",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_jobs_case_id_generation_step_key ON public.lead_follow_up_jobs USING btree (case_id, generation, step)"
+    },
+    {
+      "table": "lead_follow_up_jobs",
+      "name": "lead_follow_up_jobs_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_follow_up_jobs_pkey ON public.lead_follow_up_jobs USING btree (id)"
+    },
+    {
+      "table": "lead_integration_connections",
+      "name": "lead_integration_connections_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_integration_connections_pkey ON public.lead_integration_connections USING btree (id)"
+    },
+    {
+      "table": "lead_integration_connections",
+      "name": "lead_integration_connections_provider_key",
+      "definition": "CREATE UNIQUE INDEX lead_integration_connections_provider_key ON public.lead_integration_connections USING btree (provider)"
+    },
+    {
+      "table": "lead_integration_runtime_health",
+      "name": "lead_integration_runtime_health_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_integration_runtime_health_pkey ON public.lead_integration_runtime_health USING btree (provider)"
+    },
+    {
+      "table": "lead_integration_setup",
+      "name": "lead_integration_setup_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_integration_setup_pkey ON public.lead_integration_setup USING btree (id)"
+    },
+    {
+      "table": "lead_integration_setup",
+      "name": "lead_integration_setup_singleton_key",
+      "definition": "CREATE UNIQUE INDEX lead_integration_setup_singleton_key ON public.lead_integration_setup USING btree (singleton)"
+    },
+    {
+      "table": "lead_inventory_matches",
+      "name": "lead_inventory_matches_lead_id_requirement_id_listing_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_inventory_matches_lead_id_requirement_id_listing_id_key ON public.lead_inventory_matches USING btree (lead_id, requirement_id, listing_id)"
+    },
+    {
+      "table": "lead_inventory_matches",
+      "name": "lead_inventory_matches_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_inventory_matches_pkey ON public.lead_inventory_matches USING btree (id)"
+    },
+    {
+      "table": "lead_inventory_selections",
+      "name": "lead_inventory_selections_lead_id_listing_id_removed_at_key",
+      "definition": "CREATE UNIQUE INDEX lead_inventory_selections_lead_id_listing_id_removed_at_key ON public.lead_inventory_selections USING btree (lead_id, listing_id, removed_at)"
+    },
+    {
+      "table": "lead_inventory_selections",
+      "name": "lead_inventory_selections_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_inventory_selections_pkey ON public.lead_inventory_selections USING btree (id)"
+    },
+    {
+      "table": "lead_month_number_counters",
+      "name": "lead_month_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_month_number_counters_pkey ON public.lead_month_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "lead_number_counters",
+      "name": "lead_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_number_counters_pkey ON public.lead_number_counters USING btree (year_code)"
+    },
+    {
+      "table": "lead_recovery_cases",
+      "name": "lead_recovery_cases_case_key_key",
+      "definition": "CREATE UNIQUE INDEX lead_recovery_cases_case_key_key ON public.lead_recovery_cases USING btree (case_key)"
+    },
+    {
+      "table": "lead_recovery_cases",
+      "name": "lead_recovery_cases_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_recovery_cases_pkey ON public.lead_recovery_cases USING btree (id)"
+    },
+    {
+      "table": "lead_requirement_confirmations",
+      "name": "lead_requirement_confirmations_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_confirmations_pkey ON public.lead_requirement_confirmations USING btree (id)"
+    },
+    {
+      "table": "lead_requirement_confirmations",
+      "name": "lead_requirement_confirmations_requirement_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_confirmations_requirement_id_key ON public.lead_requirement_confirmations USING btree (requirement_id)"
+    },
+    {
+      "table": "lead_requirement_conflict_resolutions",
+      "name": "lead_requirement_conflict_resolutions_conflict_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_conflict_resolutions_conflict_id_key ON public.lead_requirement_conflict_resolutions USING btree (conflict_id)"
+    },
+    {
+      "table": "lead_requirement_conflict_resolutions",
+      "name": "lead_requirement_conflict_resolutions_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_conflict_resolutions_pkey ON public.lead_requirement_conflict_resolutions USING btree (id)"
+    },
+    {
+      "table": "lead_requirement_website_conflicts",
+      "name": "lead_requirement_website_conf_requirement_id_source_event_i_key",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_website_conf_requirement_id_source_event_i_key ON public.lead_requirement_website_conflicts USING btree (requirement_id, source_event_id, field_code)"
+    },
+    {
+      "table": "lead_requirement_website_conflicts",
+      "name": "lead_requirement_website_conflicts_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_requirement_website_conflicts_pkey ON public.lead_requirement_website_conflicts USING btree (id)"
+    },
+    {
+      "table": "lead_requirements",
+      "name": "lead_requirements_lead_id_version_no_key",
+      "definition": "CREATE UNIQUE INDEX lead_requirements_lead_id_version_no_key ON public.lead_requirements USING btree (lead_id, version_no)"
+    },
+    {
+      "table": "lead_requirements",
+      "name": "lead_requirements_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_requirements_pkey ON public.lead_requirements USING btree (id)"
+    },
+    {
+      "table": "lead_response_anchors",
+      "name": "lead_response_anchors_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_anchors_pkey ON public.lead_response_anchors USING btree (case_id, kind)"
+    },
+    {
+      "table": "lead_response_callbacks",
+      "name": "lead_response_callbacks_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_callbacks_pkey ON public.lead_response_callbacks USING btree (id)"
+    },
+    {
+      "table": "lead_response_chat_drafts",
+      "name": "lead_response_chat_drafts_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_chat_drafts_pkey ON public.lead_response_chat_drafts USING btree (id)"
+    },
+    {
+      "table": "lead_response_chat_drafts",
+      "name": "lead_response_chat_drafts_provider_inbox_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_response_chat_drafts_provider_inbox_id_key ON public.lead_response_chat_drafts USING btree (provider_inbox_id)"
+    },
+    {
+      "table": "lead_response_evidence",
+      "name": "lead_response_evidence_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_evidence_pkey ON public.lead_response_evidence USING btree (id)"
+    },
+    {
+      "table": "lead_response_evidence",
+      "name": "lead_response_evidence_source_inbox_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_response_evidence_source_inbox_id_key ON public.lead_response_evidence USING btree (source_inbox_id)"
+    },
+    {
+      "table": "lead_response_message_attempts",
+      "name": "lead_response_message_attempts_job_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_response_message_attempts_job_id_key ON public.lead_response_message_attempts USING btree (job_id)"
+    },
+    {
+      "table": "lead_response_message_attempts",
+      "name": "lead_response_message_attempts_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_message_attempts_pkey ON public.lead_response_message_attempts USING btree (id)"
+    },
+    {
+      "table": "lead_response_messaging_budgets",
+      "name": "lead_response_messaging_budgets_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_messaging_budgets_pkey ON public.lead_response_messaging_budgets USING btree (budget_day)"
+    },
+    {
+      "table": "lead_response_provider_inbox",
+      "name": "lead_response_provider_inbox_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_response_provider_inbox_pkey ON public.lead_response_provider_inbox USING btree (id)"
+    },
+    {
+      "table": "lead_response_provider_inbox",
+      "name": "lead_response_provider_inbox_provider_connection_ref_event__key",
+      "definition": "CREATE UNIQUE INDEX lead_response_provider_inbox_provider_connection_ref_event__key ON public.lead_response_provider_inbox USING btree (provider, connection_ref, event_ref)"
+    },
+    {
+      "table": "lead_source_inbox",
+      "name": "lead_source_inbox_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_source_inbox_pkey ON public.lead_source_inbox USING btree (id)"
+    },
+    {
+      "table": "lead_source_inbox",
+      "name": "lead_source_inbox_source_system_source_account_id_source_ev_key",
+      "definition": "CREATE UNIQUE INDEX lead_source_inbox_source_system_source_account_id_source_ev_key ON public.lead_source_inbox USING btree (source_system, source_account_id, source_event_id)"
+    },
+    {
+      "table": "lead_source_inbox",
+      "name": "lead_source_inbox_web_intake_journey_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_source_inbox_web_intake_journey_id_key ON public.lead_source_inbox USING btree (web_intake_journey_id)"
+    },
+    {
+      "table": "lead_source_inbox",
+      "name": "lead_source_inbox_website_intake_event_id_key",
+      "definition": "CREATE UNIQUE INDEX lead_source_inbox_website_intake_event_id_key ON public.lead_source_inbox USING btree (website_intake_event_id)"
+    },
+    {
+      "table": "lead_stage_history",
+      "name": "lead_stage_history_pkey",
+      "definition": "CREATE UNIQUE INDEX lead_stage_history_pkey ON public.lead_stage_history USING btree (id)"
+    },
+    {
+      "table": "leads",
+      "name": "leads_pkey",
+      "definition": "CREATE UNIQUE INDEX leads_pkey ON public.leads USING btree (id)"
+    },
+    {
+      "table": "leave_application_decisions",
+      "name": "leave_application_decisions_application_id_approval_cycle_key",
+      "definition": "CREATE UNIQUE INDEX leave_application_decisions_application_id_approval_cycle_key ON public.leave_application_decisions USING btree (application_id, approval_cycle)"
+    },
+    {
+      "table": "leave_application_decisions",
+      "name": "leave_application_decisions_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX leave_application_decisions_idempotency_key_key ON public.leave_application_decisions USING btree (idempotency_key)"
+    },
+    {
+      "table": "leave_application_decisions",
+      "name": "leave_application_decisions_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_application_decisions_pkey ON public.leave_application_decisions USING btree (id)"
+    },
+    {
+      "table": "leave_application_task_links",
+      "name": "leave_application_task_links_application_id_approval_cycle_key",
+      "definition": "CREATE UNIQUE INDEX leave_application_task_links_application_id_approval_cycle_key ON public.leave_application_task_links USING btree (application_id, approval_cycle)"
+    },
+    {
+      "table": "leave_application_task_links",
+      "name": "leave_application_task_links_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_application_task_links_pkey ON public.leave_application_task_links USING btree (id)"
+    },
+    {
+      "table": "leave_application_task_links",
+      "name": "leave_application_task_links_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX leave_application_task_links_request_fingerprint_key ON public.leave_application_task_links USING btree (request_fingerprint)"
+    },
+    {
+      "table": "leave_application_task_links",
+      "name": "leave_application_task_links_task_id_key",
+      "definition": "CREATE UNIQUE INDEX leave_application_task_links_task_id_key ON public.leave_application_task_links USING btree (task_id)"
+    },
+    {
+      "table": "leave_applications",
+      "name": "leave_applications_application_reference_key",
+      "definition": "CREATE UNIQUE INDEX leave_applications_application_reference_key ON public.leave_applications USING btree (application_reference)"
+    },
+    {
+      "table": "leave_applications",
+      "name": "leave_applications_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX leave_applications_idempotency_key_key ON public.leave_applications USING btree (idempotency_key)"
+    },
+    {
+      "table": "leave_applications",
+      "name": "leave_applications_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_applications_pkey ON public.leave_applications USING btree (id)"
+    },
+    {
+      "table": "leave_balance_ledger",
+      "name": "leave_balance_ledger_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX leave_balance_ledger_idempotency_key_key ON public.leave_balance_ledger USING btree (idempotency_key)"
+    },
+    {
+      "table": "leave_balance_ledger",
+      "name": "leave_balance_ledger_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_balance_ledger_pkey ON public.leave_balance_ledger USING btree (id)"
+    },
+    {
+      "table": "leave_policy_entitlements",
+      "name": "leave_policy_entitlements_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_policy_entitlements_pkey ON public.leave_policy_entitlements USING btree (id)"
+    },
+    {
+      "table": "leave_policy_entitlements",
+      "name": "leave_policy_entitlements_policy_version_id_display_order_key",
+      "definition": "CREATE UNIQUE INDEX leave_policy_entitlements_policy_version_id_display_order_key ON public.leave_policy_entitlements USING btree (policy_version_id, display_order)"
+    },
+    {
+      "table": "leave_policy_entitlements",
+      "name": "leave_policy_entitlements_policy_version_id_leave_type_vers_key",
+      "definition": "CREATE UNIQUE INDEX leave_policy_entitlements_policy_version_id_leave_type_vers_key ON public.leave_policy_entitlements USING btree (policy_version_id, leave_type_version_id)"
+    },
+    {
+      "table": "leave_policy_versions",
+      "name": "leave_policy_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_policy_versions_pkey ON public.leave_policy_versions USING btree (id)"
+    },
+    {
+      "table": "leave_policy_versions",
+      "name": "leave_policy_versions_policy_code_version_no_key",
+      "definition": "CREATE UNIQUE INDEX leave_policy_versions_policy_code_version_no_key ON public.leave_policy_versions USING btree (policy_code, version_no)"
+    },
+    {
+      "table": "leave_type_versions",
+      "name": "leave_type_versions_leave_type_id_version_no_key",
+      "definition": "CREATE UNIQUE INDEX leave_type_versions_leave_type_id_version_no_key ON public.leave_type_versions USING btree (leave_type_id, version_no)"
+    },
+    {
+      "table": "leave_type_versions",
+      "name": "leave_type_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_type_versions_pkey ON public.leave_type_versions USING btree (id)"
+    },
+    {
+      "table": "leave_types",
+      "name": "leave_types_pkey",
+      "definition": "CREATE UNIQUE INDEX leave_types_pkey ON public.leave_types USING btree (id)"
+    },
+    {
+      "table": "leave_types",
+      "name": "leave_types_type_code_key",
+      "definition": "CREATE UNIQUE INDEX leave_types_type_code_key ON public.leave_types USING btree (type_code)"
+    },
+    {
+      "table": "listing_approval_policy",
+      "name": "listing_approval_policy_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_approval_policy_pkey ON public.listing_approval_policy USING btree (id)"
+    },
+    {
+      "table": "listing_intake_events",
+      "name": "listing_intake_events_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_intake_events_pkey ON public.listing_intake_events USING btree (id)"
+    },
+    {
+      "table": "listing_mapping_versions",
+      "name": "listing_mapping_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_mapping_versions_pkey ON public.listing_mapping_versions USING btree (id)"
+    },
+    {
+      "table": "listing_mapping_versions",
+      "name": "listing_mapping_versions_provider_code_version_code_key",
+      "definition": "CREATE UNIQUE INDEX listing_mapping_versions_provider_code_version_code_key ON public.listing_mapping_versions USING btree (provider_code, version_code)"
+    },
+    {
+      "table": "listing_noc_evidence_versions",
+      "name": "listing_noc_evidence_versions_document_version_id_key",
+      "definition": "CREATE UNIQUE INDEX listing_noc_evidence_versions_document_version_id_key ON public.listing_noc_evidence_versions USING btree (document_version_id)"
+    },
+    {
+      "table": "listing_noc_evidence_versions",
+      "name": "listing_noc_evidence_versions_listing_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX listing_noc_evidence_versions_listing_id_version_number_key ON public.listing_noc_evidence_versions USING btree (listing_id, version_number)"
+    },
+    {
+      "table": "listing_noc_evidence_versions",
+      "name": "listing_noc_evidence_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_noc_evidence_versions_pkey ON public.listing_noc_evidence_versions USING btree (id)"
+    },
+    {
+      "table": "listing_units",
+      "name": "listing_units_listing_id_unit_reference_key",
+      "definition": "CREATE UNIQUE INDEX listing_units_listing_id_unit_reference_key ON public.listing_units USING btree (listing_id, unit_reference)"
+    },
+    {
+      "table": "listing_units",
+      "name": "listing_units_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_units_pkey ON public.listing_units USING btree (id)"
+    },
+    {
+      "table": "listing_value_mappings",
+      "name": "listing_value_mappings_pkey",
+      "definition": "CREATE UNIQUE INDEX listing_value_mappings_pkey ON public.listing_value_mappings USING btree (id)"
+    },
+    {
+      "table": "listings",
+      "name": "listings_pkey",
+      "definition": "CREATE UNIQUE INDEX listings_pkey ON public.listings USING btree (id)"
+    },
+    {
+      "table": "market_communities",
+      "name": "market_communities_id_area_id_key",
+      "definition": "CREATE UNIQUE INDEX market_communities_id_area_id_key ON public.market_communities USING btree (id, area_id)"
+    },
+    {
+      "table": "market_communities",
+      "name": "market_communities_pkey",
+      "definition": "CREATE UNIQUE INDEX market_communities_pkey ON public.market_communities USING btree (id)"
+    },
+    {
+      "table": "market_communities",
+      "name": "market_communities_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX market_communities_stable_code_key ON public.market_communities USING btree (stable_code)"
+    },
+    {
+      "table": "market_community_versions",
+      "name": "market_community_versions_community_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX market_community_versions_community_id_version_number_key ON public.market_community_versions USING btree (community_id, version_number)"
+    },
+    {
+      "table": "market_community_versions",
+      "name": "market_community_versions_id_community_id_key",
+      "definition": "CREATE UNIQUE INDEX market_community_versions_id_community_id_key ON public.market_community_versions USING btree (id, community_id)"
+    },
+    {
+      "table": "market_community_versions",
+      "name": "market_community_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX market_community_versions_pkey ON public.market_community_versions USING btree (id)"
+    },
+    {
+      "table": "marketing_agreements",
+      "name": "marketing_agreements_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_agreements_pkey ON public.marketing_agreements USING btree (id)"
+    },
+    {
+      "table": "marketing_campaigns",
+      "name": "marketing_campaigns_campaign_code_key",
+      "definition": "CREATE UNIQUE INDEX marketing_campaigns_campaign_code_key ON public.marketing_campaigns USING btree (campaign_code)"
+    },
+    {
+      "table": "marketing_campaigns",
+      "name": "marketing_campaigns_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_campaigns_pkey ON public.marketing_campaigns USING btree (id)"
+    },
+    {
+      "table": "marketing_channel_rule_versions",
+      "name": "marketing_channel_rule_versio_material_type_id_channel_code_key",
+      "definition": "CREATE UNIQUE INDEX marketing_channel_rule_versio_material_type_id_channel_code_key ON public.marketing_channel_rule_versions USING btree (material_type_id, channel_code, region_code, version_number)"
+    },
+    {
+      "table": "marketing_channel_rule_versions",
+      "name": "marketing_channel_rule_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_channel_rule_versions_pkey ON public.marketing_channel_rule_versions USING btree (id)"
+    },
+    {
+      "table": "marketing_material_channel_requests",
+      "name": "marketing_material_channel_re_version_id_channel_code_regio_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_channel_re_version_id_channel_code_regio_key ON public.marketing_material_channel_requests USING btree (version_id, channel_code, region_code)"
+    },
+    {
+      "table": "marketing_material_channel_requests",
+      "name": "marketing_material_channel_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_channel_requests_pkey ON public.marketing_material_channel_requests USING btree (id)"
+    },
+    {
+      "table": "marketing_material_media_links",
+      "name": "marketing_material_media_links_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_media_links_pkey ON public.marketing_material_media_links USING btree (id)"
+    },
+    {
+      "table": "marketing_material_media_links",
+      "name": "marketing_material_media_links_version_id_property_media_id_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_media_links_version_id_property_media_id_key ON public.marketing_material_media_links USING btree (version_id, property_media_id)"
+    },
+    {
+      "table": "marketing_material_official_evidence_links",
+      "name": "marketing_material_official_e_version_id_official_evidence__key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_official_e_version_id_official_evidence__key ON public.marketing_material_official_evidence_links USING btree (version_id, official_evidence_id, requirement_code)"
+    },
+    {
+      "table": "marketing_material_official_evidence_links",
+      "name": "marketing_material_official_evidence_links_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_official_evidence_links_pkey ON public.marketing_material_official_evidence_links USING btree (id)"
+    },
+    {
+      "table": "marketing_material_permit_snapshots",
+      "name": "marketing_material_permit_snapshots_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_permit_snapshots_pkey ON public.marketing_material_permit_snapshots USING btree (id)"
+    },
+    {
+      "table": "marketing_material_permit_snapshots",
+      "name": "marketing_material_permit_snapshots_version_id_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_permit_snapshots_version_id_key ON public.marketing_material_permit_snapshots USING btree (version_id)"
+    },
+    {
+      "table": "marketing_material_review_events",
+      "name": "marketing_material_review_events_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_review_events_pkey ON public.marketing_material_review_events USING btree (id)"
+    },
+    {
+      "table": "marketing_material_review_events",
+      "name": "marketing_material_review_events_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_review_events_request_fingerprint_key ON public.marketing_material_review_events USING btree (request_fingerprint)"
+    },
+    {
+      "table": "marketing_material_task_links",
+      "name": "marketing_material_task_links_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_task_links_pkey ON public.marketing_material_task_links USING btree (id)"
+    },
+    {
+      "table": "marketing_material_task_links",
+      "name": "marketing_material_task_links_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_task_links_request_fingerprint_key ON public.marketing_material_task_links USING btree (request_fingerprint)"
+    },
+    {
+      "table": "marketing_material_task_links",
+      "name": "marketing_material_task_links_task_id_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_task_links_task_id_key ON public.marketing_material_task_links USING btree (task_id)"
+    },
+    {
+      "table": "marketing_material_type_versions",
+      "name": "marketing_material_type_versi_material_type_id_version_numb_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_type_versi_material_type_id_version_numb_key ON public.marketing_material_type_versions USING btree (material_type_id, version_number)"
+    },
+    {
+      "table": "marketing_material_type_versions",
+      "name": "marketing_material_type_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_type_versions_pkey ON public.marketing_material_type_versions USING btree (id)"
+    },
+    {
+      "table": "marketing_material_types",
+      "name": "marketing_material_types_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_types_pkey ON public.marketing_material_types USING btree (id)"
+    },
+    {
+      "table": "marketing_material_types",
+      "name": "marketing_material_types_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_types_stable_code_key ON public.marketing_material_types USING btree (stable_code)"
+    },
+    {
+      "table": "marketing_material_versions",
+      "name": "marketing_material_versions_material_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_versions_material_id_version_number_key ON public.marketing_material_versions USING btree (material_id, version_number)"
+    },
+    {
+      "table": "marketing_material_versions",
+      "name": "marketing_material_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_material_versions_pkey ON public.marketing_material_versions USING btree (id)"
+    },
+    {
+      "table": "marketing_material_versions",
+      "name": "marketing_material_versions_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX marketing_material_versions_request_fingerprint_key ON public.marketing_material_versions USING btree (request_fingerprint)"
+    },
+    {
+      "table": "marketing_materials",
+      "name": "marketing_materials_material_reference_key",
+      "definition": "CREATE UNIQUE INDEX marketing_materials_material_reference_key ON public.marketing_materials USING btree (material_reference)"
+    },
+    {
+      "table": "marketing_materials",
+      "name": "marketing_materials_pkey",
+      "definition": "CREATE UNIQUE INDEX marketing_materials_pkey ON public.marketing_materials USING btree (id)"
+    },
+    {
+      "table": "matching_policy_versions",
+      "name": "matching_policy_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX matching_policy_versions_pkey ON public.matching_policy_versions USING btree (policy_version)"
+    },
+    {
+      "table": "microsoft365_mailbox_connections",
+      "name": "microsoft365_mailbox_connections_pkey",
+      "definition": "CREATE UNIQUE INDEX microsoft365_mailbox_connections_pkey ON public.microsoft365_mailbox_connections USING btree (id)"
+    },
+    {
+      "table": "microsoft365_oauth_states",
+      "name": "microsoft365_oauth_states_pkey",
+      "definition": "CREATE UNIQUE INDEX microsoft365_oauth_states_pkey ON public.microsoft365_oauth_states USING btree (state_hash)"
+    },
+    {
+      "table": "microsoft365_subscription_leases",
+      "name": "microsoft365_subscription_lea_mailbox_connection_id_folder__key",
+      "definition": "CREATE UNIQUE INDEX microsoft365_subscription_lea_mailbox_connection_id_folder__key ON public.microsoft365_subscription_leases USING btree (mailbox_connection_id, folder_scope)"
+    },
+    {
+      "table": "microsoft365_subscription_leases",
+      "name": "microsoft365_subscription_leases_pkey",
+      "definition": "CREATE UNIQUE INDEX microsoft365_subscription_leases_pkey ON public.microsoft365_subscription_leases USING btree (id)"
+    },
+    {
+      "table": "microsoft365_subscription_leases",
+      "name": "microsoft365_subscription_leases_subscription_ref_key",
+      "definition": "CREATE UNIQUE INDEX microsoft365_subscription_leases_subscription_ref_key ON public.microsoft365_subscription_leases USING btree (subscription_ref)"
+    },
+    {
+      "table": "negotiation_events",
+      "name": "negotiation_events_pkey",
+      "definition": "CREATE UNIQUE INDEX negotiation_events_pkey ON public.negotiation_events USING btree (id)"
+    },
+    {
+      "table": "offer_number_counters",
+      "name": "offer_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX offer_number_counters_pkey ON public.offer_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "offer_replacement_actions",
+      "name": "offer_replacement_actions_pkey",
+      "definition": "CREATE UNIQUE INDEX offer_replacement_actions_pkey ON public.offer_replacement_actions USING btree (id)"
+    },
+    {
+      "table": "offer_revisions",
+      "name": "offer_revisions_document_version_id_key",
+      "definition": "CREATE UNIQUE INDEX offer_revisions_document_version_id_key ON public.offer_revisions USING btree (document_version_id)"
+    },
+    {
+      "table": "offer_revisions",
+      "name": "offer_revisions_offer_id_revision_number_key",
+      "definition": "CREATE UNIQUE INDEX offer_revisions_offer_id_revision_number_key ON public.offer_revisions USING btree (offer_id, revision_number)"
+    },
+    {
+      "table": "offer_revisions",
+      "name": "offer_revisions_pkey",
+      "definition": "CREATE UNIQUE INDEX offer_revisions_pkey ON public.offer_revisions USING btree (id)"
+    },
+    {
+      "table": "offers",
+      "name": "offers_offer_reference_key",
+      "definition": "CREATE UNIQUE INDEX offers_offer_reference_key ON public.offers USING btree (offer_reference)"
+    },
+    {
+      "table": "offers",
+      "name": "offers_pkey",
+      "definition": "CREATE UNIQUE INDEX offers_pkey ON public.offers USING btree (id)"
+    },
+    {
+      "table": "official_document_definition_versions",
+      "name": "official_document_definition_v_definition_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX official_document_definition_v_definition_id_version_number_key ON public.official_document_definition_versions USING btree (definition_id, version_number)"
+    },
+    {
+      "table": "official_document_definition_versions",
+      "name": "official_document_definition_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_definition_versions_pkey ON public.official_document_definition_versions USING btree (id)"
+    },
+    {
+      "table": "official_document_definitions",
+      "name": "official_document_definitions_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_definitions_pkey ON public.official_document_definitions USING btree (id)"
+    },
+    {
+      "table": "official_document_definitions",
+      "name": "official_document_definitions_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX official_document_definitions_stable_code_key ON public.official_document_definitions USING btree (stable_code)"
+    },
+    {
+      "table": "official_document_evidence_review_events",
+      "name": "official_document_evidence_review_events_evidence_id_key",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_review_events_evidence_id_key ON public.official_document_evidence_review_events USING btree (evidence_id)"
+    },
+    {
+      "table": "official_document_evidence_review_events",
+      "name": "official_document_evidence_review_events_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_review_events_pkey ON public.official_document_evidence_review_events USING btree (id)"
+    },
+    {
+      "table": "official_document_evidence_versions",
+      "name": "official_document_evidence_versions_document_version_id_key",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_versions_document_version_id_key ON public.official_document_evidence_versions USING btree (document_version_id)"
+    },
+    {
+      "table": "official_document_evidence_versions",
+      "name": "official_document_evidence_versions_evidence_reference_key",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_versions_evidence_reference_key ON public.official_document_evidence_versions USING btree (evidence_reference)"
+    },
+    {
+      "table": "official_document_evidence_versions",
+      "name": "official_document_evidence_versions_idempotency_key_key",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_versions_idempotency_key_key ON public.official_document_evidence_versions USING btree (idempotency_key)"
+    },
+    {
+      "table": "official_document_evidence_versions",
+      "name": "official_document_evidence_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_evidence_versions_pkey ON public.official_document_evidence_versions USING btree (id)"
+    },
+    {
+      "table": "official_document_followup_task_links",
+      "name": "official_document_followup_ta_rule_version_id_listing_id_de_key",
+      "definition": "CREATE UNIQUE INDEX official_document_followup_ta_rule_version_id_listing_id_de_key ON public.official_document_followup_task_links USING btree (rule_version_id, listing_id, deal_id, context_hash, followup_reason, cycle_number)"
+    },
+    {
+      "table": "official_document_followup_task_links",
+      "name": "official_document_followup_task_links_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_followup_task_links_pkey ON public.official_document_followup_task_links USING btree (id)"
+    },
+    {
+      "table": "official_document_followup_task_links",
+      "name": "official_document_followup_task_links_request_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX official_document_followup_task_links_request_fingerprint_key ON public.official_document_followup_task_links USING btree (request_fingerprint)"
+    },
+    {
+      "table": "official_document_followup_task_links",
+      "name": "official_document_followup_task_links_task_id_key",
+      "definition": "CREATE UNIQUE INDEX official_document_followup_task_links_task_id_key ON public.official_document_followup_task_links USING btree (task_id)"
+    },
+    {
+      "table": "official_document_step_rule_versions",
+      "name": "official_document_step_rule_v_step_code_definition_id_versi_key",
+      "definition": "CREATE UNIQUE INDEX official_document_step_rule_v_step_code_definition_id_versi_key ON public.official_document_step_rule_versions USING btree (step_code, definition_id, version_number)"
+    },
+    {
+      "table": "official_document_step_rule_versions",
+      "name": "official_document_step_rule_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX official_document_step_rule_versions_pkey ON public.official_document_step_rule_versions USING btree (id)"
+    },
+    {
+      "table": "opportunities",
+      "name": "opportunities_opportunity_reference_key",
+      "definition": "CREATE UNIQUE INDEX opportunities_opportunity_reference_key ON public.opportunities USING btree (opportunity_reference)"
+    },
+    {
+      "table": "opportunities",
+      "name": "opportunities_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunities_pkey ON public.opportunities USING btree (id)"
+    },
+    {
+      "table": "opportunity_assignment_history",
+      "name": "opportunity_assignment_history_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_assignment_history_pkey ON public.opportunity_assignment_history USING btree (id)"
+    },
+    {
+      "table": "opportunity_attribution",
+      "name": "opportunity_attribution_opportunity_id_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_attribution_opportunity_id_key ON public.opportunity_attribution USING btree (opportunity_id)"
+    },
+    {
+      "table": "opportunity_attribution",
+      "name": "opportunity_attribution_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_attribution_pkey ON public.opportunity_attribution USING btree (id)"
+    },
+    {
+      "table": "opportunity_number_counters",
+      "name": "opportunity_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_number_counters_pkey ON public.opportunity_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "opportunity_participants",
+      "name": "opportunity_participants_opportunity_id_broker_id_participa_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_participants_opportunity_id_broker_id_participa_key ON public.opportunity_participants USING btree (opportunity_id, broker_id, participation_role)"
+    },
+    {
+      "table": "opportunity_participants",
+      "name": "opportunity_participants_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_participants_pkey ON public.opportunity_participants USING btree (id)"
+    },
+    {
+      "table": "opportunity_property_share_events",
+      "name": "opportunity_property_share_events_evidence_hash_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_share_events_evidence_hash_key ON public.opportunity_property_share_events USING btree (evidence_hash)"
+    },
+    {
+      "table": "opportunity_property_share_events",
+      "name": "opportunity_property_share_events_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_share_events_pkey ON public.opportunity_property_share_events USING btree (id)"
+    },
+    {
+      "table": "opportunity_property_share_items",
+      "name": "opportunity_property_share_items_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_share_items_pkey ON public.opportunity_property_share_items USING btree (id)"
+    },
+    {
+      "table": "opportunity_property_share_items",
+      "name": "opportunity_property_share_items_share_id_property_match_id_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_share_items_share_id_property_match_id_key ON public.opportunity_property_share_items USING btree (share_id, property_match_id)"
+    },
+    {
+      "table": "opportunity_property_shares",
+      "name": "opportunity_property_shares_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_shares_pkey ON public.opportunity_property_shares USING btree (id)"
+    },
+    {
+      "table": "opportunity_property_shares",
+      "name": "opportunity_property_shares_public_token_hash_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_property_shares_public_token_hash_key ON public.opportunity_property_shares USING btree (public_token_hash)"
+    },
+    {
+      "table": "opportunity_representation_history",
+      "name": "opportunity_representation_history_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_representation_history_pkey ON public.opportunity_representation_history USING btree (id)"
+    },
+    {
+      "table": "opportunity_stage_draft_finalizations",
+      "name": "opportunity_stage_draft_finalizations_draft_version_id_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_stage_draft_finalizations_draft_version_id_key ON public.opportunity_stage_draft_finalizations USING btree (draft_version_id)"
+    },
+    {
+      "table": "opportunity_stage_draft_finalizations",
+      "name": "opportunity_stage_draft_finalizations_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_stage_draft_finalizations_pkey ON public.opportunity_stage_draft_finalizations USING btree (id)"
+    },
+    {
+      "table": "opportunity_stage_draft_versions",
+      "name": "opportunity_stage_draft_versi_opportunity_id_stage_code_cre_key",
+      "definition": "CREATE UNIQUE INDEX opportunity_stage_draft_versi_opportunity_id_stage_code_cre_key ON public.opportunity_stage_draft_versions USING btree (opportunity_id, stage_code, created_by, version_no)"
+    },
+    {
+      "table": "opportunity_stage_draft_versions",
+      "name": "opportunity_stage_draft_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_stage_draft_versions_pkey ON public.opportunity_stage_draft_versions USING btree (id)"
+    },
+    {
+      "table": "opportunity_stage_history",
+      "name": "opportunity_stage_history_pkey",
+      "definition": "CREATE UNIQUE INDEX opportunity_stage_history_pkey ON public.opportunity_stage_history USING btree (id)"
+    },
+    {
+      "table": "organization_settings",
+      "name": "organization_settings_pkey",
+      "definition": "CREATE UNIQUE INDEX organization_settings_pkey ON public.organization_settings USING btree (id)"
+    },
+    {
+      "table": "organization_settings",
+      "name": "organization_settings_version_key",
+      "definition": "CREATE UNIQUE INDEX organization_settings_version_key ON public.organization_settings USING btree (version)"
+    },
+    {
+      "table": "partner_organization_versions",
+      "name": "partner_organization_versions_company_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX partner_organization_versions_company_id_version_number_key ON public.partner_organization_versions USING btree (company_id, version_number)"
+    },
+    {
+      "table": "partner_organization_versions",
+      "name": "partner_organization_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX partner_organization_versions_pkey ON public.partner_organization_versions USING btree (id)"
+    },
+    {
+      "table": "password_reset_requests",
+      "name": "password_reset_requests_pkey",
+      "definition": "CREATE UNIQUE INDEX password_reset_requests_pkey ON public.password_reset_requests USING btree (id)"
+    },
+    {
+      "table": "property_listing_noc_versions",
+      "name": "property_listing_noc_versions_listing_id_partner_version_id_key",
+      "definition": "CREATE UNIQUE INDEX property_listing_noc_versions_listing_id_partner_version_id_key ON public.property_listing_noc_versions USING btree (listing_id, partner_version_id, version_number)"
+    },
+    {
+      "table": "property_listing_noc_versions",
+      "name": "property_listing_noc_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX property_listing_noc_versions_pkey ON public.property_listing_noc_versions USING btree (id)"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_candidate_id_key",
+      "definition": "CREATE UNIQUE INDEX property_match_governed_origins_candidate_id_key ON public.property_match_governed_origins USING btree (candidate_id)"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_pkey",
+      "definition": "CREATE UNIQUE INDEX property_match_governed_origins_pkey ON public.property_match_governed_origins USING btree (id)"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_promotion_fingerprint_key",
+      "definition": "CREATE UNIQUE INDEX property_match_governed_origins_promotion_fingerprint_key ON public.property_match_governed_origins USING btree (promotion_fingerprint)"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_property_match_id_key",
+      "definition": "CREATE UNIQUE INDEX property_match_governed_origins_property_match_id_key ON public.property_match_governed_origins USING btree (property_match_id)"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_shortlist_decision_id_key",
+      "definition": "CREATE UNIQUE INDEX property_match_governed_origins_shortlist_decision_id_key ON public.property_match_governed_origins USING btree (shortlist_decision_id)"
+    },
+    {
+      "table": "property_match_history",
+      "name": "property_match_history_pkey",
+      "definition": "CREATE UNIQUE INDEX property_match_history_pkey ON public.property_match_history USING btree (id)"
+    },
+    {
+      "table": "property_matches",
+      "name": "property_matches_pkey",
+      "definition": "CREATE UNIQUE INDEX property_matches_pkey ON public.property_matches USING btree (id)"
+    },
+    {
+      "table": "property_media_approval_policy",
+      "name": "property_media_approval_policy_pkey",
+      "definition": "CREATE UNIQUE INDEX property_media_approval_policy_pkey ON public.property_media_approval_policy USING btree (id)"
+    },
+    {
+      "table": "property_media",
+      "name": "property_media_pkey",
+      "definition": "CREATE UNIQUE INDEX property_media_pkey ON public.property_media USING btree (id)"
+    },
+    {
+      "table": "property_media",
+      "name": "property_media_storage_key_key",
+      "definition": "CREATE UNIQUE INDEX property_media_storage_key_key ON public.property_media USING btree (storage_key)"
+    },
+    {
+      "table": "proposal_media",
+      "name": "proposal_media_pkey",
+      "definition": "CREATE UNIQUE INDEX proposal_media_pkey ON public.proposal_media USING btree (id)"
+    },
+    {
+      "table": "proposal_media",
+      "name": "proposal_media_proposal_version_id_property_media_id_key",
+      "definition": "CREATE UNIQUE INDEX proposal_media_proposal_version_id_property_media_id_key ON public.proposal_media USING btree (proposal_version_id, property_media_id)"
+    },
+    {
+      "table": "proposal_number_counters",
+      "name": "proposal_number_counters_pkey",
+      "definition": "CREATE UNIQUE INDEX proposal_number_counters_pkey ON public.proposal_number_counters USING btree (period_code)"
+    },
+    {
+      "table": "proposal_properties",
+      "name": "proposal_properties_pkey",
+      "definition": "CREATE UNIQUE INDEX proposal_properties_pkey ON public.proposal_properties USING btree (id)"
+    },
+    {
+      "table": "proposal_properties",
+      "name": "proposal_properties_proposal_version_id_listing_id_key",
+      "definition": "CREATE UNIQUE INDEX proposal_properties_proposal_version_id_listing_id_key ON public.proposal_properties USING btree (proposal_version_id, listing_id)"
+    },
+    {
+      "table": "proposal_templates",
+      "name": "proposal_templates_pkey",
+      "definition": "CREATE UNIQUE INDEX proposal_templates_pkey ON public.proposal_templates USING btree (id)"
+    },
+    {
+      "table": "proposal_templates",
+      "name": "proposal_templates_template_type_version_key",
+      "definition": "CREATE UNIQUE INDEX proposal_templates_template_type_version_key ON public.proposal_templates USING btree (template_type, version)"
+    },
+    {
+      "table": "proposal_versions",
+      "name": "proposal_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX proposal_versions_pkey ON public.proposal_versions USING btree (id)"
+    },
+    {
+      "table": "proposal_versions",
+      "name": "proposal_versions_proposal_id_version_number_key",
+      "definition": "CREATE UNIQUE INDEX proposal_versions_proposal_id_version_number_key ON public.proposal_versions USING btree (proposal_id, version_number)"
+    },
+    {
+      "table": "proposal_versions",
+      "name": "proposal_versions_storage_key_key",
+      "definition": "CREATE UNIQUE INDEX proposal_versions_storage_key_key ON public.proposal_versions USING btree (storage_key)"
+    },
+    {
+      "table": "proposals",
+      "name": "proposals_pkey",
+      "definition": "CREATE UNIQUE INDEX proposals_pkey ON public.proposals USING btree (id)"
+    },
+    {
+      "table": "provisional_external_properties",
+      "name": "provisional_external_properties_external_reference_key",
+      "definition": "CREATE UNIQUE INDEX provisional_external_properties_external_reference_key ON public.provisional_external_properties USING btree (external_reference)"
+    },
+    {
+      "table": "provisional_external_properties",
+      "name": "provisional_external_properties_pkey",
+      "definition": "CREATE UNIQUE INDEX provisional_external_properties_pkey ON public.provisional_external_properties USING btree (id)"
+    },
+    {
+      "table": "purchased_data_import_authorizations",
+      "name": "purchased_data_import_authorizations_pkey",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_authorizations_pkey ON public.purchased_data_import_authorizations USING btree (broker_id)"
+    },
+    {
+      "table": "purchased_data_import_batches",
+      "name": "purchased_data_import_batches_batch_reference_key",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_batches_batch_reference_key ON public.purchased_data_import_batches USING btree (batch_reference)"
+    },
+    {
+      "table": "purchased_data_import_batches",
+      "name": "purchased_data_import_batches_module_type_source_system_cod_key",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_batches_module_type_source_system_cod_key ON public.purchased_data_import_batches USING btree (module_type, source_system_code, acquisition_batch_reference, file_hash)"
+    },
+    {
+      "table": "purchased_data_import_batches",
+      "name": "purchased_data_import_batches_pkey",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_batches_pkey ON public.purchased_data_import_batches USING btree (id)"
+    },
+    {
+      "table": "purchased_data_import_rows",
+      "name": "purchased_data_import_rows_batch_id_external_row_reference_key",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_rows_batch_id_external_row_reference_key ON public.purchased_data_import_rows USING btree (batch_id, external_row_reference)"
+    },
+    {
+      "table": "purchased_data_import_rows",
+      "name": "purchased_data_import_rows_batch_id_row_number_key",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_rows_batch_id_row_number_key ON public.purchased_data_import_rows USING btree (batch_id, row_number)"
+    },
+    {
+      "table": "purchased_data_import_rows",
+      "name": "purchased_data_import_rows_pkey",
+      "definition": "CREATE UNIQUE INDEX purchased_data_import_rows_pkey ON public.purchased_data_import_rows USING btree (id)"
+    },
+    {
+      "table": "qualification_assessments",
+      "name": "qualification_assessments_pkey",
+      "definition": "CREATE UNIQUE INDEX qualification_assessments_pkey ON public.qualification_assessments USING btree (id)"
+    },
+    {
+      "table": "qualification_follow_up_task_links",
+      "name": "qualification_follow_up_task_lin_assessment_id_cycle_number_key",
+      "definition": "CREATE UNIQUE INDEX qualification_follow_up_task_lin_assessment_id_cycle_number_key ON public.qualification_follow_up_task_links USING btree (assessment_id, cycle_number)"
+    },
+    {
+      "table": "qualification_follow_up_task_links",
+      "name": "qualification_follow_up_task_links_pkey",
+      "definition": "CREATE UNIQUE INDEX qualification_follow_up_task_links_pkey ON public.qualification_follow_up_task_links USING btree (id)"
+    },
+    {
+      "table": "qualification_follow_up_task_links",
+      "name": "qualification_follow_up_task_links_task_id_key",
+      "definition": "CREATE UNIQUE INDEX qualification_follow_up_task_links_task_id_key ON public.qualification_follow_up_task_links USING btree (task_id)"
+    },
+    {
+      "table": "qualification_models",
+      "name": "qualification_models_pkey",
+      "definition": "CREATE UNIQUE INDEX qualification_models_pkey ON public.qualification_models USING btree (id)"
+    },
+    {
+      "table": "r2_legacy_lead_review",
+      "name": "r2_legacy_lead_review_lead_id_key",
+      "definition": "CREATE UNIQUE INDEX r2_legacy_lead_review_lead_id_key ON public.r2_legacy_lead_review USING btree (lead_id)"
+    },
+    {
+      "table": "r2_legacy_lead_review",
+      "name": "r2_legacy_lead_review_pkey",
+      "definition": "CREATE UNIQUE INDEX r2_legacy_lead_review_pkey ON public.r2_legacy_lead_review USING btree (id)"
+    },
+    {
+      "table": "regulatory_assumption_versions",
+      "name": "regulatory_assumption_versions_name_version_key",
+      "definition": "CREATE UNIQUE INDEX regulatory_assumption_versions_name_version_key ON public.regulatory_assumption_versions USING btree (name, version)"
+    },
+    {
+      "table": "regulatory_assumption_versions",
+      "name": "regulatory_assumption_versions_pkey",
+      "definition": "CREATE UNIQUE INDEX regulatory_assumption_versions_pkey ON public.regulatory_assumption_versions USING btree (id)"
+    },
+    {
+      "table": "routing_rules",
+      "name": "routing_rules_pkey",
+      "definition": "CREATE UNIQUE INDEX routing_rules_pkey ON public.routing_rules USING btree (id)"
+    },
+    {
+      "table": "saved_dashboard_views",
+      "name": "saved_dashboard_views_owner_id_name_dashboard_type_key",
+      "definition": "CREATE UNIQUE INDEX saved_dashboard_views_owner_id_name_dashboard_type_key ON public.saved_dashboard_views USING btree (owner_id, name, dashboard_type)"
+    },
+    {
+      "table": "saved_dashboard_views",
+      "name": "saved_dashboard_views_pkey",
+      "definition": "CREATE UNIQUE INDEX saved_dashboard_views_pkey ON public.saved_dashboard_views USING btree (id)"
+    },
+    {
+      "table": "schema_migrations",
+      "name": "schema_migrations_pkey",
+      "definition": "CREATE UNIQUE INDEX schema_migrations_pkey ON public.schema_migrations USING btree (version)"
+    },
+    {
+      "table": "sessions",
+      "name": "sessions_pkey",
+      "definition": "CREATE UNIQUE INDEX sessions_pkey ON public.sessions USING btree (token)"
+    },
+    {
+      "table": "sla_alerts",
+      "name": "sla_alerts_lead_id_alert_kind_deadline_at_key",
+      "definition": "CREATE UNIQUE INDEX sla_alerts_lead_id_alert_kind_deadline_at_key ON public.sla_alerts USING btree (lead_id, alert_kind, deadline_at)"
+    },
+    {
+      "table": "sla_alerts",
+      "name": "sla_alerts_pkey",
+      "definition": "CREATE UNIQUE INDEX sla_alerts_pkey ON public.sla_alerts USING btree (id)"
+    },
+    {
+      "table": "sla_policies",
+      "name": "sla_policies_pkey",
+      "definition": "CREATE UNIQUE INDEX sla_policies_pkey ON public.sla_policies USING btree (id)"
+    },
+    {
+      "table": "tasks",
+      "name": "tasks_pkey",
+      "definition": "CREATE UNIQUE INDEX tasks_pkey ON public.tasks USING btree (id)"
+    },
+    {
+      "table": "team_business_line_assignments",
+      "name": "team_business_line_assignments_pkey",
+      "definition": "CREATE UNIQUE INDEX team_business_line_assignments_pkey ON public.team_business_line_assignments USING btree (id)"
+    },
+    {
+      "table": "team_business_line_assignments",
+      "name": "team_business_line_assignments_team_id_effective_from_key",
+      "definition": "CREATE UNIQUE INDEX team_business_line_assignments_team_id_effective_from_key ON public.team_business_line_assignments USING btree (team_id, effective_from)"
+    },
+    {
+      "table": "team_memberships",
+      "name": "team_memberships_pkey",
+      "definition": "CREATE UNIQUE INDEX team_memberships_pkey ON public.team_memberships USING btree (id)"
+    },
+    {
+      "table": "teams",
+      "name": "teams_pkey",
+      "definition": "CREATE UNIQUE INDEX teams_pkey ON public.teams USING btree (id)"
+    },
+    {
+      "table": "transaction_counterparties",
+      "name": "transaction_counterparties_inventory_counterparty_id_key",
+      "definition": "CREATE UNIQUE INDEX transaction_counterparties_inventory_counterparty_id_key ON public.transaction_counterparties USING btree (inventory_counterparty_id)"
+    },
+    {
+      "table": "transaction_counterparties",
+      "name": "transaction_counterparties_pkey",
+      "definition": "CREATE UNIQUE INDEX transaction_counterparties_pkey ON public.transaction_counterparties USING btree (id)"
+    },
+    {
+      "table": "user_role_assignments",
+      "name": "user_role_assignments_pkey",
+      "definition": "CREATE UNIQUE INDEX user_role_assignments_pkey ON public.user_role_assignments USING btree (id)"
+    },
+    {
+      "table": "value_briefs",
+      "name": "value_briefs_pkey",
+      "definition": "CREATE UNIQUE INDEX value_briefs_pkey ON public.value_briefs USING btree (id)"
+    },
+    {
+      "table": "value_definition_usage",
+      "name": "value_definition_usage_pkey",
+      "definition": "CREATE UNIQUE INDEX value_definition_usage_pkey ON public.value_definition_usage USING btree (id)"
+    },
+    {
+      "table": "value_definition_usage",
+      "name": "value_definition_usage_value_definition_id_consumer_code_en_key",
+      "definition": "CREATE UNIQUE INDEX value_definition_usage_value_definition_id_consumer_code_en_key ON public.value_definition_usage USING btree (value_definition_id, consumer_code, entity_type, entity_id)"
+    },
+    {
+      "table": "value_definitions",
+      "name": "value_definitions_pkey",
+      "definition": "CREATE UNIQUE INDEX value_definitions_pkey ON public.value_definitions USING btree (id)"
+    },
+    {
+      "table": "value_definitions",
+      "name": "value_definitions_value_set_id_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX value_definitions_value_set_id_stable_code_key ON public.value_definitions USING btree (value_set_id, stable_code)"
+    },
+    {
+      "table": "value_sets",
+      "name": "value_sets_pkey",
+      "definition": "CREATE UNIQUE INDEX value_sets_pkey ON public.value_sets USING btree (id)"
+    },
+    {
+      "table": "value_sets",
+      "name": "value_sets_stable_code_key",
+      "definition": "CREATE UNIQUE INDEX value_sets_stable_code_key ON public.value_sets USING btree (stable_code)"
+    },
+    {
+      "table": "viewing_attendees",
+      "name": "viewing_attendees_pkey",
+      "definition": "CREATE UNIQUE INDEX viewing_attendees_pkey ON public.viewing_attendees USING btree (id)"
+    },
+    {
+      "table": "viewing_calendar_events",
+      "name": "viewing_calendar_events_pkey",
+      "definition": "CREATE UNIQUE INDEX viewing_calendar_events_pkey ON public.viewing_calendar_events USING btree (id)"
+    },
+    {
+      "table": "viewing_calendar_events",
+      "name": "viewing_calendar_events_provider_external_event_id_key",
+      "definition": "CREATE UNIQUE INDEX viewing_calendar_events_provider_external_event_id_key ON public.viewing_calendar_events USING btree (provider, external_event_id)"
+    },
+    {
+      "table": "viewing_calendar_events",
+      "name": "viewing_calendar_events_viewing_id_provider_key",
+      "definition": "CREATE UNIQUE INDEX viewing_calendar_events_viewing_id_provider_key ON public.viewing_calendar_events USING btree (viewing_id, provider)"
+    },
+    {
+      "table": "viewing_status_history",
+      "name": "viewing_status_history_pkey",
+      "definition": "CREATE UNIQUE INDEX viewing_status_history_pkey ON public.viewing_status_history USING btree (id)"
+    },
+    {
+      "table": "viewings",
+      "name": "viewings_calendar_uid_key",
+      "definition": "CREATE UNIQUE INDEX viewings_calendar_uid_key ON public.viewings USING btree (calendar_uid)"
+    },
+    {
+      "table": "viewings",
+      "name": "viewings_pkey",
+      "definition": "CREATE UNIQUE INDEX viewings_pkey ON public.viewings USING btree (id)"
+    },
+    {
+      "table": "wa_audience_segments",
+      "name": "wa_audience_segments_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_audience_segments_pkey ON public.wa_audience_segments USING btree (id)"
+    },
+    {
+      "table": "wa_campaign_approval_recipients",
+      "name": "wa_campaign_approval_recipients_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_approval_recipients_pkey ON public.wa_campaign_approval_recipients USING btree (campaign_id, revision, normalized_phone)"
+    },
+    {
+      "table": "wa_campaign_approval_recipients",
+      "name": "wa_campaign_approval_recipients_simulated_message_uq",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_approval_recipients_simulated_message_uq ON public.wa_campaign_approval_recipients USING btree (simulated_provider_message_id) WHERE (simulated_provider_message_id IS NOT NULL)"
+    },
+    {
+      "table": "wa_campaign_audit",
+      "name": "wa_campaign_audit_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_audit_pkey ON public.wa_campaign_audit USING btree (id)"
+    },
+    {
+      "table": "wa_campaign_drafts",
+      "name": "wa_campaign_drafts_campaign_reference_key",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_drafts_campaign_reference_key ON public.wa_campaign_drafts USING btree (campaign_reference)"
+    },
+    {
+      "table": "wa_campaign_drafts",
+      "name": "wa_campaign_drafts_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_drafts_pkey ON public.wa_campaign_drafts USING btree (id)"
+    },
+    {
+      "table": "wa_campaign_materials",
+      "name": "wa_campaign_materials_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_materials_pkey ON public.wa_campaign_materials USING btree (campaign_id, material_id)"
+    },
+    {
+      "table": "wa_campaign_recipients",
+      "name": "wa_campaign_recipients_batch_id_row_number_key",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_recipients_batch_id_row_number_key ON public.wa_campaign_recipients USING btree (batch_id, row_number)"
+    },
+    {
+      "table": "wa_campaign_recipients",
+      "name": "wa_campaign_recipients_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_recipients_pkey ON public.wa_campaign_recipients USING btree (id)"
+    },
+    {
+      "table": "wa_campaign_revisions",
+      "name": "wa_campaign_revisions_campaign_id_revision_key",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_revisions_campaign_id_revision_key ON public.wa_campaign_revisions USING btree (campaign_id, revision)"
+    },
+    {
+      "table": "wa_campaign_revisions",
+      "name": "wa_campaign_revisions_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_campaign_revisions_pkey ON public.wa_campaign_revisions USING btree (id)"
+    },
+    {
+      "table": "wa_contact_suppressions",
+      "name": "wa_contact_suppressions_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_contact_suppressions_pkey ON public.wa_contact_suppressions USING btree (normalized_phone)"
+    },
+    {
+      "table": "wa_conversation_assignment_history",
+      "name": "wa_conversation_assignment_history_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_conversation_assignment_history_pkey ON public.wa_conversation_assignment_history USING btree (id)"
+    },
+    {
+      "table": "wa_conversation_messages",
+      "name": "wa_conversation_messages_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_conversation_messages_pkey ON public.wa_conversation_messages USING btree (id)"
+    },
+    {
+      "table": "wa_conversation_messages",
+      "name": "wa_conversation_messages_provider_id_uq",
+      "definition": "CREATE UNIQUE INDEX wa_conversation_messages_provider_id_uq ON public.wa_conversation_messages USING btree (provider_message_id) WHERE (provider_message_id IS NOT NULL)"
+    },
+    {
+      "table": "wa_conversation_messages",
+      "name": "wa_conversation_messages_simulated_idx",
+      "definition": "CREATE INDEX wa_conversation_messages_simulated_idx ON public.wa_conversation_messages USING btree (simulated, provider_status, occurred_at DESC)"
+    },
+    {
+      "table": "wa_conversations",
+      "name": "wa_conversations_conversation_reference_key",
+      "definition": "CREATE UNIQUE INDEX wa_conversations_conversation_reference_key ON public.wa_conversations USING btree (conversation_reference)"
+    },
+    {
+      "table": "wa_conversations",
+      "name": "wa_conversations_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_conversations_pkey ON public.wa_conversations USING btree (id)"
+    },
+    {
+      "table": "wa_conversations",
+      "name": "wa_conversations_simulated_idx",
+      "definition": "CREATE INDEX wa_conversations_simulated_idx ON public.wa_conversations USING btree (simulated, simulation_run_id, last_activity_at DESC)"
+    },
+    {
+      "table": "wa_simulated_provider_control",
+      "name": "wa_simulated_provider_control_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_simulated_provider_control_pkey ON public.wa_simulated_provider_control USING btree (singleton)"
+    },
+    {
+      "table": "wa_simulated_provider_events",
+      "name": "wa_simulated_provider_events_outcome_idx",
+      "definition": "CREATE INDEX wa_simulated_provider_events_outcome_idx ON public.wa_simulated_provider_events USING btree (outcome, event_type, occurred_at DESC)"
+    },
+    {
+      "table": "wa_simulated_provider_events",
+      "name": "wa_simulated_provider_events_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_simulated_provider_events_pkey ON public.wa_simulated_provider_events USING btree (id)"
+    },
+    {
+      "table": "wa_simulated_provider_events",
+      "name": "wa_simulated_provider_events_provider_event_id_key",
+      "definition": "CREATE UNIQUE INDEX wa_simulated_provider_events_provider_event_id_key ON public.wa_simulated_provider_events USING btree (provider_event_id)"
+    },
+    {
+      "table": "wa_simulated_provider_events",
+      "name": "wa_simulated_provider_events_run_idx",
+      "definition": "CREATE INDEX wa_simulated_provider_events_run_idx ON public.wa_simulated_provider_events USING btree (simulation_run_id, occurred_at DESC)"
+    },
+    {
+      "table": "wa_simulation_runs",
+      "name": "wa_simulation_runs_pkey",
+      "definition": "CREATE UNIQUE INDEX wa_simulation_runs_pkey ON public.wa_simulation_runs USING btree (id)"
+    },
+    {
+      "table": "wa_simulation_runs",
+      "name": "wa_simulation_runs_status_idx",
+      "definition": "CREATE INDEX wa_simulation_runs_status_idx ON public.wa_simulation_runs USING btree (status, created_at DESC)"
+    }
+  ]
+}
