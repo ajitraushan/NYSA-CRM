@@ -180,6 +180,10 @@ and table counts. These rules are acceptance criteria for every task.
 - Diagnosis queries must be read-only, listed in the report with their
   results, and run only with the owner's approval for that environment.
   Production queries always need separate explicit approval.
+- Before any new script that queries Production is run, show Ajit the complete
+  script content and its SHA-256 and obtain approval for that exact content,
+  even when the script is read-only. Approval of a diagnostic objective or a
+  prior script does not authorize an unseen or changed Production script.
 - When a root cause is environmental drift, assess its full scope (all
   objects of that kind, the time window, data written during the window) before
   proposing a narrow fix.

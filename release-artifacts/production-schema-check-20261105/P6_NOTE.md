@@ -1,0 +1,3 @@
+# Production schema check — P-6 close-out note
+
+Production is clean against the schema reconstructed on PostgreSQL 13.23 from its installed commit `b6e013c51f46be482858e733160fa7e675ff3106` and 140 migrations: 2,367 constraints, 828 indexes, 3,464 columns, 50 functions, 108 enabled triggers and 7 sequences/views matched with zero missing, extra or changed objects. The 47 function MD5 differences were carriage-return/line-ending artifacts; full `pg_get_functiondef` text matched after removing `\r`. P-5 was not required, no remediation is proposed, no customer rows were exported and Production was not changed. Any future script that queries Production must be shown to Ajit in full with its SHA-256 and approved before execution, even when read-only.

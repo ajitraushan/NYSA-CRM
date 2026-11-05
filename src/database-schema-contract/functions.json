@@ -1,0 +1,259 @@
+{
+  "schema": "nysa.database-schema-contract.v1",
+  "objectType": "functions",
+  "count": 50,
+  "canonicalSha256": "0e549674e17946ba5776ad45f29c5be537cfa68fe55319a9ee7da18aea4adb85",
+  "normalization": "SHA-256 of full pg_get_functiondef UTF-8 text after removing carriage returns",
+  "entries": [
+    {
+      "name": "enforce_booking_reservation_expiry_policy",
+      "identityArguments": "",
+      "definitionSha256": "5668b9c6f92e5198067982b3b807846bd083adf658bd55b25c9935e55a349654"
+    },
+    {
+      "name": "enforce_commission_receipt_before_close_won",
+      "identityArguments": "",
+      "definitionSha256": "f215b8ac441055e0b20f72ba8d2eb71903b9a1212b6549598b9dd22167c49d32"
+    },
+    {
+      "name": "enforce_deal_current_inventory_linkage",
+      "identityArguments": "",
+      "definitionSha256": "039b44b01c67aca68cbe4c6f5ef80946e97681685382c4cb4f10501d55f067b7"
+    },
+    {
+      "name": "enforce_dld_observation_immutability",
+      "identityArguments": "",
+      "definitionSha256": "877cdcc2ec957e487728033cbcbe0f84315e1b64ee95d713a005c612d86da230"
+    },
+    {
+      "name": "enforce_lead_stage_transition",
+      "identityArguments": "",
+      "definitionSha256": "ef991eab2b07b606b4cefe0a7719179ef98d5bb7a175f9c5130d36f604841385"
+    },
+    {
+      "name": "ensure_bilateral_offer_acceptance",
+      "identityArguments": "",
+      "definitionSha256": "f24938f59ab6487472d326ab9c76188bdd7395e8b081b63c6b43dc85bd2c2010"
+    },
+    {
+      "name": "nysa_assign_lead_reference",
+      "identityArguments": "",
+      "definitionSha256": "caa95ca50695312471eb99fe675c17d4f5f92376494342328d5f60b4459f2ad7"
+    },
+    {
+      "name": "nysa_audit_terminal_lead_follow_up",
+      "identityArguments": "",
+      "definitionSha256": "0e586e56087ec4e57a5efa5ea96911052ed725b31d3db79477f397e07c0f1643"
+    },
+    {
+      "name": "nysa_close_terminal_lead_follow_ups",
+      "identityArguments": "",
+      "definitionSha256": "120c4efc89cae32d9d1768ba4cf4a17d6b381519de60e4a8612ef8b1e6a612a3"
+    },
+    {
+      "name": "nysa_guard_terminal_lead_follow_up",
+      "identityArguments": "",
+      "definitionSha256": "3d14737d3a73e2794fd157a7562c3e2445280dfcf316d0904a68a802cf74c571"
+    },
+    {
+      "name": "nysa_inventory_effective_status",
+      "identityArguments": "target_listing_id uuid",
+      "definitionSha256": "4619545de7c5d5845369e0ced2b072154e2e780bd256247abb86191f6fd431c9"
+    },
+    {
+      "name": "nysa_opportunity_sync_lead_status",
+      "identityArguments": "",
+      "definitionSha256": "2d3cb98d767eccfd5b471de25baa67dbf6725b5747d8280439cf98ea32b873da"
+    },
+    {
+      "name": "nysa_sync_lead_current_status",
+      "identityArguments": "target_lead uuid",
+      "definitionSha256": "9c01e0c719d88edbcfc1e41087601ea95a94c0b1227794be4de6bb3f55c3fcf2"
+    },
+    {
+      "name": "nysa_text_array_has_duplicates",
+      "identityArguments": "items text[]",
+      "definitionSha256": "187428c912f424466bfccb278ad5d7558b423c26d2546dca18334fee91f537e8"
+    },
+    {
+      "name": "prevent_active_payout_overlap",
+      "identityArguments": "",
+      "definitionSha256": "04916e1460173b024ab5e1d93c2fb8a75ea982bfc1f8676eb484775b6ad8d34c"
+    },
+    {
+      "name": "prevent_agent_social_media_status_overlap",
+      "identityArguments": "",
+      "definitionSha256": "0143019eec4d921854d065f5d0c8bad6cb34051b3c84094d751aed8f1b52ce57"
+    },
+    {
+      "name": "prevent_calendly_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "cd2ee8dcf48815aa7da172fd14d16cf843c973e8aeecc0efe72f87438ae5f570"
+    },
+    {
+      "name": "prevent_developer_arrangement_fact_mutation",
+      "identityArguments": "",
+      "definitionSha256": "6ff82bb64ce65377095bf3a4e265099b222305cf6783e99eab6c228fb7b19a30"
+    },
+    {
+      "name": "prevent_email_integration_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "62ac21776f9e68da438a1f2b275db199f530bbe11ce2f3f3812bea9709b2eaff"
+    },
+    {
+      "name": "prevent_governed_property_share_fact_mutation",
+      "identityArguments": "",
+      "definitionSha256": "fe3adc3a86df537ad0590f8f41028fe7423161b666b5712c65d9778809928810"
+    },
+    {
+      "name": "prevent_governed_property_share_item_mutation",
+      "identityArguments": "",
+      "definitionSha256": "c0927ecaea325de5b7b3f8e0e63e88a59d5cb1d4f3f820a2724d52d52b32cd98"
+    },
+    {
+      "name": "prevent_inventory_organization_link_mutation",
+      "identityArguments": "",
+      "definitionSha256": "64b6841ffbdc8d98a180d9e85591138506b98e5989f20dc32b524128b1a88555"
+    },
+    {
+      "name": "prevent_listing_noc_evidence_fact_mutation",
+      "identityArguments": "",
+      "definitionSha256": "0cc2fb9b887f9338a0eae785f2113fe5151113a622ad0be3efe3ca93c375f4dd"
+    },
+    {
+      "name": "prevent_partner_organization_fact_mutation",
+      "identityArguments": "",
+      "definitionSha256": "bc287969ec7dc69e819df1997b815ca452e62e0d07c3722158708adf4f162412"
+    },
+    {
+      "name": "prevent_property_listing_noc_fact_mutation",
+      "identityArguments": "",
+      "definitionSha256": "959250d08fa159398b801e8e85c6fb0cabcfc89ce81fe0130ce1217a4cd60dc6"
+    },
+    {
+      "name": "prevent_release2_immutable_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "d5a14e254b9b24c2c2b65f4a148c24a15367984ad831ad89fdeee17012fbdf6d"
+    },
+    {
+      "name": "prohibit_leave_self_approval",
+      "identityArguments": "",
+      "definitionSha256": "2cf53ebf1674c26fa27a81e0f3e494e88a1f6c4aeaacfd1a3e48e4e3280dadf0"
+    },
+    {
+      "name": "protect_agent_payout_advice_evidence",
+      "identityArguments": "",
+      "definitionSha256": "d6f3a9325a172c3a8fdc3acce72ae4aa8025cf6f8ffdf623d733ee8891d08a80"
+    },
+    {
+      "name": "protect_commission_confirmation_evidence",
+      "identityArguments": "",
+      "definitionSha256": "a64d3cb98c6da307669216439ae3480a2342f517af68138fe8c3aecfcb9c1401"
+    },
+    {
+      "name": "protect_commission_receivable_invoice",
+      "identityArguments": "",
+      "definitionSha256": "4f8537ad7e09cdf5718558137a637b068e46aeaf9409aed432293ebf465f6a3b"
+    },
+    {
+      "name": "protect_marketing_material_version",
+      "identityArguments": "",
+      "definitionSha256": "092cf23a66a82ceba56450be18c32b656448706bd91d1d4e7110233d15f30f2c"
+    },
+    {
+      "name": "protect_payout_configuration",
+      "identityArguments": "",
+      "definitionSha256": "35871258a6a1bd7d8a20f578806a4be0ad0410a9802e013bb32bf16744f908b6"
+    },
+    {
+      "name": "protect_receivable_adjustment_request",
+      "identityArguments": "",
+      "definitionSha256": "0da187f2a0ad1f6f0693feb0e01a0d10b75785949570d9200014f973d44435f0"
+    },
+    {
+      "name": "reject_booking_history_mutation",
+      "identityArguments": "",
+      "definitionSha256": "6d51be104c3d246efd7d2edd218a81183a46e1106d10de82223aa707c612854b"
+    },
+    {
+      "name": "reject_deal_status_history_mutation",
+      "identityArguments": "",
+      "definitionSha256": "01e402c80d4d1db4b2d7fad6d9c5ead4175c2fdb0170fda8fdfd738af8f5f957"
+    },
+    {
+      "name": "reject_dld_source_row_mutation",
+      "identityArguments": "",
+      "definitionSha256": "6ed17600a4894976a0ec864caf8f496f48e74910e9a26f5156bf723f92bf20d7"
+    },
+    {
+      "name": "reject_document_compliance_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "caffe00d21b2dbf61fb85e1463e2c0d7dc02ef6939179c3cea31028e380e303e"
+    },
+    {
+      "name": "reject_immutable_finance_mutation",
+      "identityArguments": "",
+      "definitionSha256": "1e9390c8542f5d70cc59070bbc9ff10a1d0e2cef179d1e9b695173bd52266cfd"
+    },
+    {
+      "name": "reject_leave_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "ff4f91445f8677b175b71700e149385ee3b753b34a4fd67479f0b6a1aab38e10"
+    },
+    {
+      "name": "reject_market_snapshot_mutation",
+      "identityArguments": "",
+      "definitionSha256": "661600f7631b27667b7c12dc264daee73ea1cc6ea21b93e754c3c879db320065"
+    },
+    {
+      "name": "reject_marketing_material_evidence_mutation",
+      "identityArguments": "",
+      "definitionSha256": "34b71d289b25e11004f8a8a5380d4d488fe2bb6beab36b0cd6d9700487fd4847"
+    },
+    {
+      "name": "reject_negotiation_event_mutation",
+      "identityArguments": "",
+      "definitionSha256": "ed2d514d4489260ef9cc88df0c8f951a87208220aeae3efd0cfae79116db96db"
+    },
+    {
+      "name": "reject_offer_replacement_action_mutation",
+      "identityArguments": "",
+      "definitionSha256": "5d7065ef462180e9356c4994005afa9efc57903813d651cd0793a03ff86f9741"
+    },
+    {
+      "name": "reject_offer_revision_mutation",
+      "identityArguments": "",
+      "definitionSha256": "aeed876dab06fa8f09ef874192c261e188b4525685ce6822d8c6852144a5615e"
+    },
+    {
+      "name": "supersede_changed_receipt_confirmation",
+      "identityArguments": "",
+      "definitionSha256": "0642a75df5fe17ad2f54248a5aef44994adfa31e96d69b65b887e6179c267735"
+    },
+    {
+      "name": "valid_compliance_reminder_offsets",
+      "identityArguments": "offsets integer[]",
+      "definitionSha256": "2d2d53ba1e416995e1df171383b46b293e0d2b55745ea2fa674106168b50ea08"
+    },
+    {
+      "name": "validate_commission_slab_set",
+      "identityArguments": "",
+      "definitionSha256": "d96fa47d28e485229b9621cc4124dd3482965cbba88b94569a6b95b5eeb16226"
+    },
+    {
+      "name": "validate_finance_opportunity",
+      "identityArguments": "",
+      "definitionSha256": "93181219d485218afb31e91ceb5bd5c90399ac93fac5d8887a92a320120f1b0e"
+    },
+    {
+      "name": "validate_inventory_organization_link_event",
+      "identityArguments": "",
+      "definitionSha256": "6ebc536d316db7a60b578cacdb2a6bcdf69f916c2cfa6738e247396dcc81cfe5"
+    },
+    {
+      "name": "validate_receivable_receipt_link",
+      "identityArguments": "",
+      "definitionSha256": "04d7e2509147fd2c149728bb2a54b51b356a96db33ef217d5112bdbe8d7f64d2"
+    }
+  ]
+}
