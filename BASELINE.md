@@ -1,10 +1,23 @@
 # CRM Development Baseline
 
-## DEV264 governed-trigger recovery candidate — 4 November 2026
+## DEV264 accepted CRM Test baseline — 5 November 2026
 
-- Target is CRM Test only. Installed baseline remains DEV263, migration 167,
-  303 public tables and zero user-defined triggers. DEV263 UAT is not accepted.
-  Production, website, REM, Meta, 360dialog and live messaging are unchanged.
+- CRM Test is accepted on `2.1.0-dev.264`, commit
+  `8d9be904149bec1b9b6d56dd8a39f17c2789fd12`, migration 168 and 303 public
+  tables. The governed contract is restored to 108 enabled triggers across 93
+  tables. The simulator is paused with fault mode `none`. Production, website,
+  REM, Meta, 360dialog and live messaging remain unchanged.
+- Acceptance evidence records Layer 1 passing; Layer 2 passing for all rules
+  with suitable data; Layer 3 WhatsApp simulator UAT W-01 through W-15 passing;
+  and Layer 4 passing in its approved reduced scope. Deferred and not-exercised
+  cases remain explicitly deferred/not exercised. See
+  `release-artifacts/dev264-preparation/DEV264_ACCEPTANCE.md`.
+- Known limitation tracked as DEV265: CRM Test remains missing 975 foreign
+  keys, 18 primary keys, 15 unique constraints and 404 indexes. A read-only
+  compatibility scan found only 17 orphan UAT264 simulator rows (12 messages
+  and 5 notifications) and no duplicate/NULL-key issue for the missing primary
+  or unique constraints. DEV264 acceptance does not authorise repair. See
+  `release-artifacts/dev264-preparation/schema-drift/STEP6_SCHEMA_DRIFT_REPORT.md`.
 - The failed plain simulated inbound reached the Lead insert and PostgreSQL
   rejected a null `lead_reference` (`23502`) because
   `leads_assign_reference` was absent. Read-only reconciliation then found that
@@ -38,13 +51,13 @@
   recreates all 108 triggers from their final definitions, does not replace any
   trigger function (including the migration-061 Lead-reference function), is
   idempotent, and fails if the resulting exact trigger contract differs.
-- The canonical four-phase CRM Test operator is extended to block stage,
+- The canonical four-phase CRM Test operator was extended to block stage,
   backup and install when the live trigger contract, the 15 governed-data
   checks or Lead counters differ from the approved baseline. It also verifies
   trigger entries in the scoped PostgreSQL dump and the complete post-migration
   contract. All hosted-worker and deployment controls in `AGENTS.md` and
-  `CRM_CHANGE_POLICY.md` remain mandatory. No hosted run is authorized by this
-  source preparation.
+  `CRM_CHANGE_POLICY.md` remain mandatory. DEV264 completed its four separately
+  approved phases; no later hosted run is authorised by this acceptance.
 - Local verification rebuilt all 168 migrations as the restricted fixture role,
   reproduced zero triggers, restored the full contract twice, passed plain
   inbound/stage/follow-up behavior and passed the complete simulator flow with
