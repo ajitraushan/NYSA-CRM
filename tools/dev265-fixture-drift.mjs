@@ -45,7 +45,7 @@ function matchesExceptPg16ConstraintDeparse(result) {
   });
 }
 try {
-  const identity = (await client.query(`SELECT current_database() database,current_user username,current_setting('server_version') version`)).rows[0];
+  const identity = (await client.query(`SELECT current_database() AS database,current_user AS username,current_setting('server_version') AS version`)).rows[0];
   if (identity.database !== 'nysa_test_fixture' || identity.username !== 'nysa_test_user') throw new Error(`Fixture identity mismatch: ${JSON.stringify(identity)}`);
   const before = compareSchemaContracts(canonical, await readDatabaseSchemaContract(client));
   const pgMajor = Number.parseInt(identity.version, 10);
