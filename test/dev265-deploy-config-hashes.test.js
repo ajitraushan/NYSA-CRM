@@ -15,10 +15,15 @@ test('DEV265 deploy config hashes are complete and match every named file', () =
   const configBytes = fs.readFileSync(configFile);
   const config = JSON.parse(configBytes);
   const proof = JSON.parse(fs.readFileSync(proofFile, 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'release-artifacts', 'origin', 'nysa-core-2.1.0-dev.265-origin.manifest.json'), 'utf8'));
 
   assert.equal(proof.configSha256, crypto.createHash('sha256').update(configBytes).digest('hex'));
   assert.equal(proof.allHashFields64Hex, true);
   assert.equal(proof.allNamedFilesMatch, true);
+  assert.equal(config.commit, manifest.commit);
+  assert.equal(config.archiveHash, manifest.packageSha256);
+  assert.equal(config.expectedTestPassed, manifest.testReceipt.passed);
+  assert.equal(manifest.testReceipt.failed, 0);
 
   for (const [field, value] of Object.entries(config).filter(([name]) => /hash|sha256/i.test(name))) {
     assert.match(value, /^[a-f0-9]{64}$/, `${field} must be 64 lowercase hexadecimal characters`);

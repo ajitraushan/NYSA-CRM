@@ -1,0 +1,31 @@
+13.23 (Debian 13.23-1.pgdg13+1)
+✖ UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate reservation and exact Deal lineage (1548.914136ms)
+﹣ Manager closes with commission outstanding; Accountant collects afterward without changing transaction closure (0.781076ms) # SKIP
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 1790.685133
+
+✖ failing tests:
+
+test at test/dev159-uat067-068-real-db.integration.test.js:109:1
+✖ UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate reservation and exact Deal lineage (1548.914136ms)
+  AssertionError [ERR_ASSERTION]: UAT-067 Negotiation acceptance must succeed through the real route
+  
+  409 !== 200
+  
+      at TestContext.<anonymous> (file:///tmp/nysa-dev264/test/dev159-uat067-068-real-db.integration.test.js:130:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 409,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

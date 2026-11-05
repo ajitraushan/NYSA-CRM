@@ -1,0 +1,16 @@
+{
+  "schema": "nysa.dev265.dev264-offer-defect-comparison.v1",
+  "baselineCommit": "8d9be904149bec1b9b6d56dd8a39f17c2789fd12",
+  "postgresqlVersion": "13.23",
+  "matchesDEV265Diagnostic": true,
+  "files": {
+    "DEV264_DEV158_OFFER_PG13.txt": {
+      "sha256": "9bdb867dc45352ca0d3c83e0f106545e116a1d6bab9b21d74a8c8447845cae77",
+      "bytes": 5061
+    },
+    "DEV264_DEV159_OFFER_PG13.txt": {
+      "sha256": "07a94d9d9fb1802d4908d7b005b224c40654d3f240a4df7023e987074d94c6ec",
+      "bytes": 1244
+    }
+  }
+}

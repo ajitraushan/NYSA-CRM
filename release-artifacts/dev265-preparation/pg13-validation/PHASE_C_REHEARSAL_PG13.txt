@@ -1,0 +1,29 @@
+13.23 (Debian 13.23-1.pgdg13+1)
+{
+  "schema": "nysa.dev265.phase-c-rehearsal.v1",
+  "database": "nysa_test_fixture",
+  "postgresqlVersion": "13.23 (Debian 13.23-1.pgdg13+1)",
+  "startedAt": "2026-11-05T21:39:46.162Z",
+  "completedAt": "2026-11-05T21:39:52.293Z",
+  "durationMs": 6120,
+  "sampleIntervalMs": 20,
+  "samples": 242,
+  "maximumObservedLocks": 1966,
+  "affectedRelationCount": 872,
+  "affectedRelations": "[872 relations; full list retained in receipt]",
+  "lockModes": {
+    "AccessExclusiveLock": 18,
+    "AccessShareLock": 868,
+    "ExclusiveLock": 1,
+    "RowExclusiveLock": 24,
+    "RowShareLock": 144,
+    "ShareLock": 200,
+    "ShareRowExclusiveLock": 288
+  },
+  "relationLocks": "[1543 relation/mode observations; full list retained in receipt]",
+  "final": {
+    "migration_count": 169,
+    "latest": "169_restore_full_schema_contract.sql"
+  },
+  "outputFile": "/home/runner/work/NYSA-CRM/NYSA-CRM/release-artifacts/dev265-preparation/pg13-validation/PHASE_C_REHEARSAL_PG13.json"
+}

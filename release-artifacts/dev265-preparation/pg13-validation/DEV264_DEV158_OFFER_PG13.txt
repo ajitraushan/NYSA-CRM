@@ -1,0 +1,41 @@
+13.23 (Debian 13.23-1.pgdg13+1)
+{"event":"3.1","status":409,"payload":{"error":"This Inventory assignment ended or was delinked. Assign it again and complete a new viewing before creating an Offer"}}
+✔ 3.1 offer creation is blocked while the Inventory assignment is expired (120.52436ms)
+{"event":"3.5","status":201,"payload":{"offerId":"b50c0d17-e536-47ab-9191-516a7f2e06dd","offerReference":"NYSA-OF-202611-000001"}}
+✔ 3.5 renewing the assignment restores the ability to create an Offer (2493.935196ms)
+{"event":"3.2","status":409,"payload":{"error":"This Offer Inventory assignment expired or ended. Reassign the Inventory before creating another revision"}}
+✔ 3.2 offer revision is blocked while the Inventory assignment is expired (1390.810981ms)
+{"event":"3.3-3.4-offer-creation","status":201,"payload":{"id":"61fb5a2b-d536-4310-997a-beaa33f09c6d","offerReference":"NYSA-OF-202611-000003","opportunityId":"e2b8db75-fefa-4256-9c44-d56ad83cf786","listingId":"78f722d5-0fd4-4389-b4de-d19b881a760f","offerType":"purchase","status":"draft","currency":"AED","ownerId":"0a85006e-89cc-4180-a60b-6a329a29e77b","currentRevisionId":"155214d6-334d-4663-810c-a5e16cd9bdf1","acceptedRevisionId":null,"version":1,"sentAt":null,"viewedAt":null,"acceptedAt":null,"rejectedAt":null,"expiredAt":null,"withdrawnAt":null,"createdBy":"0a85006e-89cc-4180-a60b-6a329a29e77b","createdAt":"2026-11-05T21:40:05.020Z","updatedAt":"2026-11-05T21:40:05.020Z","externalPropertyId":null,"recoveryCheckpoint":null,"predecessorOfferId":null,"classificationCatalogueVersionId":null,"classificationMappingEvidence":null,"inventoryAssignmentId":"e5c406ac-78d2-496d-bdec-7fad1fbfc973","revision":{"id":"155214d6-334d-4663-810c-a5e16cd9bdf1","offerId":"61fb5a2b-d536-4310-997a-beaa33f09c6d","revisionNumber":1,"supersedesRevisionId":null,"direction":"outbound","proposerRole":"customer","amount":"1000000.00","currency":"AED","depositAmount":"1000000.00","financingMethod":null,"paymentTerms":null,"conditions":null,"validityExpiresAt":"2026-11-12T21:40:05.018Z","materialCorrectionReason":null,"documentVersionId":"6d400a7f-76ad-4510-bfd6-a1ea697f2d97","createdBy":"0a85006e-89cc-4180-a60b-6a329a29e77b","createdAt":"2026-11-05T21:40:05.035Z","requiresBilateralAcceptance":true,"fileName":"NYSA_Offer_Letter_dev158-s3-1793914801026-6249e9b2-project_2026-11-06_Rev-1.pdf","fileHash":"77dd5a5afe86e2aa4809551fcc9df3ca5fa2d50c754906d957869bab6b8e8e46","storageKey":"5acc166d-620c-4ec7-bb03-916be87644f2.pdf"}}}
+{"event":"3.3-3.4-offer-send","status":200,"payload":{"id":"61fb5a2b-d536-4310-997a-beaa33f09c6d","offerReference":"NYSA-OF-202611-000003","opportunityId":"e2b8db75-fefa-4256-9c44-d56ad83cf786","listingId":"78f722d5-0fd4-4389-b4de-d19b881a760f","offerType":"purchase","status":"sent","currency":"AED","ownerId":"0a85006e-89cc-4180-a60b-6a329a29e77b","currentRevisionId":"155214d6-334d-4663-810c-a5e16cd9bdf1","acceptedRevisionId":null,"version":2,"sentAt":"2026-11-05T21:40:06.377Z","viewedAt":null,"acceptedAt":null,"rejectedAt":null,"expiredAt":null,"withdrawnAt":null,"createdBy":"0a85006e-89cc-4180-a60b-6a329a29e77b","createdAt":"2026-11-05T21:40:05.020Z","updatedAt":"2026-11-05T21:40:06.377Z","externalPropertyId":null,"recoveryCheckpoint":null,"predecessorOfferId":null,"classificationCatalogueVersionId":"06200000-0000-4000-8000-000000000001","classificationMappingEvidence":{"objective":"buy","catalogueVersion":"uat062-v1","derivedTransaction":"sale"},"inventoryAssignmentId":"e5c406ac-78d2-496d-bdec-7fad1fbfc973"}}
+{"event":"3.3-acceptance","status":409,"payload":{"error":"Acceptance evidence reference is required for this party and exact revision"}}
+✖ 3.3/3.4 Negotiation acceptance and the separate Booking creation are each blocked while the Inventory assignment is expired (1385.500006ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5602.804689
+
+✖ failing tests:
+
+test at test/dev158_business_conditions_section3.integration.test.js:204:1
+✖ 3.3/3.4 Negotiation acceptance and the separate Booking creation are each blocked while the Inventory assignment is expired (1385.500006ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Acceptance evidence reference is required for this party and exact revision'
+  - 'This Offer Inventory has no active unexpired assignment to the Opportunity'
+  
+      at TestContext.<anonymous> (file:///tmp/nysa-dev264/test/dev158_business_conditions_section3.integration.test.js:221:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Acceptance evidence reference is required for this party and exact revision',
+    expected: 'This Offer Inventory has no active unexpired assignment to the Opportunity',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

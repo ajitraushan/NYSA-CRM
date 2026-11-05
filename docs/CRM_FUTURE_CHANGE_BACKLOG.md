@@ -61,3 +61,35 @@ Customer, agent and call attempt.
 - Automated tests cover successful, unsuccessful, cancelled, duplicate-callback,
   stale-session, cross-Lead and restricted-contact cases.
 
+## TEST-OFFER-001 — Align legacy Offer fixtures with governed acceptance evidence
+
+- **Type:** Pre-existing test defect
+- **Priority:** Medium; does not block DEV265
+- **Status:** Open; reproduced unchanged on DEV264
+- **Recorded:** 6 November 2026
+- **Current release impact:** No runtime Offer-rule change in DEV265
+- **Affected tests:** `dev158_business_conditions_section3.integration.test.js`
+  and `dev159-uat067-068-real-db.integration.test.js`
+
+### Evidence
+
+- Both failures were rerun at exact DEV264 commit
+  `8d9be904149bec1b9b6d56dd8a39f17c2789fd12` on PostgreSQL 13.23.
+- DEV158 produced the same precedence mismatch: the route correctly required
+  acceptance evidence for the exact party/revision before reaching the older
+  Inventory-assignment assertion. Evidence SHA-256:
+  `9bdb867dc45352ca0d3c83e0f106545e116a1d6bab9b21d74a8c8447845cae77`.
+- DEV159 produced the same `409 !== 200` because its fixture also omitted the
+  governed exact-revision acceptance evidence. Evidence SHA-256:
+  `07a94d9d9fb1802d4908d7b005b224c40654d3f240a4df7023e987074d94c6ec`.
+- The scripted comparison records `matchesDEV265Diagnostic: true`; comparison
+  SHA-256:
+  `df9499fc73c56bdef93389c3d8960634f81d9ff0e943fbc3ed3142635462ae0e`.
+
+### Required correction
+
+Update only the legacy test fixtures to create the required acceptance evidence
+for the exact Offer revision and party before asserting the later business
+condition. Do not weaken, bypass or reorder the runtime acceptance-evidence
+rule merely to satisfy these older fixtures.
+

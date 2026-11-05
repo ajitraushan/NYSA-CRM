@@ -1,5 +1,8 @@
 {
-  "schema": "nysa.dev265.full-test-results.v1",
+  "schema": "nysa.dev265.superseded-full-test-results.v1",
+  "superseded": true,
+  "candidateCommit": "d4541b7a0bd4b70e3a2642c27a387c4e7c192225",
+  "note": "Historical receipt for the superseded pre-PostgreSQL-13.23 package; the current candidate authority is the ce4f16c origin manifest.",
   "sourceLog": "release-artifacts/dev265-preparation/test-results/GOVERNED_NON_DB_FULL_SUITE.txt",
   "sourceLogSha256": "b04637634de8700f1e66439ef04ff522a20b4adda4b5ece67423a7f3d63fab4e",
   "tests": 1660,

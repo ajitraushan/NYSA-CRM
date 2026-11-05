@@ -9,19 +9,21 @@ Status: built, tested and packaged; **not uploaded and no Phase A executed**
 ## 1. Candidate identity
 
 - Version: `2.1.0-dev.265`
-- Application commit: `d4541b7a0bd4b70e3a2642c27a387c4e7c192225`
-- Git tree: `7dd9778cf1d53ecab3f168645fb0403f49a300a0`
+- Application commit: `ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8`
+- Git tree: `dca4d774c800034c4486112c5187d0e4a5493bcf`
 - GitHub ref: `refs/heads/codex/dev265-schema-contract-restoration`
-- Origin package SHA-256: `e809353434e3a1687f5a7e678325b95fcf36820085155f8b21338c2c3a7973d0`
-- Manifest SHA-256: `bfa912882f60a692d6f6f6fbc69298932178a14f34204eae20c04527b8ec67ed`
+- Origin package SHA-256: `99166cabaa57e7f69320a207e84b166e5a4957a12bf004572fc705fdc0e9ad2a`
+- Manifest SHA-256: `4184c3600b04eb72150c1d88e5b4033933b14f2e17a3108f940f59b75e61ca37`
 - Migration count after install: 169
 - Latest migration: `169_restore_full_schema_contract.sql`
-- Migration 169 Git-content SHA-256: `a8d5afc3e1f318521a6e9ab4a1f1ca25b33da70d445b4a325bebab085fe032f3`
+- Migration 169 Git-content SHA-256: `ca0ab210ba6d65875e3494a81d93bc138fc1e89a3a36ac2cccf6a25eb3ec2e97`
 - Mandatory origin-package verification: passed against GitHub origin.
 
 The package was created only with:
 
-`npm run release:package -- --commit d4541b7a0bd4b70e3a2642c27a387c4e7c192225`
+`npm run release:package -- --commit ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8`
+
+The earlier `d4541b7...` archive is superseded and retained locally as evidence only. PostgreSQL 13.23 validation found an ambiguous implicit SQL alias in its migration 169; that archive was never uploaded or deployed. The corrected migration uses explicit aliases and was repackaged from the exact GitHub-origin commit above.
 
 ## 2. Migration 169 scope and ordering
 
@@ -78,33 +80,41 @@ The candidate canonical-contract manifest SHA-256 is `496377945ba34038c39c20026c
 
 | Test set | Result | Evidence SHA-256 |
 |---|---|---|
-| Exact GitHub-origin governed package suite | 1,660 tests: 1,559 passed, 101 intentionally skipped, 0 failed | package test-output `5c4133f041eb72f6c1bd5e0e5c00bfe4c4d55edc513457db0eb319b94dc5c545` |
-| Full per-test result list | same 1,660 outcomes | `e86739bafac3a2f40c18cc0e5c0a75025cc8cd70c2388009665595b6a7f859b4` |
-| DEV265 static/generator/verifier suite | 6 passed, 0 failed | `b8085d0199ecba3fc6ac646804db0ecb63d79641f815688b60eef43f75138c63` |
-| DEV265 exact-drift PostgreSQL integration | 2 passed, 0 failed | `2d37c6899a17542c59fc58729fe2995ae8760d1b83d27bbcbccb60c6b3387626` |
+| Exact GitHub-origin governed package suite | 1,663 tests: 1,562 passed, 101 intentionally skipped, 0 failed | package test-output `2c81334709020dccfcab666a2b837d4c36db1410a6fe24f7b699958fb1fccc3a` |
+| DEV265 static/generator/verifier suite | 7 passed, 0 failed | `e6837a8569c561578222959d8243af94e5872da9d5f2ee32531aeadb72a098b2` |
+| DEV265 exact-drift PostgreSQL 13.23 integration | 2 passed, 0 failed | `afb33eec372ca1412470033212d91e08f5a46533f0ce4807833a3cf4a4432606` |
 | Operator regression plus DEV265 operator tests | 20 passed, 0 failed | `0b9521faa29f1163b802435f2fd16704cceb7a0236208612712c2ac7e4530b0f` |
 
-The full test list is retained in `FULL_TEST_RESULTS.json`; it names all 1,660 tests and their passed/skipped status.
+The origin manifest is the authoritative governed-suite receipt. Its selected-file count is 311 and selection SHA-256 is `9fdb8801d489d613320a5bf06d4150d12494e6dd42682f7b518a86c380676806`.
+The retained `FULL_TEST_RESULTS.json` is explicitly labelled as a superseded receipt for the earlier `d4541b7...` package and is not evidence for this candidate.
 
 ### Additional database aggregate diagnostic
 
-A shared-fixture sequential diagnostic produced 1,577 passed, 80 skipped and 3 failed. It is retained, not hidden, in `test-results/GOVERNED_DB_ENABLED_SEQUENTIAL_SUITE.txt`. Two failures are older Offer tests that omit now-required acceptance evidence. The third expected the DEV265 cleanup audit in a fixture that had been made canonical without first creating the exact 17-orphan drift. After rebuilding the exact accepted damaged state, the focused DEV265 integration passed 2/2, including the audit actor, idempotency, fail-closed preflight and conversation cascade. This diagnostic is not substituted for the governed package result.
+A shared-fixture sequential diagnostic produced 1,577 passed, 80 skipped and 3 failed. It is retained, not hidden, in `test-results/GOVERNED_DB_ENABLED_SEQUENTIAL_SUITE.txt`. The DEV265 cleanup test was corrected by rebuilding the exact accepted 17-orphan damaged state; the focused PostgreSQL 13.23 integration then passed 2/2, including the audit actor, idempotency, fail-closed preflight and conversation cascade.
+
+The other two failures were reproduced without DEV265 at exact DEV264 commit `8d9be904149bec1b9b6d56dd8a39f17c2789fd12` on PostgreSQL 13.23:
+
+- `dev158_business_conditions_section3.integration.test.js`: 3 passed, 1 failed with the same acceptance-evidence precedence mismatch; evidence SHA-256 `9bdb867dc45352ca0d3c83e0f106545e116a1d6bab9b21d74a8c8447845cae77`.
+- `dev159-uat067-068-real-db.integration.test.js`: 1 failed and 1 skipped with the same `409 !== 200`; evidence SHA-256 `07a94d9d9fb1802d4908d7b005b224c40654d3f240a4df7023e987074d94c6ec`.
+
+The scripted comparison passed and records `matchesDEV265Diagnostic: true` (SHA-256 `df9499fc73c56bdef93389c3d8960634f81d9ff0e943fbc3ed3142635462ae0e`). They are recorded as pre-existing test defects in the backlog; no runtime Offer rule was weakened.
 
 ## 5. Phase C lock and duration rehearsal
 
 Receipt: `PHASE_C_REHEARSAL.json`
 
-SHA-256: `b1eefd83f7177ffbddd6593e76c72bc3b3528ff56c454226eab3ac020c687a79`
+JSON SHA-256: `0108ec21d368e3ea408e802d14bab7b632dbff2ebb8abc31ef0627e88537301b`
 
-- Database: isolated `nysa_test_fixture`; PostgreSQL 16.15.
-- Contract source: PostgreSQL 13.23 Step 3 exports; the local engine difference is disclosed.
-- Started: `2026-11-05T21:01:02.638Z`.
-- Completed: `2026-11-05T21:01:09.824Z`.
-- Duration: **7,151 ms**.
-- Samples: 206 at 20 ms.
-- Maximum observed locks: 2,973.
-- Affected relations observed: 873.
-- Lock observations by mode: AccessExclusive 18; AccessShare 870; RowExclusive 26; RowShare 144; Share 200; ShareRowExclusive 288.
+Text receipt SHA-256: `035300a5bc6d682b2b1318e68db2ccf420bca5864ae8ca8031ab790418926103`
+
+- Database: isolated `nysa_test_fixture`; PostgreSQL **13.23 (Debian 13.23-1.pgdg13+1)**.
+- Started: `2026-11-05T21:39:46.162Z`.
+- Completed: `2026-11-05T21:39:52.293Z`.
+- Duration: **6,120 ms**.
+- Samples: 242 at 20 ms.
+- Maximum observed locks: 1,966.
+- Affected relations observed: 872.
+- Lock observations by mode: AccessExclusive 18; AccessShare 868; Exclusive 1; RowExclusive 24; RowShare 144; Share 200; ShareRowExclusive 288.
 - Final ledger: 169 migrations, latest `169_restore_full_schema_contract.sql`.
 
 The rehearsal reflects a database-wide restoration and therefore intentionally exposes the lock footprint. Phase C remains separately approved, time-bounded, and requires a fresh verified scoped backup.
@@ -124,7 +134,9 @@ This operator commit requires separate written approval before placement or use.
 ## 7. Deployment config
 
 - Config file: `DEV265_DEPLOY_CONFIG.json`
-- Local LF SHA-256: `809003715227f4503b852421dd003f97352a3163ead36a30ed2204cc8c45a042`
+- Local LF SHA-256: `079cc117a2df11c3555272659d1a6ba4a9a1ca0e6e2a8e5bd37579013f5663a1`
+- Script-generated hash proof SHA-256: `16e98fab564b84939bf467f0bc783ffa9b478fb1f5da3fe2033e377b33cb1c61`
+- Script proof: every hash field is exactly 64 lowercase hexadecimal characters; package, manifest and both named schema-contract manifests equal their actual file hashes; configured governed-test pass count equals the origin manifest (`1,562`).
 - Baseline: DEV264 commit `8d9be904149bec1b9b6d56dd8a39f17c2789fd12`, migration 168, 303 tables, 108 triggers, accepted damaged full-schema baseline.
 - Expected: DEV265 application commit above, migration 169, 303 tables, 108 triggers, full canonical schema contract.
 

@@ -8,6 +8,7 @@ const source = path.join(root, 'release-artifacts', 'dev264-preparation', 'DEV26
 const outputDirectory = path.join(root, 'release-artifacts', 'dev265-preparation');
 const output = path.join(outputDirectory, 'DEV265_DEPLOY_CONFIG.json');
 const proofOutput = path.join(outputDirectory, 'DEV265_CONFIG_HASH_VERIFICATION.json');
+const proofTextOutput = path.join(outputDirectory, 'DEV265_CONFIG_HASH_VERIFICATION_OUTPUT.txt');
 const config = JSON.parse(fs.readFileSync(source, 'utf8'));
 const triggerContract = JSON.parse(fs.readFileSync(path.join(root, 'src', 'database-trigger-contract.json'), 'utf8'));
 const packageFile = path.join(root, 'release-artifacts', 'origin', 'nysa-core-2.1.0-dev.265-origin.zip');
@@ -35,12 +36,15 @@ Object.assign(config, {
   baselineTriggers: triggerContract.triggers,
   baselineSchemaContractManifestSha256: sha256(baselineContractManifest),
   expectedSchemaContractManifestSha256: sha256(canonicalContractManifest),
-  expectedTestPassed: 1559,
+  expectedTestPassed: releaseManifest.testReceipt.passed,
 });
 
 if (config.expectedTableCount !== 303 || config.expectedPostTableCount !== 303) throw new Error('DEV264 table baseline is not 303/303');
 if (config.baselineTriggers.length !== 108 || config.expectedTriggerCount !== 108) throw new Error('DEV264 trigger baseline is not 108/108');
 if (releaseManifest.packageSha256 !== config.archiveHash || releaseManifest.commit !== config.commit) throw new Error('Origin manifest does not bind the package or commit');
+if (!Number.isInteger(config.expectedTestPassed) || config.expectedTestPassed < 1 || releaseManifest.testReceipt.failed !== 0) {
+  throw new Error('Origin manifest does not contain a successful governed test receipt');
+}
 const fileChecks = {
   archiveHash: { file: packageFile, actual: sha256(packageFile) },
   manifestHash: { file: manifestFile, actual: sha256(manifestFile) },
@@ -83,9 +87,13 @@ const proof = {
 };
 const configTemporary = `${output}.tmp`;
 const proofTemporary = `${proofOutput}.tmp`;
-for (const file of [configTemporary, proofTemporary]) if (fs.existsSync(file)) fs.rmSync(file);
+const proofTextTemporary = `${proofTextOutput}.tmp`;
+for (const file of [configTemporary, proofTemporary, proofTextTemporary]) if (fs.existsSync(file)) fs.rmSync(file);
 fs.writeFileSync(configTemporary, configBytes, { flag: 'wx' });
-fs.writeFileSync(proofTemporary, `${JSON.stringify(proof, null, 2)}\n`, { flag: 'wx' });
+const proofBytes = `${JSON.stringify(proof, null, 2)}\n`;
+fs.writeFileSync(proofTemporary, proofBytes, { flag: 'wx' });
+fs.writeFileSync(proofTextTemporary, proofBytes, { flag: 'wx' });
 fs.renameSync(configTemporary, output);
 fs.renameSync(proofTemporary, proofOutput);
+fs.renameSync(proofTextTemporary, proofTextOutput);
 console.log(JSON.stringify(proof, null, 2));
