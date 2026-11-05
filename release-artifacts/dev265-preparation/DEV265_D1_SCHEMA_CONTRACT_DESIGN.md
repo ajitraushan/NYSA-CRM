@@ -18,8 +18,8 @@ Status: design checkpoint; migration 169 has not been written
 The committed generator `tools/generate-schema-contract.mjs` consumed the schema exports produced by the disposable PostgreSQL 13.23 rebuild of migrations 1–168 at DEV264. It preserves multiline constraints as whole records, hashes full `pg_get_functiondef` text after removing carriage returns, sorts every contract deterministically and references the existing governed trigger contract.
 
 - Generator SHA-256: `1c6ff9168b8fe82e3179e62025e7ca36da9b6b811e96c3d500f841684084a187`
-- Generator test SHA-256: `095520c8e176a03022e42e138dc84fb059154cef43445b68082e5353c3a7257c`
-- Test result: 1 passed, 0 failed
+- Generator test SHA-256: `3357e08851c1689acab3d08e063a2d6acfbaae7aa62fdffe095396acaf5589e0`
+- Test result: 2 DEV265 generator/manifest tests passed; 8 combined DEV264 trigger-contract and DEV265 contract tests passed; 0 failed
 - Manifest file SHA-256: `496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa`
 
 ### Contract counts and hashes
