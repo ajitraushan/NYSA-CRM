@@ -1,8 +1,8 @@
 {
   "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
   "domain": "crm-test.nysarealty.com",
-  "base": "/home/nysareal/crm-release-preparation/20261106-dev265/evidence",
-  "candidate": "/home/nysareal/crm-release-preparation/20261106-dev265/candidate",
+  "base": "/home/nysareal/crm-release-preparation/20261106-dev265-run2/evidence",
+  "candidate": "/home/nysareal/crm-release-preparation/20261106-dev265-run2/candidate",
   "zip": "/home/nysareal/crm-release-preparation/20261106-dev265/nysa-core-2.1.0-dev.265-origin.zip",
   "manifest": "/home/nysareal/crm-release-preparation/20261106-dev265/nysa-core-2.1.0-dev.265-origin.manifest.json",
   "version": "2.1.0-dev.265",
@@ -11,7 +11,7 @@
   "commit": "ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8",
   "archiveHash": "99166cabaa57e7f69320a207e84b166e5a4957a12bf004572fc705fdc0e9ad2a",
   "manifestHash": "4184c3600b04eb72150c1d88e5b4033933b14f2e17a3108f940f59b75e61ca37",
-  "operatorCommit": "7c276374857112dad6d0d3729461a152704418d0",
+  "operatorCommit": "d7a5a347fc185ad21ae42d83b75203c690445bf6",
   "expectedDatabase": "nysareal_nysa_dev247_smoke",
   "expectedRole": "nysareal_nysar2app",
   "baselineMigrationCount": 168,
@@ -2089,6 +2089,8 @@
   "backupFreshnessMinutes": 90,
   "smokeWindowSeconds": 60,
   "cleanupPaths": [],
+  "schemaContractHelperPath": "/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs",
+  "schemaContractHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
   "baselineSchemaContractManifestSha256": "4b3a04e9136193de9ec7413e51962381ffb9576eb71b062b7c263c50452390a9",
   "expectedSchemaContractManifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa"
 }

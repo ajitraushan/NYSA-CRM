@@ -16,12 +16,14 @@ const manifestFile = path.join(root, 'release-artifacts', 'origin', 'nysa-core-2
 const baselineContractManifest = path.join(root, 'src', 'database-schema-baseline', 'manifest.json');
 const canonicalContractManifest = path.join(root, 'src', 'database-schema-contract', 'manifest.json');
 const triggerContractFile = path.join(root, 'src', 'database-trigger-contract.json');
+const schemaContractHelper = path.join(root, 'tools', 'database-schema-contract.mjs');
 const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const sha256Lf = (file) => crypto.createHash('sha256').update(Buffer.from(fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n'), 'utf8')).digest('hex');
 const releaseManifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
 
 Object.assign(config, {
-  base: '/home/nysareal/crm-release-preparation/20261106-dev265/evidence',
-  candidate: '/home/nysareal/crm-release-preparation/20261106-dev265/candidate',
+  base: '/home/nysareal/crm-release-preparation/20261106-dev265-run2/evidence',
+  candidate: '/home/nysareal/crm-release-preparation/20261106-dev265-run2/candidate',
   zip: '/home/nysareal/crm-release-preparation/20261106-dev265/nysa-core-2.1.0-dev.265-origin.zip',
   manifest: '/home/nysareal/crm-release-preparation/20261106-dev265/nysa-core-2.1.0-dev.265-origin.manifest.json',
   version: '2.1.0-dev.265',
@@ -30,10 +32,12 @@ Object.assign(config, {
   commit: releaseManifest.commit,
   archiveHash: sha256(packageFile),
   manifestHash: sha256(manifestFile),
-  operatorCommit: '7c276374857112dad6d0d3729461a152704418d0',
+  operatorCommit: 'd7a5a347fc185ad21ae42d83b75203c690445bf6',
   baselineMigrationCount: 168,
   expectedMigrationCount: 169,
   baselineTriggers: triggerContract.triggers,
+  schemaContractHelperPath: '/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs',
+  schemaContractHelperSha256: sha256Lf(schemaContractHelper),
   baselineSchemaContractManifestSha256: sha256(baselineContractManifest),
   expectedSchemaContractManifestSha256: sha256(canonicalContractManifest),
   expectedTestPassed: releaseManifest.testReceipt.passed,
@@ -50,6 +54,7 @@ const fileChecks = {
   manifestHash: { file: manifestFile, actual: sha256(manifestFile) },
   baselineSchemaContractManifestSha256: { file: baselineContractManifest, actual: sha256(baselineContractManifest) },
   expectedSchemaContractManifestSha256: { file: canonicalContractManifest, actual: sha256(canonicalContractManifest) },
+  schemaContractHelperSha256: { file: schemaContractHelper, actual: sha256Lf(schemaContractHelper), normalization: 'Git/hosting LF' },
 };
 for (const [field, check] of Object.entries(fileChecks)) {
   check.configured = config[field];

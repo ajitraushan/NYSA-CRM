@@ -1,8 +1,8 @@
 {
   "schema": "nysa.dev265.config-hash-verification.v1",
-  "generatedAt": "2026-11-05T21:46:35.143Z",
+  "generatedAt": "2026-11-06T05:20:01.025Z",
   "config": "release-artifacts/dev265-preparation/DEV265_DEPLOY_CONFIG.json",
-  "configSha256": "079cc117a2df11c3555272659d1a6ba4a9a1ca0e6e2a8e5bd37579013f5663a1",
+  "configSha256": "09f2bb89c157a85325bbceae8b7bc9c8fcc6943ee75d8e725998b7d8976dcc21",
   "allHashFields64Hex": true,
   "allNamedFilesMatch": true,
   "fileChecks": {
@@ -31,6 +31,14 @@
       "file": "src/database-schema-contract/manifest.json",
       "actual": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
       "configured": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
       "is64Hex": true,
       "matches": true
     }
