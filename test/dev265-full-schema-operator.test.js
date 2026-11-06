@@ -5,7 +5,7 @@ import test from 'node:test';
 const source = fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs', import.meta.url), 'utf8');
 
 test('DEV265 operator binds both full-schema manifests and checks every deployment phase', () => {
-  for (const field of ['baselineSchemaContractManifestSha256', 'expectedSchemaContractManifestSha256']) {
+  for (const field of ['schemaContractHelperPath', 'schemaContractHelperSha256', 'baselineSchemaContractManifestSha256', 'expectedSchemaContractManifestSha256']) {
     assert.match(source, new RegExp(`'${field}'`));
   }
   for (const marker of [
@@ -16,6 +16,11 @@ test('DEV265 operator binds both full-schema manifests and checks every deployme
   ]) assert.ok(source.includes(marker), marker);
   assert.match(source, /for\(const name of \['constraints','indexes','columns','functions','sequencesViews','triggers'\]\)/);
   assert.match(source, /full schema-contract mismatch/);
+  assert.match(source, /schema-contract helper file missing/);
+  assert.match(source, /schema-contract helper hash mismatch: expected/);
+  assert.match(source, /schema-contract helper export missing/);
+  assert.match(source, /loadSchemaContractIdentity/);
+  assert.doesNotMatch(source, /path\.join\(config\.candidate,'tools','database-schema-contract\.mjs'\)/);
 });
 
 test('DEV265 operator records the full-schema result in the scoped backup and failure evidence', () => {

@@ -5,6 +5,39 @@ import path from 'node:path';
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const ordered = (rows, key) => [...rows].sort((a, b) => key(a).localeCompare(key(b)));
 
+export function loadSchemaContractIdentity({
+  helperFile,
+  expectedHelperSha256,
+  contractDirectory,
+  manifestFile,
+  expectedManifestSha256,
+  triggerContractFile,
+  label = 'schema-contract',
+}) {
+  if (!helperFile || !fs.existsSync(helperFile)) throw new Error(`${label} helper file missing: ${helperFile || '(not configured)'}`);
+  const observedHelperSha256 = sha256(fs.readFileSync(helperFile));
+  if (observedHelperSha256 !== expectedHelperSha256) {
+    throw new Error(`${label} helper hash mismatch: expected ${expectedHelperSha256}, observed ${observedHelperSha256}`);
+  }
+  if (!manifestFile || !fs.existsSync(manifestFile)) throw new Error(`${label} manifest file missing: ${manifestFile || '(not configured)'}`);
+  const observedManifestSha256 = sha256(fs.readFileSync(manifestFile));
+  if (observedManifestSha256 !== expectedManifestSha256) {
+    throw new Error(`${label} manifest hash mismatch: expected ${expectedManifestSha256}, observed ${observedManifestSha256}`);
+  }
+  if (!triggerContractFile || !fs.existsSync(triggerContractFile)) throw new Error(`${label} trigger contract file missing: ${triggerContractFile || '(not configured)'}`);
+  return {
+    contract: loadSchemaContract(contractDirectory, triggerContractFile),
+    identity: {
+      helperFile,
+      helperSha256: observedHelperSha256,
+      manifestFile,
+      manifestSha256: observedManifestSha256,
+      triggerContractFile,
+      triggerContractSha256: sha256(fs.readFileSync(triggerContractFile)),
+    },
+  };
+}
+
 export function loadSchemaContract(directory, triggerContractFile) {
   const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
   const read = (name) => JSON.parse(fs.readFileSync(path.join(directory, manifest.contracts[name].file), 'utf8')).entries;

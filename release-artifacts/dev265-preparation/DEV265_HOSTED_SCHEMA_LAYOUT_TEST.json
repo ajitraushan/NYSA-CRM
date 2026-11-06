@@ -1,0 +1,50 @@
+{
+  "schema": "nysa.hosted-schema-contract-layout-test.v1",
+  "package": "nysa-core-2.1.0-dev.265-origin.zip",
+  "packageSha256": "99166cabaa57e7f69320a207e84b166e5a4957a12bf004572fc705fdc0e9ad2a",
+  "extractedCandidateToolsPresent": false,
+  "helperSource": "database-schema-contract.mjs",
+  "hostedToolsOnlyHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+  "repositoryAccessRequiredAtRuntime": false,
+  "results": [
+    {
+      "directory": "database-schema-baseline",
+      "identity": {
+        "helperFile": "hosted-tools/database-schema-contract.mjs",
+        "helperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+        "manifestFile": "candidate/src/database-schema-baseline/manifest.json",
+        "manifestSha256": "4b3a04e9136193de9ec7413e51962381ffb9576eb71b062b7c263c50452390a9",
+        "triggerContractFile": "candidate/src/database-trigger-contract.json",
+        "triggerContractSha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4"
+      },
+      "counts": {
+        "constraints": 1696,
+        "indexes": 552,
+        "columns": 4043,
+        "functions": 50,
+        "sequencesViews": 7,
+        "triggers": 108
+      }
+    },
+    {
+      "directory": "database-schema-contract",
+      "identity": {
+        "helperFile": "hosted-tools/database-schema-contract.mjs",
+        "helperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+        "manifestFile": "candidate/src/database-schema-contract/manifest.json",
+        "manifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+        "triggerContractFile": "candidate/src/database-trigger-contract.json",
+        "triggerContractSha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4"
+      },
+      "counts": {
+        "constraints": 2704,
+        "indexes": 956,
+        "columns": 4043,
+        "functions": 50,
+        "sequencesViews": 7,
+        "triggers": 108
+      }
+    }
+  ],
+  "passed": true
+}
