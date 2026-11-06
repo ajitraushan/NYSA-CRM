@@ -1,5 +1,8 @@
 {
   "schema": "nysa.dev265.phase-c-rehearsal.v1",
+  "superseded": true,
+  "supersededBy": "release-artifacts/dev265-preparation/pg13-validation/PHASE_C_REHEARSAL_PG13.json",
+  "supersededReason": "PostgreSQL 16 rehearsal replaced by the PostgreSQL 13.23 rehearsal matching CRM Test.",
   "database": "nysa_test_fixture",
   "postgresqlVersion": "16.15",
   "startedAt": "2026-11-05T21:01:02.638Z",
