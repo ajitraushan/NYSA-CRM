@@ -49,6 +49,7 @@ import { createWhatsAppSandboxAdminRoutes, createWhatsAppSandboxInboxRoutes } fr
 import whatsappWorkspaceRoutes from './routes/whatsapp-workspace.js';
 import {createWhatsAppSimulatedProviderRoutes,createWhatsAppSimulationControlRoutes} from './routes/whatsapp-simulated-provider.js';
 import {assertSimulatedProviderEnvironment} from './whatsapp-simulated-provider.js';
+import {configureWhatsAppReplyLock} from './whatsapp-reply-lock.js';
 import { leadConnectionEnvironment } from './lead-integration-connections.js';
 import { requireAuth } from './auth.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
@@ -121,6 +122,7 @@ const shutdown = createShutdownHandler({
 async function start() {
   writeRuntimeEvent('starting');
   assertSimulatedProviderEnvironment();
+  configureWhatsAppReplyLock(process.env);
   await migrate();
   startAdviceWorker();
   startWebIntakeWorker({transaction});

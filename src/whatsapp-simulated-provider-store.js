@@ -145,8 +145,8 @@ export async function ensureSimulatedCampaignConversation({phone,displayName,tea
   });
 }
 
-export async function recordSimulatedOutbound({providerMessageId,conversationId,templateVersionId=null,text,type='text',actorId,payload,runId=null}){
-  return transaction(async client=>{
+export async function recordSimulatedOutbound({providerMessageId,conversationId,templateVersionId=null,text,type='text',actorId,payload,runId=null},{client:providedClient,auditAccepted=true}={}){
+  const work=async client=>{
     const conversation=await one('SELECT * FROM wa_conversations WHERE id=$1 AND simulated=TRUE FOR UPDATE',[conversationId],client);
     if(!conversation)throw Object.assign(new Error('Simulated conversation not found'),{statusCode:404});
     const eventPayload={...payload,id:`outbound:${providerMessageId}`};
@@ -158,9 +158,10 @@ export async function recordSimulatedOutbound({providerMessageId,conversationId,
         uuid(),conversationId,type,clean(text,4096),templateVersionId,now,providerMessageId,simulatedPayloadHash(payload)
       ],client);
     await execute('UPDATE wa_conversations SET last_activity_at=$1,updated_at=NOW() WHERE id=$2',[now,conversationId],client);
-    await audit('WhatsAppConversation',conversationId,'simulated_outbound_accepted',actorId,{providerMessageId,messageId:message.id,simulation:true},client);
+    if(auditAccepted)await audit('WhatsAppConversation',conversationId,'simulated_outbound_accepted',actorId,{providerMessageId,messageId:message.id,simulation:true},client);
     return {duplicate:false,messageId:message.id,providerMessageId};
-  });
+  };
+  return providedClient?work(providedClient):transaction(work);
 }
 
 export async function cleanupSimulationRun(runId,actorId){

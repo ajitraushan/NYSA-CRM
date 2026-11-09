@@ -143,8 +143,13 @@ test('DEV263 full in-process simulator flow works while loopback is unreachable'
     await request(`/crm/whatsapp-workspace/campaigns/${campaign.campaign.id}/submit`,{method:'POST',as:'agent',body:{}});
     const approval=await request(`/crm/whatsapp-workspace/campaigns/${campaign.campaign.id}/decision`,{method:'POST',as:'manager',body:{decision:'approve'}});
     assert.equal(approval.approval.recipientCount,2);
+    const campaignLock=await request(`/crm/whatsapp-workspace/conversations/${ctwa.conversationId}/reply-lock`,{method:'POST',as:'agent',body:{action:'acquire'}});
+    assert.equal(campaignLock.replyLock.heldByCurrentUser,true);
     const launch=await request(`/crm/whatsapp-workspace/campaigns/${campaign.campaign.id}/simulated-send`,{method:'POST',as:'manager',status:202,body:{}});
     assert.deepEqual({frozen:launch.frozenRecipientCount,accepted:launch.accepted,unchanged:launch.unchanged,failed:launch.failed},{frozen:2,accepted:2,unchanged:0,failed:0});
+    const lockAfterCampaign=await db.one('SELECT reply_lock_owner_id FROM wa_conversations WHERE id=$1',[ctwa.conversationId]);
+    assert.equal(lockAfterCampaign.replyLockOwnerId,people.agent,'Campaign launch must not consult or clear a conversation reply lock');
+    await request(`/crm/whatsapp-workspace/conversations/${ctwa.conversationId}/reply-lock`,{method:'POST',as:'agent',body:{action:'release'}});
     await wait(1400);
     const recipientStatuses=await db.many('SELECT normalized_phone,simulated_status,simulated_provider_message_id FROM wa_campaign_approval_recipients WHERE campaign_id=$1 ORDER BY normalized_phone',[campaign.campaign.id]);
     assert.deepEqual(recipientStatuses.map(row=>[row.normalizedPhone,row.simulatedStatus,Boolean(row.simulatedProviderMessageId)]),[[syntheticPhone(2),'read',true],[syntheticPhone(3),'read',true]]);

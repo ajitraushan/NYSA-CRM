@@ -9,6 +9,7 @@ import {
 import {
   applySimulatedMessageStatus,applySimulatedTemplateStatus,cleanupAllSimulatedRecords,cleanupSimulationRun,ensureSimulatedCampaignConversation,ingestSimulatedInbound,recordSimulatedOutbound
 } from '../whatsapp-simulated-provider-store.js';
+import {assertReplySendAllowed,refreshReplyLockAfterSend,replyLockState,selectConversationWithReplyLock,whatsAppReplyLockConfig} from '../whatsapp-reply-lock.js';
 
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -41,7 +42,7 @@ function requireInternalToken(req,res,config,{pathToken=null}={}){
   if(!equalSecret(presented,config.callbackToken)){res.status(401).json({error:'Invalid simulator callback credential'});return false;}
   return true;
 }
-async function control(){return one('SELECT * FROM wa_simulated_provider_control WHERE singleton=TRUE');}
+async function control(client){return one('SELECT * FROM wa_simulated_provider_control WHERE singleton=TRUE',[],client);}
 async function acceptSimulatedEvent(payload){
   if(!payload||typeof payload!=='object'||Array.isArray(payload))throw providerFailure('Simulator event body must be an object',400);
   let result;
@@ -57,8 +58,8 @@ async function postCallback(payload,delayMs=25){
   return acceptSimulatedEvent(payload);
 }
 
-async function submitSimulatedMessage(config,body){
-  const state=await control();
+async function submitSimulatedMessage(config,body,{client,deferCallbacks=false}={}){
+  const state=await control(client);
   if(state?.paused)throw providerFailure('Simulator sending is paused',423,{code:'SIMULATOR_PAUSED'});
   const fault=state?.faultMode||'none';
   if(fault==='timeout'){await wait(150);throw providerFailure('Simulated provider timeout',504);}
@@ -74,11 +75,12 @@ async function submitSimulatedMessage(config,body){
   const providerMessageId=`wamid.sim.${crypto.createHash('sha256').update(idempotencyKey).digest('hex').slice(0,24)}`;
   const result={messages:[{id:providerMessageId}],simulation:true,to:phone};
   const sequence=simulationStatusSequence({failure:Boolean(body?.simulate_failure)});
-  sequence.forEach((status,index)=>void postCallback({
+  const statusCallbacks=sequence.map((status,index)=>({payload:{
     id:`status:${providerMessageId}:${status}`,type:'message_status',message_id:providerMessageId,status,actor_id:body.actor_id,
     simulation_run_id:body.simulation_run_id||null,occurred_at:new Date(Date.now()+(index+1)*1000).toISOString()
-  },500+(index*250)).catch(reportCallbackFailure));
-  return result;
+  },delayMs:500+(index*250)}));
+  if(!deferCallbacks)statusCallbacks.forEach(item=>void postCallback(item.payload,item.delayMs).catch(reportCallbackFailure));
+  return deferCallbacks?{response:result,statusCallbacks}:result;
 }
 
 async function submitSimulatedTemplate(body){
@@ -115,16 +117,19 @@ export function createWhatsAppSimulatedProviderRoutes(){
   return r;
 }
 
-async function scopedConversation(id,broker){
-  const params=[id],role=broker.jobRole;
-  let where='c.id=$1';
-  if(role==='sales_agent'){params.push(broker.id);where+=' AND c.owner_agent_id=$2';}
-  else if(role==='manager'){const teams=[...(broker.managedTeamIds||[]),broker.teamId].filter(Boolean);params.push(teams);where+=' AND c.owner_team_id=ANY($2::uuid[])';}
-  return one(`SELECT c.* FROM wa_conversations c WHERE ${where} AND c.simulated=TRUE`,params);
+async function scopedConversation(id,broker,{client,forUpdate=false}={}){
+  const conversation=await selectConversationWithReplyLock(client,id,{forUpdate});
+  if(!conversation?.simulated)return undefined;
+  if(broker.jobRole==='sales_agent'&&String(conversation.ownerAgentId)!==String(broker.id))return undefined;
+  if(broker.jobRole==='manager'){
+    const teams=[...(broker.managedTeamIds||[]),broker.teamId].filter(Boolean).map(String);
+    if(!teams.includes(String(conversation.ownerTeamId)))return undefined;
+  }
+  return conversation;
 }
 
-async function submitInProcess(config,path,body){
-  if(path==='messages')return submitSimulatedMessage(config,body);
+async function submitInProcess(config,path,body,options){
+  if(path==='messages')return submitSimulatedMessage(config,body,options);
   if(path==='templates')return submitSimulatedTemplate(body);
   const eventPrefix='events/';
   if(path.startsWith(eventPrefix)){
@@ -148,7 +153,7 @@ export function createWhatsAppSimulationControlRoutes(){
       (SELECT COUNT(*)::int FROM wa_simulation_runs WHERE status<>'cleaned') AS active_runs
       FROM wa_conversations`);
     res.setHeader('Cache-Control','no-store');
-    res.json({provider:'simulated',environment:config.environment,enabled:config.enabled,externalNetwork:false,syntheticRange:`${config.syntheticPrefix}${'0'.repeat(config.syntheticDigits)}–${config.syntheticPrefix}${'9'.repeat(config.syntheticDigits)}`,state,counts,badge:'SIMULATED'});
+    res.json({provider:'simulated',environment:config.environment,enabled:config.enabled,externalNetwork:false,syntheticRange:`${config.syntheticPrefix}${'0'.repeat(config.syntheticDigits)}–${config.syntheticPrefix}${'9'.repeat(config.syntheticDigits)}`,replyLockTimeoutMinutes:whatsAppReplyLockConfig().timeoutMinutes,state,counts,badge:'SIMULATED'});
   });
   r.post('/admin/whatsapp-simulation/control',async(req,res)=>{
     if(req.broker.role!=='admin')return res.status(403).json({error:'Administrator access required'});
@@ -243,23 +248,36 @@ export function createWhatsAppSimulationControlRoutes(){
   r.post('/crm/whatsapp-workspace/conversations/:id/simulated-send',async(req,res)=>{
     if(req.broker.role!=='internal_broker'||!operational.has(req.broker.jobRole))return res.status(403).json({error:'Operational WhatsApp workspace access required'});
     const config=requireSimulation(req,res);if(!config)return;
-    const conversation=await scopedConversation(req.params.id,req.broker);
-    if(!conversation)return res.status(404).json({error:'Simulated conversation not found or outside your scope'});
-    const now=Date.now(),replyOpen=Boolean(conversation.lastCustomerMessageAt&&now-Date.parse(conversation.lastCustomerMessageAt)<=24*60*60*1000);
-    const templateVersionId=clean(req.body?.templateVersionId,36)||null,text=clean(req.body?.text,4096);
-    if(!replyOpen&&!templateVersionId)return res.status(409).json({error:'The 24-hour reply window is closed; select a simulated-approved template'});
-    if(replyOpen&&!text&&!templateVersionId)return res.status(400).json({error:'Enter reply text or select a template'});
-    if(templateVersionId){const template=await one(`SELECT v.id,v.body_text,v.simulated_provider_status,t.owner_team_id FROM wa_message_template_versions v JOIN wa_message_templates t ON t.id=v.template_id WHERE v.id=$1`,[templateVersionId]);if(!template||template.simulatedProviderStatus!=='approved'||String(template.ownerTeamId)!==String(conversation.ownerTeamId))return res.status(409).json({error:'Select a simulated-approved template from this team'});}
-    let payload;
-    try{
-      payload=buildSimulatedOutbound({to:conversation.normalizedPhone,type:templateVersionId?'template':'text',text,templateVersionId,actorId:req.broker.id,conversationId:conversation.id},config);
-      payload.idempotency_key=clean(req.body?.idempotencyKey,240)||payload.correlation_id;
-      payload.simulate_failure=req.body?.simulateFailure===true;
-    }catch(error){return res.status(error.statusCode||400).json({error:error.message,code:error.code});}
-    const response=await submitInProcess(config,'messages',payload),providerMessageId=response.messages?.[0]?.id;
-    if(!providerMessageId)return res.status(502).json({error:'Simulated provider response did not contain a message id'});
-    const recorded=await recordSimulatedOutbound({providerMessageId,conversationId:conversation.id,templateVersionId,text,type:templateVersionId?'template':'text',actorId:req.broker.id,payload});
-    res.status(202).json({provider:response,message:recorded,simulation:true});
+    const result=await transaction(async client=>{
+      const conversation=await scopedConversation(req.params.id,req.broker,{client,forUpdate:true});
+      if(!conversation)return{code:404,error:'Simulated conversation not found or outside your scope'};
+      let lockBefore;
+      try{lockBefore=assertReplySendAllowed(conversation,req.broker);}
+      catch(error){if(error.code==='WHATSAPP_REPLY_LOCK_HELD')return{code:409,error:error.message,response:error.responseBody};throw error;}
+      const now=Date.now(),replyOpen=Boolean(conversation.lastCustomerMessageAt&&now-Date.parse(conversation.lastCustomerMessageAt)<=24*60*60*1000);
+      const templateVersionId=clean(req.body?.templateVersionId,36)||null,text=clean(req.body?.text,4096);
+      if(!replyOpen&&!templateVersionId)return{code:409,error:'The 24-hour reply window is closed; select a simulated-approved template'};
+      if(replyOpen&&!text&&!templateVersionId)return{code:400,error:'Enter reply text or select a template'};
+      if(templateVersionId){const template=await one(`SELECT v.id,v.body_text,v.simulated_provider_status,t.owner_team_id FROM wa_message_template_versions v JOIN wa_message_templates t ON t.id=v.template_id WHERE v.id=$1`,[templateVersionId],client);if(!template||template.simulatedProviderStatus!=='approved'||String(template.ownerTeamId)!==String(conversation.ownerTeamId))return{code:409,error:'Select a simulated-approved template from this team'};}
+      let payload;
+      try{
+        payload=buildSimulatedOutbound({to:conversation.normalizedPhone,type:templateVersionId?'template':'text',text,templateVersionId,actorId:req.broker.id,conversationId:conversation.id},config);
+        payload.idempotency_key=clean(req.body?.idempotencyKey,240)||payload.correlation_id;
+        payload.simulate_failure=req.body?.simulateFailure===true;
+      }catch(error){return{code:error.statusCode||400,error:error.message,response:{error:error.message,code:error.code}};}
+      let submission;
+      try{submission=await submitInProcess(config,'messages',payload,{client,deferCallbacks:true});}
+      catch(error){return{code:error.statusCode||500,error:error.message,response:{error:error.message,code:error.code||'SIMULATED_PROVIDER_ERROR'}};}
+      const response=submission?.response,providerMessageId=response?.messages?.[0]?.id;
+      if(!providerMessageId)return{code:502,error:'Simulated provider response did not contain a message id'};
+      const recorded=await recordSimulatedOutbound({providerMessageId,conversationId:conversation.id,templateVersionId,text,type:templateVersionId?'template':'text',actorId:req.broker.id,payload},{client,auditAccepted:false});
+      const refreshed=recorded.duplicate?{refreshed:false,state:lockBefore}:await refreshReplyLockAfterSend(client,conversation,req.broker);
+      if(!recorded.duplicate)await audit('WhatsAppConversation',conversation.id,'simulated_outbound_accepted',req.broker.id,{providerMessageId,messageId:recorded.messageId,simulation:true,replyLockRefreshed:refreshed.refreshed,replyLockExpiresAt:refreshed.refreshed?refreshed.state.expiresAt:null},client);
+      return{provider:response,message:recorded,replyLock:refreshed.state,replyLockRefreshed:refreshed.refreshed,statusCallbacks:recorded.duplicate?[]:submission.statusCallbacks};
+    });
+    if(result.error)return res.status(result.code).json(result.response||{error:result.error});
+    for(const item of result.statusCallbacks)void postCallback(item.payload,item.delayMs).catch(reportCallbackFailure);
+    res.status(202).json({provider:result.provider,message:result.message,replyLock:result.replyLock,replyLockRefreshed:result.replyLockRefreshed,simulation:true});
   });
   r.post('/crm/whatsapp-workspace/campaigns/:id/simulated-send',async(req,res)=>{
     if(req.broker.role!=='internal_broker'||!['manager','director'].includes(req.broker.jobRole))return res.status(403).json({error:'Manager or Director approval is required to launch a simulated campaign'});
