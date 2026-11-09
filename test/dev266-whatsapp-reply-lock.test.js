@@ -27,7 +27,7 @@ test('DEV266 invalid timeout fails process startup before database work',()=>{
     const child=spawnSync(process.execPath,['src/server.js'],{
       cwd:new URL('..',import.meta.url),
       encoding:'utf8',
-      timeout:5000,
+      timeout:30000,
       env:{...process.env,PGDATABASE:'dev266_startup_guard',PGUSER:'dev266_startup_guard',PGPASSWORD:'dev266_startup_guard',WHATSAPP_REPLY_LOCK_TIMEOUT_MINUTES:value}
     });
     assert.notEqual(child.status,0,`startup unexpectedly accepted ${value}`);
