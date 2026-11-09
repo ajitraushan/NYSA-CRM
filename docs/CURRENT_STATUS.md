@@ -1,5 +1,26 @@
 # NYSA CORE Current Status
 
+## DEV265 CRM Test acceptance and handoff — 9 November 2026
+
+- Ajit accepted CRM Test `2.1.0-dev.265`, candidate commit
+  `ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8`, with migration 169 recorded.
+- The full schema contract is restored and verified: 975 foreign keys, 18
+  primary keys, 15 unique constraints, 404 indexes, 303 public tables and 108
+  enabled governed triggers across 93 tables.
+- Separately approved Phases A run 2, B, C and D passed. Health/readiness are
+  green and the accepted evidence shows exactly one command/CWD-verified
+  exact-root worker. The scoped app/database rollback point and every receipt
+  hash are recorded in
+  `release-artifacts/dev265-preparation/DEV265_ACCEPTANCE.md`.
+- Ajit accepted E2E E-1 through E-4. The corrected E-3a rollback-only rerun
+  proved `tasks_lead_id_fkey`; no E2E row persisted.
+- Carry forward: operator receipt schema counts are empty despite a matching
+  contract; the two Offer integration-test defects are pre-existing; and D-01
+  through D-12 plus WN/WL WhatsApp cases remain deferred.
+- Production, website, REM, Meta, 360dialog and live messaging were unchanged.
+  Any later hosted operation still requires exact approval and all mandatory
+  worker/operator controls in `AGENTS.md` and `CRM_CHANGE_POLICY.md`.
+
 ## Release 2.5 release-candidate consolidation local build — 2026-07-25
 
 - Version `2.0.0-dev.44` prevents rejected or inactive duplicate Customers from submitting KYC

@@ -1,0 +1,80 @@
+{
+  "schema": "nysa.dev265.acceptance-receipt-hashes.v1",
+  "generatedAt": "2026-11-09T18:57:25.7712615Z",
+  "generator": "PowerShell Get-FileHash SHA256 with phase/result assertions",
+  "candidate": {
+    "version": "2.1.0-dev.265",
+    "commit": "ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8",
+    "packageSha256": "99166cabaa57e7f69320a207e84b166e5a4957a12bf004572fc705fdc0e9ad2a",
+    "manifestSha256": "4184c3600b04eb72150c1d88e5b4033933b14f2e17a3108f940f59b75e61ca37"
+  },
+  "receipts": [
+    {
+      "path": "run2/STAGE_RESULT.json",
+      "bytes": 8463,
+      "sha256": "741e258e01f65a66fdefd7e4cfd2fac7e141297f4555c01be582e15fc956e2de"
+    },
+    {
+      "path": "run2/BACKUP_RESULT.json",
+      "bytes": 17104,
+      "sha256": "7a46ec873c2fe34dd4bccec4b3ccedaa567747467b564195b895087173f6f04f"
+    },
+    {
+      "path": "run2/SCOPED_BACKUP_VERIFIED.json",
+      "bytes": 9080,
+      "sha256": "3404e2ab53ed31fbfd49cbbe2dbc6b33559a473b26444c21ab0170a86e070fd7"
+    },
+    {
+      "path": "run2/INSTALL_RESULT.json",
+      "bytes": 15931,
+      "sha256": "0681d4023185ccf04b215b7b69f3871cf63bc23e6f5be46388523cfd08db814f"
+    },
+    {
+      "path": "run2/SMOKE_RESULT.json",
+      "bytes": 5097,
+      "sha256": "5f560a56a9261971e9e7353cd01557c06320be6f7a722e72c0886dc4a6b8ec55"
+    },
+    {
+      "path": "e2e/dev265-e2e-db-checks-rollback.sql",
+      "bytes": 4855,
+      "sha256": "225acb3c7128a1154549f3f82fd330302beb8f6eea4427c481b08d1b7d88098f"
+    },
+    {
+      "path": "e2e/DEV265_E2E_DB.txt",
+      "bytes": 1435,
+      "sha256": "e001881fe2152b784d21cd3c0c19db8d636b99458e424e7aee09f8eca5c89f49"
+    },
+    {
+      "path": "e2e/dev265-e2e-e3a-rollback.sql",
+      "bytes": 1621,
+      "sha256": "6db9a5134a9ae8abff7588f13e4cc32db2b35c5bd2d9a2c41a812eabf0398a3c"
+    },
+    {
+      "path": "e2e/DEV265_E2E_E3A.txt",
+      "bytes": 588,
+      "sha256": "1bd16aac42edd99a435d38fccd72329e32285c6d4c8e61d60588b1d50ee6751f"
+    }
+  ],
+  "backupArtifacts": {
+    "appArchiveSha256": "706b529aa96449334e323c14d6580aedfbc86fef19e3a29cca3d79d0c38e05b2",
+    "databaseDumpSha256": "a99fbaa179acf3ea68410c1ffa85a204e84fee7213990e2d094189ae4544a533",
+    "database": "nysareal_nysa_dev247_smoke",
+    "tableCount": 303,
+    "triggerCount": 108,
+    "verifiedAt": "2026-11-06T08:10:30.405Z"
+  },
+  "assertions": {
+    "stage": "STAGED_AND_VERIFIED",
+    "backup": "SCOPED_BACKUP_VERIFIED",
+    "install": "INSTALLED_STARTED_AND_READY",
+    "smoke": "SETTLED_SMOKE_PASSED",
+    "version": "2.1.0-dev.265",
+    "database": "ready",
+    "workerCount": 1,
+    "migrationCount": 169,
+    "tableCount": 303,
+    "triggerCount": 108,
+    "schemaContractMatches": true,
+    "correctedE3a": "PASS_AND_ROLLED_BACK"
+  }
+}

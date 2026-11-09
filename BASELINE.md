@@ -1,5 +1,45 @@
 # CRM Development Baseline
 
+## DEV265 accepted CRM Test baseline — 9 November 2026
+
+- CRM Test is accepted on `2.1.0-dev.265`, candidate commit
+  `ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8`, migration 169 and 303 public
+  tables. The database is ready and the complete canonical schema contract
+  matches after restoration of 975 foreign keys, 18 primary keys, 15 unique
+  constraints and 404 indexes. The governed trigger contract remains 108
+  enabled triggers across 93 tables.
+- Migration 169 deleted exactly the 12 synthetic UAT264 simulator messages and
+  five synthetic UAT264 notifications approved for cleanup, wrote its governed
+  audit evidence, restored the contract in one transaction and verified the
+  final state. No customer/business record was removed.
+- All four separately approved hosted phases passed. Phase D completed with
+  eight expected HTTP results, database readiness green and exactly one
+  command/CWD-verified worker for
+  `/home/nysareal/nysa-core-dashboard-dd6262a-stage`. The mandatory worker and
+  hosted-deployment controls in `AGENTS.md` and `CRM_CHANGE_POLICY.md` remain
+  acceptance criteria for every later release.
+- The verified scoped rollback point is
+  `/home/nysareal/crm-release-preparation/20261106-dev265-run2/scoped-backup-dev265-phased-run2-d7a5a34`.
+  Application archive SHA-256 is
+  `706b529aa96449334e323c14d6580aedfbc86fef19e3a29cca3d79d0c38e05b2`;
+  database dump SHA-256 is
+  `a99fbaa179acf3ea68410c1ffa85a204e84fee7213990e2d094189ae4544a533`.
+  The dump verified all 303 table names and 108 triggers. No database restore
+  was run.
+- Ajit accepted E2E E-1 through E-4. E-3a passed through the separately
+  approved corrected rollback-only fixture with SQLSTATE 23503 on
+  `tasks_lead_id_fkey`; all database E2E scripts ended in `ROLLBACK`.
+- Acceptance evidence and script-generated receipt hashes are recorded in
+  `release-artifacts/dev265-preparation/DEV265_ACCEPTANCE.md` and
+  `DEV265_ACCEPTANCE_RECEIPT_HASHES.json`.
+- Known limitations remain open: operator receipt schema summaries omit
+  expected/observed object counts even though the full contract reports
+  `matches: true`; two Offer integration-test defects are proven pre-existing;
+  and D-01 through D-12, WN-01 through WN-16 and WL-01 through WL-05 remain
+  deferred.
+- Production, website, REM, Meta, 360dialog and live messaging were unchanged.
+  This acceptance does not authorize another CRM Test or production operation.
+
 ## DEV264 accepted CRM Test baseline — 5 November 2026
 
 - CRM Test is accepted on `2.1.0-dev.264`, commit
