@@ -12,6 +12,7 @@ test('DEV267 deploy config generator binds files, contracts and the accepted bas
   assert.match(source,/expectedTriggerContractSha256:triggers\.canonicalSha256/);
   assert.match(source,/schemaContractHelperSha256:sha256Lf/);
   assert.match(source,/allHashFields64Hex:true,allNamedFilesMatch:true/);
+  assert.match(source,/for\(const name of \['output','proofOutput'\]\).*path already exists/);
   assert.match(source,/atomicWrite\(files\.output/);
   assert.doesNotMatch(source,/DEV267_DEPLOY_CONFIG/);
 });

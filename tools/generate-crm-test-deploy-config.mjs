@@ -42,7 +42,11 @@ const files={
   triggerContract:resolveRepo(spec.expectedTriggerContract||'src/database-trigger-contract.json'),
   schemaHelper:resolveRepo(spec.schemaContractHelper||'tools/database-schema-contract.mjs')
 };
-for(const [name,file] of Object.entries(files))if(!fs.existsSync(file))fail(`${name} file is unavailable: ${repoPath(file)}`);
+for(const name of ['sourceConfig','package','manifest','baselineManifest','expectedManifest','expectedColumns','triggerContract','schemaHelper']){
+  const file=files[name];
+  if(!fs.existsSync(file))fail(`${name} file is unavailable: ${repoPath(file)}`);
+}
+for(const name of ['output','proofOutput'])if(fs.existsSync(files[name]))fail(`${name} path already exists: ${repoPath(files[name])}`);
 
 const source=JSON.parse(fs.readFileSync(files.sourceConfig,'utf8'));
 const manifest=JSON.parse(fs.readFileSync(files.manifest,'utf8'));
