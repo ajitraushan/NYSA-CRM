@@ -125,6 +125,10 @@ jobs:
           exec node "$GITHUB_WORKSPACE/tools/dev267-pg13-selector-stub.mjs" "\$@"
           SH
           chmod +x /tmp/nysa-rehearsal-bin/cloudlinux-selector
+          # Shared hosting always has other account processes.  Keep one
+          # non-Node, non-marker process so `ps -u nysareal` remains a valid
+          # empty-worker inventory after the exact CRM worker is stopped.
+          sudo -u nysareal -H nohup sleep 600 >/tmp/dev267-rehearsal-account-sentinel.log 2>&1 &
           sudo -u nysareal -H env NYSA_REHEARSAL_IDLE_WORKER=true \
             nohup node /tmp/dev267-pg13-worker.mjs "$HOST_ROOT" \
             >/tmp/dev267-rehearsal-baseline-worker.log 2>&1 &
