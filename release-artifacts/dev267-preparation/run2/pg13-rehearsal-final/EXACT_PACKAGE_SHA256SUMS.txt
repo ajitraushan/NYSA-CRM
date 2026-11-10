@@ -1,0 +1,2 @@
+62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc  release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.zip
+dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f  release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.json

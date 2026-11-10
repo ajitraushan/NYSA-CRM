@@ -1,0 +1,2 @@
+{"component":"nysa-core-runtime","event":"starting","pid":4252}
+{"component":"nysa-core-runtime","event":"listening","pid":4252}

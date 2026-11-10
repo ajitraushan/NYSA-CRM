@@ -1,0 +1,11 @@
+{
+  "schema": "nysa.dev267.pg13-rehearsal-config.v1",
+  "candidateCommit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+  "operatorCommit": "63ad3c5595d7e7d58296641351b47ac623ef8071",
+  "operatorSha256": "5af8bbc8b18cfe8afee8d281913911a105150f3b111dba5c0ec04081da029911",
+  "configSha256": "031c7d9571dcbebb489cc48c3460265dd9e599c4017c3af4b44151f35d3ba92f",
+  "packageSha256": "62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc",
+  "manifestSha256": "dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f",
+  "database": "nysa_test_fixture",
+  "role": "nysa_test_user"
+}

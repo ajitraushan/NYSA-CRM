@@ -1,0 +1,11 @@
+2026-11-10T20:52:10.567Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:10.654Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:26.042Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:39.903Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:40.032Z {"action":"stop","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:40.065Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:40.108Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:40.153Z {"action":"get","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:40.789Z {"action":"set","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:54.506Z {"action":"start","stateFile":"/tmp/dev267-selector-state.json","workerFile":"/tmp/dev267-pg13-worker.mjs"}
+2026-11-10T20:52:54.509Z {"action":"start-spawned","pid":4252,"root":"/home/nysareal/nysa-core-dashboard-dd6262a-stage","workerFile":"/tmp/dev267-pg13-worker.mjs"}

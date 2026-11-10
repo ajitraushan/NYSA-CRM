@@ -1,0 +1,105 @@
+13.23 (Debian 13.23-1.pgdg13+1)
+{
+  "schema": "nysa.dev267.pg13-operator-rehearsal.v1",
+  "mode": "prepare",
+  "sourceRoot": "/tmp/dev267-candidate-source",
+  "sourceProvenance": {
+    "schema": "nysa.release-provenance.v1",
+    "repositoryUrl": "https://github.com/ajitraushan/NYSA-CRM.git",
+    "remote": "origin",
+    "commit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+    "tree": "b7ea932a35e500a3312fa84f1532c02d85c8ba65",
+    "advertisedRefs": [
+      "refs/heads/codex/dev267-run2-candidate"
+    ],
+    "sourceRef": "refs/heads/codex/dev267-run2-candidate",
+    "version": "2.1.0-dev.267",
+    "migrationCount": 170,
+    "latestMigration": "170_prospect_diary.sql",
+    "testReceipt": {
+      "command": "node tools/run-release-tests.mjs",
+      "startedAt": "2026-11-10T20:01:39.556Z",
+      "completedAt": "2026-11-10T20:02:07.092Z",
+      "tests": 1683,
+      "passed": 1578,
+      "failed": 0,
+      "skipped": 105,
+      "outputSha256": "d51dc60f21d6bffc8bc2f6c9cb4047d22147c453952c5c733ea3ab8fe2bd0947",
+      "includedFiles": 322,
+      "excludedHistoricalArtifactFiles": 94,
+      "includedFilesSha256": "b7729f11cde4de2ba9f6715e5a90078e954e73b4143388f319c34a68d72025ae",
+      "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+    }
+  },
+  "postgresqlVersion": "13.23 (Debian 13.23-1.pgdg13+1)",
+  "database": "nysa_test_fixture",
+  "role": "nysa_test_user",
+  "ledger": {
+    "count": 169,
+    "latest": "169_restore_full_schema_contract.sql"
+  },
+  "tableCount": 303,
+  "triggerCount": 108,
+  "expectedState": {
+    "migrations": 169,
+    "tables": 303,
+    "triggers": 108
+  },
+  "schemaContract": {
+    "manifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+    "triggerContractSha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4",
+    "matches": true,
+    "objects": {
+      "constraints": {
+        "expected": 2704,
+        "observed": 2704,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "indexes": {
+        "expected": 956,
+        "observed": 956,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "columns": {
+        "expected": 4043,
+        "observed": 4043,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "functions": {
+        "expected": 50,
+        "observed": 50,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "sequencesViews": {
+        "expected": 7,
+        "observed": 7,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "triggers": {
+        "expected": 108,
+        "observed": 108,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      }
+    }
+  },
+  "passed": true,
+  "completedAt": "2026-11-10T20:51:50.616Z"
+}
