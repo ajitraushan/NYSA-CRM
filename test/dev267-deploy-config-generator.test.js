@@ -15,3 +15,11 @@ test('DEV267 deploy config generator binds files, contracts and the accepted bas
   assert.match(source,/atomicWrite\(files\.output/);
   assert.doesNotMatch(source,/DEV267_DEPLOY_CONFIG/);
 });
+
+test('governed release tests use explicit non-production PostgreSQL placeholders when ambient values are absent',()=>{
+  const source=read('tools/run-release-tests.mjs');
+  assert.match(source,/PGDATABASE:process\.env\.PGDATABASE\|\|'nysa_release_test_contract'/);
+  assert.match(source,/PGUSER:process\.env\.PGUSER\|\|'nysa_release_test_contract'/);
+  assert.match(source,/PGPASSWORD:process\.env\.PGPASSWORD\|\|'nysa-release-test-contract-only'/);
+  assert.match(source,/env:testEnvironment/);
+});
