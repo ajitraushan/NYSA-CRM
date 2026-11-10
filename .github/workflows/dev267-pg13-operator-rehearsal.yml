@@ -1,0 +1,196 @@
+name: dev267-pg13-operator-rehearsal
+on:
+  push:
+    branches: ['codex/dev267-prospect-diary']
+    paths:
+      - '.github/workflows/dev267-pg13-operator-rehearsal.yml'
+      - 'tools/dev267-pg13-*.mjs'
+      - 'release-artifacts/dev267-preparation/run2/DEV267_DEPLOY_CONFIG.json'
+  workflow_dispatch:
+
+jobs:
+  phases-a-b-c:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13.23
+        env:
+          POSTGRES_PASSWORD: postgres-fixture-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: nysa_test_fixture
+      PGUSER: nysa_test_user
+      PGPASSWORD: nysa_test_password
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      CANDIDATE_COMMIT: d9133a980390fe375af36ef415b84e2f4f4fda4e
+      OPERATOR_COMMIT: 63ad3c5595d7e7d58296641351b47ac623ef8071
+      OPERATOR_SHA256: 5af8bbc8b18cfe8afee8d281913911a105150f3b111dba5c0ec04081da029911
+      PACKAGE_SHA256: 62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc
+      MANIFEST_SHA256: dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f
+      HOST_ROOT: /home/nysareal/nysa-core-dashboard-dd6262a-stage
+      PREP_ROOT: /home/nysareal/crm-release-preparation/20261110-dev267-run2-rehearsal
+      HOST_TOOLS: /home/nysareal/crm-deployment-tools/tools
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - run: npm ci
+
+      - name: Create restricted PostgreSQL 13.23 fixture
+        env: { PGPASSWORD: postgres-fixture-admin }
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
+          CREATE ROLE nysa_test_user LOGIN PASSWORD 'nysa_test_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+          CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
+          SQL
+          psql -X -Atc "SELECT current_setting('server_version');"
+
+      - name: Rebuild and verify exact DEV267 origin package
+        run: |
+          mkdir -p release-artifacts/origin/dev267-run2-ci release-artifacts/dev267-preparation/run2/rehearsal
+          npm run release:package -- --commit "$CANDIDATE_COMMIT" --output release-artifacts/origin/dev267-run2-ci
+          ZIP=release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.zip
+          MANIFEST=release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.json
+          test "$(sha256sum "$ZIP" | cut -d' ' -f1)" = "$PACKAGE_SHA256"
+          test "$(sha256sum "$MANIFEST" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          npm run release:verify-package -- "$ZIP" "$MANIFEST" release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.sha256.txt
+          mkdir /tmp/dev267-candidate-source
+          unzip -q "$ZIP" -d /tmp/dev267-candidate-source
+          sha256sum "$ZIP" "$MANIFEST" | tee release-artifacts/dev267-preparation/run2/rehearsal/EXACT_PACKAGE_SHA256SUMS.txt
+
+      - name: Prepare exact DEV266 database state and verify baseline contract
+        run: |
+          {
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node tools/dev267-pg13-fixture-rehearsal.mjs \
+              --mode prepare \
+              --source-root /tmp/dev267-candidate-source \
+              --output release-artifacts/dev267-preparation/run2/rehearsal/PHASE_AB_BASELINE_PG13.json
+          } 2>&1 | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_AB_BASELINE_PG13.txt
+
+      - name: Prepare isolated CloudLinux-shaped rehearsal layout
+        run: |
+          sudo useradd -m nysareal
+          sudo mkdir -p "$HOST_ROOT" "$HOST_TOOLS" "$PREP_ROOT" /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules
+          git archive 1abd17771a5dda3be4b5108a6453e70438ad3ed0 | sudo tar -x -C "$HOST_ROOT"
+          printf '%s\n' '{"schema":"nysa.release-provenance.v1","version":"2.1.0-dev.266","commit":"1abd17771a5dda3be4b5108a6453e70438ad3ed0"}' | sudo tee "$HOST_ROOT/RELEASE_PROVENANCE.json" >/dev/null
+          PACKAGE_HASH=$(sha256sum "$HOST_ROOT/package.json" | cut -d' ' -f1)
+          printf '%s  package.json\n' "$PACKAGE_HASH" | sudo tee "$HOST_ROOT/RUNTIME_MANIFEST.sha256" >/dev/null
+          sudo cp -a node_modules/. /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules/
+          sudo ln -s /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules "$HOST_ROOT/node_modules"
+          for file in crm-test-direct-node-release-operator.mjs hosted-worker-lifecycle.mjs crm-test-backup-verification.mjs database-trigger-contract.mjs database-schema-contract.mjs; do
+            sudo cp "tools/$file" "$HOST_TOOLS/$file"
+          done
+          test "$(sudo sha256sum "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" | cut -d' ' -f1)" = "$OPERATOR_SHA256"
+          sudo cp release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.zip "$PREP_ROOT/"
+          sudo cp release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.json "$PREP_ROOT/"
+          sudo mkdir -p "$PREP_ROOT/evidence"
+          sudo chown -R runner:runner /home/nysareal/crm-release-preparation /home/nysareal/nysa-core-dashboard-dd6262a-stage
+          sudo chmod -R a+rX /home/nysareal/nodevenv /home/nysareal/crm-deployment-tools
+
+      - name: Generate fixture-bound operator config and selector state
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const source=JSON.parse(fs.readFileSync('release-artifacts/dev267-preparation/run2/DEV267_DEPLOY_CONFIG.json','utf8'));
+          const prep=process.env.PREP_ROOT;
+          const config={...source,
+            base:`${prep}/evidence`,candidate:`${prep}/candidate`,
+            zip:`${prep}/nysa-core-2.1.0-dev.267-origin.zip`,manifest:`${prep}/nysa-core-2.1.0-dev.267-origin.manifest.json`,
+            expectedDatabase:'nysa_test_fixture',expectedRole:'nysa_test_user',
+          };
+          fs.writeFileSync(`${prep}/DEV267_REHEARSAL_CONFIG.json`,JSON.stringify(config,null,2)+'\n');
+          const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+          const receipt={schema:'nysa.dev267.pg13-rehearsal-config.v1',candidateCommit:config.commit,operatorCommit:config.operatorCommit,operatorSha256:process.env.OPERATOR_SHA256,configSha256:hash(`${prep}/DEV267_REHEARSAL_CONFIG.json`),packageSha256:hash(config.zip),manifestSha256:hash(config.manifest),database:config.expectedDatabase,role:config.expectedRole};
+          fs.writeFileSync('release-artifacts/dev267-preparation/run2/rehearsal/REHEARSAL_IDENTITIES.json',JSON.stringify(receipt,null,2)+'\n');
+          NODE
+          cat > /tmp/dev267-selector-state.json <<JSON
+          {"root":"$HOST_ROOT","domain":"crm-test.nysarealty.com","app_status":"started","env_vars":{"PGHOST":"127.0.0.1","PGPORT":"5432","PGDATABASE":"nysa_test_fixture","PGUSER":"nysa_test_user","PGPASSWORD":"nysa_test_password","PORT":"3000","NODE_ENV":"production","WHATSAPP_SANDBOX_ENABLED":"false","WHATSAPP_SANDBOX_CALLBACK_APPROVED":"false"}}
+          JSON
+          mkdir /tmp/nysa-rehearsal-bin
+          cat > /tmp/nysa-rehearsal-bin/cloudlinux-selector <<'SH'
+          #!/bin/sh
+          exec node "$GITHUB_WORKSPACE/tools/dev267-pg13-selector-stub.mjs" "$@"
+          SH
+          chmod +x /tmp/nysa-rehearsal-bin/cloudlinux-selector
+
+      - name: Rehearse actual fixed operator Phase A
+        env:
+          NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
+          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+        run: |
+          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+            NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
+            node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
+              --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \
+              --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
+              --phase stage --approved "$CANDIDATE_COMMIT:stage" \
+            | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_A_OPERATOR_RAW.txt
+          test "$(jq -r .result "$PREP_ROOT/evidence/STAGE_RESULT.json")" = STAGED_AND_VERIFIED
+
+      - name: Rehearse actual fixed operator Phase B local backup
+        env:
+          NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
+          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+        run: |
+          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+            NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
+            node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
+              --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \
+              --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
+              --phase backup --approved "$CANDIDATE_COMMIT:backup" \
+            | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_B_OPERATOR_RAW.txt
+          test "$(jq -r .result "$PREP_ROOT/evidence/BACKUP_RESULT.json")" = SCOPED_BACKUP_VERIFIED
+
+      - name: Start isolated TLS front door
+        run: |
+          echo '127.0.0.1 crm-test.nysarealty.com' | sudo tee -a /etc/hosts
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=crm-test.nysarealty.com' -keyout /tmp/dev267.key -out /tmp/dev267.crt >/dev/null 2>&1
+          sudo -E nohup node tools/dev267-pg13-tls-proxy.mjs /tmp/dev267.key /tmp/dev267.crt >/tmp/dev267-proxy.log 2>&1 &
+          sleep 1
+          grep -F 'DEV267 rehearsal TLS proxy ready' /tmp/dev267-proxy.log
+
+      - name: Rehearse actual fixed operator Phase C
+        env:
+          NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
+          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+        run: |
+          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+            NODE_TLS_REJECT_UNAUTHORIZED=0 NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
+            node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
+              --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \
+              --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
+              --phase install --approved "$CANDIDATE_COMMIT:install" \
+            | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_OPERATOR_RAW.txt
+          test "$(jq -r .result "$PREP_ROOT/evidence/INSTALL_RESULT.json")" = INSTALLED_STARTED_AND_READY
+          {
+            psql -X -Atc "SELECT current_setting('server_version');"
+            node tools/dev267-pg13-fixture-rehearsal.mjs \
+              --mode verify-postinstall \
+              --source-root /tmp/dev267-candidate-source \
+              --output release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_POSTINSTALL_PG13.json
+          } 2>&1 | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_POSTINSTALL_PG13.txt
+
+      - name: Collect and hash rehearsal receipts
+        if: always()
+        run: |
+          sudo chown -R runner:runner "$PREP_ROOT" || true
+          for file in STAGE_RESULT.json BACKUP_RESULT.json INSTALL_RESULT.json; do
+            test -f "$PREP_ROOT/evidence/$file" && cp "$PREP_ROOT/evidence/$file" "release-artifacts/dev267-preparation/run2/rehearsal/$file"
+          done
+          test -f "$PREP_ROOT/scoped-backup-dev267-pg13/SCOPED_BACKUP_VERIFIED.json" && cp "$PREP_ROOT/scoped-backup-dev267-pg13/SCOPED_BACKUP_VERIFIED.json" release-artifacts/dev267-preparation/run2/rehearsal/
+          sha256sum release-artifacts/dev267-preparation/run2/rehearsal/* | tee release-artifacts/dev267-preparation/run2/rehearsal/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev267-pg13-operator-rehearsal
+          path: release-artifacts/dev267-preparation/run2/rehearsal/
+          if-no-files-found: error

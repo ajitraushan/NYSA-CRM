@@ -1,0 +1,91 @@
+{
+  "schema": "nysa.crm-test.deploy-config-verification.v1",
+  "generatedAt": "2026-11-10T20:02:41.247Z",
+  "spec": "release-artifacts/dev267-preparation/run2/DEV267_CONFIG_SPEC.json",
+  "config": "release-artifacts/dev267-preparation/run2/DEV267_DEPLOY_CONFIG.json",
+  "configSha256": "809e4d84168f39bc43613f5ca28ce15b4fbc6893cba30d18fd397464ba9829b9",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.zip",
+      "configured": "62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc",
+      "actual": "62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.json",
+      "configured": "dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f",
+      "actual": "dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "src/database-schema-baseline/manifest.json",
+      "configured": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "actual": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineTriggerContractFileSha256": {
+      "file": "src/database-schema-baseline/database-trigger-contract.json",
+      "configured": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4",
+      "actual": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4",
+      "comparison": "raw file SHA-256 pinned by baseline manifest",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "src/database-schema-contract/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedTriggerContractSha256": {
+      "file": "src/database-trigger-contract.json",
+      "configured": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "actual": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "comparison": "SHA-256(JSON.stringify(triggers))",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "database": {
+    "baselineMigrationCount": 169,
+    "expectedMigrationCount": 170,
+    "expectedTableCount": 303,
+    "expectedPostTableCount": 306,
+    "baselineTriggerCount": 108,
+    "expectedTriggerCount": 111
+  },
+  "tests": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-10T20:01:39.556Z",
+    "completedAt": "2026-11-10T20:02:07.092Z",
+    "tests": 1683,
+    "passed": 1578,
+    "failed": 0,
+    "skipped": 105,
+    "outputSha256": "d51dc60f21d6bffc8bc2f6c9cb4047d22147c453952c5c733ea3ab8fe2bd0947",
+    "includedFiles": 322,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "b7729f11cde4de2ba9f6715e5a90078e954e73b4143388f319c34a68d72025ae",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  },
+  "candidate": {
+    "version": "2.1.0-dev.267",
+    "commit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+    "packageSha256": "62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc",
+    "manifestSha256": "dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f"
+  }
+}
