@@ -53,6 +53,18 @@ try{
   await client.end();
 }
 
-const run=spawnSync(process.execPath,['--test','--test-isolation=none','test/dev267-prospect-diary.integration.test.js'],{cwd:process.cwd(),env:{...process.env,NYSA_PROSPECT_DIARY_TEST:'local-synthetic'},encoding:'utf8'});
-process.stdout.write(run.stdout||'');process.stderr.write(run.stderr||'');
-if(run.status!==0)process.exit(run.status??1);
+const integrationRuns=[
+  {file:'test/dev267-prospect-diary.integration.test.js',flag:'NYSA_PROSPECT_DIARY_TEST'},
+  {file:'test/dev267-shared-suppression.integration.test.js',flag:'NYSA_DEV267_SHARED_SUPPRESSION_TEST'},
+  {file:'test/dev267-whatsapp-da-regression.integration.test.js',flag:'NYSA_DEV267_DA_TEST'},
+  {file:'test/whatsapp-workspace.integration.test.js',flag:'NYSA_WA_STAGE_B_DB_TEST'},
+  {file:'test/whatsapp-simulated-provider.integration.test.js',flag:'NYSA_WA_SIM_DB_TEST'}
+];
+for(const item of integrationRuns){
+  process.stdout.write(`DEV267 PostgreSQL 13.23 integration: ${item.file}\n`);
+  const run=spawnSync(process.execPath,['--test','--test-isolation=none',item.file],{
+    cwd:process.cwd(),env:{...process.env,[item.flag]:'local-synthetic'},encoding:'utf8'
+  });
+  process.stdout.write(run.stdout||'');process.stderr.write(run.stderr||'');
+  if(run.status!==0)process.exit(run.status??1);
+}

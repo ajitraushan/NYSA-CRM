@@ -8,15 +8,15 @@ import {parsePgRestoreListContracts} from '../tools/crm-test-backup-verification
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const contract=JSON.parse(read('src/database-trigger-contract.json'));
 
-test('DEV264 publishes the exact final migration trigger catalogue',()=>{
+test('the cumulative release publishes the exact current migration trigger catalogue',()=>{
   assert.equal(contract.schema,'nysa.database-trigger-contract.v1');
-  assert.equal(contract.generatedFrom.migrationCount,167);
-  assert.equal(contract.generatedFrom.latestMigration,'167_whatsapp_simulator_fault_contract.sql');
-  assert.equal(contract.triggerCount,108);
-  assert.equal(contract.tableCount,93);
-  assert.equal(contract.triggers.length,108);
-  assert.equal(new Set(contract.triggers.map(item=>`${item.table}\0${item.name}`)).size,108);
-  assert.equal(new Set(contract.triggers.map(item=>item.table)).size,93);
+  assert.equal(contract.generatedFrom.migrationCount,170);
+  assert.equal(contract.generatedFrom.latestMigration,'170_prospect_diary.sql');
+  assert.equal(contract.triggerCount,111);
+  assert.equal(contract.tableCount,95);
+  assert.equal(contract.triggers.length,111);
+  assert.equal(new Set(contract.triggers.map(item=>`${item.table}\0${item.name}`)).size,111);
+  assert.equal(new Set(contract.triggers.map(item=>item.table)).size,95);
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(contract.triggers)).digest('hex'),contract.canonicalSha256);
   for(const item of contract.triggers){
     assert.match(item.table,/^[a-z0-9_]+$/);

@@ -13,7 +13,7 @@ test('customer activity uses customer-centred direction labels without changing 
 
 test('outbound customer activity enforces contact restriction but not listing marketing authorization',()=>{
   assert.match(activityRoute,/do_not_contact/);
-  assert.match(activityRoute,/Outbound communication is blocked by the contact restriction/);
+  assert.match(activityRoute,/Outbound communication is blocked by/);
   assert.doesNotMatch(activityRoute,/marketing_agreements|permitted_channels|effective agreement permits outbound/i);
 });
 

@@ -66,7 +66,7 @@ test('DEV262 source wires an isolated provider, webhook, audit, badges, generato
   assert.match(route,/timeout/);assert.match(route,/rate_limited/);assert.match(route,/server_error/);assert.match(route,/invalid_number/);assert.match(route,/invalid_payload/);assert.match(route,/template_paused/);
   assert.match(route,/simulate_failure=req\.body\?\.simulateFailure===true/);
   assert.match(store,/provider_event_id.*UNIQUE|ON CONFLICT\(provider_event_id\)/s);
-  assert.match(store,/wa_contact_suppressions/);assert.match(store,/ctwa_entry_at/);assert.match(store,/cleanupAllSimulatedRecords/);assert.match(store,/ensureSimulatedCampaignConversation/);
+  assert.match(store,/recordContactSuppression/);assert.match(store,/ctwa_entry_at/);assert.match(store,/cleanupAllSimulatedRecords/);assert.match(store,/ensureSimulatedCampaignConversation/);
   assert.match(migration,/simulated BOOLEAN NOT NULL DEFAULT FALSE/);assert.match(migration,/payload_hash/);assert.match(migration,/wa_simulation_runs/);
   assert.match(faultMigration,/invalid_number/);assert.match(faultMigration,/wa_simulated_provider_control_fault_mode_check/);
   assert.match(ui,/SIMULATED PROVIDER/);assert.match(ui,/data-template-simulate/);assert.match(ui,/data-campaign-simulate/);assert.match(ui,/wa-simulated-reply/);
