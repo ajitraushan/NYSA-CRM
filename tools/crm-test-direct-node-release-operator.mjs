@@ -107,7 +107,16 @@ async function schemaContractComparison(pool,kind,label){
   if(!['baseline','canonical'].includes(kind))throw Error('Unknown schema-contract kind');
   const directory=kind==='baseline'?'database-schema-baseline':'database-schema-contract';
   const expectedManifestHash=kind==='baseline'?config.baselineSchemaContractManifestSha256:config.expectedSchemaContractManifestSha256;
-  const contractDirectory=path.join(config.candidate,'src',directory),manifestFile=path.join(contractDirectory,'manifest.json'),triggerFile=path.join(config.candidate,'src','database-trigger-contract.json'),helper=config.schemaContractHelperPath;
+  const contractDirectory=path.join(config.candidate,'src',directory),manifestFile=path.join(contractDirectory,'manifest.json'),helper=config.schemaContractHelperPath;
+  if(!fs.existsSync(manifestFile))throw Error(`${label} schema-contract manifest file missing: ${manifestFile}`);
+  const observedManifestHash=hash(manifestFile);
+  if(observedManifestHash!==expectedManifestHash)throw Error(`${label} schema-contract manifest hash mismatch: expected ${expectedManifestHash}, observed ${observedManifestHash}`);
+  const manifestIdentity=JSON.parse(fs.readFileSync(manifestFile,'utf8')),triggerName=manifestIdentity?.triggers?.file;
+  if(typeof triggerName!=='string'||path.basename(triggerName)!==triggerName||!manifestIdentity?.triggers?.fileSha256?.match(/^[a-f0-9]{64}$/))throw Error(`${label} schema-contract trigger identity is invalid`);
+  const triggerFile=kind==='baseline'?path.join(contractDirectory,triggerName):path.join(config.candidate,'src',triggerName);
+  if(!fs.existsSync(triggerFile))throw Error(`${label} schema-contract trigger file missing: ${triggerFile}`);
+  const observedTriggerHash=hash(triggerFile);
+  if(observedTriggerHash!==manifestIdentity.triggers.fileSha256)throw Error(`${label} schema-contract trigger hash mismatch: expected ${manifestIdentity.triggers.fileSha256}, observed ${observedTriggerHash}`);
   if(!fs.existsSync(helper))throw Error(`${label} schema-contract helper file missing: ${helper}`);
   const observedHelperHash=hash(helper);
   if(observedHelperHash!==config.schemaContractHelperSha256)throw Error(`${label} schema-contract helper hash mismatch: expected ${config.schemaContractHelperSha256}, observed ${observedHelperHash}`);

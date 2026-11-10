@@ -37,12 +37,13 @@ const files={
   sourceConfig:resolveRepo(spec.sourceConfig),output:resolveRepo(spec.output),proofOutput:resolveRepo(spec.proofOutput),
   package:resolveRepo(spec.packageFile),manifest:resolveRepo(spec.manifestFile),
   baselineManifest:resolveRepo(spec.baselineSchemaContractManifest||'src/database-schema-baseline/manifest.json'),
+  baselineTrigger:resolveRepo(spec.baselineTriggerContract||'src/database-schema-baseline/database-trigger-contract.json'),
   expectedManifest:resolveRepo(spec.expectedSchemaContractManifest||'src/database-schema-contract/manifest.json'),
   expectedColumns:resolveRepo(spec.expectedSchemaContractColumns||'src/database-schema-contract/columns.json'),
   triggerContract:resolveRepo(spec.expectedTriggerContract||'src/database-trigger-contract.json'),
   schemaHelper:resolveRepo(spec.schemaContractHelper||'tools/database-schema-contract.mjs')
 };
-for(const name of ['sourceConfig','package','manifest','baselineManifest','expectedManifest','expectedColumns','triggerContract','schemaHelper']){
+for(const name of ['sourceConfig','package','manifest','baselineManifest','baselineTrigger','expectedManifest','expectedColumns','triggerContract','schemaHelper']){
   const file=files[name];
   if(!fs.existsSync(file))fail(`${name} file is unavailable: ${repoPath(file)}`);
 }
@@ -50,6 +51,7 @@ for(const name of ['output','proofOutput'])if(fs.existsSync(files[name]))fail(`$
 
 const source=JSON.parse(fs.readFileSync(files.sourceConfig,'utf8'));
 const manifest=JSON.parse(fs.readFileSync(files.manifest,'utf8'));
+const baselineManifest=JSON.parse(fs.readFileSync(files.baselineManifest,'utf8'));
 const expectedManifest=JSON.parse(fs.readFileSync(files.expectedManifest,'utf8'));
 const expectedColumns=JSON.parse(fs.readFileSync(files.expectedColumns,'utf8'));
 const triggers=JSON.parse(fs.readFileSync(files.triggerContract,'utf8'));
@@ -63,6 +65,7 @@ if(source.expectedMigrationCount!==spec.expectedMigrationCount-1)fail('Expected 
 if(source.expectedPostTableNames?.length!==source.expectedPostTableCount)fail('Source config baseline table names are inconsistent');
 if(expectedTableNames.length!==expectedManifest.contracts?.columns?.count&&expectedColumns.count!==expectedManifest.contracts?.columns?.count)fail('Expected columns contract is inconsistent');
 if(triggers.triggers?.length!==triggers.triggerCount)fail('Expected trigger contract is inconsistent');
+if(baselineManifest.triggers?.file!==path.basename(files.baselineTrigger)||baselineManifest.triggers?.fileSha256!==sha256(files.baselineTrigger))fail('Baseline trigger contract does not match its approved manifest');
 
 const hosted=spec.hostPreparationDir.replace(/\/$/,'');
 const config={...source,
@@ -92,6 +95,7 @@ const checks={
   archiveHash:{file:repoPath(files.package),configured:config.archiveHash,actual:sha256(files.package)},
   manifestHash:{file:repoPath(files.manifest),configured:config.manifestHash,actual:sha256(files.manifest)},
   baselineSchemaContractManifestSha256:{file:repoPath(files.baselineManifest),configured:config.baselineSchemaContractManifestSha256,actual:sha256(files.baselineManifest)},
+  baselineTriggerContractFileSha256:{file:repoPath(files.baselineTrigger),configured:baselineManifest.triggers.fileSha256,actual:sha256(files.baselineTrigger),comparison:'raw file SHA-256 pinned by baseline manifest'},
   expectedSchemaContractManifestSha256:{file:repoPath(files.expectedManifest),configured:config.expectedSchemaContractManifestSha256,actual:sha256(files.expectedManifest)},
   schemaContractHelperSha256:{file:repoPath(files.schemaHelper),configured:config.schemaContractHelperSha256,actual:sha256Lf(files.schemaHelper),normalization:'Git/hosting LF'},
   expectedTriggerContractSha256:{file:repoPath(files.triggerContract),configured:config.expectedTriggerContractSha256,actual:triggerCanonical,comparison:'SHA-256(JSON.stringify(triggers))'}

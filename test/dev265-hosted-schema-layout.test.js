@@ -29,13 +29,16 @@ test('schema contract loads from hosted tools while the extracted candidate has 
   for (const directory of ['database-schema-baseline', 'database-schema-contract']) {
     const contractDirectory = path.join(candidate, 'src', directory);
     const manifestFile = path.join(contractDirectory, 'manifest.json');
+    const triggerContractFile = directory === 'database-schema-baseline'
+      ? path.join(contractDirectory, 'database-trigger-contract.json')
+      : path.join(candidate, 'src', 'database-trigger-contract.json');
     const loaded = module.loadSchemaContractIdentity({
       helperFile: helper,
       expectedHelperSha256: sha256(helper),
       contractDirectory,
       manifestFile,
       expectedManifestSha256: sha256(manifestFile),
-      triggerContractFile: path.join(candidate, 'src', 'database-trigger-contract.json'),
+      triggerContractFile,
       label: directory,
     });
     assert.equal(loaded.identity.helperFile, helper);
@@ -58,7 +61,7 @@ test('schema identity failures identify the exact missing or mismatched file', a
     contractDirectory,
     manifestFile,
     expectedManifestSha256: sha256(manifestFile),
-    triggerContractFile: path.join(root, 'src', 'database-trigger-contract.json'),
+    triggerContractFile: path.join(root, 'src', 'database-schema-baseline', 'database-trigger-contract.json'),
     label: 'stage schema-contract',
   };
   assert.throws(() => module.loadSchemaContractIdentity({ ...common, expectedHelperSha256: '0'.repeat(64) }), /helper hash mismatch: expected 0{64}, observed [a-f0-9]{64}/);
