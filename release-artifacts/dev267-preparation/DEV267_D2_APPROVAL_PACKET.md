@@ -42,7 +42,7 @@ corrected.
 | Identity | Exact value | Source |
 | --- | --- | --- |
 | Version | `2.1.0-dev.267` | package manifest and config |
-| Candidate commit | `a9f4b30232f1c613f69bdf8f1debc80d7294e97d` | GitHub `origin/codex/dev267-prospect-diary` |
+| Candidate commit | `a9f4b30232f1c613f69bdf8f1debc80d7294e97d` | GitHub tag `crm-test/dev267-candidate`; the build-time manifest also records the then-current source branch |
 | Candidate tree | `57eda90b062239dafd9a5c6472877010d43c9d09` | origin manifest |
 | Package SHA-256 | `db42527fe1c07c9bc6fff4768aff6b32a4034debc037372b2b484cfb2c4b3bde` | file and manifest |
 | Manifest SHA-256 | `a789afec0badb0db45ba128842440fc7233c96adf331e555baf233234d99ca0e` | file and config |
