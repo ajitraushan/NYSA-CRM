@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "functions",
-  "count": 50,
-  "canonicalSha256": "0e549674e17946ba5776ad45f29c5be537cfa68fe55319a9ee7da18aea4adb85",
+  "count": 53,
+  "canonicalSha256": "03622f1e6925d9857b2b923073f78f272176c0e0e95549f3b67c87d09a0452fb",
   "normalization": "SHA-256 of full pg_get_functiondef UTF-8 text after removing carriage returns",
   "entries": [
     {
@@ -51,6 +51,11 @@
       "definitionSha256": "120c4efc89cae32d9d1768ba4cf4a17d6b381519de60e4a8612ef8b1e6a612a3"
     },
     {
+      "name": "nysa_guard_prospect_outreach",
+      "identityArguments": "",
+      "definitionSha256": "b37cb1c0f81b1f6e8a2fa2fe1d0788ade3dff56b40a39783c0fe9f5f73d6aab2"
+    },
+    {
       "name": "nysa_guard_terminal_lead_follow_up",
       "identityArguments": "",
       "definitionSha256": "3d14737d3a73e2794fd157a7562c3e2445280dfcf316d0904a68a802cf74c571"
@@ -64,6 +69,16 @@
       "name": "nysa_opportunity_sync_lead_status",
       "identityArguments": "",
       "definitionSha256": "2d3cb98d767eccfd5b471de25baa67dbf6725b5747d8280439cf98ea32b873da"
+    },
+    {
+      "name": "nysa_prospect_activities_append_only",
+      "identityArguments": "",
+      "definitionSha256": "419865c9adc3492527431d0a2cad0ecfc209a06225a0bed04a0899986ff2f697"
+    },
+    {
+      "name": "nysa_prospect_status_effects",
+      "identityArguments": "",
+      "definitionSha256": "ba1dddd11eb623600c0961b838ce85fd73357bf91e7a3f9fc6c546e013a7cda2"
     },
     {
       "name": "nysa_sync_lead_current_status",

@@ -1,13 +1,13 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "constraints",
-  "count": 2704,
-  "canonicalSha256": "42767d11543825b6e85dd343ff47fb9b8ac9bb87d64b9abdaf31557ef6ac7482",
+  "count": 2748,
+  "canonicalSha256": "82886a6143ae797041fa22e06fb031d1432879a902779619b491d863f7a3e52f",
   "countsByType": {
-    "p": 303,
-    "f": 981,
-    "u": 275,
-    "c": 1145,
+    "p": 306,
+    "f": 992,
+    "u": 277,
+    "c": 1173,
     "x": 0
   },
   "entries": [
@@ -1047,7 +1047,7 @@
       "table": "audit_log",
       "name": "audit_log_entity_type_check",
       "type": "c",
-      "definition": "CHECK (((entity_type = ANY (ARRAY['Listing'::text, 'ListingApprovalPolicy'::text, 'ListingIntake'::text, 'ListingMappingVersion'::text, 'ListingValueMapping'::text, 'Comment'::text, 'Broker'::text, 'Invitation'::text, 'Team'::text, 'TeamMembership'::text, 'Contact'::text, 'ContactChannel'::text, 'ContactMerge'::text, 'Company'::text, 'CompanyRole'::text, 'MarketingAgreement'::text, 'Lead'::text, 'Activity'::text, 'ActivityCorrection'::text, 'ValueBrief'::text, 'OrganizationSettings'::text, 'ValueSet'::text, 'ValueDefinition'::text, 'WorkflowTransition'::text, 'Document'::text, 'DocumentVersion'::text, 'LeadAssignment'::text, 'LeadRequirement'::text, 'LeadStage'::text, 'Task'::text, 'LeadConversion'::text, 'SlaPolicy'::text, 'RoutingRule'::text, 'Area'::text, 'WebsiteIntake'::text, 'ConsentEvidence'::text, 'QualificationModel'::text, 'QualificationAssessment'::text, 'RegulatoryAssumption'::text, 'FinancialScenario'::text, 'PropertyMedia'::text, 'PropertyMediaApprovalPolicy'::text, 'Proposal'::text, 'ProposalVersion'::text, 'DashboardTarget'::text, 'DashboardExport'::text, 'SavedDashboardView'::text, 'AiAssistanceRun'::text, 'Opportunity'::text, 'OpportunityStage'::text, 'OpportunityAttribution'::text, 'OpportunityParticipant'::text, 'OpportunityAssignment'::text, 'R2LegacyLeadReview'::text, 'PropertyMatch'::text, 'Viewing'::text, 'CalendarConnection'::text, 'ViewingCalendarEvent'::text, 'Offer'::text, 'OfferRevision'::text, 'OfferReplacementAction'::text, 'NegotiationEvent'::text, 'Booking'::text, 'BookingStatus'::text, 'Deal'::text, 'DealParty'::text, 'DealChecklist'::text, 'DealChecklistItem'::text, 'DealStatus'::text, 'InventoryVerification'::text, 'ExternalListingPublication'::text, 'TransactionCounterparty'::text, 'ExternalProperty'::text, 'OpportunityPropertyShare'::text, 'InventoryCounterparty'::text, 'InventoryAgreement'::text, 'MarketingCampaign'::text, 'CampaignMapping'::text, 'PartnerOrganization'::text, 'InventoryOrganizationLink'::text, 'CommunicationPolicyDecision'::text, 'OpportunityPropertyShareEvent'::text, 'CustomerResponseTaskProvenance'::text, 'OfficialDocumentDefinition'::text, 'OfficialDocumentStepRule'::text, 'OfficialDocumentEvidence'::text, 'OfficialDocumentFollowup'::text, 'MarketCommunity'::text, 'DldCommunityMapping'::text, 'DldMarketSourceBatch'::text, 'DldMarketObservation'::text, 'InventoryMarketIntelligenceSnapshot'::text, 'InventoryBuilding'::text, 'CommissionPayoutPolicy'::text, 'AgentPayoutAdjustment'::text, 'DealCommissionExpectation'::text, 'DealCommissionReceipt'::text, 'DealCommissionReceiptConfirmation'::text, 'DealCommissionVarianceDecision'::text, 'DealAgentCredit'::text, 'AgentPayoutCalculation'::text, 'AgentPayoutRelease'::text, 'AgentEmployment'::text, 'LeavePolicy'::text, 'LeaveApplication'::text, 'LeaveDecision'::text, 'LeaveBalance'::text, 'DocumentComplianceRequirement'::text, 'DocumentComplianceSnapshot'::text, 'DocumentComplianceEvidence'::text, 'DocumentComplianceFollowup'::text, 'MarketingMaterialType'::text, 'MarketingChannelRule'::text, 'MarketingMaterial'::text, 'MarketingMaterialVersion'::text, 'MarketingMaterialReview'::text, 'MarketingMaterialTaskProvenance'::text, 'DeveloperBrokerageArrangement'::text, 'PropertyListingNoc'::text])) OR (entity_type = 'OpportunityStageDraft'::text) OR (entity_type = 'DealCommissionProof'::text) OR (entity_type = 'CommissionReceivable'::text) OR (entity_type = 'CommissionInvoiceAdjustment'::text) OR (entity_type = 'CommissionPaymentBatch'::text) OR (entity_type = 'AgentSocialMediaPayoutStatus'::text) OR (entity_type = 'AgentPayoutCalculationSheet'::text) OR (entity_type = 'PurchasedDataImport'::text) OR (entity_type = ANY (ARRAY['CustomerChangeRequest'::text, 'DealCancellationRequest'::text])) OR (entity_type = ANY (ARRAY['CustomerDocumentRequirement'::text, 'CustomerIdentityDocument'::text, 'CompanyIdentityDocument'::text])) OR (entity_type = ANY (ARRAY['BusinessLine'::text, 'TeamBusinessLine'::text])) OR (entity_type = 'LeadIntegrationSetup'::text) OR (entity_type = 'LeadIntegrationConnection'::text) OR (entity_type = ANY (ARRAY['WebIntakeJourney'::text, 'WebIntakeIdentity'::text, 'WebIntakeCase'::text, 'WebIntakeConfiguration'::text])) OR (entity_type = ANY (ARRAY['WhatsAppMessageTemplate'::text, 'WhatsAppRecipientImport'::text, 'WhatsAppAudienceSegment'::text, 'WhatsAppMaterial'::text, 'WhatsAppCampaign'::text])) OR (entity_type = 'WhatsAppConversation'::text)))"
+      "definition": "CHECK (((entity_type = ANY (ARRAY['Listing'::text, 'ListingApprovalPolicy'::text, 'ListingIntake'::text, 'ListingMappingVersion'::text, 'ListingValueMapping'::text, 'Comment'::text, 'Broker'::text, 'Invitation'::text, 'Team'::text, 'TeamMembership'::text, 'Contact'::text, 'ContactChannel'::text, 'ContactMerge'::text, 'Company'::text, 'CompanyRole'::text, 'MarketingAgreement'::text, 'Lead'::text, 'Activity'::text, 'ActivityCorrection'::text, 'ValueBrief'::text, 'OrganizationSettings'::text, 'ValueSet'::text, 'ValueDefinition'::text, 'WorkflowTransition'::text, 'Document'::text, 'DocumentVersion'::text, 'LeadAssignment'::text, 'LeadRequirement'::text, 'LeadStage'::text, 'Task'::text, 'LeadConversion'::text, 'SlaPolicy'::text, 'RoutingRule'::text, 'Area'::text, 'WebsiteIntake'::text, 'ConsentEvidence'::text, 'QualificationModel'::text, 'QualificationAssessment'::text, 'RegulatoryAssumption'::text, 'FinancialScenario'::text, 'PropertyMedia'::text, 'PropertyMediaApprovalPolicy'::text, 'Proposal'::text, 'ProposalVersion'::text, 'DashboardTarget'::text, 'DashboardExport'::text, 'SavedDashboardView'::text, 'AiAssistanceRun'::text, 'Opportunity'::text, 'OpportunityStage'::text, 'OpportunityAttribution'::text, 'OpportunityParticipant'::text, 'OpportunityAssignment'::text, 'R2LegacyLeadReview'::text, 'PropertyMatch'::text, 'Viewing'::text, 'CalendarConnection'::text, 'ViewingCalendarEvent'::text, 'Offer'::text, 'OfferRevision'::text, 'OfferReplacementAction'::text, 'NegotiationEvent'::text, 'Booking'::text, 'BookingStatus'::text, 'Deal'::text, 'DealParty'::text, 'DealChecklist'::text, 'DealChecklistItem'::text, 'DealStatus'::text, 'InventoryVerification'::text, 'ExternalListingPublication'::text, 'TransactionCounterparty'::text, 'ExternalProperty'::text, 'OpportunityPropertyShare'::text, 'InventoryCounterparty'::text, 'InventoryAgreement'::text, 'MarketingCampaign'::text, 'CampaignMapping'::text, 'PartnerOrganization'::text, 'InventoryOrganizationLink'::text, 'CommunicationPolicyDecision'::text, 'OpportunityPropertyShareEvent'::text, 'CustomerResponseTaskProvenance'::text, 'OfficialDocumentDefinition'::text, 'OfficialDocumentStepRule'::text, 'OfficialDocumentEvidence'::text, 'OfficialDocumentFollowup'::text, 'MarketCommunity'::text, 'DldCommunityMapping'::text, 'DldMarketSourceBatch'::text, 'DldMarketObservation'::text, 'InventoryMarketIntelligenceSnapshot'::text, 'InventoryBuilding'::text, 'CommissionPayoutPolicy'::text, 'AgentPayoutAdjustment'::text, 'DealCommissionExpectation'::text, 'DealCommissionReceipt'::text, 'DealCommissionReceiptConfirmation'::text, 'DealCommissionVarianceDecision'::text, 'DealAgentCredit'::text, 'AgentPayoutCalculation'::text, 'AgentPayoutRelease'::text, 'AgentEmployment'::text, 'LeavePolicy'::text, 'LeaveApplication'::text, 'LeaveDecision'::text, 'LeaveBalance'::text, 'DocumentComplianceRequirement'::text, 'DocumentComplianceSnapshot'::text, 'DocumentComplianceEvidence'::text, 'DocumentComplianceFollowup'::text, 'MarketingMaterialType'::text, 'MarketingChannelRule'::text, 'MarketingMaterial'::text, 'MarketingMaterialVersion'::text, 'MarketingMaterialReview'::text, 'MarketingMaterialTaskProvenance'::text, 'DeveloperBrokerageArrangement'::text, 'PropertyListingNoc'::text])) OR (entity_type = 'OpportunityStageDraft'::text) OR (entity_type = 'DealCommissionProof'::text) OR (entity_type = 'CommissionReceivable'::text) OR (entity_type = 'CommissionInvoiceAdjustment'::text) OR (entity_type = 'CommissionPaymentBatch'::text) OR (entity_type = 'AgentSocialMediaPayoutStatus'::text) OR (entity_type = 'AgentPayoutCalculationSheet'::text) OR (entity_type = 'PurchasedDataImport'::text) OR (entity_type = ANY (ARRAY['CustomerChangeRequest'::text, 'DealCancellationRequest'::text])) OR (entity_type = ANY (ARRAY['CustomerDocumentRequirement'::text, 'CustomerIdentityDocument'::text, 'CompanyIdentityDocument'::text])) OR (entity_type = ANY (ARRAY['BusinessLine'::text, 'TeamBusinessLine'::text])) OR (entity_type = 'LeadIntegrationSetup'::text) OR (entity_type = 'LeadIntegrationConnection'::text) OR (entity_type = ANY (ARRAY['WebIntakeJourney'::text, 'WebIntakeIdentity'::text, 'WebIntakeCase'::text, 'WebIntakeConfiguration'::text])) OR (entity_type = ANY (ARRAY['WhatsAppMessageTemplate'::text, 'WhatsAppRecipientImport'::text, 'WhatsAppAudienceSegment'::text, 'WhatsAppMaterial'::text, 'WhatsAppCampaign'::text])) OR (entity_type = 'WhatsAppConversation'::text) OR (entity_type = ANY (ARRAY['Prospect'::text, 'ProspectActivity'::text, 'CompanyCallingNumber'::text, 'ContactSuppression'::text]))))"
     },
     {
       "table": "audit_log",
@@ -2896,6 +2896,66 @@
       "name": "companies_status_check",
       "type": "c",
       "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'inactive'::text, 'merged'::text])))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_check",
+      "type": "c",
+      "definition": "CHECK ((((status = 'active'::text) AND (effective_to IS NULL)) OR ((status = 'retired'::text) AND (effective_to IS NOT NULL))))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_label_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(label)) >= 2))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_normalized_phone_check",
+      "type": "c",
+      "definition": "CHECK ((normalized_phone ~ '^\\+[1-9][0-9]{7,14}$'::text))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_normalized_phone_key",
+      "type": "u",
+      "definition": "UNIQUE (normalized_phone)"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'retired'::text])))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_tdra_evidence_reference_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(tdra_evidence_reference)) >= 3))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_tdra_registered_legal_name_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(tdra_registered_legal_name)) >= 2))"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_tdra_registration_reference_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(tdra_registration_reference)) >= 3))"
     },
     {
       "table": "company_contacts",
@@ -12679,6 +12739,12 @@
     },
     {
       "table": "organization_settings",
+      "name": "organization_settings_prospect_calling_policy_check",
+      "type": "c",
+      "definition": "CHECK ((((prospect_call_start_minute >= 540) AND (prospect_call_start_minute <= 1079)) AND ((prospect_call_end_minute >= 541) AND (prospect_call_end_minute <= 1080)) AND (prospect_call_start_minute < prospect_call_end_minute) AND (prospect_decline_warning_threshold >= 0) AND (prospect_unanswered_daily_warning_threshold >= 0) AND (prospect_unanswered_weekly_warning_threshold >= 0)))"
+    },
+    {
+      "table": "organization_settings",
       "name": "organization_settings_status_check",
       "type": "c",
       "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'approved'::text, 'active'::text, 'retired'::text])))"
@@ -13440,6 +13506,186 @@
       "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'generated'::text, 'changes_requested'::text, 'reviewed'::text, 'sent'::text, 'retired'::text])))"
     },
     {
+      "table": "prospect_activities",
+      "name": "prospect_activities_activity_type_check",
+      "type": "c",
+      "definition": "CHECK ((activity_type = ANY (ARRAY['call'::text, 'note'::text])))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_check",
+      "type": "c",
+      "definition": "CHECK ((((activity_type = 'call'::text) AND (direction IS NOT NULL) AND (outcome IS NOT NULL)) OR ((activity_type = 'note'::text) AND (direction IS NULL) AND (outcome IS NULL))))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_check1",
+      "type": "c",
+      "definition": "CHECK (((direction <> 'outbound'::text) OR (company_calling_number_id IS NOT NULL)))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_check2",
+      "type": "c",
+      "definition": "CHECK ((((corrects_activity_id IS NULL) AND (correction_reason IS NULL)) OR ((corrects_activity_id IS NOT NULL) AND (length(btrim(correction_reason)) >= 5))))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_check3",
+      "type": "c",
+      "definition": "CHECK (((cardinality(warning_codes) = 0) OR (warning_acknowledged AND (length(btrim(warning_reason)) >= 5))))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_company_calling_number_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (company_calling_number_id) REFERENCES company_calling_numbers(id)"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_corrects_activity_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (corrects_activity_id) REFERENCES prospect_activities(id)"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_direction_check",
+      "type": "c",
+      "definition": "CHECK ((direction = ANY (ARRAY['inbound'::text, 'outbound'::text])))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_notes_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(notes)) >= 2))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_outcome_check",
+      "type": "c",
+      "definition": "CHECK ((outcome = ANY (ARRAY['answered'::text, 'no_answer'::text, 'callback_requested'::text, 'interested'::text, 'not_interested'::text, 'declined'::text, 'voicemail'::text, 'consumer_ended'::text, 'invalid_number'::text, 'other'::text])))"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_prospect_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_check",
+      "type": "c",
+      "definition": "CHECK (((source <> 'purchased_data'::text) OR ((source_supplier IS NOT NULL) AND (source_batch_reference IS NOT NULL) AND (source_acquired_at IS NOT NULL) AND (source_evidence_reference IS NOT NULL))))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_check1",
+      "type": "c",
+      "definition": "CHECK (((consent_status <> 'verified'::text) OR (consent_evidence_reference IS NOT NULL)))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_check2",
+      "type": "c",
+      "definition": "CHECK (((status = 'do_not_contact'::text) = ((do_not_contact_reason IS NOT NULL) AND (do_not_contact_at IS NOT NULL))))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_check3",
+      "type": "c",
+      "definition": "CHECK (((status = 'converted'::text) = ((converted_contact_id IS NOT NULL) AND (converted_at IS NOT NULL) AND (converted_by IS NOT NULL))))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_consent_status_check",
+      "type": "c",
+      "definition": "CHECK ((consent_status = ANY (ARRAY['unknown'::text, 'verified'::text, 'withdrawn'::text, 'denied'::text])))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_converted_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (converted_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_converted_contact_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (converted_contact_id) REFERENCES contacts(id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_normalized_email_check",
+      "type": "c",
+      "definition": "CHECK (((normalized_email IS NULL) OR (normalized_email = lower(normalized_email))))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_normalized_phone_check",
+      "type": "c",
+      "definition": "CHECK ((normalized_phone ~ '^\\+[1-9][0-9]{7,14}$'::text))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_normalized_phone_key",
+      "type": "u",
+      "definition": "UNIQUE (normalized_phone)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_owner_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_source_check",
+      "type": "c",
+      "definition": "CHECK ((source = ANY (ARRAY['cold_call'::text, 'referral'::text, 'event'::text, 'personal_network'::text, 'purchased_data'::text, 'other'::text])))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['not_contacted'::text, 'no_answer'::text, 'call_back'::text, 'interested'::text, 'not_interested'::text, 'do_not_contact'::text, 'converted'::text])))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_team_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (team_id) REFERENCES teams(id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_timezone_source_check",
+      "type": "c",
+      "definition": "CHECK ((timezone_source = ANY (ARRAY['phone_inferred'::text, 'agent_confirmed'::text, 'manager_override'::text])))"
+    },
+    {
       "table": "provisional_external_properties",
       "name": "provisional_external_properti_seller_agency_counterparty_i_fkey",
       "type": "f",
@@ -14097,7 +14343,7 @@
       "table": "tasks",
       "name": "tasks_context_check",
       "type": "c",
-      "definition": "CHECK ((((task_type = 'leave_approval'::text) AND (leave_application_id IS NOT NULL) AND (marketing_material_version_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NULL) AND (contact_id IS NULL)) OR ((task_type = ANY (ARRAY['marketing_material_review'::text, 'marketing_material_follow_up'::text])) AND (marketing_material_version_id IS NOT NULL) AND (leave_application_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NULL) AND (contact_id IS NULL)) OR ((task_type = 'web_intake_follow_up'::text) AND (follow_up_case_id IS NOT NULL) AND (leave_application_id IS NULL) AND (marketing_material_version_id IS NULL)) OR ((task_type <> ALL (ARRAY['leave_approval'::text, 'marketing_material_review'::text, 'marketing_material_follow_up'::text, 'web_intake_follow_up'::text])) AND (leave_application_id IS NULL) AND (marketing_material_version_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NOT NULL) AND (contact_id IS NOT NULL))))"
+      "definition": "CHECK ((((task_type = 'prospect_follow_up'::text) AND (prospect_id IS NOT NULL) AND (prospect_channel = ANY (ARRAY['call'::text, 'whatsapp'::text, 'email'::text])) AND (lead_id IS NULL) AND (contact_id IS NULL) AND (leave_application_id IS NULL) AND (marketing_material_version_id IS NULL) AND (follow_up_case_id IS NULL)) OR ((task_type = 'leave_approval'::text) AND (prospect_id IS NULL) AND (prospect_channel IS NULL) AND (leave_application_id IS NOT NULL) AND (marketing_material_version_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NULL) AND (contact_id IS NULL)) OR ((task_type = ANY (ARRAY['marketing_material_review'::text, 'marketing_material_follow_up'::text])) AND (prospect_id IS NULL) AND (prospect_channel IS NULL) AND (marketing_material_version_id IS NOT NULL) AND (leave_application_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NULL) AND (contact_id IS NULL)) OR ((task_type = 'web_intake_follow_up'::text) AND (prospect_id IS NULL) AND (prospect_channel IS NULL) AND (follow_up_case_id IS NOT NULL) AND (leave_application_id IS NULL) AND (marketing_material_version_id IS NULL)) OR ((task_type <> ALL (ARRAY['prospect_follow_up'::text, 'leave_approval'::text, 'marketing_material_review'::text, 'marketing_material_follow_up'::text, 'web_intake_follow_up'::text])) AND (prospect_id IS NULL) AND (prospect_channel IS NULL) AND (leave_application_id IS NULL) AND (marketing_material_version_id IS NULL) AND (follow_up_case_id IS NULL) AND (lead_id IS NOT NULL) AND (contact_id IS NOT NULL))))"
     },
     {
       "table": "tasks",
@@ -14149,6 +14395,12 @@
     },
     {
       "table": "tasks",
+      "name": "tasks_policy_warning_acknowledgement_check",
+      "type": "c",
+      "definition": "CHECK (((cardinality(policy_warning_codes) = 0) OR (policy_warning_acknowledged AND (length(btrim(policy_warning_reason)) >= 5))))"
+    },
+    {
+      "table": "tasks",
       "name": "tasks_priority_check",
       "type": "c",
       "definition": "CHECK ((priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text])))"
@@ -14173,6 +14425,12 @@
     },
     {
       "table": "tasks",
+      "name": "tasks_prospect_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id)"
+    },
+    {
+      "table": "tasks",
       "name": "tasks_status_check",
       "type": "c",
       "definition": "CHECK ((status = ANY (ARRAY['open'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text])))"
@@ -14181,7 +14439,7 @@
       "table": "tasks",
       "name": "tasks_task_type_check",
       "type": "c",
-      "definition": "CHECK ((task_type = ANY (ARRAY['general'::text, 'proposal_correction'::text, 'customer_response_follow_up'::text, 'leave_approval'::text, 'document_compliance_follow_up'::text, 'marketing_material_review'::text, 'marketing_material_follow_up'::text, 'qualification_follow_up'::text, 'web_intake_follow_up'::text])))"
+      "definition": "CHECK ((task_type = ANY (ARRAY['general'::text, 'proposal_correction'::text, 'customer_response_follow_up'::text, 'leave_approval'::text, 'document_compliance_follow_up'::text, 'marketing_material_review'::text, 'marketing_material_follow_up'::text, 'qualification_follow_up'::text, 'web_intake_follow_up'::text, 'prospect_follow_up'::text])))"
     },
     {
       "table": "team_business_line_assignments",
@@ -15061,9 +15319,15 @@
     },
     {
       "table": "wa_contact_suppressions",
+      "name": "wa_contact_suppressions_restrictions_check",
+      "type": "c",
+      "definition": "CHECK ((jsonb_typeof(restrictions) = 'object'::text))"
+    },
+    {
+      "table": "wa_contact_suppressions",
       "name": "wa_contact_suppressions_suppression_type_check",
       "type": "c",
-      "definition": "CHECK ((suppression_type = ANY (ARRAY['opt_out'::text, 'wrong_number'::text])))"
+      "definition": "CHECK ((suppression_type = ANY (ARRAY['opt_out'::text, 'do_not_contact'::text, 'dncr'::text, 'wrong_number'::text])))"
     },
     {
       "table": "wa_conversation_assignment_history",

@@ -7,6 +7,7 @@ const {Pool}=pg;
 const FIXTURE_DATABASE='nysa_test_fixture';
 const FIXTURE_ROLE='nysa_test_user';
 const FIXTURE_SCHEMA=process.env.NYSA_FIXTURE_SCHEMA_NAME||'nysa_test_user';
+const TRIGGER_REPAIR_MIGRATIONS=new Set(['168_restore_governed_trigger_contract.sql']);
 
 const quoteIdentifier=value=>`"${String(value).replaceAll('"','""')}"`;
 const escapeRegExp=value=>String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -23,7 +24,7 @@ function normalizeDefinition(definition){
 
 function sourceForTrigger(name,migrations){
   const pattern=new RegExp(`\\bCREATE\\s+(?:CONSTRAINT\\s+)?TRIGGER\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(?:"${escapeRegExp(name)}"|${escapeRegExp(name)})\\b`,'i');
-  const matches=migrations.filter(item=>pattern.test(item.sql));
+  const matches=migrations.filter(item=>!TRIGGER_REPAIR_MIGRATIONS.has(item.name)&&pattern.test(item.sql));
   if(!matches.length)throw new Error(`No source migration found for trigger ${name}`);
   return matches.at(-1).name;
 }

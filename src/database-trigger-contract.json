@@ -2,12 +2,12 @@
   "schema": "nysa.database-trigger-contract.v1",
   "generatedFrom": {
     "database": "nysa_test_fixture",
-    "migrationCount": 167,
-    "latestMigration": "167_whatsapp_simulator_fault_contract.sql"
+    "migrationCount": 170,
+    "latestMigration": "170_prospect_diary.sql"
   },
-  "triggerCount": 108,
-  "tableCount": 93,
-  "canonicalSha256": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+  "triggerCount": 111,
+  "tableCount": 95,
+  "canonicalSha256": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
   "triggers": [
     {
       "table": "agent_payout_adjustment_slabs",
@@ -1359,6 +1359,43 @@
       "enabled": "O",
       "sourceMigration": "040_release2_matching_viewing.sql",
       "definition": "CREATE TRIGGER property_match_history_immutable BEFORE DELETE OR UPDATE ON property_match_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_append_only",
+      "function": "public.nysa_prospect_activities_append_only",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "170_prospect_diary.sql",
+      "definition": "CREATE TRIGGER prospect_activities_append_only BEFORE DELETE OR UPDATE ON prospect_activities FOR EACH ROW EXECUTE FUNCTION nysa_prospect_activities_append_only();"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_outreach_guard",
+      "function": "public.nysa_guard_prospect_outreach",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "170_prospect_diary.sql",
+      "definition": "CREATE TRIGGER prospect_activities_outreach_guard BEFORE INSERT ON prospect_activities FOR EACH ROW EXECUTE FUNCTION nysa_guard_prospect_outreach();"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_status_effects",
+      "function": "public.nysa_prospect_status_effects",
+      "timing": "AFTER",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "170_prospect_diary.sql",
+      "definition": "CREATE TRIGGER prospects_status_effects AFTER UPDATE OF status ON prospects FOR EACH ROW EXECUTE FUNCTION nysa_prospect_status_effects();"
     },
     {
       "table": "tasks",
