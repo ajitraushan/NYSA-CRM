@@ -51,7 +51,7 @@ jobs:
           CREATE ROLE nysa_test_user LOGIN PASSWORD 'nysa_test_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
           CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
           SQL
-          psql -X -Atc "SELECT current_setting('server_version');"
+          PGPASSWORD=nysa_test_password psql -X -Atc "SELECT current_setting('server_version');"
 
       - name: Rebuild and verify exact DEV267 origin package
         run: |
@@ -182,6 +182,7 @@ jobs:
       - name: Collect and hash rehearsal receipts
         if: always()
         run: |
+          mkdir -p release-artifacts/dev267-preparation/run2/rehearsal
           sudo chown -R runner:runner "$PREP_ROOT" || true
           for file in STAGE_RESULT.json BACKUP_RESULT.json INSTALL_RESULT.json; do
             test -f "$PREP_ROOT/evidence/$file" && cp "$PREP_ROOT/evidence/$file" "release-artifacts/dev267-preparation/run2/rehearsal/$file"
