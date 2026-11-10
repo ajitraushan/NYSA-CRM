@@ -1,5 +1,37 @@
 # CRM Development Baseline
 
+## DEV266 accepted / DEV267 D-1 hold — 10 November 2026
+
+- Installed CRM Test source of truth is accepted DEV266 `2.1.0-dev.266`, commit
+  `1abd17771a5dda3be4b5108a6453e70438ad3ed0`, migration 169, database
+  `nysareal_nysa_dev247_smoke`, 303 public tables, 108 enabled triggers and one
+  exact-root worker after readiness. The governed acceptance record is
+  `release-artifacts/dev266-preparation/DEV266_ACCEPTANCE.md` at commit
+  `85cfb0f7b18597e03120c41ece911a0ed3bd914b`.
+- DEV266 round-two testing found D-A: an existing STOP suppression is not read
+  when a later WhatsApp recipient import creates a new row. D-A blocks go-live
+  and is now mandatory DEV267 scope with Prospect Diary and one shared contact
+  suppression store/reader. The synthetic CRM Test D-A records remain in place
+  for reproduction and retest.
+- DEV267 is stopped at revised checkpoint D-1. The design is
+  `release-artifacts/dev267-preparation/DEV267_D1_PROSPECT_DIARY_SHARED_SUPPRESSION_DESIGN.md`.
+  No DEV267 package, upload, hosted query, Phase A or hosted mutation is
+  authorized. The partial worktree implementation predates the addendum and is
+  not release evidence.
+- Earlier local PostgreSQL 13.23 and browser passes cover only the superseded
+  Prospect-only draft. They do not cover D-A, the shared suppression reader,
+  normal My Tasks/My Diary integration, purchased-data provenance, calling
+  controls or the final migration 170 contract.
+- DEV268 is deferred until DEV267 is accepted. Its scope is campaign retirement,
+  local reply-lock pill formatting, consistent out-of-scope 404 responses and
+  removal of material `storageKey` from list responses. Intermittent Chrome
+  Admin login drops remain a watch item.
+- Any later CRM Test deployment must use the mandatory detached-origin package,
+  full schema/trigger contracts, canonical operator, four separately approved
+  phases and exact-root worker verification. Production remains the separately
+  governed RC1 baseline and requires its own reconciliation, backup, package
+  and exact approval.
+
 ## DEV265 accepted CRM Test baseline — 9 November 2026
 
 - CRM Test is accepted on `2.1.0-dev.265`, candidate commit
