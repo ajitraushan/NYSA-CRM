@@ -275,23 +275,29 @@ Phone-country inference is visibly marked as a guess. The Agent can correct it;
 a Manager override is audited. Outbound call follow-ups outside the maintained
 window are rejected with the next valid local time.
 
-The same governed settings include:
+The same governed settings include warning thresholds:
 
-- maximum calls after an explicit product/service decline: `0` and not
-  configurable above zero;
+- calls after an explicit product/service decline: default warning threshold
+  `0`;
 - maximum unanswered/consumer-terminated attempts per Prospect-local calendar
-  day: default `1`, configurable only from 0 to 1; and
+  day: default warning threshold `1`; and
 - maximum unanswered/consumer-terminated attempts in a rolling seven-day
-  period: default `2`, configurable only from 0 to 2.
+  period: default warning threshold `2`.
 
-Outcomes `not_interested`/`declined` record the first-decline time and block all
-later outbound call Tasks. `no_answer`, `voicemail` and `consumer_ended` record
-an attempt and contribute to both limits. When a limit is reached, CORE blocks
-the Task and returns the next eligible local time. `invalid_number` records a
-`wrong_number` suppression. Completed call evidence is never discarded: an
-already-completed call outside the window or beyond a limit is retained with a
-mandatory compliance-exception reason and audit, but CORE does not create the
-next outbound call Task.
+These thresholds are **soft compliance warnings, not hard call bounds**.
+Outcomes `not_interested`/`declined` record the first-decline time.
+`no_answer`, `voicemail` and `consumer_ended` record an attempt and contribute
+to the daily/weekly counts. When a threshold is reached, CORE shows the rule,
+the observed count and next preferred local time. The Agent may still record or
+schedule the call after acknowledging the warning and entering a reason; the
+acknowledgement, threshold, count and reason are audited. `invalid_number`
+records a `wrong_number` suppression and remains a hard block. DNC, DNCR,
+wrong-number and opt-out controls are also hard blocks under their channel
+policy; only repeat-call thresholds are advisory.
+
+Completed call evidence is never discarded. An already-completed call outside
+the window or beyond a warning threshold is retained with a mandatory
+compliance-exception reason and audit.
 
 CORE does not prevent a human from making a call outside the system; these are
 system scheduling and evidence controls, not a claim that CORE controls a
@@ -505,9 +511,11 @@ settings used.
    opt-out remains active and still blocks campaigns/proactive sends.
 9. Opt-out release fails without new post-opt-out consent evidence and succeeds
    only with authorized evidence; other types require authorized reason.
-10. Calling policy tests: local 09:00/18:00 boundary, zero repeat after decline,
-    once-daily/twice-weekly unanswered limits, stricter settings and immutable
-    evidence for a recorded exception.
+10. Calling policy tests: local 09:00/18:00 boundary; decline, once-daily and
+    twice-weekly warning thresholds; configured threshold changes; warning
+    acknowledgement/reason; permitted scheduling after acknowledgement; and
+    immutable evidence for the exception. These tests must prove that repeat
+    thresholds warn rather than hard-block.
 11. Quick Prospect entry, phone normalization, multiple calls, multiple Tasks,
    My Tasks/My Diary visibility, versioned notes, local calling window, approved
    company number, duplicate scope safety, reassignment and all conversion modes.
@@ -533,6 +541,8 @@ implemented. DEV268 starts only from an accepted DEV267 candidate and contains:
 Ajit approved D-1 on 10 November 2026 with the amendments now incorporated:
 09:00–18:00 setting, TDRA evidence, evidence-governed release, layered
 restrictions, configured repeat-call limits, explicit 1=1 scope semantics and
-the transaction-wrapped counts script. Implementation may proceed to D-2.
+the transaction-wrapped counts script. Ajit subsequently clarified that repeat
+call limits are soft warnings requiring acknowledgement/reason, not hard call
+bounds. Implementation may proceed to D-2.
 Packaging/upload/Phase A and the single hosted counts run remain separately
 controlled.
