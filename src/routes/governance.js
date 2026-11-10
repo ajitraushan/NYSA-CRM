@@ -8,6 +8,7 @@ import { decodeAndValidateFile,savePrivate,readPrivate,removePrivate } from '../
 import { validateOrganizationProfile,publicOrganization } from '../organization-domain.js';
 import { validateDefaultDocumentAgent } from '../document-agent-domain.js';
 import { stableCodeError } from '../admin-governance.js';
+import {getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
 
 const r=Router();
 r.use(requireAuth,requireGovernanceAccess);
@@ -97,12 +98,14 @@ async function createOrganizationDraft(req,res){
     const row=await one(`INSERT INTO organization_settings
       (id,version,legal_name,display_name,trade_license_number,orn,registration_authority,registered_address,primary_phone,primary_email,
        website_url,default_currency,timezone,locale,brand_version,proposal_footer,default_disclaimer,vat_registration_number,
-       bank_account_name,bank_name,bank_account_number,bank_iban,bank_swift_code,bank_currency,bank_branch,default_document_agent_id,status,created_by,
+       bank_account_name,bank_name,bank_account_number,bank_iban,bank_swift_code,bank_currency,bank_branch,default_document_agent_id,
+       prospect_call_start_minute,prospect_call_end_minute,prospect_decline_warning_threshold,prospect_unanswered_daily_warning_threshold,prospect_unanswered_weekly_warning_threshold,status,created_by,
        logo_file_name,logo_media_type,logo_file_size_bytes,logo_storage_key,logo_file_hash)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,'draft',$27,$28,$29,$30,$31,$32) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,'draft',$32,$33,$34,$35,$36,$37) RETURNING *`,
       [id,current.version+1,b.legalName,b.displayName,b.tradeLicenseNumber,b.orn,b.registrationAuthority,b.registeredAddress,b.primaryPhone,b.primaryEmail,
        b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,
-       b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,req.broker.id,active?.logoFileName||null,
+       b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,
+       b.prospectCallStartMinute,b.prospectCallEndMinute,b.prospectDeclineWarningThreshold,b.prospectUnansweredDailyWarningThreshold,b.prospectUnansweredWeeklyWarningThreshold,req.broker.id,active?.logoFileName||null,
        active?.logoMediaType||null,active?.logoFileSizeBytes||null,active?.logoStorageKey||null,active?.logoFileHash||null],client);
     await audit('OrganizationSettings',id,'draft_created',req.broker.id,{version:row.version},client);return row;
   });
@@ -119,7 +122,9 @@ r.patch('/admin/organization-settings/:id',async(req,res)=>{
   const row=await one(`UPDATE organization_settings SET legal_name=$1,display_name=$2,trade_license_number=$3,registration_authority=$4,registered_address=$5,
     orn=$6,primary_phone=$7,primary_email=$8,website_url=$9,default_currency=$10,timezone=$11,locale=$12,brand_version=$13,proposal_footer=$14,
     default_disclaimer=$15,vat_registration_number=$16,bank_account_name=$17,bank_name=$18,bank_account_number=$19,bank_iban=$20,
-    bank_swift_code=$21,bank_currency=$22,bank_branch=$23,default_document_agent_id=$24,updated_at=NOW() WHERE id=$25 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.orn,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,current.id]);
+    bank_swift_code=$21,bank_currency=$22,bank_branch=$23,default_document_agent_id=$24,prospect_call_start_minute=$25,prospect_call_end_minute=$26,
+    prospect_decline_warning_threshold=$27,prospect_unanswered_daily_warning_threshold=$28,prospect_unanswered_weekly_warning_threshold=$29,
+    updated_at=NOW() WHERE id=$30 AND status='draft' RETURNING *`,[b.legalName,b.displayName,b.tradeLicenseNumber,b.registrationAuthority,b.registeredAddress,b.orn,b.primaryPhone,b.primaryEmail,b.websiteUrl,b.defaultCurrency,b.timezone,b.locale,b.brandVersion,b.proposalFooter,b.defaultDisclaimer,b.vatRegistrationNumber,b.bankAccountName,b.bankName,b.bankAccountNumber,b.bankIban,b.bankSwiftCode,b.bankCurrency,b.bankBranch,b.defaultDocumentAgentId,b.prospectCallStartMinute,b.prospectCallEndMinute,b.prospectDeclineWarningThreshold,b.prospectUnansweredDailyWarningThreshold,b.prospectUnansweredWeeklyWarningThreshold,current.id]);
   await audit('OrganizationSettings',row.id,'draft_edited',req.broker.id,{version:row.version});res.json(publicOrganization(row));
 });
 
@@ -153,15 +158,17 @@ r.post('/crm/contacts/:id/channels',async(req,res)=>{
   const b=req.body||{},kind=b.channelKind,raw=clean(b.rawValue),normalized=normalizeChannel(kind,raw);
   if(!['Phone','Email'].includes(kind)||!normalized) return res.status(400).json({error:'A valid Phone or Email channel is required'});
   if(kind==='Email'&&b.whatsappEnabled) return res.status(400).json({error:'WhatsApp capability is valid only for phone channels'});
+  if(b.restrictionStatus==='do_not_contact'&&(kind!=='Phone'||!clean(b.restrictionReason)||clean(b.restrictionReason).length<5))return res.status(400).json({error:'Phone do-not-contact requires a meaningful reason'});
   const duplicates=await many(`SELECT cc.id,cc.contact_id,c.full_name FROM contact_channels cc JOIN contacts c ON c.id=cc.contact_id
     WHERE cc.channel_kind=$1 AND cc.normalized_value=$2 AND cc.contact_id<>$3 AND c.lifecycle_status<>'merged'`,[kind,normalized,contact.id]);
   if(duplicates.length&&!b.duplicateReviewed) return res.status(409).json({error:'Duplicate contact channel requires review',duplicates});
-  const id=uuid();const channel=await one(`INSERT INTO contact_channels
+  const id=uuid();const channel=await transaction(async client=>{const row=await one(`INSERT INTO contact_channels
     (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,restriction_status,created_by)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
     [id,contact.id,kind,clean(b.usageLabel)||'Primary',raw,normalized,b.whatsappEnabled?1:0,b.isPrimary?1:0,
-     b.verificationStatus||'format_valid',b.restrictionStatus||'allowed',req.broker.id]);
-  await audit('ContactChannel',id,'created',req.broker.id,{contactId:contact.id,kind,duplicateReviewed:Boolean(b.duplicateReviewed)});
+     b.verificationStatus||'format_valid',b.restrictionStatus||'allowed',req.broker.id],client);
+    if(kind==='Phone'&&row.restrictionStatus==='do_not_contact')await recordContactSuppression({phone:normalized,type:'do_not_contact',evidenceReference:clean(b.evidenceReference)||`contact-channel:${id}`,actorId:req.broker.id,reason:clean(b.restrictionReason)},client);
+    await audit('ContactChannel',id,'created',req.broker.id,{contactId:contact.id,kind,duplicateReviewed:Boolean(b.duplicateReviewed),restrictionStatus:row.restrictionStatus},client);return row;});
   res.status(201).json({...channel,duplicateWarnings:duplicates});
 });
 
@@ -170,13 +177,17 @@ r.patch('/crm/contact-channels/:id',async(req,res)=>{
   const contact=await scopedContact(req,channel.contactId);if(!contact)return res.status(404).json({error:'Channel not found'});
   if(isCrmReadOnly(req.broker))return res.status(403).json({error:'This role has read-only CRM access'});
   const b=req.body||{},sets=[],params=[],changes={};
+  if(b.restrictionStatus==='do_not_contact'&&(channel.channelKind!=='Phone'||!clean(b.restrictionReason)||clean(b.restrictionReason).length<5))return res.status(400).json({error:'Phone do-not-contact requires a meaningful reason'});
+  if(channel.restrictionStatus==='do_not_contact'&&b.restrictionStatus!==undefined&&b.restrictionStatus!=='do_not_contact'&&!isManager(req.broker))return res.status(403).json({error:'Manager or Director authority is required to release do-not-contact'});
   if(b.rawValue!==undefined){const normalized=normalizeChannel(channel.channelKind,b.rawValue);if(!normalized)return res.status(400).json({error:'Channel value is invalid'});params.push(clean(b.rawValue));sets.push(`raw_value=$${params.length}`);params.push(normalized);sets.push(`normalized_value=$${params.length}`);changes.value=true;}
   for(const [field,column,convert] of [['usageLabel','usage_label',clean],['whatsappEnabled','whatsapp_enabled',v=>v?1:0],['isPrimary','is_primary',v=>v?1:0],['verificationStatus','verification_status',clean],['restrictionStatus','restriction_status',clean]]){
     if(b[field]!==undefined){if(field==='whatsappEnabled'&&channel.channelKind!=='Phone'&&b[field])return res.status(400).json({error:'WhatsApp capability is valid only for phone channels'});params.push(convert(b[field]));sets.push(`${column}=$${params.length}`);changes[field]=b[field];}
   }
   if(!sets.length)return res.json(channel);params.push(channel.id);
-  const updated=await one(`UPDATE contact_channels SET ${sets.join(',')},verified_at=CASE WHEN verification_status='verified' THEN COALESCE(verified_at,NOW()) ELSE verified_at END,updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params);
-  await audit('ContactChannel',channel.id,'edited',req.broker.id,changes);res.json(updated);
+  try{const updated=await transaction(async client=>{const row=await one(`UPDATE contact_channels SET ${sets.join(',')},verified_at=CASE WHEN verification_status='verified' THEN COALESCE(verified_at,NOW()) ELSE verified_at END,updated_at=NOW() WHERE id=$${params.length} RETURNING *`,params,client);
+    if(row.channelKind==='Phone'&&row.restrictionStatus==='do_not_contact')await recordContactSuppression({phone:row.normalizedValue,type:'do_not_contact',evidenceReference:clean(b.evidenceReference)||`contact-channel:${row.id}`,actorId:req.broker.id,reason:clean(b.restrictionReason)},client);
+    else if(channel.channelKind==='Phone'&&channel.restrictionStatus==='do_not_contact'&&row.restrictionStatus!=='do_not_contact'){const shared=await getContactSuppression(channel.normalizedValue,client);if(shared.restrictions.do_not_contact?.active)await releaseContactSuppression({phone:channel.normalizedValue,type:'do_not_contact',reason:b.restrictionReason,actorId:req.broker.id,actorRole:req.broker.jobRole},client);}
+    await audit('ContactChannel',channel.id,'edited',req.broker.id,changes,client);return row;});res.json(updated);}catch(error){res.status(409).json({error:error.message});}
 });
 
 r.get('/crm/contacts/:id/duplicates',async(req,res)=>{

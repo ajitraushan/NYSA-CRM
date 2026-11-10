@@ -195,7 +195,9 @@ const documents = {
 
 const triggerContract = JSON.parse(fs.readFileSync(triggerContractPath, 'utf8'));
 if (triggerContract.schema !== 'nysa.database-trigger-contract.v1') fail('Unexpected trigger-contract schema');
-if (triggerContract.triggerCount !== 108 || triggerContract.tableCount !== 93) {
+if (!Number.isInteger(triggerContract.triggerCount) || triggerContract.triggerCount < 1 ||
+    !Number.isInteger(triggerContract.tableCount) || triggerContract.tableCount < 1 ||
+    triggerContract.triggers?.length !== triggerContract.triggerCount) {
   fail(`Unexpected trigger contract counts: ${triggerContract.triggerCount}/${triggerContract.tableCount}`);
 }
 

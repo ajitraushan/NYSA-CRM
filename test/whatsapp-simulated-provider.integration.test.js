@@ -56,11 +56,17 @@ test('DEV263 simulated provider uses in-process actions when the configured loop
 
     const stop=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'STOP',eventId:'dev262-stop-1'}});assert.equal(stop.suppressionType,'opt_out');
     const suppression=await db.one("SELECT suppression_type FROM wa_contact_suppressions WHERE normalized_phone='+971509000001'");assert.equal(suppression.suppressionType,'opt_out');
+    const blocked=await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}/simulated-send`,{method:'POST',as:'agent',status:409,body:{templateVersionId:template.version.id}});assert.equal(blocked.code,'CONTACT_SUPPRESSED');
+    await new Promise(resolve=>setTimeout(resolve,10));
+    const serviceInbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000001',name:'Synthetic DEV262 Prospect',teamId:team,agentId:people.agent,text:'Please confirm my request',eventId:'dev267-service-inbound-1'}});assert.equal(serviceInbound.conversationId,inbound.conversationId);
+    const servicePolicy=await db.one("SELECT c.last_customer_message_at,(s.restrictions->'opt_out'->>'recordedAt')::timestamptz AS opt_out_at FROM wa_conversations c JOIN wa_contact_suppressions s ON s.normalized_phone=c.normalized_phone WHERE c.id=$1",[inbound.conversationId]);
+    assert.ok(new Date(servicePolicy.lastCustomerMessageAt).getTime()>new Date(servicePolicy.optOutAt).getTime(),JSON.stringify(servicePolicy));
+    await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}/simulated-send`,{method:'POST',as:'agent',status:202,body:{text:'Your marketing opt-out remains active.'}});
     await request(`/admin/whatsapp-simulation/conversations/${inbound.conversationId}/backdate`,{method:'POST',body:{hours:25}});
     const closed=await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}`,{as:'agent'});assert.equal(closed.conversation.replyWindowOpen,false);
 
     await request('/admin/whatsapp-simulation/control',{method:'POST',body:{paused:false,faultMode:'rate_limited'}});
-    await request(`/crm/whatsapp-workspace/conversations/${inbound.conversationId}/simulated-send`,{method:'POST',as:'agent',status:429,body:{templateVersionId:template.version.id}});
+    await request(`/crm/whatsapp-workspace/conversations/${first.conversationId}/simulated-send`,{method:'POST',as:'agent',status:429,body:{templateVersionId:template.version.id}});
     await request('/admin/whatsapp-simulation/control',{method:'POST',body:{paused:false,faultMode:'none'}});
     const run=await request('/admin/whatsapp-simulation/runs',{method:'POST',status:201,body:{seed:'repeatable-dev262',conversations:1,messages:0,optOuts:0,rate:5,configuration:{teams:[{teamId:team,agentIds:[people.agent]},{teamId:team,agentIds:[people.agent]},{teamId:team,agentIds:[people.agent,people.agent,people.agent,people.agent,people.agent,people.agent,people.agent,people.agent]}]}}});created.runs.push(run.run.id);
     const runInbound=await request('/admin/whatsapp-simulation/inbound',{method:'POST',status:202,body:{from:'+971509000003',name:'Synthetic Cleanup',teamId:team,agentId:people.agent,text:'cleanup me',eventId:'dev262-run-1',simulationRunId:run.run.id}});created.conversations.push(runInbound.conversationId);

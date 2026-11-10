@@ -11,7 +11,11 @@ export function validateOrganizationProfile(body={}){
     bankAccountNumber:clean(body.bankAccountNumber),bankIban:clean(body.bankIban)?.replace(/\s+/g,'').toUpperCase()||null,
     bankSwiftCode:clean(body.bankSwiftCode)?.replace(/\s+/g,'').toUpperCase()||null,
     bankCurrency:String(body.bankCurrency||body.defaultCurrency||'AED').trim().toUpperCase(),bankBranch:clean(body.bankBranch),
-    defaultDocumentAgentId:clean(body.defaultDocumentAgentId)
+    defaultDocumentAgentId:clean(body.defaultDocumentAgentId),
+    prospectCallStartMinute:Number(body.prospectCallStartMinute??540),prospectCallEndMinute:Number(body.prospectCallEndMinute??1080),
+    prospectDeclineWarningThreshold:Number(body.prospectDeclineWarningThreshold??0),
+    prospectUnansweredDailyWarningThreshold:Number(body.prospectUnansweredDailyWarningThreshold??1),
+    prospectUnansweredWeeklyWarningThreshold:Number(body.prospectUnansweredWeeklyWarningThreshold??2)
   };
   if(!profile.legalName||!profile.displayName||!profile.brandVersion)return {error:'Legal name, display name and brand version are required'};
   if(!/^[A-Z]{3}$/.test(profile.defaultCurrency))return {error:'Default currency must be a three-letter ISO currency code'};
@@ -19,6 +23,9 @@ export function validateOrganizationProfile(body={}){
   if(profile.primaryEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.primaryEmail))return {error:'Primary email is invalid'};
   if(profile.websiteUrl){try{const u=new URL(profile.websiteUrl);if(!['http:','https:'].includes(u.protocol))throw new Error();}catch{return {error:'Website must be a valid HTTP or HTTPS URL'};}}
   try{new Intl.DateTimeFormat(profile.locale,{timeZone:profile.timezone}).format(new Date());}catch{return {error:'Locale or timezone is invalid'};}
+  const whole=['prospectCallStartMinute','prospectCallEndMinute','prospectDeclineWarningThreshold','prospectUnansweredDailyWarningThreshold','prospectUnansweredWeeklyWarningThreshold'];
+  if(whole.some(key=>!Number.isInteger(profile[key])||profile[key]<0))return{error:'Prospect calling policy values must be whole non-negative numbers'};
+  if(profile.prospectCallStartMinute<540||profile.prospectCallEndMinute>1080||profile.prospectCallStartMinute>=profile.prospectCallEndMinute)return{error:'Prospect calling hours must stay within 09:00–18:00 prospect-local time'};
   return {profile};
 }
 

@@ -8,6 +8,7 @@ import {resolvePrimaryRoutingArea,selectRoutingRule} from '../routing-service.js
 import {calculateDeadlines} from './lead-operations.js';
 import {CAPABILITY,hasCapability} from '../role-access.js';
 import {loadActiveClassificationCatalogue,validateClassificationSelection} from '../classification-catalogue.js';
+import {recordContactSuppression} from '../contact-suppression.js';
 
 const r=Router(),clean=value=>String(value??'').trim(),SOURCE=/^[a-z][a-z0-9_]{1,63}$/,XLSX='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 r.use(requireAuth);
@@ -92,6 +93,7 @@ r.post('/crm/purchased-data-import/:moduleType/commit',async(req,res)=>{
           const contactId=uuid(),customerReference=`NYSA-CUS-${new Date().getUTCFullYear()}-${contactId.slice(0,8).toUpperCase()}`,v=row.normalized,preferred=['Phone','Email','WhatsApp','SMS'].includes(clean(v.preferredChannel))?clean(v.preferredChannel):null,restricted=['do_not_contact','restricted'].includes(clean(v.restrictionStatus));
           contact=await one(`INSERT INTO contacts(id,customer_reference,full_name,email,phone,preferred_channel,notes,owner_id,created_by,email_status,phone_status,do_not_contact,lifecycle_status) VALUES($1,$2,$3,$4,$5,$6,$7,NULL,$8,'unverified','unverified',$9,$10) RETURNING *`,[contactId,customerReference,clean(v.fullName),v.email||null,v.phone||null,preferred,clean(v.sourceNotes)||null,req.broker.id,restricted?1:0,restricted?'restricted':'active'],client);
           for(const [kind,raw,normalized] of [['Email',v.email,v.email],['Phone',v.phone,v.phone]])if(raw)await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,restriction_status,created_by) VALUES($1,$2,$3,$4,$5,$6,1,'unverified',$7,$8)`,[uuid(),contact.id,kind,raw,normalized,kind==='Phone'&&preferred==='WhatsApp'?1:0,restricted?'do_not_contact':'allowed',req.broker.id],client);
+          if(restricted&&v.phone)await recordContactSuppression({phone:v.phone,type:'do_not_contact',evidenceReference:`purchased-import:${batchId}:${row.externalRowReference}`,actorId:req.broker.id,reason:clean(v.sourceNotes)||'Purchased import marked do not contact'},client);
           outcome='created';
           if(v.phone&&!createdByPhone.has(v.phone))createdByPhone.set(v.phone,contact);
         }

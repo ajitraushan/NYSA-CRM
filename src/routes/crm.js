@@ -5,7 +5,7 @@ import { one, many, execute, transaction, uuid, audit } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { SOURCES, STAGES, TEMPERATURES, CUSTOMER_ROLE_INPUT_TYPES, CHANNELS, ACTIVITY_TYPES,
   COMPANY_TYPES, JOB_ROLES, QUALIFICATION_GUIDANCE, validateBudget, validateLeadStage,
-  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues,
+  validateContactIdentity, calculateMortgage, calculateRoi, isReassignmentDue, validateLeadTransition, normalizeDelimitedValues, normalizePhone,
   activityStageTransition } from '../crm-domain.js';
 import { hasNysaStaffIdentity, isCompanyReader, isManager, isCrmReadOnly, canReadLead,
   canWriteLead, canOperateLead, canWriteOpportunity, canAssignLead, leadScopeSql, opportunityScopeSql, teamScopeSql, contactScopeSql, companyScopeSql } from '../crm-policy.js';
@@ -16,6 +16,7 @@ import { checkEmailCredibility,checkApolloProfessionalEvidence,contactEnrichment
 import { loadActiveClassificationCatalogue,validateClassificationSelection,legacyBusinessType,isInventorySideObjective } from '../classification-catalogue.js';
 import {CAPABILITY,hasCapability} from '../role-access.js';
 import {deriveCustomerKycStatus,effectiveIdentityState,validateIdentitySubmission,validateCompanyDocumentSubmission,CUSTOMER_IDENTITY_TYPES,CORPORATE_IDENTITY_TYPES} from '../customer-document-domain.js';
+import {blocksOutbound,getContactSuppression,recordContactSuppression} from '../contact-suppression.js';
 
 const r = Router();
 const EXTERNAL_COMPANY_ROLES=['developer','agency','referral_partner','service_provider','employer','supplier','corporate_client','landlord','vendor','other'];
@@ -459,6 +460,7 @@ r.post('/crm/contacts', async (req, res) => {
   if (!canWriteCrm(req.broker)) return res.status(403).json({ error:'This role has read-only CRM access' });
   if (!clean(b.fullName)) return res.status(400).json({ error: 'fullName is required' });
   if (!clean(b.email) || !clean(b.phone)) return res.status(400).json({ error:'New customers require email and phone' });
+  if(b.doNotContact&&(!clean(b.contactRestrictionReason)||clean(b.contactRestrictionReason).length<5))return res.status(400).json({error:'A meaningful contact-restriction reason is required'});
   const identity=validateContactIdentity(b.email,b.phone);
   if(identity.error) return res.status(400).json({error:identity.error});
   const enumError = invalidEnum(b.contactType || 'buyer', CUSTOMER_ROLE_INPUT_TYPES, 'contactType') ||
@@ -492,6 +494,7 @@ r.post('/crm/contacts', async (req, res) => {
       VALUES ($1,$2,'Email','Primary',$3,$4,1,$5,$6)`,[uuid(),id,String(b.email).trim(),identity.email,identity.emailStatus,req.broker.id],client);
     if(identity.phone)await execute(`INSERT INTO contact_channels (id,contact_id,channel_kind,usage_label,raw_value,normalized_value,whatsapp_enabled,is_primary,verification_status,created_by)
       VALUES ($1,$2,'Phone','Primary',$3,$4,$5,1,$6,$7)`,[uuid(),id,String(b.phone).trim(),identity.phone,b.whatsappEnabled||b.preferredChannel==='WhatsApp'?1:0,identity.phoneStatus,req.broker.id],client);
+    if(b.doNotContact)await recordContactSuppression({phone:identity.phone,type:'do_not_contact',evidenceReference:clean(b.contactRestrictionEvidenceReference)||`contact:${id}`,actorId:req.broker.id,reason:clean(b.contactRestrictionReason)},client);
     if(b.companyId)await execute(`INSERT INTO company_contacts (id,company_id,contact_id,relationship_role,is_primary,created_by) VALUES ($1,$2,$3,$4,1,$5)`,[uuid(),b.companyId,id,clean(b.companyRelationshipRole)||'customer_contact',req.broker.id],client);
     await audit('Contact',id,duplicatePending?'duplicate_draft_created':'created',req.broker.id,
       {fullName:row.fullName,duplicateReviewStatus:row.duplicateReviewStatus,duplicateMatchIds:duplicates.map(x=>x.id)},client);return row;
@@ -1102,8 +1105,8 @@ r.post('/crm/leads/:id/activities', async (req,res)=>{
   if(b.activityType==='Meeting'&&(!meetingStart||!Number.isInteger(Number(b.meetingDurationMinutes||30))||Number(b.meetingDurationMinutes||30)<15||Number(b.meetingDurationMinutes||30)>480))return res.status(400).json({error:'Meeting date/time and a duration from 15 to 480 minutes are required'});
   if(b.followUpRequired&&!nextActionDueAt)return res.status(400).json({error:'A due date is required when follow-up is required'});
   if(b.direction==='Outbound'&&customerDiscussion){
-    const contact=await one('SELECT do_not_contact FROM contacts WHERE id=$1',[lead.contactId]);
-    if(contact?.doNotContact)return res.status(409).json({error:'Outbound communication is blocked by the contact restriction'});
+    const contact=await one('SELECT do_not_contact,phone FROM contacts WHERE id=$1',[lead.contactId]),suppression=contact?.phone?await getContactSuppression(normalizePhone(contact.phone)):null;
+    if(contact?.doNotContact||blocksOutbound(suppression))return res.status(409).json({error:`Outbound communication is blocked by ${suppression?.strongest||'the contact restriction'}`});
   }
   let documentVersion=null;
   if(b.documentVersionId){

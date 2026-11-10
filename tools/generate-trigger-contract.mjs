@@ -6,8 +6,7 @@ import pg from 'pg';
 const {Pool}=pg;
 const FIXTURE_DATABASE='nysa_test_fixture';
 const FIXTURE_ROLE='nysa_test_user';
-const FIXTURE_SCHEMA='nysa_test_user';
-const CONTRACT_BASELINE_MIGRATION='167_whatsapp_simulator_fault_contract.sql';
+const FIXTURE_SCHEMA=process.env.NYSA_FIXTURE_SCHEMA_NAME||'nysa_test_user';
 
 const quoteIdentifier=value=>`"${String(value).replaceAll('"','""')}"`;
 const escapeRegExp=value=>String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -44,9 +43,7 @@ async function main(){
   }
   const migrationDirectory=path.resolve('src/migrations');
   const allMigrationNames=(await fs.readdir(migrationDirectory)).filter(name=>name.endsWith('.sql')).sort();
-  const baselineIndex=allMigrationNames.indexOf(CONTRACT_BASELINE_MIGRATION);
-  if(baselineIndex<0)throw new Error(`Trigger-contract baseline migration is unavailable: ${CONTRACT_BASELINE_MIGRATION}`);
-  const migrationNames=allMigrationNames.slice(0,baselineIndex+1);
+  const migrationNames=allMigrationNames;
   const migrations=[];
   for(const name of migrationNames)migrations.push({name,sql:await fs.readFile(path.join(migrationDirectory,name),'utf8')});
 

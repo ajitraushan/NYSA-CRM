@@ -58,15 +58,22 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     assert.equal(approved.version.internalStatus,'approved');
     assert.equal(approved.version.metaStatus,'not_submitted');
 
+    const suppressedPhone='+971500000742';
+    const {recordContactSuppression}=await import('../src/contact-suppression.js');
+    await db.transaction(client=>recordContactSuppression({phone:suppressedPhone,type:'opt_out',evidenceReference:'dev267-existing-stop',actorId:people.agent},client));
     const rows=[
       {name:'Synthetic Prospect One',phone:'+971500000741',email:'prospect-one@example.invalid',source:'synthetic_test',consentStatus:'verified',consentEvidenceRef:'synthetic-consent-1',tags:['investor'],requirements:{areas:['Dubai Marina'],businessType:'Sale',budgetMax:2500000}},
-      {name:'Synthetic Prospect Duplicate',phone:'+971500000741',email:'prospect-two@example.invalid',source:'synthetic_test',consentStatus:'evidence_pending',tags:['investor']}
+      {name:'Synthetic Prospect Duplicate',phone:'+971500000741',email:'prospect-two@example.invalid',source:'synthetic_test',consentStatus:'evidence_pending',tags:['investor']},
+      {name:'Synthetic Existing Stop',phone:suppressedPhone,email:'prospect-stop@example.invalid',source:'synthetic_test',consentStatus:'verified',consentEvidenceRef:'later-import-evidence',tags:['investor']}
     ];
     const source={sourceType:'event'};
     const preview=await request('/crm/whatsapp-workspace/recipient-imports/preview',{method:'POST',body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows,...source}});
-    assert.deepEqual(preview.counts,{ready:1,review_required:1,invalid:0});
+    assert.deepEqual(preview.counts,{ready:1,review_required:1,invalid:0,suppressed:1});
+    assert.equal(preview.rows.find(row=>row.phone===suppressedPhone).suppressionType,'opt_out');
     const committed=await request('/crm/whatsapp-workspace/recipient-imports/commit',{method:'POST',status:201,body:{teamId:teams.main,originalFileName:'synthetic-recipients.csv',rows,...source,previewHash:preview.previewHash,reviewToken:preview.reviewToken,decisions:[{rowNumber:2,disposition:'excluded'}]}});
-    ids.batch=committed.batch.id;assert.equal(committed.includedCount,1);
+    ids.batch=committed.batch.id;assert.equal(committed.includedCount,1);assert.equal(committed.retainedSuppressedCount,1);
+    const retained=await db.one('SELECT suppression_status,suppression_reason FROM wa_campaign_recipients WHERE batch_id=$1 AND normalized_phone=$2',[ids.batch,suppressedPhone]);
+    assert.deepEqual(retained,{suppressionStatus:'suppressed',suppressionReason:'opt_out'});
 
     const segment=await request('/crm/whatsapp-workspace/segments',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} consented`,description:'Synthetic verified recipients',definition:{batchIds:[ids.batch],consentStatus:'verified',tagsAny:['investor']}}});
     ids.segment=segment.segment.id;
@@ -107,6 +114,7 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     if(ids.batch){await db.execute('DELETE FROM wa_campaign_recipients WHERE batch_id=$1',[ids.batch]);await db.execute('DELETE FROM wa_recipient_import_batches WHERE id=$1',[ids.batch]);}
     if(ids.material)await db.execute('DELETE FROM wa_material_catalogue WHERE id=$1',[ids.material]);
     if(ids.template){await db.execute('DELETE FROM wa_message_template_versions WHERE template_id=$1',[ids.template]);await db.execute('DELETE FROM wa_message_templates WHERE id=$1',[ids.template]);}
+    await db.execute("DELETE FROM wa_contact_suppressions WHERE normalized_phone='+971500000742'");
     await db.execute('DELETE FROM audit_log WHERE performed_by=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM sessions WHERE broker_id=ANY($1::uuid[])',[Object.values(people)]);
     await db.execute('DELETE FROM team_memberships WHERE team_id=ANY($1::uuid[])',[Object.values(teams)]);

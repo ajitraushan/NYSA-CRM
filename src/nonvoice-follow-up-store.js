@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import {FOLLOW_UP_POLICY_VERSION,applySequenceEvent} from './lead-follow-up-domain.js';
+import {recordContactSuppression} from './contact-suppression.js';
+import {normalizePhone} from './crm-domain.js';
 const id=()=>crypto.randomUUID();
 const fail=code=>{throw Object.assign(new Error(code),{statusCode:409});};
 const boundedRef=value=>typeof value==='string' && /^[A-Za-z0-9_.:-]{1,160}$/.test(value);
@@ -77,9 +79,13 @@ export async function applyNonvoiceEvent(input,client) {
   if(input.type==='opt_out'||input.type==='wrong_person'){await client.query("UPDATE tasks SET status='cancelled',outcome='Stopped by verified contact restriction',updated_at=NOW() WHERE id=$1 AND status IN ('open','in_progress')",[current.next_action_task_id]);
    await client.query("UPDATE lead_response_callbacks SET status='cancelled' WHERE case_id=$1 AND status='confirmed_callback'",[current.id]);
   }
-  if(input.type==='opt_out'||input.type==='wrong_person') await client.query(`UPDATE contacts SET do_not_contact=1,
-    contact_restriction_reason=$2,updated_at=NOW() WHERE id=(SELECT contact_id FROM leads WHERE id=$1)`,
-    [current.lead_id,input.type==='opt_out'?'Customer opted out through verified integration':'Wrong person reported through verified integration']);
+  if(input.type==='opt_out'||input.type==='wrong_person'){
+    await client.query(`UPDATE contacts SET do_not_contact=1,
+      contact_restriction_reason=$2,updated_at=NOW() WHERE id=(SELECT contact_id FROM leads WHERE id=$1)`,
+      [current.lead_id,input.type==='opt_out'?'Customer opted out through verified integration':'Wrong person reported through verified integration']);
+    const contact=await one(client,'SELECT c.phone FROM contacts c JOIN leads l ON l.contact_id=c.id WHERE l.id=$1',[current.lead_id]);
+    const normalized=normalizePhone(contact?.phone);if(normalized)await recordContactSuppression({phone:normalized,type:input.type==='opt_out'?'opt_out':'wrong_number',evidenceReference:`nonvoice:${input.connectionRef}:${input.eventRef}`,actorId:current.created_by,reason:input.type},client);
+  }
   await client.query(`INSERT INTO audit_log(id,entity_type,entity_id,action,performed_by,details)
     VALUES($1,'Lead',$2,'nonvoice_event_applied',$3,$4)`,[id(),current.lead_id,current.created_by,
     JSON.stringify({caseRef:current.id,type:input.type,generation:next.generation})]);

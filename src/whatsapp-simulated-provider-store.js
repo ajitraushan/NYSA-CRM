@@ -1,5 +1,6 @@
 import {audit,execute,many,one,transaction,uuid} from './db.js';
 import {classifyWhatsAppSuppression} from './whatsapp-campaign-domain.js';
+import {recordContactSuppression} from './contact-suppression.js';
 import {assertSyntheticWhatsAppPhone,simulatedPayloadHash} from './whatsapp-simulated-provider.js';
 
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
@@ -34,9 +35,7 @@ async function validateOwner(payload,client){
 async function applySuppression(phone,text,evidenceReference,actorId,client){
   const suppressionType=classifyWhatsAppSuppression(text);
   if(!suppressionType)return null;
-  await execute(`INSERT INTO wa_contact_suppressions(normalized_phone,suppression_type,evidence_reference,recorded_by)
-    VALUES($1,$2,$3,$4) ON CONFLICT(normalized_phone) DO UPDATE SET suppression_type=EXCLUDED.suppression_type,
-    evidence_reference=EXCLUDED.evidence_reference,recorded_by=EXCLUDED.recorded_by,recorded_at=NOW(),audit_expires_at=NOW()+INTERVAL '12 months'`,[phone,suppressionType,evidenceReference,actorId],client);
+  await recordContactSuppression({phone,type:suppressionType,evidenceReference,actorId,auditExpiresAt:new Date(Date.now()+365*86400000).toISOString()},client);
   await execute(`UPDATE wa_campaign_recipients SET suppression_status='suppressed',suppressed_at=NOW(),suppression_reason=$2,
     consent_status=CASE WHEN $2='opt_out' THEN 'withdrawn' ELSE 'denied' END WHERE normalized_phone=$1`,[phone,suppressionType],client);
   await execute(`UPDATE wa_campaign_approval_recipients SET removed_at=COALESCE(removed_at,NOW()),removal_reason=COALESCE(removal_reason,$2)

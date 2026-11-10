@@ -120,7 +120,7 @@ export function displayMetaStatus(value){
 }
 
 export function recipientDecision(row,decision={}){
-  if(row.action==='invalid')return{include:false,disposition:'excluded',error:null};
+  if(['invalid','suppressed'].includes(row.action))return{include:false,disposition:'excluded',error:null};
   if(row.action==='ready')return{include:decision.include!==false,disposition:decision.include===false?'excluded':'unique',error:null};
   const disposition=clean(decision.disposition,40);
   if(!['linked','kept_separate','excluded'].includes(disposition))return{include:false,disposition:null,error:`Row ${row.rowNumber}: choose Link, Keep separate or Exclude`};

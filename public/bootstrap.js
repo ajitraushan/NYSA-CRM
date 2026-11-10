@@ -5,13 +5,14 @@
   if(!build)throw new Error('Application version is missing');
   window.NYSA_ASSET_BUILD=build;
   const financeCss=document.createElement('link');financeCss.rel='stylesheet';financeCss.href=`/finance-workspace.css?v=${encodeURIComponent(build)}`;document.head.appendChild(financeCss);
+  const prospectCss=document.createElement('link');prospectCss.rel='stylesheet';prospectCss.href=`/prospect-diary.css?v=${encodeURIComponent(build)}`;document.head.appendChild(prospectCss);
   const loadScript=file=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=`/${file}?v=${encodeURIComponent(build)}`;if(['localhost','127.0.0.1'].includes(location.hostname))script.src+='&localBust='+Date.now();script.onload=resolve;script.onerror=()=>reject(new Error(`${file} could not be loaded for ${build}`));document.body.appendChild(script);});
   // Feature modules must exist before app.js restores the last workspace. Loading
   // app.js early made Administration sections appear/disappear across refreshes.
   // The independent feature modules can load in parallel; only app.js is gated.
   await new Promise((resolve,reject)=>{const designCss=document.createElement('link');designCss.rel='stylesheet';designCss.href=`/ui-design-system.css?v=${encodeURIComponent(build)}`;designCss.onload=resolve;designCss.onerror=()=>reject(new Error('The shared workspace styles could not be loaded'));document.head.appendChild(designCss);});
   await loadScript('ui-design-system.js');
-  const featureFiles=['review-task-ui.js','director-commission-summary-ui.js','customer-lookup-ui.js','finance-workspace-ui.js','shared-review-panel.js','accountant-workspace-ui.js','purchased-data-import-ui.js','whatsapp-workspace-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js','lead-integration-ui.js','lead-response-dev244-ui.js','incoming-leads-ui.js'];
+  const featureFiles=['review-task-ui.js','director-commission-summary-ui.js','customer-lookup-ui.js','finance-workspace-ui.js','shared-review-panel.js','accountant-workspace-ui.js','purchased-data-import-ui.js','whatsapp-workspace-ui.js','prospect-diary-ui.js','offer-ui.js','deal-ui.js','inventory-workspace-ui.js','dashboard-ui.js','official-document-ui.js','market-intelligence-ui.js','commission-payout-ui.js','receivables-ui.js','opportunity-finance-ui.js','agent-leave-ui.js','document-compliance-ui.js','marketing-material-compliance-ui.js','matching-completion-ui.js','email-calendly-ui.js','lead-integration-ui.js','lead-response-dev244-ui.js','incoming-leads-ui.js'];
   const [moneyInput]=await Promise.all([import(`/money-input.js?v=${encodeURIComponent(build)}`),...featureFiles.map(loadScript)]);
   window.parseReceiptAmount=moneyInput.parseReceiptAmount;
   // Phase 1 owns the current desks; legacy modules must not win a network-load race.

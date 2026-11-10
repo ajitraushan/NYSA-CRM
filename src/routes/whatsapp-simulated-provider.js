@@ -10,8 +10,10 @@ import {
   applySimulatedMessageStatus,applySimulatedTemplateStatus,cleanupAllSimulatedRecords,cleanupSimulationRun,ensureSimulatedCampaignConversation,ingestSimulatedInbound,recordSimulatedOutbound
 } from '../whatsapp-simulated-provider-store.js';
 import {assertReplySendAllowed,refreshReplyLockAfterSend,replyLockState,selectConversationWithReplyLock,whatsAppReplyLockConfig} from '../whatsapp-reply-lock.js';
+import {getContactSuppression} from '../contact-suppression.js';
 
 const clean=(value,max=500)=>String(value??'').trim().slice(0,max);
+const milliseconds=value=>value instanceof Date?value.getTime():Date.parse(value||'');
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const operational=new Set(['sales_agent','manager','director']);
 const reportCallbackFailure=()=>console.error(JSON.stringify({component:'whatsapp-simulator',event:'callback-delivery-failed'}));
@@ -251,10 +253,15 @@ export function createWhatsAppSimulationControlRoutes(){
     const result=await transaction(async client=>{
       const conversation=await scopedConversation(req.params.id,req.broker,{client,forUpdate:true});
       if(!conversation)return{code:404,error:'Simulated conversation not found or outside your scope'};
+      const suppression=await getContactSuppression(conversation.normalizedPhone,client);
+      if(suppression.blocked){
+        const optOutAt=milliseconds(suppression.restrictions.opt_out?.recordedAt),lastInbound=milliseconds(conversation.lastCustomerMessageAt),serviceReply=suppression.strongest==='opt_out'&&Number.isFinite(optOutAt)&&lastInbound>optOutAt&&Date.now()-lastInbound<=24*60*60*1000;
+        if(!serviceReply)return{code:409,error:`Outbound WhatsApp is blocked by ${suppression.strongest}`,response:{error:`Outbound WhatsApp is blocked by ${suppression.strongest}`,code:'CONTACT_SUPPRESSED'}};
+      }
       let lockBefore;
       try{lockBefore=assertReplySendAllowed(conversation,req.broker);}
       catch(error){if(error.code==='WHATSAPP_REPLY_LOCK_HELD')return{code:409,error:error.message,response:error.responseBody};throw error;}
-      const now=Date.now(),replyOpen=Boolean(conversation.lastCustomerMessageAt&&now-Date.parse(conversation.lastCustomerMessageAt)<=24*60*60*1000);
+      const now=Date.now(),replyOpen=Boolean(conversation.lastCustomerMessageAt&&now-milliseconds(conversation.lastCustomerMessageAt)<=24*60*60*1000);
       const templateVersionId=clean(req.body?.templateVersionId,36)||null,text=clean(req.body?.text,4096);
       if(!replyOpen&&!templateVersionId)return{code:409,error:'The 24-hour reply window is closed; select a simulated-approved template'};
       if(replyOpen&&!text&&!templateVersionId)return{code:400,error:'Enter reply text or select a template'};

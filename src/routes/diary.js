@@ -48,10 +48,11 @@ r.get('/crm/diary',async(req,res)=>{
       LEFT JOIN activity_calendar_events cal ON cal.activity_id=a.id AND cal.provider='google_calendar'
       WHERE a.due_at>=$1 AND a.due_at<$2 AND a.activity_type<>'Note'${ownerClause.replace('%ALIAS%','a.owner_id')}
       ORDER BY a.due_at`,params),
-    many(`SELECT t.id,t.subject,t.details,t.due_at AS starts_at,t.completed_at,t.status AS record_status,t.assignee_id AS agent_id,
+    many(`SELECT t.id,t.subject,t.details,t.due_at AS starts_at,t.completed_at,t.status AS record_status,t.assignee_id AS agent_id,t.task_type,
       b.name AS agent_name,c.id AS customer_id,c.full_name AS customer_name,c.phone AS customer_phone,c.email AS customer_email,
-      l.id AS lead_id,l.title AS lead_title,t.priority
-      FROM tasks t JOIN brokers b ON b.id=t.assignee_id JOIN contacts c ON c.id=t.contact_id JOIN leads l ON l.id=t.lead_id
+      l.id AS lead_id,l.title AS lead_title,p.id AS prospect_id,p.display_name AS prospect_name,p.phone AS prospect_phone,p.email AS prospect_email,t.priority
+      FROM tasks t JOIN brokers b ON b.id=t.assignee_id LEFT JOIN contacts c ON c.id=t.contact_id LEFT JOIN leads l ON l.id=t.lead_id
+      LEFT JOIN prospects p ON p.id=t.prospect_id
       WHERE t.due_at>=$1 AND t.due_at<$2${ownerClause.replace('%ALIAS%','t.assignee_id')}
       ORDER BY t.due_at`,params),
     many(`SELECT v.id,v.starts_at,v.ends_at,v.status AS record_status,v.location,v.instructions,v.client_message,v.outcome,v.feedback,
@@ -66,9 +67,9 @@ r.get('/crm/diary',async(req,res)=>{
   ]);
   const now=new Date(),items=[
     ...activities.map(x=>({...x,sourceKind:'activity',category:x.activityType==='Call'?'call':x.activityType==='Meeting'?'meeting':'task',appointmentType:x.activityType,durationMinutes:x.meetingDurationMinutes??(x.durationSeconds?Math.ceil(x.durationSeconds/60):null),recordStatus:null})),
-    ...tasks.map(x=>({...x,sourceKind:'task',category:'task',appointmentType:'Task',endsAt:null,durationMinutes:null})),
+    ...tasks.map(x=>({...x,customerName:x.customerName||x.prospectName||'Prospect',customerPhone:x.customerPhone||x.prospectPhone,customerEmail:x.customerEmail||x.prospectEmail,sourceKind:'task',category:'task',appointmentType:x.taskType==='prospect_follow_up'?'Prospect follow-up':'Task',endsAt:null,durationMinutes:null})),
     ...viewings.map(x=>({...x,sourceKind:'viewing',category:'viewing',appointmentType:'Physical viewing',durationMinutes:Math.round((new Date(x.endsAt)-new Date(x.startsAt))/60000)}))
-  ].map(item=>({...item,status:diaryStatus(item,now),calendarDeliveryStatus:calendarDeliveryStatus(item)})).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt)||a.customerName.localeCompare(b.customerName));
+  ].map(item=>({...item,status:diaryStatus(item,now),calendarDeliveryStatus:calendarDeliveryStatus(item)})).sort((a,b)=>new Date(a.startsAt)-new Date(b.startsAt)||String(a.customerName||'').localeCompare(String(b.customerName||'')));
   res.json({timezone:'Asia/Dubai',from:range.from,to:range.to,selectedAgentId,companyView,allowedAgents,items:markDiaryConflicts(items)});
 });
 
