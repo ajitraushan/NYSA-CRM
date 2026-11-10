@@ -53,15 +53,14 @@ jobs:
           SQL
           PGPASSWORD=nysa_test_password psql -X -Atc "SELECT current_setting('server_version');"
 
-      - name: Rebuild and verify exact DEV267 origin package
+      - name: Verify and extract exact DEV267 origin package
         run: |
-          mkdir -p release-artifacts/origin/dev267-run2-ci release-artifacts/dev267-preparation/run2/rehearsal
-          npm run release:package -- --commit "$CANDIDATE_COMMIT" --output release-artifacts/origin/dev267-run2-ci
-          ZIP=release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.zip
-          MANIFEST=release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.json
+          mkdir -p release-artifacts/dev267-preparation/run2/rehearsal
+          ZIP=release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.zip
+          MANIFEST=release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.json
           test "$(sha256sum "$ZIP" | cut -d' ' -f1)" = "$PACKAGE_SHA256"
           test "$(sha256sum "$MANIFEST" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
-          npm run release:verify-package -- "$ZIP" "$MANIFEST" release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.sha256.txt
+          npm run release:verify-package -- "$ZIP" "$MANIFEST" release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.sha256.txt
           mkdir /tmp/dev267-candidate-source
           unzip -q "$ZIP" -d /tmp/dev267-candidate-source
           sha256sum "$ZIP" "$MANIFEST" | tee release-artifacts/dev267-preparation/run2/rehearsal/EXACT_PACKAGE_SHA256SUMS.txt
@@ -90,8 +89,8 @@ jobs:
             sudo cp "tools/$file" "$HOST_TOOLS/$file"
           done
           test "$(sudo sha256sum "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" | cut -d' ' -f1)" = "$OPERATOR_SHA256"
-          sudo cp release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.zip "$PREP_ROOT/"
-          sudo cp release-artifacts/origin/dev267-run2-ci/nysa-core-2.1.0-dev.267-origin.manifest.json "$PREP_ROOT/"
+          sudo cp release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.zip "$PREP_ROOT/"
+          sudo cp release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.json "$PREP_ROOT/"
           sudo mkdir -p "$PREP_ROOT/evidence"
           sudo chown -R runner:runner /home/nysareal/crm-release-preparation /home/nysareal/nysa-core-dashboard-dd6262a-stage
           sudo chmod -R a+rX /home/nysareal/nodevenv /home/nysareal/crm-deployment-tools
