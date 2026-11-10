@@ -198,7 +198,8 @@ jobs:
             | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_OPERATOR_RAW.txt
           OPERATOR_STATUS=${PIPESTATUS[0]}
           set -e
-          cp /tmp/dev267-rehearsal-worker.log release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_WORKER_RAW.txt || true
+          sudo cp /tmp/dev267-rehearsal-worker.log release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_WORKER_RAW.txt || true
+          sudo chown runner:runner release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_WORKER_RAW.txt || true
           cp /tmp/dev267-proxy.log release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_PROXY_RAW.txt || true
           cp /tmp/dev267-selector-debug.log release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_SELECTOR_RAW.txt || true
           cat release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_WORKER_RAW.txt || true
