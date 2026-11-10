@@ -10,6 +10,7 @@ if(process.env.NYSA_REHEARSAL_IDLE_WORKER==='true'){
   // exact-marker, exact-CWD process alive without starting an ungoverned
   // second HTTP listener; Phase C exercises the normal verified stop and then
   // the selector stub starts the real DEV267 server below.
+  setInterval(()=>{},60_000);
   await new Promise(()=>{});
 }else{
   await import(pathToFileURL(path.join(root,'src','server.js')));
