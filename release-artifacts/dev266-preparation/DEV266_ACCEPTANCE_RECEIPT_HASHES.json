@@ -1,0 +1,66 @@
+{
+  "schema": "nysa.dev266.acceptance-receipt-hashes.v1",
+  "generatedAt": "2026-11-10T18:13:06.0059821Z",
+  "generator": "PowerShell Get-FileHash SHA256 with receipt identity/result assertions",
+  "candidate": {
+    "version": "2.1.0-dev.266",
+    "commit": "1abd17771a5dda3be4b5108a6453e70438ad3ed0",
+    "packageSha256": "5bf0479e9be519d708c8b94a076975c24caec93718c2550161badab450e112b5",
+    "manifestSha256": "b760f9dd3a9201017a3fc7aa00ddc5b954de4c1969e7aa7dbfd9cd7ad800c0c8",
+    "configSha256": "6c44f4625e916cd2c5dac344b093051abf4e7f16cf0db9b4f793647a289062f3"
+  },
+  "receipts": [
+    {
+      "path": "STAGE_RESULT.json",
+      "bytes": 8450,
+      "sha256": "2224dee5e3cbd5e9820e323fe1ca18e22514f0a97380992a138ac2e182af0186"
+    },
+    {
+      "path": "BACKUP_RESULT.json",
+      "bytes": 17068,
+      "sha256": "dc6835a6deb720e90bca52edbfded7ef0f27599d5c86d3a4a7e17ba00991d61e"
+    },
+    {
+      "path": "SCOPED_BACKUP_VERIFIED.json",
+      "bytes": 9057,
+      "sha256": "304850a01a610739eed2f4f518724aec53cd3fb758f358561e8664b5efc69e4e"
+    },
+    {
+      "path": "INSTALL_RESULT.json",
+      "bytes": 15910,
+      "sha256": "167e54e024f6c5a84ef7eea66dbfb4a200392817b8240942652e404c0b9c05e0"
+    },
+    {
+      "path": "SMOKE_RESULT.json",
+      "bytes": 5092,
+      "sha256": "5cb05ffeb38642152f8bcfdc5165faea20a63a0eea11a64632e4b7449c0d9483"
+    },
+    {
+      "path": "DEV266_DEPLOY_CONFIG.json",
+      "bytes": 83170,
+      "sha256": "6c44f4625e916cd2c5dac344b093051abf4e7f16cf0db9b4f793647a289062f3"
+    }
+  ],
+  "backupArtifacts": {
+    "path": "/home/nysareal/crm-release-preparation/20261110-dev266/scoped-backup-dev266-phased-run1-d7a5a34",
+    "appArchiveSha256": "074dda295832e7c221c12dc2d13354c0193a68623ad5a195b68509f259d07b8f",
+    "databaseDumpSha256": "cfdbaa5f271d51478637adf445eea55a6ea4246fd95295065629750a982e412e",
+    "database": "nysareal_nysa_dev247_smoke",
+    "tableCount": 303,
+    "triggerCount": 108,
+    "verifiedAt": "2026-11-10T17:21:40.655Z"
+  },
+  "assertions": {
+    "stage": "STAGED_AND_VERIFIED",
+    "backup": "SCOPED_BACKUP_VERIFIED",
+    "install": "INSTALLED_STARTED_AND_READY",
+    "smoke": "SETTLED_SMOKE_PASSED",
+    "version": "2.1.0-dev.266",
+    "database": "ready",
+    "workerCount": 1,
+    "migrationCount": 169,
+    "tableCount": 303,
+    "triggerCount": 108,
+    "schemaContractMatches": true
+  }
+}
