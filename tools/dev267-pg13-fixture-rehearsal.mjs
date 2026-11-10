@@ -43,7 +43,11 @@ try{
       await client.query('BEGIN');
       try{
         await client.query(sql);
-        await client.query('INSERT INTO public.schema_migrations(version) VALUES($1)',[file]);
+        // A small legacy migration set self-registers in schema_migrations.
+        // Match the governed fixture builders and register runner-managed
+        // migrations idempotently so those historical files are not inserted
+        // twice while every migration still appears exactly once in the ledger.
+        await client.query('INSERT INTO public.schema_migrations(version) VALUES($1) ON CONFLICT(version) DO NOTHING',[file]);
         await client.query('COMMIT');
       }catch(error){
         await client.query('ROLLBACK');
