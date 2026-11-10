@@ -71,4 +71,7 @@ test('DEV266 adds no migration and retains the accepted schema ledger',()=>{
   const migrations=fs.readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
   assert.equal(migrations.length,169);
   assert.equal(migrations.at(-1),'169_restore_full_schema_contract.sql');
+  for(const name of ['columns.json','constraints.json','functions.json','indexes.json','manifest.json','sequences-views.json']){
+    assert.deepEqual(fs.readFileSync(new URL(`../src/database-schema-baseline/${name}`,import.meta.url)),fs.readFileSync(new URL(`../src/database-schema-contract/${name}`,import.meta.url)),`DEV266 baseline must reflect the accepted DEV265 canonical schema: ${name}`);
+  }
 });

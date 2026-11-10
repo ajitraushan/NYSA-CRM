@@ -5,42 +5,41 @@
     "postgresqlVersion": "13.23",
     "migrationCount": 168,
     "latestMigration": "168_restore_governed_trigger_contract.sql",
-    "sourcePrefix": "ACTUAL",
     "sourceFiles": {
       "constraints": {
-        "file": "ACTUAL_constraints.txt",
-        "sha256": "caafa66bc5eb558facaf02bcb4cebdf10cc2fa89261ba2c3fadc907dc0c34a52"
+        "file": "EXPECTED_constraints.txt",
+        "sha256": "584f20eaf41d5bbd66c4ed799fdfa9b837d8d9004f2b7dd761ff007120cfe856"
       },
       "indexes": {
-        "file": "ACTUAL_indexes.txt",
-        "sha256": "754e56f705db9271a504216ed41b9daaba9e58c12a9a5f857a553fff1c6c510d"
+        "file": "EXPECTED_indexes.txt",
+        "sha256": "02f2c1087d88c4daba784ed0f096b5b0028453190d1a620f78c487f18ceefbc3"
       },
       "columns": {
-        "file": "ACTUAL_columns.txt",
-        "sha256": "150b934f2ae10d5919bf96015ad87e7f0bc8d931876a23754b2fea47660a043f"
+        "file": "EXPECTED_columns.txt",
+        "sha256": "ac3a5523df141e1dc9c2d10c7af9b188bbe8c8abe97c0b969da40eb2936b26ae"
       },
       "functions": {
-        "file": "ACTUAL_function_defs.hex.txt",
-        "sha256": "b32e48a948acfc071e7f0298b07974440722c2f5f32077c38a94c58739d8cbf3"
+        "file": "EXPECTED_function_defs.hex.txt",
+        "sha256": "0268bea2c37773458430eb384d4cb9d71cb1773ff3dee83358260845a7d0dfa1"
       },
       "sequencesViews": {
-        "file": "ACTUAL_sequences_views.txt",
-        "sha256": "3584692018940889010888c5003784255d706f3ac7593edab52c7ba57b36dfad"
+        "file": "EXPECTED_sequences_views.txt",
+        "sha256": "fe8b1e9272f113a8158591c3fdfca337976b2f7ffbee71da78c7f3204ab7a983"
       }
     }
   },
   "contracts": {
     "constraints": {
       "file": "constraints.json",
-      "count": 1696,
-      "canonicalSha256": "8bf0dfbe864d584050971b9dc95ab5586bcd98d43e0ffd0f448943886600a1e6",
-      "fileSha256": "9dd45178077abc337e52562e68d731b92b505824e2215f158ebf674016809eb0"
+      "count": 2704,
+      "canonicalSha256": "42767d11543825b6e85dd343ff47fb9b8ac9bb87d64b9abdaf31557ef6ac7482",
+      "fileSha256": "f724230e8c8f08954140c34a31a98ebc9388fb045becce75d1240df44a3ad648"
     },
     "indexes": {
       "file": "indexes.json",
-      "count": 552,
-      "canonicalSha256": "92f6bf4eb6f5554a6cf1bafd80b360c58759441e605cce660e7b84eab3744bbf",
-      "fileSha256": "fd83ff0385b32f087fe328021bb7d40c144148bba7770c2955eb8b7423dfa471"
+      "count": 956,
+      "canonicalSha256": "53e1919a249c34ca2fcfbb12a6131e90c0d68c4a715149a2638954df63e34164",
+      "fileSha256": "3f9361a65846bcb60b743fd41f44b0a02523fad1e7c1e7184d0348bf307ba44a"
     },
     "columns": {
       "file": "columns.json",
