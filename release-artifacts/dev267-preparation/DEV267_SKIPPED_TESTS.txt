@@ -1,0 +1,105 @@
+﹣ M-04/J POST coordinated reassignment preserves an Accepted Offer in PostgreSQL (0.0621ms) # Set NYSA_RUN_DB_INTEGRATION=1 with dedicated PostgreSQL test credentials
+﹣ FIT-DECLARATIONS-RANKING-ONLY-156 permits an unassessed customer-fit variance while preserving evidence (0.1135ms) # Set NYSA_RUN_INVENTORY_ELIGIBILITY_DB_INTEGRATION=1 inside a disposable fixture schema
+﹣ P0-INVENTORY-EFFECTIVE-STATUS-PARITY-157 reports canonical status when stored Inventory status is stale (0.0508ms) # Set NYSA_RUN_INVENTORY_ELIGIBILITY_DB_INTEGRATION=1 inside a disposable fixture schema
+﹣ UAT-040-DB authorized Manager creates and auto-activates a corporate Developer version (0.083ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-041-DB owner/represented party persists without creating a Customer or Contact (0.0463ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-042-DB Community and Developer linkage persist without mutating Inventory operations (0.04ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-043-DB Manager queue returns the exact submitted Inventory ID used by navigation (0.0349ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-048-DB quick availability update persists exact effective/expiry values and audit evidence (0.0339ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 2.1 non-Manager attempting administrative closure receives 403 (0.0499ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 2.2 Manager attempting closure with no reason receives 400 (0.0404ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 2.5 Manager closing eligible Inventory with a reason succeeds and the reason persists (0.0452ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 5.1 new assignment expires_at is exactly 7 days from creation (0.034ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 5.3 non-Manager attempting to extend assignment expiry receives 403 (0.0648ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 5.4 Manager extending expiry with reason: old/new/actor/reason all persisted (0.0335ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 7.1/7.2/7.3 detaching Inventory keeps the linkage visible in history with actor, reason, and both creator and servicing agent (0.0318ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 9.1 a property meeting the strict size minimum is not wrongly excluded (size_sqft regression guard) (0.0532ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 3.1 offer creation is blocked while the Inventory assignment is expired (0.1057ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 3.5 renewing the assignment restores the ability to create an Offer (0.0487ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 3.2 offer revision is blocked while the Inventory assignment is expired (0.0391ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ 3.3/3.4 Negotiation acceptance and the separate Booking creation are each blocked while the Inventory assignment is expired (0.0383ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate reservation and exact Deal lineage (0.0885ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ Manager closes with commission outstanding; Accountant collects afterward without changing transaction closure (0.048ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ UAT-072 and UAT-074 expose one-time delivery evidence and explicit persistent-session behavior (0.1103ms) # Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-075 creates Building and audit atomically, then reports exact duplicate without another row (0.0544ms) # Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-078 creates objective-specific version 1 rows under one stable model code (0.0487ms) # Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-077 completed assessment atomically records score and advances Contacted Lead to Qualified (0.0425ms) # Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-079 retires the active objective model with reasoned audit evidence (0.0345ms) # Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-081 real HTTP and PostgreSQL evidence creates deadline, supersedes reassessment, and recurs Cold nurture (0.2467ms) # Set NYSA_RUN_DEV163_DB_INTEGRATION=1 inside the disposable fixture schema
+﹣ UAT-082/084/085 binds the visible Opportunity, preserves AI summary, and atomically shortlists plus assigns (0.084ms) # Set NYSA_RUN_DEV164_DB_INTEGRATION=1 inside a disposable fixture schema
+﹣ UAT-082 realigns exact confirmed lineage before UAT-083/085 rerun and atomic assignment (0.048ms) # Set NYSA_RUN_DEV164_DB_INTEGRATION=1 inside a disposable fixture schema
+﹣ DEF-107/114 Lead detail loads with real SQL (0.042ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-109 Inventory list executes with real SQL (0.0343ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-116 stage draft is durably saved and audited (0.0336ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-112 official requirements query accepts empty evidence and active rules (0.0332ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-117 lifecycle drilldown uses active Deal, not historical Qualified (0.0298ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-117 Closed Won remains current when the same Lead has another Qualified pursuit (0.0302ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-112 PDF upload persists private immutable evidence and remains pending independent review (0.0292ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-117 first contact advances New only, never regresses Qualified or prematurely marks Won (0.0302ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-116 stale drafts reject without changing governed business state (0.0294ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-117 dashboard counts and contributing records reconcile (0.0285ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEF-115 Agent and Manager cannot record or confirm finance receipts (0.0302ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Unassigned Agent retains permitted Lead reading but cannot operate, draft or see it in own pipeline (0.0289ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Scoped agent uploads private proof and bytes survive download/reload; upload does not record receipt (0.0351ms) # Restricted local synthetic database required
+﹣ Proof retries are idempotent, conflicting keys rejected, concurrent retries produce one immutable attachment (0.0299ms) # Restricted local synthetic database required
+﹣ Reject unauthorized reads/writes, cross-Deal downloads and unsupported/spoofed/oversize proof (0.0305ms) # Restricted local synthetic database required
+﹣ Accountant has a finance-only Deal list and can retrieve proof; agent cannot confirm actual receipt (0.0298ms) # Restricted local synthetic database required
+﹣ Finance links the exact proof to an immutable receipt, confirms actual receipt, leaves closure separate (0.0279ms) # Restricted local synthetic database required
+﹣ Accountant four-workspace scope: searchable finance Opportunity projection, own leave and denied unrelated access (0.0289ms) # Restricted local synthetic database required
+﹣ Finance-only selectors expose uninvoiced Closed Won commission balances and reject other roles (0.0308ms) # Restricted local synthetic database required
+﹣ Closed Won Opportunity automatically enters awaiting invoicing and leaves only after an active schedule exists (0.0285ms) # Restricted local synthetic database required
+﹣ Create two separate planned invoices with correct VAT; atomic validation and idempotent retries (0.0292ms) # Restricted local synthetic database required
+﹣ Each instalment requires its own issued invoice; bad dates, duplicate references and role escalation rejected (0.0287ms) # Restricted local synthetic database required
+﹣ Gross partial collection drives balance; repeated bank reference and overpayment are blocked (0.5996ms) # Restricted local synthetic database required
+﹣ Concurrent remaining payments cannot overcollect; invoice is paid after reload with full audit (0.0638ms) # Restricted local synthetic database required
+﹣ Audited reversals restore balance; cancellation preserves invoice and blocks further collection (0.0348ms) # Restricted local synthetic database required
+﹣ Concurrent schedule retry writes once; customer/agency/developer all supported without touching closure (0.0314ms) # Restricted local synthetic database required
+﹣ Pagination keeps complete filtered totals and invalid inputs do not become server errors (0.0321ms) # Restricted local synthetic database required
+﹣ Receivables reads live Opportunity split without exposing customer or sales details (0.0291ms) # Restricted local synthetic database required
+﹣ Finance displays linked invoice references and rejects recording the same payment again (0.0302ms) # Restricted local synthetic database required
+﹣ Direct Finance receipt cannot be duplicated as an invoice payment; failures preserve balances (0.0302ms) # Restricted local synthetic database required
+﹣ A new partial payment supersedes confirmation, preserves evidence and permits fresh reconciliation (0.0298ms) # Restricted local synthetic database required
+﹣ Receipt posting rolls back if the linked collection write fails (0.0289ms) # Restricted local synthetic database required
+﹣ VAT-only rounding is linked and reversible without inventing a zero Finance receipt (0.0285ms) # Restricted local synthetic database required
+﹣ Opportunity without any Deal: issue invoice, upload proof, collect partial payments and reconcile (0.0296ms) # Restricted local synthetic database required
+﹣ No-Deal Opportunity receipts reject unauthorized access, wrong proof, duplicate bank references and conflicting retries (0.1992ms) # Restricted local synthetic database required
+﹣ No-Deal payment reversal restores invoice and supersedes reconciliation; later Deal creation does not copy receipts (0.3728ms) # Restricted local synthetic database required
+﹣ Opportunity direct receipts and confirmations serialize retries and preserve parent identity (0.0713ms) # Restricted local synthetic database required
+﹣ transaction completion document blocks Close Won until uploaded without any seller master record (0.0614ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ database accepts the maintained quarterly achieved-rate method and true-up accounting (0.0804ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ effective-dated Agent social-media statuses cannot overlap (0.0455ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ split payout output satisfies the deployed immutable payout-band constraint (0.0619ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ migration 127 installs private, auditable import schema without granting authority (0.2686ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Customer reference, Sales Agent importer identity and batch provenance are enforced by the database (0.0954ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Admin can maintain official-document and marketing configuration but cannot open operational evidence (0.0799ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Sales Agent populated leave and Manager task endpoints return governed states instead of server errors (0.1208ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ Sales Agent can create and submit leave and the maintained Line Manager receives one approval task (0.0937ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ purchased-data register follows the central Sales Agent and Admin role capability (0.0527ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ migration 128 installs all DEV211 governed schema contracts (0.0779ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEV211 approval queues permit only one pending request per governed record (0.0361ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEV214 migration accepts booking-free Developer-stock linkage and rollback-only Sold Inventory creation (0.0822ms) # Set NYSA_RUN_DEV214_DB_INTEGRATION=1 inside the restricted synthetic fixture
+﹣ routing priority wins, Manager assignment works, and an expired Agent cannot reclaim the same Lead (0.0874ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEV218 migration installs the approved-document, BRN, ORN and Listing NOC contracts (0.0502ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ DEV218 database enforces conditional BRN and immutable issuance/evidence identities (0.0358ms) # Requires the restricted local synthetic PostgreSQL fixture
+﹣ customer requirement HTTP saves persist and audit both identity kinds (0.1005ms) # SKIP
+﹣ DEV236 actual PostgreSQL migration and lifecycle regression (0.0411ms) # Dedicated local PostgreSQL fixture required
+﹣ DEV238 target API lifecycle, authorization, period values and optimistic concurrency (0.0963ms) # Dedicated local fixture required
+﹣ DEV239 business-line maintenance, dated reporting, role scope and targets (0.1422ms) # SKIP
+﹣ Phase 1 WEB intake lifecycle on the guarded PostgreSQL fixture (0.1134ms) # SKIP
+﹣ Dashboard cards reconcile with paginated records for Agent, Manager and all Director views (0.0764ms) # SKIP
+﹣ DEV263 full in-process simulator flow works while loopback is unreachable (0.1267ms) # SKIP
+﹣ DEV264 restores the triggerless CRM Test shape idempotently and enforces Lead rules (0.0786ms) # SKIP
+﹣ DEV265 exact drift restoration, audit actor, idempotency and cascade contract (0.0463ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ DEV265 preflight rejects any schema state other than the exact baseline or canonical contract (0.0394ms) # Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+﹣ DEV266 reply lock is enforced by the PostgreSQL 13 route transaction (0.1019ms) # SKIP
+﹣ DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings (0.1105ms) # SKIP
+﹣ DEV267 layered restrictions serialize, preserve weaker restrictions and require governed release evidence (0.0876ms) # SKIP
+﹣ DEV267 D-A: STOP before later import remains suppressed at preview and commit (0.0616ms) # SKIP
+﹣ Local migration removes only the closure trigger; rollback DDL is reversible and finance immutability remains (0.0541ms) # SKIP
+﹣ durable nonvoice workflow on dedicated synthetic PostgreSQL (0.0763ms) # SKIP
+﹣ DEF-137 query includes exact linked Offer issuances, preserves Opportunity issuances and excludes another Opportunity (0.0796ms) # Requires restricted local synthetic fixture
+﹣ ENH-004–008 migration, exact storage, SQL projections, legacy preservation and rollback (0.0571ms) # Requires restricted synthetic fixture
+﹣ UI-001 task source projection retains exact assignee scope and exposes only a masked provisional hint (0.0768ms) # SKIP
+﹣ sandbox durable lifecycle, quota, encryption and concurrent idempotency on isolated PostgreSQL (0.1164ms) # SKIP
+﹣ DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable (0.062ms) # SKIP
+﹣ WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture (0.0941ms) # SKIP

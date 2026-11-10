@@ -1,0 +1,113 @@
+{
+  "schema": "nysa.dev267.prospect-diary-browser.v1",
+  "synthetic": true,
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev267-exact-package-a9f4b30",
+  "releaseFile": "public/prospect-diary-ui.js",
+  "releaseSha256": "1c0130dfebf1e0e3ca4fd89351273a54d2efd27b24d6d59f19045ede8e3e89ca",
+  "loadedFromActualReleaseFile": true,
+  "roles": [
+    {
+      "role": "sales_agent",
+      "status": "passed",
+      "detailState": {
+        "activities": 2,
+        "followUps": 2,
+        "reassign": false,
+        "conversion": true,
+        "url": "?workspace=prospect&record=00000001-0000-4000-8000-000000000267"
+      },
+      "restored": {
+        "q": "Synthetic",
+        "scroll": 175,
+        "restores": 1
+      },
+      "mobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "cardWidth": 358,
+        "buttonLabels": [
+          "Today1",
+          "Overdue0",
+          "Upcoming1",
+          "Interested0",
+          "Do not contact0",
+          "Apply",
+          "Synthetic Prospect 267+971509999267 · dev267@example.invalidCall backSynthetic Agent · Synthetic Secondary SalesCall after lunch11 Nov 2026, 13:00Open →",
+          "Save prospect"
+        ]
+      },
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshot": "sales_agent-mobile.png"
+    },
+    {
+      "role": "manager",
+      "status": "passed",
+      "detailState": {
+        "activities": 2,
+        "followUps": 2,
+        "reassign": true,
+        "conversion": false,
+        "url": "?workspace=prospect&record=00000001-0000-4000-8000-000000000267"
+      },
+      "restored": {
+        "q": "Synthetic",
+        "scroll": 175,
+        "restores": 1
+      },
+      "mobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "cardWidth": 358,
+        "buttonLabels": [
+          "Today1",
+          "Overdue0",
+          "Upcoming1",
+          "Interested0",
+          "Do not contact0",
+          "Apply",
+          "Synthetic Prospect 267+971509999267 · dev267@example.invalidCall backSynthetic Agent · Synthetic Secondary SalesCall after lunch11 Nov 2026, 13:00Open →",
+          "Save prospect"
+        ]
+      },
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshot": "manager-mobile.png"
+    },
+    {
+      "role": "director",
+      "status": "passed",
+      "detailState": {
+        "activities": 2,
+        "followUps": 2,
+        "reassign": true,
+        "conversion": false,
+        "url": "?workspace=prospect&record=00000001-0000-4000-8000-000000000267"
+      },
+      "restored": {
+        "q": "Synthetic",
+        "scroll": 175,
+        "restores": 1
+      },
+      "mobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "cardWidth": 358,
+        "buttonLabels": [
+          "Today1",
+          "Overdue0",
+          "Upcoming1",
+          "Interested0",
+          "Do not contact0",
+          "Apply",
+          "Synthetic Prospect 267+971509999267 · dev267@example.invalidCall backSynthetic Agent · Synthetic Secondary SalesCall after lunch11 Nov 2026, 13:00Open →",
+          "Save prospect"
+        ]
+      },
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshot": "director-mobile.png"
+    }
+  ],
+  "checkedAt": "2026-11-10T19:32:56.676Z"
+}

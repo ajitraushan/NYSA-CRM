@@ -60,15 +60,19 @@ are not overwritten; a correction is a new event explaining the correction.
 
 ### Follow-up actions
 
-The same prospect can have any number of dated follow-ups. Each records subject,
-details, assignee, due date, priority and status. At most one open/in-progress
-follow-up can be marked as the prospect's next action. Completing or cancelling
-that action does not delete its history.
+The same prospect can have any number of dated follow-ups. DEV267 extends the
+governed `tasks` context with a Prospect-only context and task type
+`prospect_follow_up`; it does not create a parallel follow-up table. Each Task
+records subject, details, assignee, due date, priority, channel and status. At
+most one open/in-progress Task can be the prospect's primary next action.
+Completing or cancelling it through Prospect Diary, My Tasks or My Diary updates
+the same Task row and does not delete its history.
 
-Because the existing `tasks` table requires formal Customer and Lead context,
-pre-customer follow-ups remain in the Prospect Diary. DEV267 does not weaken the
-governed Task constraints. Conversion may create a normal Lead next action through
-the existing Lead workflow; it does not copy pre-customer follow-ups into Tasks.
+Conversion rechecks suppression and duplicates under lock. Open Prospect Tasks
+are relinked to the authoritative Customer when the governed Task context allows,
+or explicitly closed with a conversion outcome before the normal Lead next action
+is created. No follow-up is silently copied, discarded or kept in a competing
+store.
 
 ### Do-not-contact
 
@@ -154,7 +158,8 @@ the client is not trusted to enforce authorization.
 - WhatsApp, SMS, email or any external message send;
 - AI qualification or automated follow-up;
 - bulk prospect upload;
-- changes to existing Customer, Lead, Task, Diary, dashboard or workflow rules;
+- unrelated changes to existing Customer, Lead, dashboard or workflow rules;
+- campaign retirement and the small fixes held for DEV268;
 - production installation before CRM Test UAT and separate approval.
 
 ## Acceptance criteria

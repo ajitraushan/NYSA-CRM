@@ -1,0 +1,55 @@
+PostgreSQL 13.23
+{"migrations":170,"latest":"170_prospect_diary.sql","tables":306,"triggers":111,"migration170Idempotent":true}
+DEV267 PostgreSQL 13.23 integration: test/dev267-prospect-diary.integration.test.js
+✔ DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings (1573.6672ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1591.651
+DEV267 PostgreSQL 13.23 integration: test/dev267-shared-suppression.integration.test.js
+✔ DEV267 layered restrictions serialize, preserve weaker restrictions and require governed release evidence (2021.4822ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 32044.9187
+DEV267 PostgreSQL 13.23 integration: test/dev267-whatsapp-da-regression.integration.test.js
+✔ DEV267 D-A: STOP before later import remains suppressed at preview and commit (1100.9367ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1123.2321
+DEV267 PostgreSQL 13.23 integration: test/whatsapp-workspace.integration.test.js
+✔ WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture (2078.0674ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2092.7411
+DEV267 PostgreSQL 13.23 integration: test/whatsapp-simulated-provider.integration.test.js
+✔ DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable (4166.6262ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34284.9695
+{"component":"whatsapp-simulator","event":"callback-delivery-failed"}
+{"component":"whatsapp-simulator","event":"callback-delivery-failed"}
+{"component":"whatsapp-simulator","event":"callback-delivery-failed"}
