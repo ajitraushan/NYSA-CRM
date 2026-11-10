@@ -1,0 +1,21 @@
+PostgreSQL 13.23
+Error: Simulated template is paused
+    at providerFailure (file:///C:/Users/ajitr/.codex/worktrees/production-dev248-preparation/canonical-worktree/src/routes/whatsapp-simulated-provider.js:20:24)
+    at submitSimulatedTemplate (file:///C:/Users/ajitr/.codex/worktrees/production-dev248-preparation/canonical-worktree/src/routes/whatsapp-simulated-provider.js:89:49)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///C:/Users/ajitr/.codex/worktrees/production-dev248-preparation/canonical-worktree/src/routes/whatsapp-simulated-provider.js:244:18 {
+  statusCode: 409,
+  responseBody: {
+    error: 'Simulated template is paused',
+    code: 'SIMULATED_TEMPLATE_PAUSED'
+  }
+}
+✔ DEV263 full in-process simulator flow works while loopback is unreachable (6520.3097ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35277.0448
