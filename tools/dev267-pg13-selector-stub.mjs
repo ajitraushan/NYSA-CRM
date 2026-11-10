@@ -5,6 +5,8 @@ const stateFile=process.env.NYSA_REHEARSAL_SELECTOR_STATE;
 const workerFile=process.env.NYSA_REHEARSAL_WORKER;
 if(!stateFile||!workerFile)throw new Error('Rehearsal selector state and worker are required');
 const values=process.argv.slice(2),action=values[0],value=name=>values[values.indexOf(name)+1];
+const debug=value=>fs.appendFileSync('/tmp/dev267-selector-debug.log',`${new Date().toISOString()} ${JSON.stringify(value)}\n`);
+debug({action,stateFile,workerFile});
 const read=()=>JSON.parse(fs.readFileSync(stateFile,'utf8'));
 const write=state=>fs.writeFileSync(stateFile,`${JSON.stringify(state,null,2)}\n`);
 if(action==='get'){
@@ -23,6 +25,8 @@ if(action==='get'){
   const environment=Object.entries(state.env_vars).flatMap(([name,item])=>[`${name}=${item}`]);
   const log=fs.openSync('/tmp/dev267-rehearsal-worker.log','a');
   const child=spawn('sudo',['-u','nysareal','-H','env',...environment,process.execPath,workerFile,state.root],{detached:true,stdio:['ignore',log,log]});
+  debug({action:'start-spawned',pid:child.pid,root:state.root,workerFile});
+  child.on('error',error=>debug({action:'start-spawn-error',code:error.code||null,message:error.message}));
   child.unref();
   fs.closeSync(log);
   process.stdout.write('{}\n');
