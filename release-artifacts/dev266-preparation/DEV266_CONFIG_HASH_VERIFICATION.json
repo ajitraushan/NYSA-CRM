@@ -1,0 +1,95 @@
+{
+  "schema": "nysa.dev266.config-hash-verification.v1",
+  "generatedAt": "2026-11-10T03:22:48.357Z",
+  "config": "release-artifacts/dev266-preparation/DEV266_DEPLOY_CONFIG.json",
+  "configSha256": "6c44f4625e916cd2c5dac344b093051abf4e7f16cf0db9b4f793647a289062f3",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.266-origin.zip",
+      "actual": "5bf0479e9be519d708c8b94a076975c24caec93718c2550161badab450e112b5",
+      "configured": "5bf0479e9be519d708c8b94a076975c24caec93718c2550161badab450e112b5",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.266-origin.manifest.json",
+      "actual": "b760f9dd3a9201017a3fc7aa00ddc5b954de4c1969e7aa7dbfd9cd7ad800c0c8",
+      "configured": "b760f9dd3a9201017a3fc7aa00ddc5b954de4c1969e7aa7dbfd9cd7ad800c0c8",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "src/database-schema-baseline/manifest.json",
+      "actual": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "configured": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "src/database-schema-contract/manifest.json",
+      "actual": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "configured": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "unchanged": {
+    "operator": {
+      "commit": "d7a5a347fc185ad21ae42d83b75203c690445bf6",
+      "sha256": "3c47f64247750435ec7e1593de3c027a930e79ac96c5571ef30707c48db694cb"
+    },
+    "helpers": {
+      "schema": {
+        "file": "tools/database-schema-contract.mjs",
+        "sha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c"
+      },
+      "worker": {
+        "file": "tools/hosted-worker-lifecycle.mjs",
+        "sha256": "6bbb2833fbafcaf4f78d7a0f1269b4c0062c022c4292d594bcd40a7f61dae785"
+      },
+      "backup": {
+        "file": "tools/crm-test-backup-verification.mjs",
+        "sha256": "b682d446d3a422d1c325eb5a6e2bcfd749f3b396ffd58e0df77fef2f862bf215"
+      },
+      "trigger": {
+        "file": "tools/database-trigger-contract.mjs",
+        "sha256": "b95c369e7f8ba2a199aaa5de3b2fe7e1592ca7b52b6d4fc9dddfd02caebd2fcd"
+      }
+    },
+    "triggerContract": {
+      "file": "src/database-trigger-contract.json",
+      "sha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4",
+      "canonicalSha256": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073"
+    }
+  },
+  "database": {
+    "baselineMigrationCount": 169,
+    "expectedMigrationCount": 169,
+    "expectedTableCount": 303,
+    "expectedTriggerCount": 108
+  },
+  "tests": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-10T03:17:55.599Z",
+    "completedAt": "2026-11-10T03:18:25.423Z",
+    "tests": 1672,
+    "passed": 1570,
+    "failed": 0,
+    "skipped": 102,
+    "outputSha256": "1231568b2cf24e07e0a263c526a6eb19acff93865c8dbf6e3ba473b7e88f67d6",
+    "includedFiles": 315,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "676d036da33d8529fa2766ef8b793c76fd5ef2a3641c6724b0376158bfb2a723",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  }
+}

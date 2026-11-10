@@ -1,0 +1,44 @@
+{
+  "schema": "nysa.dev266.baseline-canonical-verification.v1",
+  "checkedAt": "2026-11-10T03:22:57.887Z",
+  "files": [
+    {
+      "file": "columns.json",
+      "baselineSha256": "ee9f3f4c797b7d2b4387621e58b650cf2d307907a04fac69d3f4de5e62c015af",
+      "canonicalSha256": "ee9f3f4c797b7d2b4387621e58b650cf2d307907a04fac69d3f4de5e62c015af",
+      "byteIdentical": true
+    },
+    {
+      "file": "constraints.json",
+      "baselineSha256": "f724230e8c8f08954140c34a31a98ebc9388fb045becce75d1240df44a3ad648",
+      "canonicalSha256": "f724230e8c8f08954140c34a31a98ebc9388fb045becce75d1240df44a3ad648",
+      "byteIdentical": true
+    },
+    {
+      "file": "functions.json",
+      "baselineSha256": "1289a5b5714be1bb4aa0cbef9de8a04db5337c929fd6f214ecd60f715b20391d",
+      "canonicalSha256": "1289a5b5714be1bb4aa0cbef9de8a04db5337c929fd6f214ecd60f715b20391d",
+      "byteIdentical": true
+    },
+    {
+      "file": "indexes.json",
+      "baselineSha256": "3f9361a65846bcb60b743fd41f44b0a02523fad1e7c1e7184d0348bf307ba44a",
+      "canonicalSha256": "3f9361a65846bcb60b743fd41f44b0a02523fad1e7c1e7184d0348bf307ba44a",
+      "byteIdentical": true
+    },
+    {
+      "file": "manifest.json",
+      "baselineSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "canonicalSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+      "byteIdentical": true
+    },
+    {
+      "file": "sequences-views.json",
+      "baselineSha256": "33a173bb3e1bd8fe928e09b703fc9d713c9ef9c389fbb365ad1175e47a01100d",
+      "canonicalSha256": "33a173bb3e1bd8fe928e09b703fc9d713c9ef9c389fbb365ad1175e47a01100d",
+      "byteIdentical": true
+    }
+  ],
+  "allSixByteIdentical": true,
+  "manifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa"
+}

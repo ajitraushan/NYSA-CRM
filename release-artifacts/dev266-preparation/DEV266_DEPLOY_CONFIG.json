@@ -1,0 +1,2096 @@
+{
+  "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+  "domain": "crm-test.nysarealty.com",
+  "base": "/home/nysareal/crm-release-preparation/20261110-dev266/evidence",
+  "candidate": "/home/nysareal/crm-release-preparation/20261110-dev266/candidate",
+  "zip": "/home/nysareal/crm-release-preparation/20261110-dev266/nysa-core-2.1.0-dev.266-origin.zip",
+  "manifest": "/home/nysareal/crm-release-preparation/20261110-dev266/nysa-core-2.1.0-dev.266-origin.manifest.json",
+  "version": "2.1.0-dev.266",
+  "baselineVersion": "2.1.0-dev.265",
+  "baselineCommit": "ce4f16c7adaf1636db216abd9e1ccbdd62dd8fd8",
+  "commit": "1abd17771a5dda3be4b5108a6453e70438ad3ed0",
+  "archiveHash": "5bf0479e9be519d708c8b94a076975c24caec93718c2550161badab450e112b5",
+  "manifestHash": "b760f9dd3a9201017a3fc7aa00ddc5b954de4c1969e7aa7dbfd9cd7ad800c0c8",
+  "operatorCommit": "d7a5a347fc185ad21ae42d83b75203c690445bf6",
+  "expectedDatabase": "nysareal_nysa_dev247_smoke",
+  "expectedRole": "nysareal_nysar2app",
+  "baselineMigrationCount": 169,
+  "expectedMigrationCount": 169,
+  "expectedTableCount": 303,
+  "expectedTableNames": [
+    "activities",
+    "activity_calendar_events",
+    "activity_corrections",
+    "agent_area_assignments",
+    "agent_employment_versions",
+    "agent_employments",
+    "agent_payout_adjustment_slabs",
+    "agent_payout_adjustment_versions",
+    "agent_payout_advices",
+    "agent_payout_calculation_bands",
+    "agent_payout_calculations",
+    "agent_payout_decision_events",
+    "agent_payout_release_events",
+    "agent_social_media_payout_status_versions",
+    "ai_assistance_runs",
+    "approved_document_drafts",
+    "approved_document_issuances",
+    "areas",
+    "audit_log",
+    "booking_number_counters",
+    "booking_reservation_extensions",
+    "booking_status_history",
+    "bookings",
+    "brokers",
+    "business_line_kpis",
+    "business_lines",
+    "calendar_connections",
+    "calendly_bookings",
+    "calendly_connections",
+    "calendly_event_type_mappings",
+    "calendly_host_mappings",
+    "calendly_oauth_states",
+    "calendly_projection_events",
+    "calendly_provider_event_processing",
+    "calendly_provider_events",
+    "calendly_scheduling_intents",
+    "campaign_external_mappings",
+    "checklist_template_items",
+    "checklist_templates",
+    "classification_catalogue_versions",
+    "classification_dimensions",
+    "classification_legacy_exceptions",
+    "classification_mappings",
+    "classification_values",
+    "comments",
+    "commission_invoice_number_counters",
+    "commission_payment_batch_items",
+    "commission_payment_batches",
+    "commission_payout_policy_slabs",
+    "commission_payout_policy_versions",
+    "commission_receivable_adjustment_requests",
+    "commission_receivable_collections",
+    "commission_receivable_invoices",
+    "commission_receivable_requests",
+    "commission_receivable_reversals",
+    "commission_receivable_schedules",
+    "communication_policy_decisions",
+    "companies",
+    "company_contacts",
+    "company_identity_documents",
+    "consent_evidence",
+    "contact_channels",
+    "contact_roles",
+    "contacts",
+    "controlled_value_consumers",
+    "customer_action_suggestions",
+    "customer_change_requests",
+    "customer_document_requirement_versions",
+    "customer_evidence_facts",
+    "customer_identity_documents",
+    "customer_response_task_provenance",
+    "dashboard_metric_snapshots",
+    "dashboard_target_revisions",
+    "dashboard_targets",
+    "deal_agent_credit_lines",
+    "deal_agent_credit_versions",
+    "deal_cancellation_requests",
+    "deal_checklist_items",
+    "deal_checklists",
+    "deal_commission_expectation_components",
+    "deal_commission_expectation_versions",
+    "deal_commission_proofs",
+    "deal_commission_receipt_confirmations",
+    "deal_commission_receipts",
+    "deal_commission_variance_decisions",
+    "deal_document_compliance_snapshots",
+    "deal_document_requirement_instances",
+    "deal_inventory_linkages",
+    "deal_number_counters",
+    "deal_parties",
+    "deal_status_history",
+    "deals",
+    "developer_brokerage_arrangement_versions",
+    "dld_community_mapping_versions",
+    "dld_market_observations",
+    "dld_market_source_batches",
+    "dld_market_source_rows",
+    "document_compliance_evidence_review_events",
+    "document_compliance_evidence_versions",
+    "document_compliance_followup_task_links",
+    "document_compliance_official_evidence_links",
+    "document_compliance_requirement_versions",
+    "document_compliance_requirements",
+    "document_links",
+    "document_templates",
+    "document_versions",
+    "documents",
+    "email_drafts",
+    "email_message_evidence",
+    "email_message_state_events",
+    "email_outbox",
+    "email_projection_events",
+    "email_provider_event_processing",
+    "email_provider_events",
+    "email_sync_checkpoints",
+    "email_threads",
+    "external_company_roles",
+    "external_listing_preparation_versions",
+    "external_listing_publications",
+    "external_portal_field_mappings",
+    "external_portal_mapping_versions",
+    "external_portal_permit_evidence_versions",
+    "financial_scenarios",
+    "integration_oauth_states",
+    "inventory_agent_assignment_history",
+    "inventory_agreements",
+    "inventory_assignment_events",
+    "inventory_assignment_expiry_changes",
+    "inventory_assignments",
+    "inventory_buildings",
+    "inventory_counterparties",
+    "inventory_market_intelligence_review_events",
+    "inventory_market_intelligence_snapshots",
+    "inventory_match_candidate_assessments",
+    "inventory_match_decisions",
+    "inventory_match_feedback",
+    "inventory_matching_candidates",
+    "inventory_matching_runs",
+    "inventory_organization_link_events",
+    "inventory_reopen_requests",
+    "inventory_verification_requests",
+    "invitations",
+    "lead_assignments",
+    "lead_conversions",
+    "lead_email_mailbox_cursors",
+    "lead_follow_up_cases",
+    "lead_follow_up_events",
+    "lead_follow_up_jobs",
+    "lead_integration_connections",
+    "lead_integration_runtime_health",
+    "lead_integration_setup",
+    "lead_inventory_matches",
+    "lead_inventory_selections",
+    "lead_month_number_counters",
+    "lead_number_counters",
+    "lead_recovery_cases",
+    "lead_requirement_confirmations",
+    "lead_requirement_conflict_resolutions",
+    "lead_requirement_website_conflicts",
+    "lead_requirements",
+    "lead_response_anchors",
+    "lead_response_callbacks",
+    "lead_response_chat_drafts",
+    "lead_response_evidence",
+    "lead_response_message_attempts",
+    "lead_response_messaging_budgets",
+    "lead_response_provider_inbox",
+    "lead_source_inbox",
+    "lead_stage_history",
+    "leads",
+    "leave_application_decisions",
+    "leave_application_task_links",
+    "leave_applications",
+    "leave_balance_ledger",
+    "leave_policy_entitlements",
+    "leave_policy_versions",
+    "leave_type_versions",
+    "leave_types",
+    "listing_approval_policy",
+    "listing_intake_events",
+    "listing_mapping_versions",
+    "listing_noc_evidence_versions",
+    "listing_units",
+    "listing_value_mappings",
+    "listings",
+    "market_communities",
+    "market_community_versions",
+    "marketing_agreements",
+    "marketing_campaigns",
+    "marketing_channel_rule_versions",
+    "marketing_material_channel_requests",
+    "marketing_material_media_links",
+    "marketing_material_official_evidence_links",
+    "marketing_material_permit_snapshots",
+    "marketing_material_review_events",
+    "marketing_material_task_links",
+    "marketing_material_type_versions",
+    "marketing_material_types",
+    "marketing_material_versions",
+    "marketing_materials",
+    "matching_policy_versions",
+    "microsoft365_mailbox_connections",
+    "microsoft365_oauth_states",
+    "microsoft365_subscription_leases",
+    "negotiation_events",
+    "offer_number_counters",
+    "offer_replacement_actions",
+    "offer_revisions",
+    "offers",
+    "official_document_definition_versions",
+    "official_document_definitions",
+    "official_document_evidence_review_events",
+    "official_document_evidence_versions",
+    "official_document_followup_task_links",
+    "official_document_step_rule_versions",
+    "opportunities",
+    "opportunity_assignment_history",
+    "opportunity_attribution",
+    "opportunity_number_counters",
+    "opportunity_participants",
+    "opportunity_property_share_events",
+    "opportunity_property_share_items",
+    "opportunity_property_shares",
+    "opportunity_representation_history",
+    "opportunity_stage_draft_finalizations",
+    "opportunity_stage_draft_versions",
+    "opportunity_stage_history",
+    "organization_settings",
+    "partner_organization_versions",
+    "password_reset_requests",
+    "property_listing_noc_versions",
+    "property_match_governed_origins",
+    "property_match_history",
+    "property_matches",
+    "property_media",
+    "property_media_approval_policy",
+    "proposal_media",
+    "proposal_number_counters",
+    "proposal_properties",
+    "proposal_templates",
+    "proposal_versions",
+    "proposals",
+    "provisional_external_properties",
+    "purchased_data_import_authorizations",
+    "purchased_data_import_batches",
+    "purchased_data_import_rows",
+    "qualification_assessments",
+    "qualification_follow_up_task_links",
+    "qualification_models",
+    "r2_legacy_lead_review",
+    "regulatory_assumption_versions",
+    "routing_rules",
+    "saved_dashboard_views",
+    "schema_migrations",
+    "sessions",
+    "sla_alerts",
+    "sla_policies",
+    "tasks",
+    "team_business_line_assignments",
+    "team_memberships",
+    "teams",
+    "transaction_counterparties",
+    "user_role_assignments",
+    "value_briefs",
+    "value_definition_usage",
+    "value_definitions",
+    "value_sets",
+    "viewing_attendees",
+    "viewing_calendar_events",
+    "viewing_status_history",
+    "viewings",
+    "wa_audience_segments",
+    "wa_campaign_approval_recipients",
+    "wa_campaign_audit",
+    "wa_campaign_drafts",
+    "wa_campaign_materials",
+    "wa_campaign_recipients",
+    "wa_campaign_revisions",
+    "wa_contact_suppressions",
+    "wa_conversation_assignment_history",
+    "wa_conversation_messages",
+    "wa_conversations",
+    "wa_inbox_notifications",
+    "wa_material_catalogue",
+    "wa_message_template_versions",
+    "wa_message_templates",
+    "wa_recipient_import_batches",
+    "wa_sandbox_attempts",
+    "wa_sandbox_audit",
+    "wa_sandbox_connections",
+    "wa_sandbox_events",
+    "wa_simulated_provider_control",
+    "wa_simulated_provider_events",
+    "wa_simulation_runs",
+    "wa_template_catalogue",
+    "web_intake_configuration_exceptions",
+    "web_intake_configuration_versions",
+    "web_intake_contact_attempts",
+    "web_intake_contact_match_keys",
+    "web_intake_journeys",
+    "web_intake_provisional_identities",
+    "website_intake_events",
+    "workflow_transitions"
+  ],
+  "expectedPostTableCount": 303,
+  "expectedPostTableNames": [
+    "activities",
+    "activity_calendar_events",
+    "activity_corrections",
+    "agent_area_assignments",
+    "agent_employment_versions",
+    "agent_employments",
+    "agent_payout_adjustment_slabs",
+    "agent_payout_adjustment_versions",
+    "agent_payout_advices",
+    "agent_payout_calculation_bands",
+    "agent_payout_calculations",
+    "agent_payout_decision_events",
+    "agent_payout_release_events",
+    "agent_social_media_payout_status_versions",
+    "ai_assistance_runs",
+    "approved_document_drafts",
+    "approved_document_issuances",
+    "areas",
+    "audit_log",
+    "booking_number_counters",
+    "booking_reservation_extensions",
+    "booking_status_history",
+    "bookings",
+    "brokers",
+    "business_line_kpis",
+    "business_lines",
+    "calendar_connections",
+    "calendly_bookings",
+    "calendly_connections",
+    "calendly_event_type_mappings",
+    "calendly_host_mappings",
+    "calendly_oauth_states",
+    "calendly_projection_events",
+    "calendly_provider_event_processing",
+    "calendly_provider_events",
+    "calendly_scheduling_intents",
+    "campaign_external_mappings",
+    "checklist_template_items",
+    "checklist_templates",
+    "classification_catalogue_versions",
+    "classification_dimensions",
+    "classification_legacy_exceptions",
+    "classification_mappings",
+    "classification_values",
+    "comments",
+    "commission_invoice_number_counters",
+    "commission_payment_batch_items",
+    "commission_payment_batches",
+    "commission_payout_policy_slabs",
+    "commission_payout_policy_versions",
+    "commission_receivable_adjustment_requests",
+    "commission_receivable_collections",
+    "commission_receivable_invoices",
+    "commission_receivable_requests",
+    "commission_receivable_reversals",
+    "commission_receivable_schedules",
+    "communication_policy_decisions",
+    "companies",
+    "company_contacts",
+    "company_identity_documents",
+    "consent_evidence",
+    "contact_channels",
+    "contact_roles",
+    "contacts",
+    "controlled_value_consumers",
+    "customer_action_suggestions",
+    "customer_change_requests",
+    "customer_document_requirement_versions",
+    "customer_evidence_facts",
+    "customer_identity_documents",
+    "customer_response_task_provenance",
+    "dashboard_metric_snapshots",
+    "dashboard_target_revisions",
+    "dashboard_targets",
+    "deal_agent_credit_lines",
+    "deal_agent_credit_versions",
+    "deal_cancellation_requests",
+    "deal_checklist_items",
+    "deal_checklists",
+    "deal_commission_expectation_components",
+    "deal_commission_expectation_versions",
+    "deal_commission_proofs",
+    "deal_commission_receipt_confirmations",
+    "deal_commission_receipts",
+    "deal_commission_variance_decisions",
+    "deal_document_compliance_snapshots",
+    "deal_document_requirement_instances",
+    "deal_inventory_linkages",
+    "deal_number_counters",
+    "deal_parties",
+    "deal_status_history",
+    "deals",
+    "developer_brokerage_arrangement_versions",
+    "dld_community_mapping_versions",
+    "dld_market_observations",
+    "dld_market_source_batches",
+    "dld_market_source_rows",
+    "document_compliance_evidence_review_events",
+    "document_compliance_evidence_versions",
+    "document_compliance_followup_task_links",
+    "document_compliance_official_evidence_links",
+    "document_compliance_requirement_versions",
+    "document_compliance_requirements",
+    "document_links",
+    "document_templates",
+    "document_versions",
+    "documents",
+    "email_drafts",
+    "email_message_evidence",
+    "email_message_state_events",
+    "email_outbox",
+    "email_projection_events",
+    "email_provider_event_processing",
+    "email_provider_events",
+    "email_sync_checkpoints",
+    "email_threads",
+    "external_company_roles",
+    "external_listing_preparation_versions",
+    "external_listing_publications",
+    "external_portal_field_mappings",
+    "external_portal_mapping_versions",
+    "external_portal_permit_evidence_versions",
+    "financial_scenarios",
+    "integration_oauth_states",
+    "inventory_agent_assignment_history",
+    "inventory_agreements",
+    "inventory_assignment_events",
+    "inventory_assignment_expiry_changes",
+    "inventory_assignments",
+    "inventory_buildings",
+    "inventory_counterparties",
+    "inventory_market_intelligence_review_events",
+    "inventory_market_intelligence_snapshots",
+    "inventory_match_candidate_assessments",
+    "inventory_match_decisions",
+    "inventory_match_feedback",
+    "inventory_matching_candidates",
+    "inventory_matching_runs",
+    "inventory_organization_link_events",
+    "inventory_reopen_requests",
+    "inventory_verification_requests",
+    "invitations",
+    "lead_assignments",
+    "lead_conversions",
+    "lead_email_mailbox_cursors",
+    "lead_follow_up_cases",
+    "lead_follow_up_events",
+    "lead_follow_up_jobs",
+    "lead_integration_connections",
+    "lead_integration_runtime_health",
+    "lead_integration_setup",
+    "lead_inventory_matches",
+    "lead_inventory_selections",
+    "lead_month_number_counters",
+    "lead_number_counters",
+    "lead_recovery_cases",
+    "lead_requirement_confirmations",
+    "lead_requirement_conflict_resolutions",
+    "lead_requirement_website_conflicts",
+    "lead_requirements",
+    "lead_response_anchors",
+    "lead_response_callbacks",
+    "lead_response_chat_drafts",
+    "lead_response_evidence",
+    "lead_response_message_attempts",
+    "lead_response_messaging_budgets",
+    "lead_response_provider_inbox",
+    "lead_source_inbox",
+    "lead_stage_history",
+    "leads",
+    "leave_application_decisions",
+    "leave_application_task_links",
+    "leave_applications",
+    "leave_balance_ledger",
+    "leave_policy_entitlements",
+    "leave_policy_versions",
+    "leave_type_versions",
+    "leave_types",
+    "listing_approval_policy",
+    "listing_intake_events",
+    "listing_mapping_versions",
+    "listing_noc_evidence_versions",
+    "listing_units",
+    "listing_value_mappings",
+    "listings",
+    "market_communities",
+    "market_community_versions",
+    "marketing_agreements",
+    "marketing_campaigns",
+    "marketing_channel_rule_versions",
+    "marketing_material_channel_requests",
+    "marketing_material_media_links",
+    "marketing_material_official_evidence_links",
+    "marketing_material_permit_snapshots",
+    "marketing_material_review_events",
+    "marketing_material_task_links",
+    "marketing_material_type_versions",
+    "marketing_material_types",
+    "marketing_material_versions",
+    "marketing_materials",
+    "matching_policy_versions",
+    "microsoft365_mailbox_connections",
+    "microsoft365_oauth_states",
+    "microsoft365_subscription_leases",
+    "negotiation_events",
+    "offer_number_counters",
+    "offer_replacement_actions",
+    "offer_revisions",
+    "offers",
+    "official_document_definition_versions",
+    "official_document_definitions",
+    "official_document_evidence_review_events",
+    "official_document_evidence_versions",
+    "official_document_followup_task_links",
+    "official_document_step_rule_versions",
+    "opportunities",
+    "opportunity_assignment_history",
+    "opportunity_attribution",
+    "opportunity_number_counters",
+    "opportunity_participants",
+    "opportunity_property_share_events",
+    "opportunity_property_share_items",
+    "opportunity_property_shares",
+    "opportunity_representation_history",
+    "opportunity_stage_draft_finalizations",
+    "opportunity_stage_draft_versions",
+    "opportunity_stage_history",
+    "organization_settings",
+    "partner_organization_versions",
+    "password_reset_requests",
+    "property_listing_noc_versions",
+    "property_match_governed_origins",
+    "property_match_history",
+    "property_matches",
+    "property_media",
+    "property_media_approval_policy",
+    "proposal_media",
+    "proposal_number_counters",
+    "proposal_properties",
+    "proposal_templates",
+    "proposal_versions",
+    "proposals",
+    "provisional_external_properties",
+    "purchased_data_import_authorizations",
+    "purchased_data_import_batches",
+    "purchased_data_import_rows",
+    "qualification_assessments",
+    "qualification_follow_up_task_links",
+    "qualification_models",
+    "r2_legacy_lead_review",
+    "regulatory_assumption_versions",
+    "routing_rules",
+    "saved_dashboard_views",
+    "schema_migrations",
+    "sessions",
+    "sla_alerts",
+    "sla_policies",
+    "tasks",
+    "team_business_line_assignments",
+    "team_memberships",
+    "teams",
+    "transaction_counterparties",
+    "user_role_assignments",
+    "value_briefs",
+    "value_definition_usage",
+    "value_definitions",
+    "value_sets",
+    "viewing_attendees",
+    "viewing_calendar_events",
+    "viewing_status_history",
+    "viewings",
+    "wa_audience_segments",
+    "wa_campaign_approval_recipients",
+    "wa_campaign_audit",
+    "wa_campaign_drafts",
+    "wa_campaign_materials",
+    "wa_campaign_recipients",
+    "wa_campaign_revisions",
+    "wa_contact_suppressions",
+    "wa_conversation_assignment_history",
+    "wa_conversation_messages",
+    "wa_conversations",
+    "wa_inbox_notifications",
+    "wa_material_catalogue",
+    "wa_message_template_versions",
+    "wa_message_templates",
+    "wa_recipient_import_batches",
+    "wa_sandbox_attempts",
+    "wa_sandbox_audit",
+    "wa_sandbox_connections",
+    "wa_sandbox_events",
+    "wa_simulated_provider_control",
+    "wa_simulated_provider_events",
+    "wa_simulation_runs",
+    "wa_template_catalogue",
+    "web_intake_configuration_exceptions",
+    "web_intake_configuration_versions",
+    "web_intake_contact_attempts",
+    "web_intake_contact_match_keys",
+    "web_intake_journeys",
+    "web_intake_provisional_identities",
+    "website_intake_events",
+    "workflow_transitions"
+  ],
+  "baselineTriggers": [
+    {
+      "table": "agent_payout_adjustment_slabs",
+      "name": "agent_adjustment_slabs_draft_only",
+      "function": "public.protect_payout_configuration",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER agent_adjustment_slabs_draft_only BEFORE DELETE OR UPDATE ON agent_payout_adjustment_slabs FOR EACH ROW EXECUTE FUNCTION protect_payout_configuration();"
+    },
+    {
+      "table": "agent_payout_adjustment_versions",
+      "name": "agent_adjustment_no_overlap",
+      "function": "public.prevent_active_payout_overlap",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER agent_adjustment_no_overlap BEFORE INSERT OR UPDATE OF status, effective_from, effective_to ON agent_payout_adjustment_versions FOR EACH ROW EXECUTE FUNCTION prevent_active_payout_overlap();"
+    },
+    {
+      "table": "agent_payout_adjustment_versions",
+      "name": "agent_adjustment_validate_slabs",
+      "function": "public.validate_commission_slab_set",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER agent_adjustment_validate_slabs BEFORE UPDATE OF status ON agent_payout_adjustment_versions FOR EACH ROW EXECUTE FUNCTION validate_commission_slab_set();"
+    },
+    {
+      "table": "agent_payout_advices",
+      "name": "protect_agent_payout_advice_evidence",
+      "function": "public.protect_agent_payout_advice_evidence",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "135_accountant_workspace_payout_advice.sql",
+      "definition": "CREATE TRIGGER protect_agent_payout_advice_evidence BEFORE UPDATE ON agent_payout_advices FOR EACH ROW EXECUTE FUNCTION protect_agent_payout_advice_evidence();"
+    },
+    {
+      "table": "agent_payout_calculation_bands",
+      "name": "payout_bands_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER payout_bands_immutable BEFORE DELETE OR UPDATE ON agent_payout_calculation_bands FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "agent_payout_decision_events",
+      "name": "payout_decisions_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER payout_decisions_immutable BEFORE DELETE OR UPDATE ON agent_payout_decision_events FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "agent_payout_release_events",
+      "name": "payout_releases_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER payout_releases_immutable BEFORE DELETE OR UPDATE ON agent_payout_release_events FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "agent_social_media_payout_status_versions",
+      "name": "agent_social_media_status_no_overlap",
+      "function": "public.prevent_agent_social_media_status_overlap",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "121_agent_social_media_payout_eligibility.sql",
+      "definition": "CREATE TRIGGER agent_social_media_status_no_overlap BEFORE INSERT OR UPDATE OF agent_id, effective_from, effective_to ON agent_social_media_payout_status_versions FOR EACH ROW EXECUTE FUNCTION prevent_agent_social_media_status_overlap();"
+    },
+    {
+      "table": "booking_reservation_extensions",
+      "name": "booking_reservation_extensions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "079_release3b_reservation_expiry_governance.sql",
+      "definition": "CREATE TRIGGER booking_reservation_extensions_immutable BEFORE DELETE OR UPDATE ON booking_reservation_extensions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "booking_status_history",
+      "name": "booking_status_history_immutable",
+      "function": "public.reject_booking_history_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "046_release2_booking_reservation.sql",
+      "definition": "CREATE TRIGGER booking_status_history_immutable BEFORE DELETE OR UPDATE ON booking_status_history FOR EACH ROW EXECUTE FUNCTION reject_booking_history_mutation();"
+    },
+    {
+      "table": "bookings",
+      "name": "bookings_bilateral_acceptance",
+      "function": "public.ensure_bilateral_offer_acceptance",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "136_uat_inventory_mandates_and_offer_acceptance.sql",
+      "definition": "CREATE TRIGGER bookings_bilateral_acceptance BEFORE INSERT OR UPDATE OF accepted_offer_revision_id ON bookings FOR EACH ROW EXECUTE FUNCTION ensure_bilateral_offer_acceptance();"
+    },
+    {
+      "table": "bookings",
+      "name": "bookings_reservation_expiry_policy",
+      "function": "public.enforce_booking_reservation_expiry_policy",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "079_release3b_reservation_expiry_governance.sql",
+      "definition": "CREATE TRIGGER bookings_reservation_expiry_policy BEFORE INSERT OR UPDATE OF expires_at ON bookings FOR EACH ROW EXECUTE FUNCTION enforce_booking_reservation_expiry_policy();"
+    },
+    {
+      "table": "calendly_projection_events",
+      "name": "calendly_projection_events_immutable",
+      "function": "public.prevent_calendly_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "094_release3d_calendly_scheduling.sql",
+      "definition": "CREATE TRIGGER calendly_projection_events_immutable BEFORE DELETE OR UPDATE ON calendly_projection_events FOR EACH ROW EXECUTE FUNCTION prevent_calendly_evidence_mutation();"
+    },
+    {
+      "table": "calendly_provider_event_processing",
+      "name": "calendly_provider_event_processing_immutable",
+      "function": "public.prevent_calendly_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "094_release3d_calendly_scheduling.sql",
+      "definition": "CREATE TRIGGER calendly_provider_event_processing_immutable BEFORE DELETE OR UPDATE ON calendly_provider_event_processing FOR EACH ROW EXECUTE FUNCTION prevent_calendly_evidence_mutation();"
+    },
+    {
+      "table": "calendly_provider_events",
+      "name": "calendly_provider_events_immutable",
+      "function": "public.prevent_calendly_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "094_release3d_calendly_scheduling.sql",
+      "definition": "CREATE TRIGGER calendly_provider_events_immutable BEFORE DELETE OR UPDATE ON calendly_provider_events FOR EACH ROW EXECUTE FUNCTION prevent_calendly_evidence_mutation();"
+    },
+    {
+      "table": "commission_payout_policy_slabs",
+      "name": "commission_policy_slabs_draft_only",
+      "function": "public.protect_payout_configuration",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_policy_slabs_draft_only BEFORE DELETE OR UPDATE ON commission_payout_policy_slabs FOR EACH ROW EXECUTE FUNCTION protect_payout_configuration();"
+    },
+    {
+      "table": "commission_payout_policy_versions",
+      "name": "commission_policy_no_overlap",
+      "function": "public.prevent_active_payout_overlap",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_policy_no_overlap BEFORE INSERT OR UPDATE OF status, effective_from, effective_to ON commission_payout_policy_versions FOR EACH ROW EXECUTE FUNCTION prevent_active_payout_overlap();"
+    },
+    {
+      "table": "commission_payout_policy_versions",
+      "name": "commission_policy_validate_slabs",
+      "function": "public.validate_commission_slab_set",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_policy_validate_slabs BEFORE UPDATE OF status ON commission_payout_policy_versions FOR EACH ROW EXECUTE FUNCTION validate_commission_slab_set();"
+    },
+    {
+      "table": "commission_receivable_adjustment_requests",
+      "name": "receivable_adjustment_protection",
+      "function": "public.protect_receivable_adjustment_request",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "118_dev186_187_receivable_workflow.sql",
+      "definition": "CREATE TRIGGER receivable_adjustment_protection BEFORE DELETE OR UPDATE ON commission_receivable_adjustment_requests FOR EACH ROW EXECUTE FUNCTION protect_receivable_adjustment_request();"
+    },
+    {
+      "table": "commission_receivable_collections",
+      "name": "receivable_collection_link",
+      "function": "public.validate_receivable_receipt_link",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "115_receivable_single_entry_receipts.sql",
+      "definition": "CREATE TRIGGER receivable_collection_link BEFORE INSERT ON commission_receivable_collections FOR EACH ROW EXECUTE FUNCTION validate_receivable_receipt_link();"
+    },
+    {
+      "table": "commission_receivable_collections",
+      "name": "receivable_collections_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "113_dev177_commission_receivables.sql",
+      "definition": "CREATE TRIGGER receivable_collections_immutable BEFORE DELETE OR UPDATE ON commission_receivable_collections FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "commission_receivable_invoices",
+      "name": "receivable_invoice_protection",
+      "function": "public.protect_commission_receivable_invoice",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "113_dev177_commission_receivables.sql",
+      "definition": "CREATE TRIGGER receivable_invoice_protection BEFORE DELETE OR UPDATE ON commission_receivable_invoices FOR EACH ROW EXECUTE FUNCTION protect_commission_receivable_invoice();"
+    },
+    {
+      "table": "commission_receivable_requests",
+      "name": "receivable_requests_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "113_dev177_commission_receivables.sql",
+      "definition": "CREATE TRIGGER receivable_requests_immutable BEFORE DELETE OR UPDATE ON commission_receivable_requests FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "commission_receivable_reversals",
+      "name": "receivable_reversal_link",
+      "function": "public.validate_receivable_receipt_link",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "115_receivable_single_entry_receipts.sql",
+      "definition": "CREATE TRIGGER receivable_reversal_link BEFORE INSERT ON commission_receivable_reversals FOR EACH ROW EXECUTE FUNCTION validate_receivable_receipt_link();"
+    },
+    {
+      "table": "commission_receivable_reversals",
+      "name": "receivable_reversals_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "113_dev177_commission_receivables.sql",
+      "definition": "CREATE TRIGGER receivable_reversals_immutable BEFORE DELETE OR UPDATE ON commission_receivable_reversals FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "commission_receivable_schedules",
+      "name": "receivable_schedules_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "113_dev177_commission_receivables.sql",
+      "definition": "CREATE TRIGGER receivable_schedules_immutable BEFORE DELETE OR UPDATE ON commission_receivable_schedules FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "communication_policy_decisions",
+      "name": "communication_policy_decisions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "085_release3c_governed_share_response.sql",
+      "definition": "CREATE TRIGGER communication_policy_decisions_immutable BEFORE DELETE OR UPDATE ON communication_policy_decisions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "customer_response_task_provenance",
+      "name": "customer_response_task_provenance_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "085_release3c_governed_share_response.sql",
+      "definition": "CREATE TRIGGER customer_response_task_provenance_immutable BEFORE DELETE OR UPDATE ON customer_response_task_provenance FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "deal_agent_credit_lines",
+      "name": "deal_agent_credit_lines_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER deal_agent_credit_lines_immutable BEFORE DELETE OR UPDATE ON deal_agent_credit_lines FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "deal_commission_expectation_components",
+      "name": "commission_expectation_components_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_expectation_components_immutable BEFORE DELETE OR UPDATE ON deal_commission_expectation_components FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "commission_proofs_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "112_dev176_commission_proof.sql",
+      "definition": "CREATE TRIGGER commission_proofs_immutable BEFORE DELETE OR UPDATE ON deal_commission_proofs FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "deal_commission_proofs",
+      "name": "proof_opportunity",
+      "function": "public.validate_finance_opportunity",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "116_opportunity_finance_identity.sql",
+      "definition": "CREATE TRIGGER proof_opportunity BEFORE INSERT ON deal_commission_proofs FOR EACH ROW EXECUTE FUNCTION validate_finance_opportunity();"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "commission_confirmations_immutable",
+      "function": "public.protect_commission_confirmation_evidence",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "115_receivable_single_entry_receipts.sql",
+      "definition": "CREATE TRIGGER commission_confirmations_immutable BEFORE DELETE OR UPDATE ON deal_commission_receipt_confirmations FOR EACH ROW EXECUTE FUNCTION protect_commission_confirmation_evidence();"
+    },
+    {
+      "table": "deal_commission_receipt_confirmations",
+      "name": "confirmation_opportunity",
+      "function": "public.validate_finance_opportunity",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "116_opportunity_finance_identity.sql",
+      "definition": "CREATE TRIGGER confirmation_opportunity BEFORE INSERT ON deal_commission_receipt_confirmations FOR EACH ROW EXECUTE FUNCTION validate_finance_opportunity();"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "commission_receipts_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_receipts_immutable BEFORE DELETE OR UPDATE ON deal_commission_receipts FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "receipt_changes_supersede_confirmation",
+      "function": "public.supersede_changed_receipt_confirmation",
+      "timing": "AFTER",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "115_receivable_single_entry_receipts.sql",
+      "definition": "CREATE TRIGGER receipt_changes_supersede_confirmation AFTER INSERT ON deal_commission_receipts FOR EACH ROW EXECUTE FUNCTION supersede_changed_receipt_confirmation();"
+    },
+    {
+      "table": "deal_commission_receipts",
+      "name": "receipt_opportunity",
+      "function": "public.validate_finance_opportunity",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "116_opportunity_finance_identity.sql",
+      "definition": "CREATE TRIGGER receipt_opportunity BEFORE INSERT ON deal_commission_receipts FOR EACH ROW EXECUTE FUNCTION validate_finance_opportunity();"
+    },
+    {
+      "table": "deal_commission_variance_decisions",
+      "name": "commission_variance_decisions_immutable",
+      "function": "public.reject_immutable_finance_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "088_release5_commission_receipt_realtime_payout.sql",
+      "definition": "CREATE TRIGGER commission_variance_decisions_immutable BEFORE DELETE OR UPDATE ON deal_commission_variance_decisions FOR EACH ROW EXECUTE FUNCTION reject_immutable_finance_mutation();"
+    },
+    {
+      "table": "deal_document_requirement_instances",
+      "name": "deal_document_requirement_instances_immutable",
+      "function": "public.reject_document_compliance_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "090_release6_customer_transaction_document_compliance.sql",
+      "definition": "CREATE TRIGGER deal_document_requirement_instances_immutable BEFORE DELETE OR UPDATE ON deal_document_requirement_instances FOR EACH ROW EXECUTE FUNCTION reject_document_compliance_evidence_mutation();"
+    },
+    {
+      "table": "deal_inventory_linkages",
+      "name": "deal_inventory_linkages_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "099_dev153_inventory_assignment_lifecycle.sql",
+      "definition": "CREATE TRIGGER deal_inventory_linkages_immutable BEFORE DELETE OR UPDATE ON deal_inventory_linkages FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "deal_status_history",
+      "name": "deal_status_history_immutable",
+      "function": "public.reject_deal_status_history_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "047_release2_deal_foundation.sql",
+      "definition": "CREATE TRIGGER deal_status_history_immutable BEFORE DELETE OR UPDATE ON deal_status_history FOR EACH ROW EXECUTE FUNCTION reject_deal_status_history_mutation();"
+    },
+    {
+      "table": "deals",
+      "name": "deals_bilateral_acceptance",
+      "function": "public.ensure_bilateral_offer_acceptance",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "136_uat_inventory_mandates_and_offer_acceptance.sql",
+      "definition": "CREATE TRIGGER deals_bilateral_acceptance BEFORE INSERT OR UPDATE OF accepted_offer_revision_id ON deals FOR EACH ROW EXECUTE FUNCTION ensure_bilateral_offer_acceptance();"
+    },
+    {
+      "table": "deals",
+      "name": "deals_current_inventory_linkage_consistency",
+      "function": "public.enforce_deal_current_inventory_linkage",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "099_dev153_inventory_assignment_lifecycle.sql",
+      "definition": "CREATE CONSTRAINT TRIGGER deals_current_inventory_linkage_consistency AFTER INSERT OR UPDATE OF current_inventory_linkage_id, listing_id, external_property_id, offer_id, accepted_offer_revision_id, booking_id ON deals DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION enforce_deal_current_inventory_linkage();"
+    },
+    {
+      "table": "developer_brokerage_arrangement_versions",
+      "name": "developer_arrangement_immutable",
+      "function": "public.prevent_developer_arrangement_fact_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "098_developer_arrangement_and_listing_noc.sql",
+      "definition": "CREATE TRIGGER developer_arrangement_immutable BEFORE DELETE OR UPDATE ON developer_brokerage_arrangement_versions FOR EACH ROW EXECUTE FUNCTION prevent_developer_arrangement_fact_mutation();"
+    },
+    {
+      "table": "dld_market_observations",
+      "name": "dld_observations_immutable",
+      "function": "public.enforce_dld_observation_immutability",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "087_release4_dld_market_intelligence.sql",
+      "definition": "CREATE TRIGGER dld_observations_immutable BEFORE INSERT OR DELETE OR UPDATE ON dld_market_observations FOR EACH ROW EXECUTE FUNCTION enforce_dld_observation_immutability();"
+    },
+    {
+      "table": "dld_market_source_rows",
+      "name": "dld_source_rows_immutable",
+      "function": "public.reject_dld_source_row_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "087_release4_dld_market_intelligence.sql",
+      "definition": "CREATE TRIGGER dld_source_rows_immutable BEFORE DELETE OR UPDATE ON dld_market_source_rows FOR EACH ROW EXECUTE FUNCTION reject_dld_source_row_mutation();"
+    },
+    {
+      "table": "document_compliance_evidence_review_events",
+      "name": "document_compliance_reviews_immutable",
+      "function": "public.reject_document_compliance_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "090_release6_customer_transaction_document_compliance.sql",
+      "definition": "CREATE TRIGGER document_compliance_reviews_immutable BEFORE DELETE OR UPDATE ON document_compliance_evidence_review_events FOR EACH ROW EXECUTE FUNCTION reject_document_compliance_evidence_mutation();"
+    },
+    {
+      "table": "document_compliance_evidence_versions",
+      "name": "document_compliance_evidence_immutable",
+      "function": "public.reject_document_compliance_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "090_release6_customer_transaction_document_compliance.sql",
+      "definition": "CREATE TRIGGER document_compliance_evidence_immutable BEFORE DELETE OR UPDATE ON document_compliance_evidence_versions FOR EACH ROW EXECUTE FUNCTION reject_document_compliance_evidence_mutation();"
+    },
+    {
+      "table": "document_compliance_followup_task_links",
+      "name": "document_compliance_task_links_immutable",
+      "function": "public.reject_document_compliance_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "090_release6_customer_transaction_document_compliance.sql",
+      "definition": "CREATE TRIGGER document_compliance_task_links_immutable BEFORE DELETE OR UPDATE ON document_compliance_followup_task_links FOR EACH ROW EXECUTE FUNCTION reject_document_compliance_evidence_mutation();"
+    },
+    {
+      "table": "document_compliance_official_evidence_links",
+      "name": "document_compliance_official_links_immutable",
+      "function": "public.reject_document_compliance_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "090_release6_customer_transaction_document_compliance.sql",
+      "definition": "CREATE TRIGGER document_compliance_official_links_immutable BEFORE DELETE OR UPDATE ON document_compliance_official_evidence_links FOR EACH ROW EXECUTE FUNCTION reject_document_compliance_evidence_mutation();"
+    },
+    {
+      "table": "email_message_evidence",
+      "name": "email_message_evidence_immutable",
+      "function": "public.prevent_email_integration_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "093_release3d_microsoft365_email.sql",
+      "definition": "CREATE TRIGGER email_message_evidence_immutable BEFORE DELETE OR UPDATE ON email_message_evidence FOR EACH ROW EXECUTE FUNCTION prevent_email_integration_evidence_mutation();"
+    },
+    {
+      "table": "email_message_state_events",
+      "name": "email_message_state_events_immutable",
+      "function": "public.prevent_email_integration_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "093_release3d_microsoft365_email.sql",
+      "definition": "CREATE TRIGGER email_message_state_events_immutable BEFORE DELETE OR UPDATE ON email_message_state_events FOR EACH ROW EXECUTE FUNCTION prevent_email_integration_evidence_mutation();"
+    },
+    {
+      "table": "email_projection_events",
+      "name": "email_projection_events_immutable",
+      "function": "public.prevent_email_integration_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "093_release3d_microsoft365_email.sql",
+      "definition": "CREATE TRIGGER email_projection_events_immutable BEFORE DELETE OR UPDATE ON email_projection_events FOR EACH ROW EXECUTE FUNCTION prevent_email_integration_evidence_mutation();"
+    },
+    {
+      "table": "email_provider_event_processing",
+      "name": "email_provider_event_processing_immutable",
+      "function": "public.prevent_email_integration_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "093_release3d_microsoft365_email.sql",
+      "definition": "CREATE TRIGGER email_provider_event_processing_immutable BEFORE DELETE OR UPDATE ON email_provider_event_processing FOR EACH ROW EXECUTE FUNCTION prevent_email_integration_evidence_mutation();"
+    },
+    {
+      "table": "email_provider_events",
+      "name": "email_provider_events_immutable",
+      "function": "public.prevent_email_integration_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "093_release3d_microsoft365_email.sql",
+      "definition": "CREATE TRIGGER email_provider_events_immutable BEFORE DELETE OR UPDATE ON email_provider_events FOR EACH ROW EXECUTE FUNCTION prevent_email_integration_evidence_mutation();"
+    },
+    {
+      "table": "external_listing_preparation_versions",
+      "name": "external_listing_preparation_versions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "080_release3b_external_portal_preparation.sql",
+      "definition": "CREATE TRIGGER external_listing_preparation_versions_immutable BEFORE DELETE OR UPDATE ON external_listing_preparation_versions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "external_portal_permit_evidence_versions",
+      "name": "external_portal_permit_evidence_versions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "081_release3b_portal_permit_reconciliation.sql",
+      "definition": "CREATE TRIGGER external_portal_permit_evidence_versions_immutable BEFORE DELETE OR UPDATE ON external_portal_permit_evidence_versions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_agent_assignment_history",
+      "name": "inventory_agent_assignment_history_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "078_release3b_inventory_progressive_governance.sql",
+      "definition": "CREATE TRIGGER inventory_agent_assignment_history_immutable BEFORE DELETE OR UPDATE ON inventory_agent_assignment_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_assignment_events",
+      "name": "inventory_assignment_events_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "099_dev153_inventory_assignment_lifecycle.sql",
+      "definition": "CREATE TRIGGER inventory_assignment_events_immutable BEFORE DELETE OR UPDATE ON inventory_assignment_events FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_assignment_expiry_changes",
+      "name": "inventory_assignment_expiry_changes_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "099_dev153_inventory_assignment_lifecycle.sql",
+      "definition": "CREATE TRIGGER inventory_assignment_expiry_changes_immutable BEFORE DELETE OR UPDATE ON inventory_assignment_expiry_changes FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_market_intelligence_review_events",
+      "name": "market_snapshot_reviews_immutable",
+      "function": "public.reject_market_snapshot_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "087_release4_dld_market_intelligence.sql",
+      "definition": "CREATE TRIGGER market_snapshot_reviews_immutable BEFORE DELETE OR UPDATE ON inventory_market_intelligence_review_events FOR EACH ROW EXECUTE FUNCTION reject_market_snapshot_mutation();"
+    },
+    {
+      "table": "inventory_market_intelligence_snapshots",
+      "name": "market_snapshots_immutable",
+      "function": "public.reject_market_snapshot_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "087_release4_dld_market_intelligence.sql",
+      "definition": "CREATE TRIGGER market_snapshots_immutable BEFORE DELETE OR UPDATE ON inventory_market_intelligence_snapshots FOR EACH ROW EXECUTE FUNCTION reject_market_snapshot_mutation();"
+    },
+    {
+      "table": "inventory_match_candidate_assessments",
+      "name": "inventory_match_candidate_assessments_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "092_release3b_matching_completion.sql",
+      "definition": "CREATE TRIGGER inventory_match_candidate_assessments_immutable BEFORE DELETE OR UPDATE ON inventory_match_candidate_assessments FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_match_decisions",
+      "name": "inventory_match_decisions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "076_release3b_match_decisions_and_feedback.sql",
+      "definition": "CREATE TRIGGER inventory_match_decisions_immutable BEFORE DELETE OR UPDATE ON inventory_match_decisions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_match_feedback",
+      "name": "inventory_match_feedback_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "076_release3b_match_decisions_and_feedback.sql",
+      "definition": "CREATE TRIGGER inventory_match_feedback_immutable BEFORE DELETE OR UPDATE ON inventory_match_feedback FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_matching_candidates",
+      "name": "inventory_matching_candidates_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "075_release3b_governed_inventory_matching.sql",
+      "definition": "CREATE TRIGGER inventory_matching_candidates_immutable BEFORE DELETE OR UPDATE ON inventory_matching_candidates FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_matching_runs",
+      "name": "inventory_matching_runs_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "075_release3b_governed_inventory_matching.sql",
+      "definition": "CREATE TRIGGER inventory_matching_runs_immutable BEFORE DELETE OR UPDATE ON inventory_matching_runs FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "inventory_organization_link_events",
+      "name": "inventory_organization_link_events_append_only",
+      "function": "public.prevent_inventory_organization_link_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "084_partner_organization_integration.sql",
+      "definition": "CREATE TRIGGER inventory_organization_link_events_append_only BEFORE DELETE OR UPDATE ON inventory_organization_link_events FOR EACH ROW EXECUTE FUNCTION prevent_inventory_organization_link_mutation();"
+    },
+    {
+      "table": "inventory_organization_link_events",
+      "name": "inventory_organization_link_events_validate",
+      "function": "public.validate_inventory_organization_link_event",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "084_partner_organization_integration.sql",
+      "definition": "CREATE TRIGGER inventory_organization_link_events_validate BEFORE INSERT ON inventory_organization_link_events FOR EACH ROW EXECUTE FUNCTION validate_inventory_organization_link_event();"
+    },
+    {
+      "table": "lead_requirement_confirmations",
+      "name": "lead_requirement_confirmations_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "077_release3b_requirement_confirmation.sql",
+      "definition": "CREATE TRIGGER lead_requirement_confirmations_immutable BEFORE DELETE OR UPDATE ON lead_requirement_confirmations FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "lead_requirement_conflict_resolutions",
+      "name": "lead_requirement_conflict_resolutions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "077_release3b_requirement_confirmation.sql",
+      "definition": "CREATE TRIGGER lead_requirement_conflict_resolutions_immutable BEFORE DELETE OR UPDATE ON lead_requirement_conflict_resolutions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "lead_requirement_website_conflicts",
+      "name": "lead_requirement_website_conflicts_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "077_release3b_requirement_confirmation.sql",
+      "definition": "CREATE TRIGGER lead_requirement_website_conflicts_immutable BEFORE DELETE OR UPDATE ON lead_requirement_website_conflicts FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "leads",
+      "name": "leads_assign_reference",
+      "function": "public.nysa_assign_lead_reference",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "060_consolidated_lead_opportunity_remediation.sql",
+      "definition": "CREATE TRIGGER leads_assign_reference BEFORE INSERT ON leads FOR EACH ROW EXECUTE FUNCTION nysa_assign_lead_reference();"
+    },
+    {
+      "table": "leads",
+      "name": "leads_close_follow_ups",
+      "function": "public.nysa_close_terminal_lead_follow_ups",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "138_terminal_lead_follow_up_cleanup.sql",
+      "definition": "CREATE TRIGGER leads_close_follow_ups AFTER INSERT OR UPDATE OF stage, current_status ON leads FOR EACH ROW EXECUTE FUNCTION nysa_close_terminal_lead_follow_ups();"
+    },
+    {
+      "table": "leads",
+      "name": "leads_stage_transition_guard",
+      "function": "public.enforce_lead_stage_transition",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "009_acceptance_hardening.sql",
+      "definition": "CREATE TRIGGER leads_stage_transition_guard BEFORE UPDATE OF stage ON leads FOR EACH ROW EXECUTE FUNCTION enforce_lead_stage_transition();"
+    },
+    {
+      "table": "leave_application_decisions",
+      "name": "leave_decision_no_self_approval",
+      "function": "public.prohibit_leave_self_approval",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "089_agent_employment_leave.sql",
+      "definition": "CREATE TRIGGER leave_decision_no_self_approval BEFORE INSERT ON leave_application_decisions FOR EACH ROW EXECUTE FUNCTION prohibit_leave_self_approval();"
+    },
+    {
+      "table": "leave_application_decisions",
+      "name": "leave_decisions_immutable",
+      "function": "public.reject_leave_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "089_agent_employment_leave.sql",
+      "definition": "CREATE TRIGGER leave_decisions_immutable BEFORE DELETE OR UPDATE ON leave_application_decisions FOR EACH ROW EXECUTE FUNCTION reject_leave_evidence_mutation();"
+    },
+    {
+      "table": "leave_application_task_links",
+      "name": "leave_task_links_immutable",
+      "function": "public.reject_leave_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "089_agent_employment_leave.sql",
+      "definition": "CREATE TRIGGER leave_task_links_immutable BEFORE DELETE OR UPDATE ON leave_application_task_links FOR EACH ROW EXECUTE FUNCTION reject_leave_evidence_mutation();"
+    },
+    {
+      "table": "leave_balance_ledger",
+      "name": "leave_balance_immutable",
+      "function": "public.reject_leave_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "089_agent_employment_leave.sql",
+      "definition": "CREATE TRIGGER leave_balance_immutable BEFORE DELETE OR UPDATE ON leave_balance_ledger FOR EACH ROW EXECUTE FUNCTION reject_leave_evidence_mutation();"
+    },
+    {
+      "table": "listing_noc_evidence_versions",
+      "name": "listing_noc_evidence_immutable",
+      "function": "public.prevent_listing_noc_evidence_fact_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "132_approved_documents_and_brand.sql",
+      "definition": "CREATE TRIGGER listing_noc_evidence_immutable BEFORE DELETE OR UPDATE ON listing_noc_evidence_versions FOR EACH ROW EXECUTE FUNCTION prevent_listing_noc_evidence_fact_mutation();"
+    },
+    {
+      "table": "marketing_material_media_links",
+      "name": "marketing_media_links_immutable",
+      "function": "public.reject_marketing_material_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_media_links_immutable BEFORE DELETE OR UPDATE ON marketing_material_media_links FOR EACH ROW EXECUTE FUNCTION reject_marketing_material_evidence_mutation();"
+    },
+    {
+      "table": "marketing_material_official_evidence_links",
+      "name": "marketing_official_links_immutable",
+      "function": "public.reject_marketing_material_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_official_links_immutable BEFORE DELETE OR UPDATE ON marketing_material_official_evidence_links FOR EACH ROW EXECUTE FUNCTION reject_marketing_material_evidence_mutation();"
+    },
+    {
+      "table": "marketing_material_permit_snapshots",
+      "name": "marketing_permit_snapshots_immutable",
+      "function": "public.reject_marketing_material_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_permit_snapshots_immutable BEFORE DELETE OR UPDATE ON marketing_material_permit_snapshots FOR EACH ROW EXECUTE FUNCTION reject_marketing_material_evidence_mutation();"
+    },
+    {
+      "table": "marketing_material_review_events",
+      "name": "marketing_review_events_immutable",
+      "function": "public.reject_marketing_material_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_review_events_immutable BEFORE DELETE OR UPDATE ON marketing_material_review_events FOR EACH ROW EXECUTE FUNCTION reject_marketing_material_evidence_mutation();"
+    },
+    {
+      "table": "marketing_material_task_links",
+      "name": "marketing_task_links_immutable",
+      "function": "public.reject_marketing_material_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_task_links_immutable BEFORE DELETE OR UPDATE ON marketing_material_task_links FOR EACH ROW EXECUTE FUNCTION reject_marketing_material_evidence_mutation();"
+    },
+    {
+      "table": "marketing_material_versions",
+      "name": "marketing_material_version_guard",
+      "function": "public.protect_marketing_material_version",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "091_release6_marketing_material_compliance.sql",
+      "definition": "CREATE TRIGGER marketing_material_version_guard BEFORE DELETE OR UPDATE ON marketing_material_versions FOR EACH ROW EXECUTE FUNCTION protect_marketing_material_version();"
+    },
+    {
+      "table": "matching_policy_versions",
+      "name": "matching_policy_versions_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "076_release3b_match_decisions_and_feedback.sql",
+      "definition": "CREATE TRIGGER matching_policy_versions_immutable BEFORE DELETE OR UPDATE ON matching_policy_versions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "negotiation_events",
+      "name": "negotiation_events_immutable",
+      "function": "public.reject_negotiation_event_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "045_release2_offer_negotiation.sql",
+      "definition": "CREATE TRIGGER negotiation_events_immutable BEFORE DELETE OR UPDATE ON negotiation_events FOR EACH ROW EXECUTE FUNCTION reject_negotiation_event_mutation();"
+    },
+    {
+      "table": "offer_replacement_actions",
+      "name": "offer_replacement_actions_immutable",
+      "function": "public.reject_offer_replacement_action_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "095_dev146_full_scope_uat_governance.sql",
+      "definition": "CREATE TRIGGER offer_replacement_actions_immutable BEFORE DELETE OR UPDATE ON offer_replacement_actions FOR EACH ROW EXECUTE FUNCTION reject_offer_replacement_action_mutation();"
+    },
+    {
+      "table": "offer_revisions",
+      "name": "offer_revisions_immutable",
+      "function": "public.reject_offer_revision_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "045_release2_offer_negotiation.sql",
+      "definition": "CREATE TRIGGER offer_revisions_immutable BEFORE DELETE OR UPDATE ON offer_revisions FOR EACH ROW EXECUTE FUNCTION reject_offer_revision_mutation();"
+    },
+    {
+      "table": "offers",
+      "name": "offers_bilateral_acceptance",
+      "function": "public.ensure_bilateral_offer_acceptance",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "136_uat_inventory_mandates_and_offer_acceptance.sql",
+      "definition": "CREATE CONSTRAINT TRIGGER offers_bilateral_acceptance AFTER INSERT OR UPDATE OF accepted_revision_id ON offers DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ensure_bilateral_offer_acceptance();"
+    },
+    {
+      "table": "official_document_evidence_review_events",
+      "name": "official_document_review_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "086_release4_official_document_evidence.sql",
+      "definition": "CREATE TRIGGER official_document_review_immutable BEFORE DELETE OR UPDATE ON official_document_evidence_review_events FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "official_document_evidence_versions",
+      "name": "official_document_evidence_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "086_release4_official_document_evidence.sql",
+      "definition": "CREATE TRIGGER official_document_evidence_immutable BEFORE DELETE OR UPDATE ON official_document_evidence_versions FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "official_document_followup_task_links",
+      "name": "official_document_task_link_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "086_release4_official_document_evidence.sql",
+      "definition": "CREATE TRIGGER official_document_task_link_immutable BEFORE DELETE OR UPDATE ON official_document_followup_task_links FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "opportunities",
+      "name": "opportunities_sync_lead_status",
+      "function": "public.nysa_opportunity_sync_lead_status",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "061_dev90_reference_and_status_governance.sql",
+      "definition": "CREATE TRIGGER opportunities_sync_lead_status AFTER INSERT OR UPDATE OF stage ON opportunities FOR EACH ROW EXECUTE FUNCTION nysa_opportunity_sync_lead_status();"
+    },
+    {
+      "table": "opportunity_assignment_history",
+      "name": "opportunity_assignment_history_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "039_release2_connected_operations.sql",
+      "definition": "CREATE TRIGGER opportunity_assignment_history_immutable BEFORE DELETE OR UPDATE ON opportunity_assignment_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "opportunity_attribution",
+      "name": "opportunity_attribution_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "038_release2_opportunity_foundation.sql",
+      "definition": "CREATE TRIGGER opportunity_attribution_immutable BEFORE DELETE OR UPDATE ON opportunity_attribution FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "opportunity_property_share_events",
+      "name": "opportunity_property_share_events_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "085_release3c_governed_share_response.sql",
+      "definition": "CREATE TRIGGER opportunity_property_share_events_immutable BEFORE DELETE OR UPDATE ON opportunity_property_share_events FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "opportunity_property_share_items",
+      "name": "opportunity_property_share_items_governed_immutable",
+      "function": "public.prevent_governed_property_share_item_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "085_release3c_governed_share_response.sql",
+      "definition": "CREATE TRIGGER opportunity_property_share_items_governed_immutable BEFORE DELETE OR UPDATE ON opportunity_property_share_items FOR EACH ROW EXECUTE FUNCTION prevent_governed_property_share_item_mutation();"
+    },
+    {
+      "table": "opportunity_property_shares",
+      "name": "opportunity_property_shares_governed_immutable_facts",
+      "function": "public.prevent_governed_property_share_fact_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "085_release3c_governed_share_response.sql",
+      "definition": "CREATE TRIGGER opportunity_property_shares_governed_immutable_facts BEFORE UPDATE ON opportunity_property_shares FOR EACH ROW EXECUTE FUNCTION prevent_governed_property_share_fact_mutation();"
+    },
+    {
+      "table": "opportunity_stage_history",
+      "name": "opportunity_stage_history_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "038_release2_opportunity_foundation.sql",
+      "definition": "CREATE TRIGGER opportunity_stage_history_immutable BEFORE DELETE OR UPDATE ON opportunity_stage_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "partner_organization_versions",
+      "name": "partner_organization_versions_immutable_facts",
+      "function": "public.prevent_partner_organization_fact_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "084_partner_organization_integration.sql",
+      "definition": "CREATE TRIGGER partner_organization_versions_immutable_facts BEFORE UPDATE ON partner_organization_versions FOR EACH ROW EXECUTE FUNCTION prevent_partner_organization_fact_mutation();"
+    },
+    {
+      "table": "property_listing_noc_versions",
+      "name": "property_listing_noc_immutable",
+      "function": "public.prevent_property_listing_noc_fact_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "098_developer_arrangement_and_listing_noc.sql",
+      "definition": "CREATE TRIGGER property_listing_noc_immutable BEFORE DELETE OR UPDATE ON property_listing_noc_versions FOR EACH ROW EXECUTE FUNCTION prevent_property_listing_noc_fact_mutation();"
+    },
+    {
+      "table": "property_match_governed_origins",
+      "name": "property_match_governed_origins_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "092_release3b_matching_completion.sql",
+      "definition": "CREATE TRIGGER property_match_governed_origins_immutable BEFORE DELETE OR UPDATE ON property_match_governed_origins FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "property_match_history",
+      "name": "property_match_history_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "040_release2_matching_viewing.sql",
+      "definition": "CREATE TRIGGER property_match_history_immutable BEFORE DELETE OR UPDATE ON property_match_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    },
+    {
+      "table": "tasks",
+      "name": "tasks_terminal_lead_follow_up_audit",
+      "function": "public.nysa_audit_terminal_lead_follow_up",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "138_terminal_lead_follow_up_cleanup.sql",
+      "definition": "CREATE TRIGGER tasks_terminal_lead_follow_up_audit AFTER INSERT OR UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION nysa_audit_terminal_lead_follow_up();"
+    },
+    {
+      "table": "tasks",
+      "name": "tasks_terminal_lead_follow_up_guard",
+      "function": "public.nysa_guard_terminal_lead_follow_up",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "138_terminal_lead_follow_up_cleanup.sql",
+      "definition": "CREATE TRIGGER tasks_terminal_lead_follow_up_guard BEFORE INSERT OR UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION nysa_guard_terminal_lead_follow_up();"
+    },
+    {
+      "table": "viewing_status_history",
+      "name": "viewing_status_history_immutable",
+      "function": "public.prevent_release2_immutable_evidence_mutation",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "040_release2_matching_viewing.sql",
+      "definition": "CREATE TRIGGER viewing_status_history_immutable BEFORE DELETE OR UPDATE ON viewing_status_history FOR EACH ROW EXECUTE FUNCTION prevent_release2_immutable_evidence_mutation();"
+    }
+  ],
+  "expectedTriggerCount": 108,
+  "expectedTriggerContractSha256": "a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073",
+  "expectedTriggerDriftDataChecks": [
+    {
+      "name": "active_agent_adjustment_invalid_slab_sets",
+      "count": 0
+    },
+    {
+      "name": "active_agent_adjustment_overlap_pairs",
+      "count": 0
+    },
+    {
+      "name": "active_commission_policy_invalid_slab_sets",
+      "count": 0
+    },
+    {
+      "name": "active_commission_policy_overlap_pairs",
+      "count": 0
+    },
+    {
+      "name": "booking_bilateral_acceptance_incomplete",
+      "count": 0
+    },
+    {
+      "name": "booking_extension_without_exact_evidence",
+      "count": 0
+    },
+    {
+      "name": "booking_initial_term_over_seven_days",
+      "count": 0
+    },
+    {
+      "name": "booking_term_over_fourteen_days",
+      "count": 0
+    },
+    {
+      "name": "deal_bilateral_acceptance_incomplete",
+      "count": 0
+    },
+    {
+      "name": "invalid_lead_stage_history",
+      "count": 0
+    },
+    {
+      "name": "leave_approval_task_assignment_mismatch",
+      "count": 0
+    },
+    {
+      "name": "leave_self_approval_decisions",
+      "count": 0
+    },
+    {
+      "name": "offer_bilateral_acceptance_incomplete",
+      "count": 0
+    },
+    {
+      "name": "terminal_leads_with_open_followups",
+      "count": 0
+    },
+    {
+      "name": "terminal_leads_with_stale_next_followup",
+      "count": 0
+    }
+  ],
+  "expectedTestPassed": 1570,
+  "totalTimeoutMinutes": 45,
+  "backupFreshnessMinutes": 90,
+  "smokeWindowSeconds": 60,
+  "cleanupPaths": [],
+  "schemaContractHelperPath": "/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs",
+  "schemaContractHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+  "baselineSchemaContractManifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+  "expectedSchemaContractManifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa"
+}

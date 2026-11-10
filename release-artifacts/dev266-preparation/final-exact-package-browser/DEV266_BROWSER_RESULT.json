@@ -1,0 +1,50 @@
+{
+  "schema": "nysa.dev266.reply-lock-browser.v1",
+  "synthetic": true,
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev266-exact-package-1abd177",
+  "releaseFile": "public/whatsapp-workspace-ui.js",
+  "releaseSha256": "6c0f81d72f45483e8b15d2b3791b83ed187c7074a13a5de9d59c2a14b2b4cab6",
+  "loadedFromActualReleaseFile": true,
+  "roles": [
+    {
+      "role": "sales_agent",
+      "status": "passed",
+      "initial": {
+        "form": true,
+        "acquire": true,
+        "release": true,
+        "text": "Synthetic Prospect SIMULATEDWA-CON-DEV266 · Synthetic Agent · Synthetic Secondary SalesBack to inboxResponder: human24h reply: open72h CTWA pricing: not applicableReply lock: Synthetic Agent until 10 Nov 2026, 12:30inbound SIMULATEDSynthetic inbound10 Nov 2026, 12:30Simulated reply (free-form window open)Simulated-approved templateOptionalSend to local simulatorAcquire reply lockRelease reply lock"
+      },
+      "screenshot": "sales_agent.png",
+      "pageErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "role": "manager",
+      "status": "passed",
+      "initial": {
+        "form": false,
+        "acquire": false,
+        "release": true,
+        "text": "Synthetic Prospect SIMULATEDWA-CON-DEV266 · Synthetic Agent · Synthetic Secondary SalesBack to inboxResponder: human24h reply: open72h CTWA pricing: not applicableReply lock: Synthetic Agent until 10 Nov 2026, 12:30inbound SIMULATEDSynthetic inbound10 Nov 2026, 12:30Reply unavailable. Reply lock held by Synthetic Agent until 10 Nov 2026, 12:30.Release reply lockAssign to AgentSelect AgentReason *ReassignTake over"
+      },
+      "screenshot": "manager.png",
+      "pageErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "role": "director",
+      "status": "passed",
+      "initial": {
+        "form": false,
+        "acquire": false,
+        "release": true,
+        "text": "Synthetic Prospect SIMULATEDWA-CON-DEV266 · Synthetic Agent · Synthetic Secondary SalesBack to inboxResponder: human24h reply: open72h CTWA pricing: not applicableReply lock: Synthetic Agent until 10 Nov 2026, 12:30inbound SIMULATEDSynthetic inbound10 Nov 2026, 12:30Reply unavailable. Reply lock held by Synthetic Agent until 10 Nov 2026, 12:30.Release reply lockAssign to AgentSelect AgentReason *ReassignTake over"
+      },
+      "screenshot": "director.png",
+      "pageErrors": [],
+      "consoleErrors": []
+    }
+  ],
+  "checkedAt": "2026-11-10T03:20:24.021Z"
+}
