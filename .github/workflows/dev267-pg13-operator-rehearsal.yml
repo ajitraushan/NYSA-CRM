@@ -97,7 +97,7 @@ jobs:
           sudo mkdir -p "$PREP_ROOT/evidence"
           sudo cp tools/dev267-pg13-worker.mjs /tmp/dev267-pg13-worker.mjs
           sudo chmod 755 /tmp/dev267-pg13-worker.mjs
-          sudo chown -R runner:runner /home/nysareal/crm-release-preparation /home/nysareal/nysa-core-dashboard-dd6262a-stage
+          sudo chown -R nysareal:nysareal /home/nysareal/nysa-core-dashboard-dd6262a-stage
           sudo chmod -R a+rX /home/nysareal/nodevenv /home/nysareal/crm-deployment-tools
 
       - name: Generate fixture-bound operator config and selector state
@@ -119,6 +119,8 @@ jobs:
           cat > /tmp/dev267-selector-state.json <<JSON
           {"root":"$HOST_ROOT","domain":"crm-test.nysarealty.com","app_status":"started","env_vars":{"PGHOST":"127.0.0.1","PGPORT":"5432","PGDATABASE":"nysa_test_fixture","PGUSER":"nysa_test_user","PGPASSWORD":"nysa_test_password","PORT":"3000","NODE_ENV":"production","WHATSAPP_SANDBOX_ENABLED":"false","WHATSAPP_SANDBOX_CALLBACK_APPROVED":"false"}}
           JSON
+          sudo chown -R nysareal:nysareal "$PREP_ROOT"
+          sudo chown nysareal:nysareal /tmp/dev267-selector-state.json
           mkdir /tmp/nysa-rehearsal-bin
           cat > /tmp/nysa-rehearsal-bin/cloudlinux-selector <<SH
           #!/bin/sh
@@ -147,10 +149,10 @@ jobs:
           NYSA_REHEARSAL_WORKER: /tmp/dev267-pg13-worker.mjs
         run: |
           set -o pipefail
-          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+          sudo -u nysareal -H env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             cloudlinux-selector get --json --interpreter nodejs --domain crm-test.nysarealty.com
-          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+          sudo -u nysareal -H env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
               --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \
@@ -165,7 +167,7 @@ jobs:
           NYSA_REHEARSAL_WORKER: /tmp/dev267-pg13-worker.mjs
         run: |
           set -o pipefail
-          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+          sudo -u nysareal -H env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
               --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \
@@ -189,7 +191,7 @@ jobs:
         run: |
           set -o pipefail
           set +e
-          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+          sudo -u nysareal -H env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NODE_TLS_REJECT_UNAUTHORIZED=0 NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
               --config "$PREP_ROOT/DEV267_REHEARSAL_CONFIG.json" \

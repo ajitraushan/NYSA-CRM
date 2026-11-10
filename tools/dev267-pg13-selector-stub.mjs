@@ -22,9 +22,12 @@ if(action==='get'){
 }else if(action==='start'){
   const state={...read(),app_status:'started'};
   write(state);
-  const environment=Object.entries(state.env_vars).flatMap(([name,item])=>[`${name}=${item}`]);
   const log=fs.openSync('/tmp/dev267-rehearsal-worker.log','a');
-  const child=spawn('sudo',['-u','nysareal','-H','env',...environment,process.execPath,workerFile,state.root],{detached:true,stdio:['ignore',log,log]});
+  const child=spawn(process.execPath,[workerFile,state.root],{
+    detached:true,
+    stdio:['ignore',log,log],
+    env:{...process.env,...state.env_vars},
+  });
   debug({action:'start-spawned',pid:child.pid,root:state.root,workerFile});
   child.on('error',error=>debug({action:'start-spawn-error',code:error.code||null,message:error.message}));
   child.unref();
