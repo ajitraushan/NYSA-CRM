@@ -86,7 +86,7 @@ jobs:
           printf '%s\n' '{"schema":"nysa.release-provenance.v1","version":"2.1.0-dev.266","commit":"1abd17771a5dda3be4b5108a6453e70438ad3ed0"}' | sudo tee "$HOST_ROOT/RELEASE_PROVENANCE.json" >/dev/null
           PACKAGE_HASH=$(sha256sum "$HOST_ROOT/package.json" | cut -d' ' -f1)
           printf '%s  package.json\n' "$PACKAGE_HASH" | sudo tee "$HOST_ROOT/RUNTIME_MANIFEST.sha256" >/dev/null
-          sudo cp -a node_modules/. /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules/
+          sudo cp -al node_modules/. /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules/
           sudo ln -s /home/nysareal/nodevenv/nysa-core-dashboard-dd6262a-stage/24/lib/node_modules "$HOST_ROOT/node_modules"
           for file in crm-test-direct-node-release-operator.mjs hosted-worker-lifecycle.mjs crm-test-backup-verification.mjs database-trigger-contract.mjs database-schema-contract.mjs; do
             sudo cp "tools/$file" "$HOST_TOOLS/$file"
@@ -95,6 +95,8 @@ jobs:
           sudo cp release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.zip "$PREP_ROOT/"
           sudo cp release-artifacts/origin/dev267-run2/nysa-core-2.1.0-dev.267-origin.manifest.json "$PREP_ROOT/"
           sudo mkdir -p "$PREP_ROOT/evidence"
+          sudo cp tools/dev267-pg13-worker.mjs /tmp/dev267-pg13-worker.mjs
+          sudo chmod 755 /tmp/dev267-pg13-worker.mjs
           sudo chown -R runner:runner /home/nysareal/crm-release-preparation /home/nysareal/nysa-core-dashboard-dd6262a-stage
           sudo chmod -R a+rX /home/nysareal/nodevenv /home/nysareal/crm-deployment-tools
 
@@ -124,18 +126,21 @@ jobs:
           SH
           chmod +x /tmp/nysa-rehearsal-bin/cloudlinux-selector
           sudo -u nysareal -H env NYSA_REHEARSAL_IDLE_WORKER=true \
-            nohup node "$GITHUB_WORKSPACE/tools/dev267-pg13-worker.mjs" "$HOST_ROOT" \
+            nohup node /tmp/dev267-pg13-worker.mjs "$HOST_ROOT" \
             >/tmp/dev267-rehearsal-baseline-worker.log 2>&1 &
           for attempt in $(seq 1 20); do
             if sudo ps -u nysareal -o args= | grep -Fx "lsnode:$HOST_ROOT/"; then break; fi
             sleep 0.25
           done
-          sudo ps -u nysareal -o args= | grep -Fx "lsnode:$HOST_ROOT/"
+          if ! sudo ps -u nysareal -o args= | grep -Fx "lsnode:$HOST_ROOT/"; then
+            cat /tmp/dev267-rehearsal-baseline-worker.log
+            exit 1
+          fi
 
       - name: Rehearse actual fixed operator Phase A
         env:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
-          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+          NYSA_REHEARSAL_WORKER: /tmp/dev267-pg13-worker.mjs
         run: |
           set -o pipefail
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
@@ -153,7 +158,7 @@ jobs:
       - name: Rehearse actual fixed operator Phase B local backup
         env:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
-          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+          NYSA_REHEARSAL_WORKER: /tmp/dev267-pg13-worker.mjs
         run: |
           set -o pipefail
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
@@ -176,7 +181,7 @@ jobs:
       - name: Rehearse actual fixed operator Phase C
         env:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
-          NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
+          NYSA_REHEARSAL_WORKER: /tmp/dev267-pg13-worker.mjs
         run: |
           set -o pipefail
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
