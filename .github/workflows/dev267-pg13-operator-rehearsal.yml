@@ -51,6 +51,7 @@ jobs:
           CREATE ROLE nysa_test_user LOGIN PASSWORD 'nysa_test_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
           CREATE DATABASE nysa_test_fixture OWNER nysa_test_user;
           SQL
+          psql -X -v ON_ERROR_STOP=1 -U postgres -d nysa_test_fixture -c 'ALTER SCHEMA public OWNER TO nysa_test_user;'
           PGPASSWORD=nysa_test_password psql -X -Atc "SELECT current_setting('server_version');"
 
       - name: Verify and extract exact DEV267 origin package
@@ -67,6 +68,7 @@ jobs:
 
       - name: Prepare exact DEV266 database state and verify baseline contract
         run: |
+          set -o pipefail
           {
             psql -X -Atc "SELECT current_setting('server_version');"
             node tools/dev267-pg13-fixture-rehearsal.mjs \
@@ -74,6 +76,7 @@ jobs:
               --source-root /tmp/dev267-candidate-source \
               --output release-artifacts/dev267-preparation/run2/rehearsal/PHASE_AB_BASELINE_PG13.json
           } 2>&1 | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_AB_BASELINE_PG13.txt
+          jq -e '.passed == true and .expectedState.migrations == 169 and .expectedState.tables == 303 and .expectedState.triggers == 108' release-artifacts/dev267-preparation/run2/rehearsal/PHASE_AB_BASELINE_PG13.json
 
       - name: Prepare isolated CloudLinux-shaped rehearsal layout
         run: |
@@ -115,9 +118,9 @@ jobs:
           {"root":"$HOST_ROOT","domain":"crm-test.nysarealty.com","app_status":"started","env_vars":{"PGHOST":"127.0.0.1","PGPORT":"5432","PGDATABASE":"nysa_test_fixture","PGUSER":"nysa_test_user","PGPASSWORD":"nysa_test_password","PORT":"3000","NODE_ENV":"production","WHATSAPP_SANDBOX_ENABLED":"false","WHATSAPP_SANDBOX_CALLBACK_APPROVED":"false"}}
           JSON
           mkdir /tmp/nysa-rehearsal-bin
-          cat > /tmp/nysa-rehearsal-bin/cloudlinux-selector <<'SH'
+          cat > /tmp/nysa-rehearsal-bin/cloudlinux-selector <<SH
           #!/bin/sh
-          exec node "$GITHUB_WORKSPACE/tools/dev267-pg13-selector-stub.mjs" "$@"
+          exec node "$GITHUB_WORKSPACE/tools/dev267-pg13-selector-stub.mjs" "\$@"
           SH
           chmod +x /tmp/nysa-rehearsal-bin/cloudlinux-selector
 
@@ -126,6 +129,10 @@ jobs:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
           NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
         run: |
+          set -o pipefail
+          sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
+            NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
+            cloudlinux-selector get --json --interpreter nodejs --domain crm-test.nysarealty.com
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
@@ -133,13 +140,14 @@ jobs:
               --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
               --phase stage --approved "$CANDIDATE_COMMIT:stage" \
             | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_A_OPERATOR_RAW.txt
-          test "$(jq -r .result "$PREP_ROOT/evidence/STAGE_RESULT.json")" = STAGED_AND_VERIFIED
+          test "$(sudo jq -r .result "$PREP_ROOT/evidence/STAGE_RESULT.json")" = STAGED_AND_VERIFIED
 
       - name: Rehearse actual fixed operator Phase B local backup
         env:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
           NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
         run: |
+          set -o pipefail
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
@@ -147,7 +155,7 @@ jobs:
               --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
               --phase backup --approved "$CANDIDATE_COMMIT:backup" \
             | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_B_OPERATOR_RAW.txt
-          test "$(jq -r .result "$PREP_ROOT/evidence/BACKUP_RESULT.json")" = SCOPED_BACKUP_VERIFIED
+          test "$(sudo jq -r .result "$PREP_ROOT/evidence/BACKUP_RESULT.json")" = SCOPED_BACKUP_VERIFIED
 
       - name: Start isolated TLS front door
         run: |
@@ -162,6 +170,7 @@ jobs:
           NYSA_REHEARSAL_SELECTOR_STATE: /tmp/dev267-selector-state.json
           NYSA_REHEARSAL_WORKER: ${{ github.workspace }}/tools/dev267-pg13-worker.mjs
         run: |
+          set -o pipefail
           sudo -E env PATH="/tmp/nysa-rehearsal-bin:$PATH" \
             NODE_TLS_REJECT_UNAUTHORIZED=0 NYSA_REHEARSAL_SELECTOR_STATE="$NYSA_REHEARSAL_SELECTOR_STATE" NYSA_REHEARSAL_WORKER="$NYSA_REHEARSAL_WORKER" \
             node "$HOST_TOOLS/crm-test-direct-node-release-operator.mjs" \
@@ -169,7 +178,7 @@ jobs:
               --backup-path "$PREP_ROOT/scoped-backup-dev267-pg13" \
               --phase install --approved "$CANDIDATE_COMMIT:install" \
             | tee release-artifacts/dev267-preparation/run2/rehearsal/PHASE_C_OPERATOR_RAW.txt
-          test "$(jq -r .result "$PREP_ROOT/evidence/INSTALL_RESULT.json")" = INSTALLED_STARTED_AND_READY
+          test "$(sudo jq -r .result "$PREP_ROOT/evidence/INSTALL_RESULT.json")" = INSTALLED_STARTED_AND_READY
           {
             psql -X -Atc "SELECT current_setting('server_version');"
             node tools/dev267-pg13-fixture-rehearsal.mjs \
