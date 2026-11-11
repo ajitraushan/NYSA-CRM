@@ -6,6 +6,7 @@ import os from 'node:os';
 import pg from 'pg';
 import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt,prepareSourceSwap,prepareSelectorModulesSwap,dependencyTreeHash,checkAccountQuota} from '../tools/production-prospect-release-operator.mjs';
 import {verifyRuntime} from '../tools/production-runtime-manifest.mjs';
+import {inspectProductionWorkers,quiesceProductionWorkers,acceptProductionReadiness} from '../tools/production-worker-evidence.mjs';
 import {inspectProductionNodeTools,assertApprovedProductionNodeTools} from '../tools/production-node-tools.mjs';
 import {createHash} from 'node:crypto';
 import {readProductionPrivilegeEvidence,validateProductionRegistration} from '../tools/production-prospect-readonly-preflight.mjs';
@@ -160,4 +161,51 @@ test('Production quota guard records each cPanel checkpoint and stops at or abov
   assert.throws(()=>checkAccountQuota({},'api-failure',()=>JSON.stringify({
     module:'Quota',func:'get_quota_info',result:{status:0}
   })),/account quota lookup failed/);
+});
+
+test('Production inventories three workers, quiesces stale survivors and accepts one DEV270 worker',async()=>{
+  const root='/home/nysareal/nysa-crm';
+  const exe='/opt/alt/alt-nodejs24/root/usr/bin/node';
+  const make=pid=>({pid,command:`lsnode:${root}/`,cwd:root});
+  const before=[make(1688401),make(2869591),make(3651043)];
+  const metadata={
+    inspect:()=>before,verify:pid=>before.find(worker=>worker.pid===pid),
+    readExe:pid=>pid===2869591?exe:exe+' (deleted)',
+    readProcess:()=> 'nysareal Tue Oct 27 00:54:27 2026'
+  };
+  const inventory=inspectProductionWorkers(metadata);
+  assert.deepEqual(inventory.filter(worker=>worker.stale).map(worker=>worker.pid),[1688401,3651043]);
+  assert.equal(inventory[0].startedAt,'Tue Oct 27 00:54:27 2026');
+  assert.throws(()=>inspectProductionWorkers({...metadata,readExe:()=>'/usr/bin/unrelated-node'}),/Unexpected executable/);
+  assert.throws(()=>inspectProductionWorkers({...metadata,readProcess:()=> 'other Tue Oct 27 00:54:27 2026'}),/Unexpected owner/);
+  assert.throws(()=>inspectProductionWorkers({...metadata,verify:()=>null}),/identity changed/);
+  let workers=inventory;
+  let stopped=false;
+  let stopCount=0;
+  const report={};
+  await quiesceProductionWorkers(report,{
+    selectorStop:()=>{stopCount++;stopped=true;workers=workers.filter(worker=>worker.stale);},
+    isStopped:()=>stopped,inspect:()=>workers,verify:pid=>workers.find(worker=>worker.pid===pid),
+    signal:(pid,name)=>{assert.equal(name,'SIGTERM');workers=workers.filter(worker=>worker.pid!==pid);}
+  });
+  assert.equal(stopCount,1);
+  assert.equal(report.workersBefore.length,3);
+  assert.deepEqual(report.workersAfterQuiesce,[]);
+  assert.deepEqual(report.workerSignals.map(item=>item.pid),[1688401,3651043]);
+  assert.deepEqual(report.staleWorkersStopped.map(worker=>worker.pid),[1688401,3651043]);
+
+  const response=()=>new Response(JSON.stringify({ok:true,database:'ready',version:'2.1.0-dev.270'}));
+  const ready=await acceptProductionReadiness(report,'2.1.0-dev.270',{inspect:()=>[make(999)],request:response});
+  assert.equal(ready.workerCount,1);
+  assert.equal(ready.version,'2.1.0-dev.270');
+  assert.equal(report.readinessAccepted,true);
+  const mismatch={};
+  let requestCount=0;
+  await assert.rejects(acceptProductionReadiness(mismatch,'2.1.0-dev.270',{
+    inspect:()=>before,request:()=>{requestCount++;return response();},
+    pause:()=>{throw Error('Must stop after green HTTP readiness with duplicate workers');}
+  }),/Exactly one verified worker/);
+  assert.equal(mismatch.readinessAccepted,true);
+  assert.equal(mismatch.workersAfterReadiness.length,3);
+  assert.equal(requestCount,1);
 });

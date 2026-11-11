@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {compareSchemaContracts,readDatabaseSchemaContract} from './database-schema-contract.mjs';
-import {inspectWorkers} from './hosted-worker-lifecycle.mjs';
+import {inspectProductionWorkers} from './production-worker-evidence.mjs';
 
 const ROOT = '/home/nysareal/nysa-crm';
 const DOMAIN = 'crm.nysarealty.com';
@@ -24,7 +24,7 @@ export function validateProductionConfig(config) {
   assert.equal(config.root,ROOT);
   assert.equal(config.domain,DOMAIN);
   assert.equal(config.baselineCommit,RC1);
-  for (const name of ['candidateCommit','baselineSchemaSha256','baselineRuntimeManifestSha256','scriptSha256','schemaHelperSha256','workerHelperSha256','runtimeHelperSha256']) {
+  for (const name of ['candidateCommit','baselineSchemaSha256','baselineRuntimeManifestSha256','scriptSha256','schemaHelperSha256','workerHelperSha256','runtimeHelperSha256','productionWorkerEvidenceSha256']) {
     const length = name === 'candidateCommit' ? 40 : 64;
     assert.match(config[name],new RegExp('^[a-f0-9]{'+length+'}$'),name);
   }
@@ -122,7 +122,8 @@ async function main(args) {
     for (const [file,key] of [[script,'scriptSha256'],
       [new URL('./database-schema-contract.mjs',import.meta.url),'schemaHelperSha256'],
       [new URL('./hosted-worker-lifecycle.mjs',import.meta.url),'workerHelperSha256'],
-      [new URL('./production-runtime-manifest.mjs',import.meta.url),'runtimeHelperSha256']]) {
+      [new URL('./production-runtime-manifest.mjs',import.meta.url),'runtimeHelperSha256'],
+      [new URL('./production-worker-evidence.mjs',import.meta.url),'productionWorkerEvidenceSha256']]) {
       assert.equal(hash(fs.readFileSync(file)),config[key],key+' mismatch');
     }
     assert.equal(fs.realpathSync(ROOT),ROOT);
@@ -147,8 +148,8 @@ async function main(args) {
     validateProductionRegistration(environment);
     report.registeredSettingNames=['PGDATABASE','PGUSER','LEAD_RESPONSE_ENVIRONMENT','NYSA_ENVIRONMENT',
       'PROSPECT_OUTSIDE_CALLING_HOURS_MODE',...flags].filter(key=>Object.hasOwn(environment,key));
-    report.workers=inspectWorkers(ROOT);
-    if (report.workers.length>1) throw new Error('Multiple exact-root Production workers');
+    report.workers=inspectProductionWorkers();
+    report.staleWorkersFound=report.workers.filter(worker=>worker.stale);
     const {blocks,bfree,bavail,bsize}=fs.statfsSync(ROOT);
     const occupied=blocks-bfree;
     report.disk={usedPercent:Math.ceil(100*occupied/(occupied+bavail)),availableBytes:bavail*bsize};

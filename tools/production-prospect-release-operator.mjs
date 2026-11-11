@@ -9,7 +9,8 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {setTimeout as sleep} from 'node:timers/promises';
-import {inspectWorkers,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
+import {verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
+import {inspectProductionWorkers,quiesceProductionWorkers,acceptProductionReadiness} from './production-worker-evidence.mjs';
 import {parsePgRestoreListContracts,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
 import {compareSchemaContracts,loadSchemaContract,readDatabaseSchemaContract} from './database-schema-contract.mjs';
 import {validateProductionRegistration,verifyProductionCatalog} from './production-prospect-readonly-preflight.mjs';
@@ -64,10 +65,9 @@ function registration(){
 function selector(action){
   run('cloudlinux-selector',[action,'--json','--interpreter','nodejs','--domain',DOMAIN,'--app-root',path.basename(ROOT)]);
 }
-async function stop(){
-  const stopped=()=>registration().app_status==='stopped';
-  try{selector('stop');}catch(error){if(!stopped())throw error;}
-  await stopVerifiedWorkers(ROOT,{assertStopped:stopped});
+async function stop(report){
+  const isStopped=()=>registration().app_status==='stopped';
+  await quiesceProductionWorkers(report,{selectorStop:()=>selector('stop'),isStopped});
 }
 function environment(){
   const env=registration().env_vars||{};
@@ -331,8 +331,8 @@ async function main(args){
       assert.equal(read(path.join(ROOT,'package.json')).version,'2.1.0-rc.1');
       await verifyRuntime(ROOT,baseline);
       report.catalog=await catalog(config);
-      report.workers=inspectWorkers(ROOT);
-      assert.ok(report.workers.length<=1);
+      report.workers=inspectProductionWorkers();
+      report.staleWorkersFound=report.workers.filter(worker=>worker.stale);
       const entries=await stage(config,stageDir);
       checkAccountQuota(report,'after-candidate-extraction');
       report.previousDependencies=dependencyLink();
@@ -419,13 +419,12 @@ async function main(args){
       assert.equal(await dependencyTreeHash(modulesSwap.next),backup.stagedDependencySha256);
       report.priorNodevenvModules=modulesSwap.prior;
       report.priorSourceDirectory=sourceSwap.previous;
-      report.workersBefore=inspectWorkers(ROOT);
-      assert.ok(report.workersBefore.length<=1);
       checkAccountQuota(report,'before-quiesce-and-install');
-      let ready=false,startAttempted=false;
+      let quiesced=false,startAttempted=false;
       const changed=[];
       try{
-        await stop();
+        await stop(report);
+        quiesced=true;
         await catalog(config);
         sourceSwap.activate();
         for(const name of targets.filter(name=>!name.startsWith('src/'))){
@@ -441,17 +440,22 @@ async function main(args){
         assert.equal(await dependencyTreeHash(SELECTOR_MODULES),backup.stagedDependencySha256);
         startAttempted=true;
         selector('start');
-        for(let attempt=0;attempt<15;attempt++){
-          try{report.readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:config.version});ready=true;break;}
-          catch(error){if(attempt===14)throw error;await sleep(2000);}
-        }
+        await acceptProductionReadiness(report,config.version);
         report.selectorDependencies=dependencyLink();
         assert.deepEqual(report.selectorDependencies,backup.previousDependencies);
         assert.equal(await dependencyTreeHash(SELECTOR_MODULES),backup.stagedDependencySha256);
         report.catalog=await catalog(config,stageDir);
+        report.workersAfterInstall=inspectProductionWorkers();
+        assert.equal(report.workersAfterInstall.length,1,'Production must have one worker after install');
       }catch(error){
-        if(!ready){
-          await stop();
+        if(quiesced&&!report.readinessAccepted){
+          if(startAttempted){
+            report.rollbackWorkerReconciliation={};
+            await stop(report.rollbackWorkerReconciliation);
+          }else{
+            assert.equal(registration().app_status,'stopped');
+            assert.equal(inspectProductionWorkers().length,0);
+          }
           sourceSwap.restore();
           const restore=changed.filter(name=>prior.has(name));
           for(const name of restore)fs.copyFileSync(filePath(recovery,name),filePath(ROOT,name));
@@ -473,7 +477,7 @@ async function main(args){
           const health=await fetch('https://'+DOMAIN+'/api/health',{redirect:'error',signal:AbortSignal.timeout(15000)});
           assert.equal(health.status,200);
           report.rollback=await verifyReadinessWorker({root:ROOT,expectedVersion:'2.1.0-rc.1'});
-        }else report.readinessAccepted=true;
+        }
         throw error;
       }
     }else{
@@ -504,7 +508,7 @@ async function main(args){
         if(pending.size)await sleep(Math.min(2500,Math.max(0,deadline-Date.now())));
       }
       assert.equal(pending.size,0,'Settled HTTP probes failed');
-      report.readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:config.version});
+      report.readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:config.version,inspect:inspectProductionWorkers});
       const backup=read(receiptPath('backup'));
       report.selectorDependencies=dependencyLink();
       assert.deepEqual(report.selectorDependencies,backup.previousDependencies);
