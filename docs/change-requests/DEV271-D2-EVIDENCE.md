@@ -5,6 +5,10 @@ Approved D-1 revision 2 covers R1–R8. R8 spec SHA-256
 Accepted DEV270 source is `5c1c350151d6ace33377b33526e2bfedf4ae8f6b`.
 Candidate package and provenance, hosted sender and delivery evidence are pending.
 
+## CRM Test delivery recipient
+
+Ajit designated lead@nysarealty.com as the recipient for the synthetic CRM Test digest. Add it to the CRM Test recipient allow-list for that run. The approved digest sender and its credentials are separate. This recipient designation does not change the Admin self-test, which resolves the signed-in Admin address.
+
 ## Password-entry interface
 
 Ajit enters the password in **cPanel → Advanced → Terminal** at a masked
