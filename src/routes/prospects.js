@@ -5,7 +5,7 @@ import {hasInternalCrmIdentity} from '../crm-policy.js';
 import {normalizePhone,isValidEmail} from '../crm-domain.js';
 import {blocksOutbound,getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
 import {prospectCallingPolicyConfig} from '../prospect-calling-policy.js';
-import { advanceProspectRetry, validateProspectNextStep } from '../prospect-tracking.js';
+import { advanceProspectRetry, validateProspectAgentTarget, validateProspectCadence, validateProspectNextStep } from '../prospect-tracking.js';
 import {registerProspectUpload} from './prospect-upload.js';
 import {UPLOAD_SOURCES} from '../prospect-upload.js';
 
@@ -19,8 +19,8 @@ const email=value=>clean(value)?.toLowerCase()||null;
 const canManage=broker=>['manager','director'].includes(broker.jobRole);
 
 r.use(requireAuth,(req,res,next)=>{
-  const numberMaintenance=req.broker?.role==='admin'&&req.path.startsWith('/api/crm/prospect-diary/calling-numbers');
-  if(!numberMaintenance&&(!hasInternalCrmIdentity(req.broker)||!['sales_agent','manager','director'].includes(req.broker.jobRole)))return res.status(403).json({error:'Prospect Diary access is restricted to Sales Agents and CRM leadership'});
+  const adminSettings=req.broker?.role==='admin'&&(req.path.startsWith('/api/crm/prospect-diary/calling-numbers')||req.path.startsWith('/api/crm/prospect-diary/admin/cadence-policy'));
+  if(!adminSettings&&(!hasInternalCrmIdentity(req.broker)||!['sales_agent','manager','director'].includes(req.broker.jobRole)))return res.status(403).json({error:'Prospect Diary access is restricted to Sales Agents and CRM leadership'});
   next();
 });
 
@@ -112,6 +112,68 @@ r.post('/crm/prospects',async(req,res)=>{
     const row=await one(`INSERT INTO prospects(id,display_name,phone,normalized_phone,email,normalized_email,source,source_supplier,source_batch_reference,source_acquired_at,source_evidence_reference,brief_notes,status,owner_id,team_id,timezone,timezone_source,consent_status,consent_evidence_reference,suppression_snapshot,do_not_contact_reason,do_not_contact_at,created_by) VALUES($1,$2,$3,$4,$5,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$13) RETURNING *`,[id,clean(b.displayName),String(b.phone).trim(),phone,mail,source,clean(b.sourceSupplier),clean(b.sourceBatchReference),clean(b.sourceAcquiredAt),clean(b.sourceEvidenceReference),clean(b.briefNotes),restricted?'do_not_contact':'not_contacted',req.broker.id,owner?.teamId||req.broker.teamId||null,timezone,clean(b.timezone)?'agent_confirmed':'phone_inferred',b.consentStatus||'unknown',clean(b.consentEvidenceReference),suppression.restrictions,restricted?`Shared restriction: ${suppression.strongest}`:null,restricted?new Date():null],client);
     await audit('Prospect',id,'created',req.broker.id,{source,status:row.status,duplicateSummary:{globalMatch:duplicates.globalMatch,outsideScope:duplicates.outsideScope},restriction:suppression.strongest},client);return{prospect:row,duplicates};
   });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
+});
+
+
+const cadencePath = '/crm/prospect-diary/admin/cadence-policy';
+
+r.get(cadencePath,async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  const versions=await many("SELECT * FROM prospect_cadence_policy_versions WHERE status IN('active','draft') ORDER BY status,created_at DESC,id");
+  return res.json({versions});
+});
+
+r.post(cadencePath,async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  const settings=validateProspectCadence(req.body||{});
+  if(settings.error)return res.status(400).json(settings);
+  const version=await transaction(async client=>{
+    const row=await one(
+      "INSERT INTO prospect_cadence_policy_versions(id,status,daily_target,working_days,first_call_days,retry_gaps,park_on_exhaustion,created_by) VALUES($1,'draft',$2,$3,$4,$5,$6,$7) RETURNING *",
+      [uuid(),settings.dailyTarget,settings.workingDays,settings.firstCallDays,settings.retryGaps,settings.parkOnExhaustion,req.broker.id],client);
+    await audit('OrganizationSettings',row.id,'prospect_cadence_draft_created',req.broker.id,settings,client);
+    return row;
+  });
+  return res.status(201).json({version});
+});
+
+r.post(cadencePath+'/:id/approve',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Cadence draft not found'});
+  const version=await transaction(async client=>{
+    await execute("SELECT pg_advisory_xact_lock(hashtextextended('prospect-cadence-policy-approval',0))",[],client);
+    const draft=await one("SELECT id FROM prospect_cadence_policy_versions WHERE id=$1 AND status='draft' FOR UPDATE",[req.params.id],client);
+    if(!draft)return null;
+    const previous=await one("UPDATE prospect_cadence_policy_versions SET status='retired' WHERE status='active' RETURNING id",[],client);
+    const row=await one("UPDATE prospect_cadence_policy_versions SET status='active',approved_by=$2,approved_at=now() WHERE id=$1 RETURNING *",
+      [draft.id,req.broker.id],client);
+    await audit('OrganizationSettings',row.id,'prospect_cadence_approved',req.broker.id,{previousId:previous?.id??null},client);
+    return row;
+  });
+  if(!version)return res.status(404).json({error:'Cadence draft not found'});
+  return res.json({version});
+});
+
+function validProspectTrackingId(id){
+  return typeof id==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id);
+}
+
+r.post('/crm/prospect-diary/targets/:agentId',async(req,res)=>{
+  if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});
+  const id=req.params.agentId;
+  if(!validProspectTrackingId(id))return res.status(404).json({error:'Agent not found'});
+  const input=validateProspectAgentTarget(req.body||{});
+  if(input.error)return res.status(400).json(input);
+  const target=await transaction(async client=>{
+    const agent=await ownerContext(id,req.broker,client);
+    if(agent?.jobRole!=='sales_agent')return null;
+    const row=await one("INSERT INTO prospect_agent_targets(id,agent_id,effective_from,daily_target,reason,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
+      [uuid(),id,input.effectiveFrom,input.dailyTarget,input.reason,req.broker.id],client);
+    await audit('Broker',id,'prospect_daily_target_set',req.broker.id,{targetId:row.id,...input},client);
+    return row;
+  });
+  if(!target)return res.status(404).json({error:'Agent not found'});
+  return res.status(201).json({target});
 });
 
 r.get('/crm/prospect-diary/today',async(req,res)=>{
@@ -229,6 +291,62 @@ r.post('/crm/prospect-diary/overrides/:id/review',async(req,res)=>{
 });
 
 r.get('/crm/prospects/:id',async(req,res)=>{const prospect=await visibleProspect(req.params.id,req.broker);if(!prospect)return res.status(404).json({error:'Prospect not found or outside your scope'});const [activities,followUps,suppression,callingNumbers,editHistory]=await Promise.all([many(`SELECT a.*,b.name AS created_by_name,n.label AS company_calling_number_label FROM prospect_activities a JOIN brokers b ON b.id=a.created_by LEFT JOIN company_calling_numbers n ON n.id=a.company_calling_number_id WHERE a.prospect_id=$1 ORDER BY a.occurred_at DESC,a.id DESC`,[prospect.id]),many(`SELECT f.*,b.name AS assignee_name,c.name AS created_by_name FROM tasks f JOIN brokers b ON b.id=f.assignee_id JOIN brokers c ON c.id=f.created_by WHERE f.prospect_id=$1 AND f.task_type='prospect_follow_up' ORDER BY CASE WHEN f.status IN('open','in_progress') THEN 0 ELSE 1 END,f.due_at,f.id`,[prospect.id]),getContactSuppression(prospect.normalizedPhone),many("SELECT id,label,phone,normalized_phone FROM company_calling_numbers WHERE status='active' ORDER BY label"),many("SELECT a.timestamp,a.details,b.name AS actor_name FROM audit_log a LEFT JOIN brokers b ON b.id=a.performed_by WHERE a.entity_type='Prospect' AND a.entity_id=$1 AND a.action='profile_updated' ORDER BY a.timestamp DESC",[prospect.id])]);res.json({prospect,activities,followUps,editHistory,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});
+
+
+const interestFields = {
+  purpose:'prospect_purpose', budgetBand:'prospect_budget_band', propertyType:'prospect_property_type',
+  market:'prospect_market', timeline:'prospect_timeline',
+};
+
+r.patch('/crm/prospects/:id/interest',async(req,res)=>{
+  if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Prospect not found'});
+  const fields=Object.keys(interestFields);
+  const body=req.body||{};
+  if(Object.keys(body).some(key=>!fields.includes(key)&&key!=='areaIds')||
+     fields.some(key=>Object.hasOwn(body,key)&&body[key]!==null&&
+       (typeof body[key]!=='string'||!/^[a-z][a-z0-9_]{0,63}$/.test(body[key])))||
+     (Object.hasOwn(body,'areaIds')&&(!Array.isArray(body.areaIds)||body.areaIds.length>100||!body.areaIds.every(validProspectTrackingId)))) {
+    return res.status(400).json({error:'Use controlled interest values and valid preferred areas'});
+  }
+  const result=await transaction(async client=>{
+    const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});
+    if(!prospect)return {code:404,error:'Prospect not found'};
+    if(prospect.ownerId!==req.broker.id)return {code:403,error:'Only the owning Agent may edit prospect interest'};
+    if(prospect.status==='converted')return {code:409,error:'Converted Prospect history is read-only'};
+    const existing=await many('SELECT area_id FROM prospect_preferred_areas WHERE prospect_id=$1 ORDER BY area_id',[prospect.id],client);
+    const before={...Object.fromEntries(fields.map(key=>[key,prospect[key]??null])),areaIds:existing.map(row=>row.areaId)};
+    const after={...before,...body};
+    for(const key of fields){
+      if(after[key]===null||after[key]===before[key])continue;
+      const value=await one(
+        "SELECT d.id FROM value_sets s JOIN value_definitions d ON d.value_set_id=s.id WHERE s.stable_code=$1 AND s.status='active' "+
+        "AND d.stable_code=$2 AND d.definition_status='active' AND (d.effective_from IS NULL OR d.effective_from<=now()) "+
+        'AND (d.effective_to IS NULL OR d.effective_to>now())',
+        [interestFields[key],after[key]],client);
+      if(!value)return {code:400,error:'An interest value is unavailable or retired'};
+    }
+    after.areaIds=[...new Set(after.areaIds.map(id=>id.toLowerCase()))].sort();
+    const added=after.areaIds.filter(id=>!before.areaIds.includes(id));
+    if(added.length){
+      const available=await many('SELECT id FROM areas WHERE active=1 AND id=ANY($1::uuid[])',[added],client);
+      if(available.length!==added.length)return {code:400,error:'A preferred area is unavailable or retired'};
+    }
+    if(JSON.stringify(before)===JSON.stringify(after))return {interest:before};
+    await execute('UPDATE prospects SET purpose=$2,budget_band=$3,property_type=$4,market=$5,timeline=$6,updated_at=now() WHERE id=$1',
+      [prospect.id,...fields.map(key=>after[key])],client);
+    await execute('DELETE FROM prospect_preferred_areas WHERE prospect_id=$1 AND NOT(area_id=ANY($2::uuid[]))',
+      [prospect.id,after.areaIds],client);
+    if(added.length)await execute('INSERT INTO prospect_preferred_areas(prospect_id,area_id) SELECT $1,unnest($2::uuid[])',
+      [prospect.id,added],client);
+    const historyId=uuid();
+    await execute('INSERT INTO prospect_interest_history(id,prospect_id,changed_by,before_values,after_values) VALUES($1,$2,$3,$4::jsonb,$5::jsonb)',
+      [historyId,prospect.id,req.broker.id,JSON.stringify(before),JSON.stringify(after)],client);
+    await audit('Prospect',prospect.id,'interest_updated',req.broker.id,{historyId},client);
+    return {interest:after};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  return res.json(result);
+});
 
 r.patch('/crm/prospects/:id',async(req,res)=>{
   const b=req.body||{},has=key=>Object.prototype.hasOwnProperty.call(b,key),sourceFields=['source','sourceSupplier','sourceBatchReference','sourceAcquiredAt','sourceEvidenceReference'],changesRequested=['displayName','email','phone','briefNotes',...sourceFields].some(has);

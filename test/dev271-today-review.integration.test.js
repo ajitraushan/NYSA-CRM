@@ -44,9 +44,9 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
       const listener = app.listen({ host: '127.0.0.1', port: 0 }, () => resolve(listener));
       listener.once('error', reject);
     });
-    async function request(path, who, status, body) {
-      const response = await fetch('http://127.0.0.1:' + server.address().port + '/api/crm/prospect-diary/' + path, {
-        method: body ? 'POST' : 'GET',
+    async function request(path, who, status, body, method = body ? 'POST' : 'GET') {
+      const response = await fetch('http://127.0.0.1:' + server.address().port + '/api/crm/' + (path.startsWith('prospects/') ? path : 'prospect-diary/' + path), {
+        method,
         headers: { authorization: 'Bearer ' + tokens[who], 'content-type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
       });
@@ -54,6 +54,31 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
       assert.equal(response.status, status, JSON.stringify(data));
       return data;
     }
+    const cadence={dailyTarget:40,workingDays:[1,2,3,4,5,6],firstCallDays:1,retryGaps:[1,2,4],parkOnExhaustion:true};
+    await request('admin/cadence-policy','agent',403,cadence);
+    await request('admin/cadence-policy','admin',400,{...cadence,workingDays:[1,1]});
+    const draft=(await request('admin/cadence-policy','admin',201,cadence)).version;
+    const active=(await request('admin/cadence-policy/'+draft.id+'/approve','admin',200,{})).version;
+    assert.equal(active.status,'active');
+    assert.equal((await db.one("SELECT count(*)::int AS count FROM prospect_cadence_policy_versions WHERE status='active'")).count,1);
+    const target={dailyTarget:25,effectiveFrom:'2026-11-12',reason:'Synthetic target'};
+    await request('targets/'+ids.outsider,'manager',404,target);
+    const savedTarget=(await request('targets/'+ids.agent,'manager',201,target)).target;
+    assert.equal(savedTarget.dailyTarget,25);
+    const set=uuid();
+    await db.execute("INSERT INTO value_sets(id,stable_code,name,configuration_class,created_by) VALUES($1,'prospect_purpose','Prospect purpose','B',$2)",[set,ids.admin]);
+    await db.execute("INSERT INTO value_definitions(id,value_set_id,stable_code,display_label_en,definition_status,created_by) VALUES($1,$2,'investment','Investment','active',$3)",[uuid(),set,ids.admin]);
+    const interest='prospects/'+ids.untouched+'/interest';
+    await request(interest,'manager',403,{purpose:'investment'},'PATCH');
+    await request(interest,'outsider',404,{purpose:'investment'},'PATCH');
+    await request(interest,'agent',400,{purpose:'undefined_value'},'PATCH');
+    const saved=(await request(interest,'agent',200,{purpose:'investment'},'PATCH')).interest;
+    assert.equal(saved.purpose,'investment');
+    await request(interest,'agent',200,{purpose:'investment'},'PATCH');
+    const history=await db.many('SELECT before_values,after_values FROM prospect_interest_history WHERE prospect_id=$1',[ids.untouched]);
+    assert.equal(history.length,1);
+    assert.equal(history[0].beforeValues.purpose,null);
+    assert.equal(history[0].afterValues.purpose,'investment');
     const own = await request('today', 'agent', 200);
     assert.deepEqual(own.items.map(item => item.id), [ids.due, ids.untouched]);
     assert.deepEqual(own.items.map(item => item.priority), [1, 5]);

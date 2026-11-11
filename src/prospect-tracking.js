@@ -68,3 +68,28 @@ export function advanceProspectRetry({ previousAttempts, outcome, step, at, poli
     parkedAt: !gap && policy.parkOnExhaustion ? new Date(at) : null,
   };
 }
+
+const boundedInteger = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
+
+export function validateProspectCadence(body = {}) {
+  const { dailyTarget, workingDays, firstCallDays, retryGaps, parkOnExhaustion } = body;
+  if (!boundedInteger(dailyTarget, 0, 300) || !boundedInteger(firstCallDays, 1, 14) ||
+      !Array.isArray(workingDays) || workingDays.length === 0 ||
+      workingDays.some(day => !boundedInteger(day, 1, 7)) || new Set(workingDays).size !== workingDays.length ||
+      !Array.isArray(retryGaps) || !boundedInteger(retryGaps.length, 1, 10) ||
+      retryGaps.some(gap => !boundedInteger(gap, 1, 14)) || typeof parkOnExhaustion !== 'boolean') {
+    return { error: 'Enter a valid call target, working days, first-call deadline and retry cadence' };
+  }
+  return { dailyTarget, workingDays: [...workingDays].sort((a,b) => a-b), firstCallDays, retryGaps, parkOnExhaustion };
+}
+
+export function validateProspectAgentTarget(body = {}) {
+  const { dailyTarget, effectiveFrom } = body;
+  const reason = text(body.reason);
+  const validDate = typeof effectiveFrom === 'string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(effectiveFrom) &&
+    Number.isFinite(Date.parse(effectiveFrom)) && new Date(effectiveFrom).toISOString().slice(0,10) === effectiveFrom;
+  if (!boundedInteger(dailyTarget, 0, 300) || !validDate || reason.length < 5 || reason.length > 1000) {
+    return { error: 'Enter a target from 0 to 300, an effective date and a meaningful reason' };
+  }
+  return { dailyTarget, effectiveFrom, reason };
+}
