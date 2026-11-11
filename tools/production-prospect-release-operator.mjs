@@ -13,13 +13,12 @@ import {verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
 import {inspectProductionWorkers,quiesceProductionWorkers,acceptProductionReadiness} from './production-worker-evidence.mjs';
 import {parsePgRestoreListContracts,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
 import {compareSchemaContracts,loadSchemaContract,readDatabaseSchemaContract} from './database-schema-contract.mjs';
-import {validateProductionRegistration,verifyProductionCatalog} from './production-prospect-readonly-preflight.mjs';
+import {productionBaseline,validateProductionRegistration,verifyProductionCatalog} from './production-prospect-readonly-preflight.mjs';
 
 const ROOT='/home/nysareal/nysa-crm', DOMAIN='crm.nysarealty.com';
 const DATABASE='nysareal_nysacrm', ROLE='nysareal_nysacrmapp';
 const NODEVENV='/home/nysareal/nodevenv/nysa-crm/24';
 const SELECTOR_MODULES=path.join(NODEVENV,'lib','node_modules');
-const RC1='b6e013c51f46be482858e733160fa7e675ff3106';
 const WORK='/home/nysareal/crm-release-preparation';
 const digest=data=>createHash('sha256').update(data).digest('hex');
 const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
@@ -82,7 +81,7 @@ async function catalog(config,canonicalRoot){
   await client.connect();
   try{
     await client.query('BEGIN READ ONLY');
-    if(!canonicalRoot)return await verifyProductionCatalog(client,read(config.baselineSchema));
+    if(!canonicalRoot)return await verifyProductionCatalog(client,read(config.baselineSchema),config.baselineCommit);
     const identity=(await client.query("SELECT current_database() AS database,current_user AS role,current_setting('transaction_read_only') AS read_only")).rows[0];
     assert.deepEqual(identity,{database:DATABASE,role:ROLE,read_only:'on'});
     const dir=path.join(canonicalRoot,'src');
@@ -289,7 +288,7 @@ async function main(args){
   const configBytes=fs.readFileSync(configFile),config=JSON.parse(configBytes),configSha256=digest(configBytes);
   assert.match(config.commit,/^[a-f0-9]{40}$/);
   assert.match(config.version,/^2\.1\.0-dev\.\d+$/);
-  assert.equal(config.baselineCommit,RC1);
+  const approvedBaseline=productionBaseline(config.baselineCommit);
   assert.equal(approval,`${config.commit}:production-${phase}:${configSha256}`);
   assertProductionPaths(config);
   for(const key of ['package','manifest','baselineRuntime','baselineSchema','preflightReceipt','preflightConfig']){
@@ -309,7 +308,10 @@ async function main(args){
   assert.equal(preflightConfig.baselineSchemaSha256,config.baselineSchemaSha256);
   assert.equal(preflightConfig.baselineRuntimeManifestSha256,config.baselineRuntimeSha256);
   assert.equal(preflight.runtimeFiles?.manifestSha256,config.baselineRuntimeSha256);
-  assert.equal(preflight.runtimeFiles?.verified,392);
+  assert.equal(preflightConfig.baselineCommit,config.baselineCommit);
+  assert.equal(preflight.baselineCommit,config.baselineCommit);
+  assert.equal(preflight.installedVersion,approvedBaseline.version);
+  assert.equal(preflight.runtimeFiles?.verified,approvedBaseline.runtimeFiles);
   const freshnessMs=config.freshnessMinutes*60000;
   assert.ok(Number.isFinite(freshnessMs)&&freshnessMs>=600000&&freshnessMs<=14400000);
   if(phase==='backup'){
@@ -328,7 +330,7 @@ async function main(args){
     const baseline=parseRuntimeManifest(fs.readFileSync(config.baselineRuntime,'utf8'));
     if(phase==='backup'){
       checkAccountQuota(report,'before-backup');
-      assert.equal(read(path.join(ROOT,'package.json')).version,'2.1.0-rc.1');
+      assert.equal(read(path.join(ROOT,'package.json')).version,approvedBaseline.version);
       await verifyRuntime(ROOT,baseline);
       report.catalog=await catalog(config);
       report.workers=inspectProductionWorkers();
@@ -468,7 +470,7 @@ async function main(args){
           await verifyRuntime(ROOT,new Map(restore.map(name=>[name,prior.get(name)])));
           report.rollbackFilesVerified=true;
           report.candidateStartAttempted=startAttempted;
-          // RC1 must not be restarted automatically once a migration may have run.
+          // Automatic restart still requires the approved baseline database contract.
           await catalog(config);
           selector('start');
           const rootResponse=await fetch('https://'+DOMAIN+'/',{redirect:'error',signal:AbortSignal.timeout(15000)});
@@ -476,7 +478,7 @@ async function main(args){
           assert.match(await rootResponse.text(),/NYSA CORE/);
           const health=await fetch('https://'+DOMAIN+'/api/health',{redirect:'error',signal:AbortSignal.timeout(15000)});
           assert.equal(health.status,200);
-          report.rollback=await verifyReadinessWorker({root:ROOT,expectedVersion:'2.1.0-rc.1'});
+          report.rollback=await verifyReadinessWorker({root:ROOT,expectedVersion:approvedBaseline.version});
         }
         throw error;
       }

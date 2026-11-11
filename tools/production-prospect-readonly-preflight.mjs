@@ -14,16 +14,28 @@ const DOMAIN = 'crm.nysarealty.com';
 const DATABASE = 'nysareal_nysacrm';
 const ROLE = 'nysareal_nysacrmapp';
 const RC1 = 'b6e013c51f46be482858e733160fa7e675ff3106';
+const DEV270 = '5c1c350151d6ace33377b33526e2bfedf4ae8f6b';
+const baselines = Object.freeze({
+  [RC1]: Object.freeze({version:'2.1.0-rc.1',migrations:140,tables:258,triggers:108,runtimeFiles:392}),
+  [DEV270]: Object.freeze({version:'2.1.0-dev.270',migrations:171,tables:307,triggers:111,runtimeFiles:503}),
+});
+
+export function productionBaseline(commit) {
+  assert.ok(Object.hasOwn(baselines,commit),'Unsupported Production baseline commit');
+  return baselines[commit];
+}
+
 const flags = [
   'LEAD_WHATSAPP_ENABLED','LEAD_WHATSAPP_INBOX_ENABLED','WHATSAPP_SANDBOX_ENABLED',
-  'WHATSAPP_SANDBOX_CALLBACK_APPROVED','WHATSAPP_SIMULATED_PROVIDER_ENABLED'
+  'WHATSAPP_SANDBOX_CALLBACK_APPROVED','WHATSAPP_SIMULATED_PROVIDER_ENABLED',
+  'PROSPECT_DIGEST_EMAIL_ENABLED','PROSPECT_DIGEST_SCHEDULE_ENABLED'
 ];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
 export function validateProductionConfig(config) {
   assert.equal(config.root,ROOT);
   assert.equal(config.domain,DOMAIN);
-  assert.equal(config.baselineCommit,RC1);
+  productionBaseline(config.baselineCommit);
   for (const name of ['candidateCommit','baselineSchemaSha256','baselineRuntimeManifestSha256','scriptSha256','schemaHelperSha256','workerHelperSha256','runtimeHelperSha256','productionWorkerEvidenceSha256']) {
     const length = name === 'candidateCommit' ? 40 : 64;
     assert.match(config[name],new RegExp('^[a-f0-9]{'+length+'}$'),name);
@@ -42,24 +54,25 @@ export function validateProductionRegistration(environment) {
   }
 }
 
-export async function verifyProductionCatalog(client, expected) {
+export async function verifyProductionCatalog(client, expected, baselineCommit=RC1) {
+  const baseline=productionBaseline(baselineCommit);
   const identity = (await client.query(`SELECT current_database() AS database,current_user AS role,
     current_setting('server_version') AS version,current_setting('transaction_read_only') AS read_only`)).rows[0];
   assert.equal(identity.database,DATABASE);
   assert.equal(identity.role,ROLE);
   assert.equal(identity.read_only,'on');
   assert.match(identity.version,/^13\.23(?:\b|$)/);
-  assert.equal(expected.sourceCommit,RC1);
-  assert.equal(expected.ledger.length,140);
-  assert.equal(expected.tables.length,258);
-  assert.equal(expected.contract.triggers.length,108);
+  assert.equal(expected.sourceCommit,baselineCommit);
+  assert.equal(expected.ledger.length,baseline.migrations);
+  assert.equal(expected.tables.length,baseline.tables);
+  assert.equal(expected.contract.triggers.length,baseline.triggers);
   const ledger = (await client.query('SELECT version FROM schema_migrations ORDER BY 1')).rows.map(row=>row.version);
   const tables = (await client.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1")).rows.map(row=>row.tablename);
-  assert.deepEqual(ledger,expected.ledger,'Production migration ledger differs from RC1');
+  assert.deepEqual(ledger,expected.ledger,'Production migration ledger differs from the approved baseline');
   assert.deepEqual(tables,expected.tables,'Production public table names differ from RC1');
   const comparison = compareSchemaContracts(expected.contract,await readDatabaseSchemaContract(client));
   if (!comparison.matches) {
-    const error=new Error('Production schema differs from RC1');
+    const error=new Error('Production schema differs from the approved baseline');
     error.comparison=comparison;
     throw error;
   }
@@ -113,12 +126,13 @@ async function main(args) {
     throw new Error('The preflight and evidence must be outside the Production application');
   }
   const output=fs.openSync(evidenceFile,'wx',0o600);
-  const report={candidateCommit:config.candidateCommit,configSha256:hash(configBytes),root:ROOT,domain:DOMAIN,
+  const baseline=productionBaseline(config.baselineCommit);
+  const report={candidateCommit:config.candidateCommit,baselineCommit:config.baselineCommit,configSha256:hash(configBytes),root:ROOT,domain:DOMAIN,
     startedAt:new Date().toISOString(),result:'FAILED'};
   let client;
   try {
     const schema=fs.readFileSync(schemaFile);
-    assert.equal(hash(schema),config.baselineSchemaSha256,'RC1 expectation hash mismatch');
+    assert.equal(hash(schema),config.baselineSchemaSha256,'Baseline schema expectation hash mismatch');
     for (const [file,key] of [[script,'scriptSha256'],
       [new URL('./database-schema-contract.mjs',import.meta.url),'schemaHelperSha256'],
       [new URL('./hosted-worker-lifecycle.mjs',import.meta.url),'workerHelperSha256'],
@@ -128,12 +142,12 @@ async function main(args) {
     }
     assert.equal(fs.realpathSync(ROOT),ROOT);
     const installed = JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
-    assert.equal(installed.version,'2.1.0-rc.1');
+    assert.equal(installed.version,baseline.version);
     report.installedVersion=installed.version;
     const baselineRuntime=fs.readFileSync(runtimeFile);
-    assert.equal(hash(baselineRuntime),config.baselineRuntimeManifestSha256,'RC1 runtime manifest hash mismatch');
+    assert.equal(hash(baselineRuntime),config.baselineRuntimeManifestSha256,'Baseline runtime manifest hash mismatch');
     const runtimeEntries=parseRuntimeManifest(baselineRuntime.toString('utf8'));
-    assert.equal(runtimeEntries.size,392);
+    assert.equal(runtimeEntries.size,baseline.runtimeFiles);
     await verifyRuntime(ROOT,runtimeEntries);
     report.runtimeFiles={manifestSha256:config.baselineRuntimeManifestSha256,verified:runtimeEntries.size,
       srcMode:(fs.statSync(path.join(ROOT,'src')).mode&0o777).toString(8)};
@@ -141,8 +155,8 @@ async function main(args) {
     report.baselineProvenance=fs.existsSync(provenance)
       ? {commit:JSON.parse(fs.readFileSync(provenance,'utf8')).commit,sha256:hash(fs.readFileSync(provenance))}
       : {available:false};
-    if (report.baselineProvenance.commit && report.baselineProvenance.commit!==RC1) {
-      throw new Error('Production provenance commit differs from RC1');
+    if ((config.baselineCommit!==RC1 || report.baselineProvenance.commit) && report.baselineProvenance.commit!==config.baselineCommit) {
+      throw new Error('Production provenance commit differs from the approved baseline');
     }
     const {env_vars:environment={}}=registration();
     validateProductionRegistration(environment);
@@ -158,7 +172,7 @@ async function main(args) {
       database:DATABASE,user:ROLE,password:environment.PGPASSWORD,connectionTimeoutMillis:10000,statement_timeout:12000});
     await client.connect();
     await client.query('BEGIN READ ONLY');
-    report.catalog=await verifyProductionCatalog(client,JSON.parse(schema));
+    report.catalog=await verifyProductionCatalog(client,JSON.parse(schema),config.baselineCommit);
     report.usersByRoleAndTeam=(await client.query(`SELECT job_role,team_id,COUNT(*)::int AS total
       FROM brokers GROUP BY job_role,team_id ORDER BY job_role,team_id`)).rows;
     Object.assign(report,await readProductionPrivilegeEvidence(client));
