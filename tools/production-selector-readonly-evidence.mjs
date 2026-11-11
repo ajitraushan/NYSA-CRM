@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {fileHash} from './production-runtime-manifest.mjs';
+import {inspectProductionNodeTools} from './production-node-tools.mjs';
 
 const root='/home/nysareal/nysa-crm';
 const nodevenv='/home/nysareal/nodevenv/nysa-crm/24';
@@ -20,14 +20,10 @@ assert.equal(fs.realpathSync(nodevenv),nodevenv);
 const link=path.join(root,'node_modules');
 assert.ok(fs.lstatSync(link).isSymbolicLink());
 assert.equal(fs.realpathSync(link),modules);
-const nodeExecutable=fs.realpathSync(path.join(nodevenv,'bin','node'));
-assert.equal(fs.realpathSync(process.execPath),nodeExecutable);
-assert.match(process.versions.node,/^24\./);
-const npmCli=fs.realpathSync(path.join(nodevenv,'bin','npm'));
+const nodeTools=await inspectProductionNodeTools();
 const evidence={
   result:'SELECTOR_DEPENDENCIES_VERIFIED',root,nodevenv,modules,
-  linkTarget:fs.readlinkSync(link),nodeExecutable,nodeVersion:process.versions.node,
-  nodeExecutableSha256:await fileHash(nodeExecutable),npmCli,npmCliSha256:await fileHash(npmCli)
+  linkTarget:fs.readlinkSync(link),...nodeTools
 };
 fs.writeFileSync(evidenceFile,JSON.stringify(evidence,null,2)+'\n',{flag:'wx',mode:0o600});
 console.log(JSON.stringify(evidence));

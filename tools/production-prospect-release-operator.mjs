@@ -1,3 +1,4 @@
+import {inspectProductionNodeTools,assertApprovedProductionNodeTools} from './production-node-tools.mjs';
 import {fileHash,parseRuntimeManifest,safeName,verifyRuntime} from './production-runtime-manifest.mjs';
 export {parseRuntimeManifest} from './production-runtime-manifest.mjs';
 import assert from 'node:assert/strict';
@@ -151,16 +152,10 @@ export function prepareSelectorModulesSwap(live,staged,suffix,{copy=copyTree}={}
     }
   };
 }
-async function stageDependencies(config,stageDir){
-  assert.equal(fs.realpathSync(process.execPath),config.nodeExecutable);
-  assert.equal(fs.realpathSync(path.join(NODEVENV,'bin','node')),config.nodeExecutable);
-  await requireHash(config.nodeExecutable,config.nodeExecutableSha256);
-  assert.ok(process.versions.node.startsWith('24.'),'Production release requires registered Node.js 24');
-  assert.equal(fs.realpathSync(path.join(NODEVENV,'bin','npm')),config.npmCli);
-  await requireHash(config.npmCli,config.npmCliSha256);
-  const cleanEnv={PATH:path.dirname(process.execPath)+':/usr/bin:/bin',HOME:config.workspace,
+async function stageDependencies(config,stageDir,{nodeExecutable,npmCli}){
+  const cleanEnv={PATH:path.dirname(nodeExecutable)+':/usr/bin:/bin',HOME:config.workspace,
     npm_config_registry:'https://registry.npmjs.org/',npm_config_cache:path.join(config.workspace,'npm-cache')};
-  run(process.execPath,[config.npmCli,'ci','--omit=dev','--ignore-scripts','--no-audit','--no-fund'],
+  run(nodeExecutable,[npmCli,'ci','--omit=dev','--ignore-scripts','--no-audit','--no-fund'],
     {cwd:stageDir,env:cleanEnv,timeout:600000});
   const deps=path.join(stageDir,'node_modules');
   assert.equal(fs.realpathSync(deps),deps);
@@ -305,6 +300,8 @@ async function main(args){
   const output=fs.openSync(receiptPath(phase),'wx',0o600);
   const stageDir=evidence('candidate'),archive=evidence('app.tar.gz'),dump=evidence('database.dump');
   try{
+    report.nodeTools=await inspectProductionNodeTools();
+    assertApprovedProductionNodeTools(report.nodeTools,config);
     const baseline=parseRuntimeManifest(fs.readFileSync(config.baselineRuntime,'utf8'));
     if(phase==='backup'){
       assert.equal(read(path.join(ROOT,'package.json')).version,'2.1.0-rc.1');
@@ -324,7 +321,7 @@ async function main(args){
       assert.equal(await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true}),before,'RC1 nodevenv changed while copied');
       report.rc1Nodevenv={copy:rc1Nodevenv,sha256:before,
         modulesSha256:await dependencyTreeHash(SELECTOR_MODULES,{preserveExternalLinks:true})};
-      report.stagedDependencies=await stageDependencies(config,stageDir);
+      report.stagedDependencies=await stageDependencies(config,stageDir,report.nodeTools);
       report.stagedDependencySha256=await dependencyTreeHash(report.stagedDependencies);
       await verifyRuntime(stageDir,entries);
       run('tar',['-czf',archive,'--one-file-system','-C',ROOT,'.'],{timeout:600000});

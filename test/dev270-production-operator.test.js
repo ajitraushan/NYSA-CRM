@@ -6,6 +6,7 @@ import os from 'node:os';
 import pg from 'pg';
 import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt,prepareSourceSwap,prepareSelectorModulesSwap,dependencyTreeHash} from '../tools/production-prospect-release-operator.mjs';
 import {verifyRuntime} from '../tools/production-runtime-manifest.mjs';
+import {inspectProductionNodeTools,assertApprovedProductionNodeTools} from '../tools/production-node-tools.mjs';
 import {createHash} from 'node:crypto';
 import {readProductionPrivilegeEvidence,validateProductionRegistration} from '../tools/production-prospect-readonly-preflight.mjs';
 
@@ -114,4 +115,28 @@ test('selector keeps the same module link across install and verified RC1 rollba
   assert.equal(fs.readlinkSync(moduleLink),linkBefore);
   assert.equal(await dependencyTreeHash(fs.realpathSync(moduleLink)),baseline);
   assert.equal(await dependencyTreeHash(path.join(backup,'lib','node_modules')),baseline);
+});
+
+test('CloudLinux selector wraps Node but Production pins the real ALT interpreter and its npm CLI',async()=>{
+  const base='/opt/alt/alt-nodejs24/root/usr';
+  const executable=base+'/bin/node';
+  const wrapper='/usr/share/l.v.e-manager/utils/node_wrapper';
+  const npmCli=base+'/lib/node_modules/npm/bin/npm-cli.js';
+  const selectorNode='/home/nysareal/nodevenv/nysa-crm/24/bin/node';
+  const resolved=new Map([[executable,executable],[selectorNode,wrapper],[base+'/bin/npm',npmCli]]);
+  const digests=new Map([[wrapper,'a'.repeat(64)],[executable,'b'.repeat(64)],[npmCli,'c'.repeat(64)]]);
+  const layout={executable,nodeVersion:'24.22.2',realpath:file=>resolved.get(file),hash:async file=>digests.get(file)};
+  const receipt=await inspectProductionNodeTools(layout);
+  assert.deepEqual(receipt,{
+    nodeWrapper:wrapper,nodeWrapperSha256:digests.get(wrapper),nodeExecutable:executable,
+    nodeExecutableSha256:digests.get(executable),nodeVersion:'24.22.2',npmCli,npmCliSha256:digests.get(npmCli)
+  });
+  assert.doesNotThrow(()=>assertApprovedProductionNodeTools(receipt,receipt));
+  for(const key of ['nodeWrapperSha256','nodeExecutableSha256','npmCliSha256']){
+    assert.throws(()=>assertApprovedProductionNodeTools(receipt,{...receipt,[key]:'d'.repeat(64)}),new RegExp(key));
+  }
+  await assert.rejects(inspectProductionNodeTools({...layout,executable:wrapper}),/exact ALT Node/);
+  await assert.rejects(inspectProductionNodeTools({...layout,nodeVersion:'22.1.0'}),/requires Node.js 24/);
+  resolved.set(base+'/bin/npm',wrapper);
+  await assert.rejects(inspectProductionNodeTools(layout),/installation CLI/);
 });
