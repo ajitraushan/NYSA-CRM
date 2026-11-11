@@ -5,7 +5,7 @@ import test from 'node:test';
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 
 test('DEV267 Prospect Diary release surface is wired without relaxing existing workflows',()=>{
-  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.270');
+  assert.equal(JSON.parse(read('package.json')).version,'2.1.0-dev.271');
   const server=read('src/server.js'),app=read('public/app.js'),bootstrap=read('public/bootstrap.js'),route=read('src/routes/prospects.js'),migration=read('src/migrations/170_prospect_diary.sql');
   assert.match(server,/import prospectRoutes from '.\/routes\/prospects\.js'/);
   assert.match(server,/app\.mount\('\/api', prospectRoutes\)/);
@@ -49,7 +49,7 @@ test('DEV267 keeps repeat limits advisory and preserves governed outreach contro
   assert.match(route,/it does not block the call/);
   assert.match(route,/applyOutsideCallingHours/);
   assert.match(policy,/PROSPECT_OUTSIDE_CALLING_HOURS_MODE/);
-  assert.match(route,/type:'wrong_number'/);
+  assert.match(route,/next\.step === 'close_dnc' \? 'do_not_contact' : 'wrong_number'/);
   assert.match(route,/Admin or Director access is required/);
   assert.match(route,/timezone_corrected/);
   assert.match(ui,/Team warning overrides/);

@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "columns",
-  "count": 4122,
-  "canonicalSha256": "9c11b36dd2aafde683313a324d9185bb7b43a991f449785f573c5ab03d699470",
+  "count": 4183,
+  "canonicalSha256": "d4dbf775b497cfa018eaddc7df6ceb8d39175debfe2e4925ac193cf72dc932a5",
   "entries": [
     {
       "table": "activities",
@@ -2166,6 +2166,13 @@
       "dataType": "text",
       "nullable": "NO",
       "defaultExpression": "'English'::text"
+    },
+    {
+      "table": "brokers",
+      "name": "prospect_digest_opt_out",
+      "dataType": "boolean",
+      "nullable": "YES",
+      "defaultExpression": ""
     },
     {
       "table": "brokers",
@@ -22819,6 +22826,27 @@
     },
     {
       "table": "prospect_activities",
+      "name": "next_step",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "not_interested_note",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "not_interested_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
       "name": "notes",
       "dataType": "text",
       "nullable": "NO",
@@ -22847,6 +22875,13 @@
     },
     {
       "table": "prospect_activities",
+      "name": "recontact_month",
+      "dataType": "date",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
       "name": "warning_acknowledged",
       "dataType": "boolean",
       "nullable": "NO",
@@ -22864,6 +22899,307 @@
       "name": "warning_reason",
       "dataType": "text",
       "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "agent_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "daily_target",
+      "dataType": "smallint",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "effective_from",
+      "dataType": "date",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "reason",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "approved_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "approved_by",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "daily_target",
+      "dataType": "smallint",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "first_call_days",
+      "dataType": "smallint",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "park_on_exhaustion",
+      "dataType": "boolean",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "retry_gaps",
+      "dataType": "ARRAY",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "status",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "working_days",
+      "dataType": "ARRAY",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "attempts",
+      "dataType": "smallint",
+      "nullable": "NO",
+      "defaultExpression": "0"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "audience",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "error_code",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "last_attempt_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "next_attempt_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "recipient_email",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "recipient_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "report_date",
+      "dataType": "date",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "sent_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "status",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "after_values",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "before_values",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "changed_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "changed_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "prospect_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "activity_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "comment",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "reviewed_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "reviewed_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "task_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_preferred_areas",
+      "name": "area_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_preferred_areas",
+      "name": "prospect_id",
+      "dataType": "uuid",
+      "nullable": "NO",
       "defaultExpression": ""
     },
     {
@@ -22925,6 +23261,13 @@
     {
       "table": "prospects",
       "name": "brief_notes",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "budget_band",
       "dataType": "text",
       "nullable": "YES",
       "defaultExpression": ""
@@ -23008,9 +23351,37 @@
     },
     {
       "table": "prospects",
+      "name": "first_call_due_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
       "name": "id",
       "dataType": "uuid",
       "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "last_activity_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "market",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "next_retry_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
       "defaultExpression": ""
     },
     {
@@ -23036,8 +23407,36 @@
     },
     {
       "table": "prospects",
+      "name": "parked_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
       "name": "phone",
       "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "property_type",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "purpose",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "retry_attempts",
+      "dataType": "smallint",
       "nullable": "YES",
       "defaultExpression": ""
     },
@@ -23094,6 +23493,13 @@
       "table": "prospects",
       "name": "team_id",
       "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "timeline",
+      "dataType": "text",
       "nullable": "YES",
       "defaultExpression": ""
     },
@@ -24682,6 +25088,27 @@
     {
       "table": "tasks",
       "name": "prospect_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
+      "name": "snooze_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
+      "name": "snoozed_until",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
+      "name": "source_activity_id",
       "dataType": "uuid",
       "nullable": "YES",
       "defaultExpression": ""

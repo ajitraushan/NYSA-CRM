@@ -1,13 +1,13 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "constraints",
-  "count": 2748,
-  "canonicalSha256": "82886a6143ae797041fa22e06fb031d1432879a902779619b491d863f7a3e52f",
+  "count": 2754,
+  "canonicalSha256": "5057e393b5012d1b5dddd17acc004cc4a1c46d260e8266aab98b0554716fbca3",
   "countsByType": {
-    "p": 306,
-    "f": 992,
+    "p": 307,
+    "f": 995,
     "u": 277,
-    "c": 1173,
+    "c": 1175,
     "x": 0
   },
   "entries": [
@@ -13563,7 +13563,7 @@
       "table": "prospect_activities",
       "name": "prospect_activities_notes_check",
       "type": "c",
-      "definition": "CHECK ((length(btrim(notes)) >= 2))"
+      "definition": "CHECK ((length(btrim(notes)) >=\nCASE\n    WHEN (activity_type = 'note'::text) THEN 1\n    ELSE 2\nEND))"
     },
     {
       "table": "prospect_activities",
@@ -13582,6 +13582,30 @@
       "name": "prospect_activities_prospect_id_fkey",
       "type": "f",
       "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "prospect_upload_batches_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "prospect_upload_batches_file_sha256_check",
+      "type": "c",
+      "definition": "CHECK ((file_sha256 ~ '^[0-9a-f]{64}$'::text))"
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "prospect_upload_batches_owner_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "prospect_upload_batches_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
     },
     {
       "table": "prospects",
@@ -13612,6 +13636,12 @@
       "name": "prospects_consent_status_check",
       "type": "c",
       "definition": "CHECK ((consent_status = ANY (ARRAY['unknown'::text, 'verified'::text, 'withdrawn'::text, 'denied'::text])))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_contact_identity_check",
+      "type": "c",
+      "definition": "CHECK ((((phone IS NULL) = (normalized_phone IS NULL)) AND ((normalized_phone IS NOT NULL) OR (normalized_email IS NOT NULL)) AND ((normalized_phone IS NOT NULL) OR (upload_batch_id IS NOT NULL))))"
     },
     {
       "table": "prospects",
@@ -13665,7 +13695,7 @@
       "table": "prospects",
       "name": "prospects_source_check",
       "type": "c",
-      "definition": "CHECK ((source = ANY (ARRAY['cold_call'::text, 'referral'::text, 'event'::text, 'personal_network'::text, 'purchased_data'::text, 'other'::text])))"
+      "definition": "CHECK ((source = ANY (ARRAY['cold_call'::text, 'referral'::text, 'event'::text, 'personal_network'::text, 'purchased_data'::text, 'other'::text, 'diary'::text, 'notebook'::text, 'whatsapp'::text, 'rem'::text])))"
     },
     {
       "table": "prospects",
@@ -13684,6 +13714,12 @@
       "name": "prospects_timezone_source_check",
       "type": "c",
       "definition": "CHECK ((timezone_source = ANY (ARRAY['phone_inferred'::text, 'agent_confirmed'::text, 'manager_override'::text])))"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_upload_batch_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (upload_batch_id) REFERENCES prospect_upload_batches(id)"
     },
     {
       "table": "provisional_external_properties",

@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "functions",
-  "count": 53,
-  "canonicalSha256": "03622f1e6925d9857b2b923073f78f272176c0e0e95549f3b67c87d09a0452fb",
+  "count": 55,
+  "canonicalSha256": "6b61da886837458460752adba035ccfa3bc9edfed793d9c573c6fcc529c0c4d6",
   "normalization": "SHA-256 of full pg_get_functiondef UTF-8 text after removing carriage returns",
   "entries": [
     {
@@ -74,6 +74,16 @@
       "name": "nysa_prospect_activities_append_only",
       "identityArguments": "",
       "definitionSha256": "419865c9adc3492527431d0a2cad0ecfc209a06225a0bed04a0899986ff2f697"
+    },
+    {
+      "name": "nysa_prospect_first_call_deadline",
+      "identityArguments": "",
+      "definitionSha256": "e55e0591a7719be3036545cbe9e3d1606b674dc35df4062e5becb4281d9508c7"
+    },
+    {
+      "name": "nysa_prospect_interest_history_append_only",
+      "identityArguments": "",
+      "definitionSha256": "bf05b82d4d1165dcb56145e15d010748c65c0f45193309a0f2cd0d7e23eecff8"
     },
     {
       "name": "nysa_prospect_status_effects",

@@ -2,12 +2,12 @@
   "schema": "nysa.database-trigger-contract.v1",
   "generatedFrom": {
     "database": "nysa_test_fixture",
-    "migrationCount": 170,
-    "latestMigration": "170_prospect_diary.sql"
+    "migrationCount": 172,
+    "latestMigration": "172_prospect_tracking.sql"
   },
-  "triggerCount": 111,
-  "tableCount": 95,
-  "canonicalSha256": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+  "triggerCount": 113,
+  "tableCount": 96,
+  "canonicalSha256": "61a110b212fee3b3422c8cb61c8725bf26143a21a6e276f764ac04ad6ff7a2e2",
   "triggers": [
     {
       "table": "agent_payout_adjustment_slabs",
@@ -1384,6 +1384,31 @@
       "enabled": "O",
       "sourceMigration": "170_prospect_diary.sql",
       "definition": "CREATE TRIGGER prospect_activities_outreach_guard BEFORE INSERT ON prospect_activities FOR EACH ROW EXECUTE FUNCTION nysa_guard_prospect_outreach();"
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "prospect_interest_history_append_only",
+      "function": "public.nysa_prospect_interest_history_append_only",
+      "timing": "BEFORE",
+      "events": [
+        "DELETE",
+        "UPDATE"
+      ],
+      "enabled": "O",
+      "sourceMigration": "172_prospect_tracking.sql",
+      "definition": "CREATE TRIGGER prospect_interest_history_append_only BEFORE DELETE OR UPDATE ON prospect_interest_history FOR EACH ROW EXECUTE FUNCTION nysa_prospect_interest_history_append_only();"
+    },
+    {
+      "table": "prospects",
+      "name": "prospect_first_call_deadline",
+      "function": "public.nysa_prospect_first_call_deadline",
+      "timing": "BEFORE",
+      "events": [
+        "INSERT"
+      ],
+      "enabled": "O",
+      "sourceMigration": "172_prospect_tracking.sql",
+      "definition": "CREATE TRIGGER prospect_first_call_deadline BEFORE INSERT ON prospects FOR EACH ROW EXECUTE FUNCTION nysa_prospect_first_call_deadline();"
     },
     {
       "table": "prospects",

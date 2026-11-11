@@ -103,6 +103,40 @@ const dashboardMetrics={callsMade:'Calls made',callsConnected:'Connected',newInt
  conversions:'Conversions',followUpsOverdue:'Overdue follow-ups',untouchedPastDue:'Untouched past due'};
 const percent=(count,total)=>total?Math.round(count/total*100)+'%':'—';
 
+function drawProspectTrend(canvas,trend){
+ const ctx=canvas.getContext('2d');
+ if(!ctx||trend.length===0)return;
+ const width=canvas.width,height=canvas.height,pad=26;
+ const maximum=Math.max(1,...trend.map(day=>Number(day.made)));
+ const x=index=>pad+(width-2*pad)*index/Math.max(1,trend.length-1);
+ const y=value=>height-pad-(height-2*pad)*Number(value)/maximum;
+ ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;
+ ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,height-pad);ctx.lineTo(width-pad,height-pad);ctx.stroke();
+ for(const [key,color] of [['made','#243852'],['connected','#9b692f']]){
+   ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();
+   trend.forEach((point,index)=>index?ctx.lineTo(x(index),y(point[key])):ctx.moveTo(x(index),y(point[key])));
+   ctx.stroke();
+   trend.forEach((point,index)=>{ctx.beginPath();ctx.arc(x(index),y(point[key]),3,0,Math.PI*2);ctx.fill();});
+ }
+}
+
+async function showProspectDigest(root){
+ const data=await context.api('/crm/prospect-diary/digest/preview');
+ const panel=root.querySelector('[data-digest-preview]');
+ panel.hidden=false;
+ panel.innerHTML=`<h3>Digest preview · ${context.escape(data.date)}</h3>
+   <p>${Number(data.tiles.callsMade)} calls / ${Number(data.target)} target ·
+   ${Number(data.tiles.callsConnected)} connected · ${Number(data.dueToday)} follow-ups due</p>
+   <button class="btn btn-sm" type="button" data-digest-optout>Opt out of digest email</button>`;
+ panel.querySelector('[data-digest-optout]').onclick=async()=>{
+   try{
+     await context.api('/crm/prospect-diary/digest/preference',{method:'PATCH',body:{optOut:true}});
+     panel.querySelector('[data-digest-optout]').textContent='Email opt-out saved';
+     panel.querySelector('[data-digest-optout]').disabled=true;
+   }catch(error){errorBox(root,error.message);}
+ };
+}
+
 async function renderDashboard(){
  const root=context.root,esc=context.escape;
  const params=new URLSearchParams(window.location.search);
@@ -120,11 +154,16 @@ async function renderDashboard(){
  const filterSelect=(name,label,items,empty)=>`<label>${label}<select name="${name}"><option value="">${empty}</option>
    ${items.map(item=>`<option value="${esc(item.id)}" ${data.filters[name]===item.id?'selected':''}>${esc(item.name||item.id)}</option>`).join('')}</select></label>`;
  const rows=(items,keys)=>items.map(item=>`<tr>${keys.map(key=>`<td>${esc(item[key]??'—')}</td>`).join('')}</tr>`).join('');
- const table=(title,items,columns)=>`<section class="dashboard-panel"><h3>${title}</h3>
-   <table><thead><tr>${columns.map(([,label])=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
+ const table=(title,items,columns,sortable=false)=>`<section class="dashboard-panel"><h3>${title}</h3>
+   <table ${sortable?'data-agent-sort-table':''}><thead><tr>${columns.map(([key,label])=>`<th scope="col">${sortable?
+     `<button class="btn btn-sm" type="button" data-agent-sort="${key}">${label}</button>`:label}</th>`).join('')}</tr></thead>
    <tbody>${rows(items,columns.map(([key])=>key))}</tbody></table></section>`;
+ const agentColumns=[['name','Agent'],['team','Team'],['target','Target'],['calls_made','Calls'],['calls_connected','Connected'],
+   ['new_interested','Interested'],['conversions','Converted'],['follow_ups_due','Follow-ups due'],['follow_ups_on_time','On time'],
+   ['overdue','Overdue'],['untouched_two_days','Untouched >2d'],['untouched_seven_days','Untouched >7d'],
+   ['untouched_fourteen_days','Untouched >14d'],['overrides','Overrides'],['last_call','Last call']];
  root.innerHTML=`<section class="prospect-diary">
-  <header class="dashboard-head"><h2>Prospecting</h2><button class="btn" type="button" data-dashboard-diary>All prospects</button></header>
+  <header class="dashboard-head"><h2>Prospecting</h2><button class="btn" type="button" data-show-digest>Digest preview</button><button class="btn" type="button" data-dashboard-diary>All prospects</button></header>
   <form class="prospect-toolbar" data-dashboard-filter>
     <label>Period<select name="period">${options([['today','Today'],['week','This week'],['month','This month'],['custom','Custom']],data.filters.period)}</select></label>
     <label>From<input type="date" name="from" value="${esc(data.filters.from)}"></label>
@@ -138,15 +177,40 @@ async function renderDashboard(){
   <div class="prospect-summary">${metrics}<div><span>Connect rate</span><strong>${percent(data.tiles.callsConnected,data.tiles.callsMade)}</strong></div></div>
   <section class="dashboard-panel" data-dashboard-drilldown hidden></section>
   <section class="dashboard-panel"><h3>Prospect funnel</h3>${chart}</section>
-  ${data.agents.length?table('Agent performance',data.agents,[['name','Agent'],['team','Team'],['target','Target'],['calls_made','Calls'],['calls_connected','Connected'],['new_interested','Interested'],['conversions','Converted'],['overdue','Overdue'],['overrides','Overrides']]):''}
+  <section class="dashboard-panel" data-digest-preview hidden></section>
+  ${data.agents.length?table('Agent performance',data.agents,agentColumns,true):''}
+  ${data.agents.length?'<button class="btn" type="button" data-agent-export>Export Agent table</button>':''}
   ${data.agents.length?`<section class="dashboard-panel"><h3>Agent actions</h3>${data.agents.map(agent=>`
       <p>${esc(agent.name)} <button class="btn btn-sm" type="button" data-agent-today="${esc(agent.id)}">Open Today</button>
       <button class="btn btn-sm" type="button" data-agent-target="${esc(agent.id)}">Set daily target</button></p>`).join('')}</section>`:''}
+  ${data.trend.length?'<section class="dashboard-panel"><h3>Activity trend chart</h3><p>Calls made (navy) and connected (bronze)</p><canvas width="720" height="220" style="max-width:100%" role="img" aria-label="Trend of calls made and connected" data-prospect-trend></canvas></section>':''}
   ${table('Activity trend',data.trend,[['day','Period'],['made','Calls'],['connected','Connected']])}
   ${table('Call outcomes',data.outcomes,[['outcome','Outcome'],['reason','Reason'],['count','Count']])}
   ${table('Source quality',data.sources,[['source','Source'],['batch','Batch'],['prospects','Prospects'],['contacted','Contacted'],['connected','Connected'],['interested','Interested'],['converted','Converted'],['closed','Closed']])}
   <section class="dashboard-panel"><h3>Aging prospects</h3>${data.aging.map(item=>`<p><button class="btn btn-sm" type="button" data-dashboard-open="${esc(item.id)}">${esc(item.display_name||'Unnamed prospect')}</button> · ${esc(fmt(item.since))}</p>`).join('')||'<p>No aging prospects in this scope.</p>'}</section>
  </section>`;
+ const chartCanvas=root.querySelector('[data-prospect-trend]');
+ if(chartCanvas)drawProspectTrend(chartCanvas,data.trend);
+ root.querySelector('[data-show-digest]').onclick=()=>showProspectDigest(root).catch(error=>errorBox(root,error.message));
+ const exportDashboard=async metric=>{
+   const query=new URLSearchParams(params);
+   query.set('metric',metric);
+   try{await context.download('/crm/prospect-diary/dashboard/export.csv?'+query,'prospect-dashboard.csv');}
+   catch(error){errorBox(root,error.message);}
+ };
+ const exportButton=root.querySelector('[data-agent-export]');
+ if(exportButton)exportButton.onclick=()=>exportDashboard('agents');
+ let lastSort='',direction=1;
+ for(const button of root.querySelectorAll('[data-agent-sort]'))button.onclick=()=>{
+   const key=button.dataset.agentSort;
+   direction=key===lastSort?-direction:1;
+   lastSort=key;
+   const sorted=[...data.agents].sort((a,b)=>{
+     const x=a[key],y=b[key];
+     return direction*(typeof x==='number'&&typeof y==='number'?x-y:String(x??'').localeCompare(String(y??'')));
+   });
+   root.querySelector('[data-agent-sort-table] tbody').innerHTML=rows(sorted,agentColumns.map(([name])=>name));
+ };
  root.querySelector('[data-dashboard-diary]').onclick=()=>{state.view='diary';render();};
  root.querySelector('[data-dashboard-filter]').onsubmit=event=>{
    event.preventDefault();
@@ -180,8 +244,9 @@ async function renderDashboard(){
      const result=await context.api('/crm/prospect-diary/dashboard/drilldown?'+query);
      const panel=root.querySelector('[data-dashboard-drilldown]');
      panel.hidden=false;
-     panel.innerHTML=`<h3>${esc(dashboardMetrics[metric])} · ${Number(result.total)} prospects</h3>
+     panel.innerHTML=`<h3>${esc(dashboardMetrics[metric])} · ${Number(result.total)} records</h3><button class="btn" type="button" data-metric-export>Export records</button>
        ${result.rows.map(item=>`<p><button class="btn btn-sm" type="button" data-drilldown-open="${esc(item.id)}">${esc(item.displayName||'Unnamed prospect')}</button></p>`).join('')}`;
+     panel.querySelector('[data-metric-export]').onclick=()=>exportDashboard(metric);
      for(const item of panel.querySelectorAll('[data-drilldown-open]'))item.onclick=()=>open(item.dataset.drilldownOpen);
    }catch(error){errorBox(root,error.message);}
  };
@@ -195,6 +260,7 @@ async function renderToday(){
  catch(error){root.textContent=error.message;return;}
  const esc=context.escape;
  const reason=item=>{
+   if(item.timingRecontact)return 'Timing recontact · '+fmt(item.dueAt);
    if(item.priority===1)return 'Overdue follow-up · '+fmt(item.dueAt);
    if(item.priority===2)return 'Follow-up today · '+fmt(item.dueAt);
    if(item.priority===3)return 'Callback · '+fmt(item.dueAt);
@@ -238,11 +304,12 @@ async function renderToday(){
  };
 }
 
-async function loadOverridePanel(root,panel){
- const result=await context.api('/crm/prospect-diary/overrides');
+async function loadOverridePanel(root,panel,status='all'){
+ const result=await context.api('/crm/prospect-diary/overrides?status='+encodeURIComponent(status));
  const esc=context.escape;
  panel.hidden=false;
  panel.innerHTML=`<section class="dashboard-panel"><h3>Team warning overrides · ${Number(result.unreviewedCount)} unreviewed</h3>
+   <label>Review status<select data-override-status>${options([['all','All'],['unreviewed','Unreviewed'],['reviewed','Reviewed']],status)}</select></label>
    ${result.overrides.map(item=>`<article class="prospect-event">
    <b>${esc(item.displayName||'Unnamed prospect')}${item.phoneLastFour?' · ••••'+esc(item.phoneLastFour):''}</b>
    <p>${item.warningCodes.map(code=>esc(warningLabels[code]||code.replaceAll('_',' '))).join('<br>')}</p>
@@ -254,6 +321,8 @@ async function loadOverridePanel(root,panel){
      <label>Review comment (optional)<input name="comment" minlength="5" maxlength="1000"></label>
      <button class="btn btn-sm" type="submit">Mark reviewed</button>
    </form>`}</article>`).join('')||'<p>No warning overrides in your permitted team scope.</p>'}</section>`;
+ panel.querySelector('[data-override-status]').onchange=event=>
+   loadOverridePanel(root,panel,event.currentTarget.value).catch(error=>errorBox(root,error.message));
  for(const button of panel.querySelectorAll('[data-override-open]'))button.onclick=()=>open(button.dataset.overrideOpen);
  for(const form of panel.querySelectorAll('[data-override-review]'))form.onsubmit=async event=>{
    event.preventDefault();
@@ -262,7 +331,7 @@ async function loadOverridePanel(root,panel){
    try{
      await context.api('/crm/prospect-diary/overrides/'+encodeURIComponent(form.dataset.overrideReview)+'/review',
        {method:'POST',body:{evidenceType:form.dataset.evidenceType,comment:form.elements.comment.value}});
-     await loadOverridePanel(root,panel);
+     await loadOverridePanel(root,panel,status);
    }catch(error){errorBox(root,error.message);}
    finally{button.disabled=false;}
  };
@@ -360,6 +429,15 @@ async function bindDetail(host,data){
  const followCards=[...body.querySelectorAll('.prospect-follow-up')];data.followUps.forEach((item,index)=>{if(!item.policyWarningCodes?.length)return;const small=followCards[index]?.querySelector('small');if(!small)return;small.textContent+=` Ã‚· Warning: ${item.policyWarningCodes.map(code=>warningLabels[code]||code.replaceAll('_',' ')).join('; ')} Ã‚· Reason: ${item.policyWarningReason||'Not recorded'}`;});
  const showError=message=>{const box=body.querySelector('[data-prospect-error]');box.hidden=false;box.className='prospect-error';box.textContent=message;box.scrollIntoView({block:'center'});};const refresh=async()=>{const next=await context.api(`/crm/prospects/${data.prospect.id}`);await bindDetail(host,next);};const refreshAll=async()=>{const id=data.prospect.id;host.remove();await render();await open(id);};
  await bindProspectInterest(body,data,refresh,showError);
+ if(data.overrideReviews?.length){
+   const panel=document.createElement('section');
+   panel.className='dashboard-panel';
+   panel.innerHTML=`<h3>Override reviews</h3><ul>${data.overrideReviews.map(review=>
+     `<li>${context.escape(review.reviewedByName)} · ${context.escape(fmt(review.reviewedAt))}
+     ${review.comment?' · '+context.escape(review.comment):''}</li>`).join('')}</ul>`;
+   body.prepend(panel);
+ }
+
  body.querySelector('[data-prospect-edit]')?.addEventListener('submit',async event=>{event.preventDefault();try{const values=Object.fromEntries(new FormData(event.currentTarget)),saved=await context.api(`/crm/prospects/${data.prospect.id}`,{method:'PATCH',body:values}),timezoneNote=saved.timezoneSuggestion&&saved.timezoneSuggestion!==data.prospect.timezone?` Suggested timezone updated to ${saved.timezoneSuggestion}.`:'';context.toast(`Prospect details updated and audited.${timezoneNote}`);await refresh();}catch(error){showError(error.message);}});
  body.querySelectorAll('[data-correct-activity]').forEach(button=>button.onclick=()=>{const form=body.querySelector('[data-activity-form]'),reason=body.querySelector('[data-correction-field]');form.elements.correctsActivityId.value=button.dataset.correctActivity;reason.hidden=false;reason.querySelector('input').required=true;form.scrollIntoView({block:'center'});form.elements.notes.focus();});
  body.querySelector('[data-activity-form]')?.addEventListener('change',event=>{if(event.target.name==='activityType')body.querySelectorAll('[data-call-field]').forEach(x=>x.hidden=event.target.value==='note');});

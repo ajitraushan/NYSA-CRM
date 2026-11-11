@@ -109,16 +109,16 @@ test('the committed cumulative schema contracts match their manifest', () => {
   const contractDir = path.join(root, 'src', 'database-schema-contract');
   const manifest = JSON.parse(fs.readFileSync(path.join(contractDir, 'manifest.json'), 'utf8'));
   assert.equal(manifest.schema, 'nysa.database-schema-contract.v1');
-  assert.equal(manifest.generatedFrom.sourceCommit, '30b9f74d801deab30474fe61a00ab2288b228b52');
+  assert.equal(manifest.generatedFrom.sourceCommit, '3f47cfe0357560a79504ce13e3fb57f531083ca4');
   assert.equal(manifest.generatedFrom.postgresqlVersion, '13.23');
-  assert.equal(manifest.generatedFrom.migrationCount, 171);
+  assert.equal(manifest.generatedFrom.migrationCount, 172);
   assert.equal(manifest.generatedFrom.sourcePrefix, undefined);
 
   const expectedCounts = {
-    constraints: 2754,
-    indexes: 968,
-    columns: 4122,
-    functions: 53,
+    constraints: 2788,
+    indexes: 986,
+    columns: 4183,
+    functions: 55,
     sequencesViews: 7,
   };
   for (const [name, expectedCount] of Object.entries(expectedCounts)) {
@@ -134,8 +134,8 @@ test('the committed cumulative schema contracts match their manifest', () => {
 
   const triggerFile = path.join(root, 'src', 'database-trigger-contract.json');
   const triggers = JSON.parse(fs.readFileSync(triggerFile, 'utf8'));
-  assert.equal(triggers.triggerCount, 111);
-  assert.equal(triggers.tableCount, 95);
+  assert.equal(triggers.triggerCount, 113);
+  assert.equal(triggers.tableCount, 96);
   assert.equal(manifest.triggers.canonicalSha256, triggers.canonicalSha256);
   assert.equal(manifest.triggers.fileSha256, sha256File(triggerFile));
 });

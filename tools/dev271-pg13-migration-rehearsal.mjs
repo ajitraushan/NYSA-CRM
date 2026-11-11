@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import pg from 'pg';
+import {compareSchemaContracts,loadSchemaContract,readDatabaseSchemaContract} from './database-schema-contract.mjs';
 import { applyFixtureMigration, createFixture, fixtureIdentity, migrationFiles } from './dev270-pg13-rehearsal-fixture.mjs';
 
 const ownership = JSON.parse(await fs.readFile('release-artifacts/dev270-preparation-r2/hosted-production-ownership/PRODUCTION_OWNERSHIP_RESULT.json', 'utf8'));
@@ -28,10 +29,16 @@ for (const [database, role] of [['nysa_test_fixture','nysa_test_user'], ['nysare
     await client.query("INSERT INTO brokers(id,name,email,role,job_role,status,password_hash) VALUES($1,'Synthetic Agent','dev271@example.test','internal_broker','sales_agent','active','fixture')",[actor]);
     await client.query("INSERT INTO prospects(id,phone,normalized_phone,owner_id,timezone,timezone_source,created_by,created_at) VALUES ($1,'+971501234567','+971501234567',$3,'Asia/Dubai','phone_inferred',$3,'2020-11-14 05:00Z'), ($2,'+971501234568','+971501234568',$3,'Asia/Dubai','phone_inferred',$3,now())",[prospect,'99999999-0000-4000-8000-000000000005',actor]);
     await client.query(legacyCall,['99999999-0000-4000-8000-000000000003',prospect,'2020-11-14 06:00Z',actor]);
+    await client.query("INSERT INTO brokers(id,name,email,role,job_role,status,password_hash) VALUES('99999999-0000-4000-8000-000000000007','Synthetic Admin','dev271-admin@example.test','admin','admin','active','fixture')");
     assert.equal(migrationFiles[171],'172_prospect_tracking.sql');
     const started = performance.now();
     await applyFixtureMigration(client,migrationFiles[171],role);
     const elapsedMs = Math.round(performance.now()-started);
+    const schema=compareSchemaContracts(loadSchemaContract('src/database-schema-contract','src/database-trigger-contract.json'),await readDatabaseSchemaContract(client));
+    assert.ok(schema.matches,JSON.stringify(schema));
+    const {rows:[seeds]}=await client.query("SELECT count(*)::int AS count FROM value_sets WHERE stable_code IN('prospect_not_interested_reason','prospect_purpose','prospect_budget_band','prospect_property_type','prospect_market','prospect_timeline')");
+    assert.equal(seeds.count,6);
+
     const {rows:[backfill]} = await client.query('SELECT now() AS measured_at, count(*)::int AS prospects_total, count(first_call_due_at)::int AS first_call_due_backfilled, count(*) FILTER (WHERE first_call_due_at < now())::int AS first_call_due_in_past FROM prospects');
     assert.deepEqual([backfill.prospects_total,backfill.first_call_due_backfilled,backfill.first_call_due_in_past],[2,2,1]);
     await client.query(legacyCall,['99999999-0000-4000-8000-000000000004',prospect,'2020-11-16 06:00Z',actor]);
@@ -50,7 +57,7 @@ for (const [database, role] of [['nysa_test_fixture','nysa_test_user'], ['nysare
     assert.equal(evidence.owner_held,database==='nysareal_nysacrm'?58:0);
     const identity=await fixtureIdentity(client);
     assert.equal(identity.migrations,172);
-    results.push({...identity,...evidence,elapsedMs,...backfill,interest_history:{insert_accepted:true,update_rejected:true,delete_rejected:true,row_retained:true},scope:'synthetic data, DEV270 INSERT shape only'});
+    results.push({...identity,...evidence,elapsedMs,...backfill,schema_contract_matches:schema.matches,triggers:schema.triggers.observed,controlled_value_sets:seeds.count,interest_history:{insert_accepted:true,update_rejected:true,delete_rejected:true,row_retained:true},scope:'synthetic data, DEV270 INSERT shape only'});
     console.log(JSON.stringify(results.at(-1)));
   } finally { await client.end(); }
 }

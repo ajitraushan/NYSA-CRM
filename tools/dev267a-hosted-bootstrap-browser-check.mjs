@@ -33,6 +33,8 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/crm/business-lines')return json(res,200,{businessLines:[]});
   if(url.pathname==='/api/crm/dashboard/views')return json(res,200,{views:[]});
   if(url.pathname==='/api/crm/dashboard')return json(res,200,dashboard);
+  if(url.pathname==='/api/crm/prospect-diary/today')return json(res,200,{items:[],queueTotal:0,readOnly:false});
+  if(url.pathname==='/api/crm/prospects/'+prospectId+'/interest')return json(res,200,{values:{},selections:[],editable:false});
   if(url.pathname==='/api/crm/prospects')return json(res,200,{summary:{total:1,today:1,overdue:0,upcoming:1,interested:0,doNotContact:fixtureDncr?1:0},prospects:[prospect()],agents:activeRole==='manager'?[{id:'00000002-0000-4000-8000-000000000268',name:'Synthetic Agent',jobRole:'sales_agent'}]:[],canManage:activeRole==='manager'});
   if(url.pathname===`/api/crm/prospects/${prospectId}`&&req.method==='GET')return json(res,200,prospectDetail());
   if(url.pathname===`/api/crm/prospects/${prospectId}/conversion-matches`&&req.method==='GET')return json(res,200,{matches:[],outsideScopeMatch:false});
@@ -63,6 +65,10 @@ try{
     await page.goto(`http://127.0.0.1:${port}/?role=${role}`,{waitUntil:'networkidle0',timeout:60000});
     await page.waitForSelector('button[data-tab="prospectDiary"]',{timeout:30000});
     await page.click('button[data-tab="prospectDiary"]');
+    if(role==='sales_agent'){
+      await page.waitForSelector('[data-today-diary]');
+      await page.click('[data-today-diary]');
+    }
     await page.waitForSelector('[data-prospect]',{timeout:30000});
     const state=await page.evaluate(()=>{const head=document.querySelector('#view .prospect-diary>.dashboard-head'),name=document.querySelector('.prospect-card-name'),tiles=[...document.querySelectorAll('[data-summary]')].map(button=>[button.querySelector('span')?.textContent,button.querySelector('strong')?.textContent]);return{heading:document.querySelector('#view h2')?.textContent||'',cards:document.querySelectorAll('[data-prospect]').length,active:document.querySelector('button[data-tab="prospectDiary"]')?.classList.contains('active'),featureType:typeof window.renderProspectDiary,wrapperType:typeof window.renderProspectDiaryWorkspace,dashboardModuleType:typeof window.renderDashboardFeatureModule,legacyDashboardGlobalType:typeof window.renderCrmDashboard,headTag:head?.tagName,headBackground:getComputedStyle(head).backgroundColor,headColor:getComputedStyle(head).color,nameColor:getComputedStyle(name).color,tiles};});
     assert.equal(state.heading,'Prospect Diary');

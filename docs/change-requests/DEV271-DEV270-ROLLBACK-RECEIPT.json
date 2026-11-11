@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "version": "2.1.0-dev.270",
+  "database": "synthetic PostgreSQL 13.23",
+  "scope": "unmodified DEV270 migration runner and authenticated HTTP call route on DEV271 schema",
+  "httpStatus": 201,
+  "observed": {
+    "activity_type": "call",
+    "outcome": "answered",
+    "next_step": null,
+    "migrations": 172
+  },
+  "elapsedMs": 7351
+}

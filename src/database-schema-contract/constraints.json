@@ -1,13 +1,13 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "constraints",
-  "count": 2754,
-  "canonicalSha256": "5057e393b5012d1b5dddd17acc004cc4a1c46d260e8266aab98b0554716fbca3",
+  "count": 2788,
+  "canonicalSha256": "cc5c73ba0ab42a059ab2429d0164dacaff6d6514f212d6f378faceb67ba088ee",
   "countsByType": {
-    "p": 307,
-    "f": 995,
-    "u": 277,
-    "c": 1175,
+    "p": 313,
+    "f": 1008,
+    "u": 280,
+    "c": 1187,
     "x": 0
   },
   "entries": [
@@ -13584,6 +13584,204 @@
       "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE"
     },
     {
+      "table": "prospect_agent_targets",
+      "name": "prospect_agent_targets_agent_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (agent_id) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "prospect_agent_targets_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "prospect_agent_targets_daily_target_check",
+      "type": "c",
+      "definition": "CHECK (((daily_target >= 0) AND (daily_target <= 300)))"
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "prospect_agent_targets_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_agent_targets",
+      "name": "prospect_agent_targets_reason_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(reason)) >= 5))"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_approved_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (approved_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_daily_target_check",
+      "type": "c",
+      "definition": "CHECK (((daily_target >= 0) AND (daily_target <= 300)))"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_first_call_days_check",
+      "type": "c",
+      "definition": "CHECK (((first_call_days >= 1) AND (first_call_days <= 14)))"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_retry_gaps_check",
+      "type": "c",
+      "definition": "CHECK ((((cardinality(retry_gaps) >= 1) AND (cardinality(retry_gaps) <= 10)) AND (1 <= ALL (retry_gaps)) AND (14 >= ALL (retry_gaps))))"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'retired'::text])))"
+    },
+    {
+      "table": "prospect_cadence_policy_versions",
+      "name": "prospect_cadence_policy_versions_working_days_check",
+      "type": "c",
+      "definition": "CHECK (((cardinality(working_days) > 0) AND (working_days <@ ARRAY[(1)::smallint, (2)::smallint, (3)::smallint, (4)::smallint, (5)::smallint, (6)::smallint, (7)::smallint])))"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_attempts_check",
+      "type": "c",
+      "definition": "CHECK (((attempts >= 0) AND (attempts <= 2)))"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_audience_check",
+      "type": "c",
+      "definition": "CHECK ((audience = ANY (ARRAY['agent'::text, 'manager'::text, 'director'::text, 'admin_test'::text])))"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_recipient_id_audience_report_date_key",
+      "type": "u",
+      "definition": "UNIQUE (recipient_id, audience, report_date)"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_recipient_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (recipient_id) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_digest_runs",
+      "name": "prospect_digest_runs_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'sending'::text, 'accepted'::text, 'retry'::text, 'review'::text, 'failed'::text, 'skipped'::text])))"
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "prospect_interest_history_changed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (changed_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "prospect_interest_history_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_interest_history",
+      "name": "prospect_interest_history_prospect_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_activity_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (activity_id) REFERENCES prospect_activities(id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_activity_id_key",
+      "type": "u",
+      "definition": "UNIQUE (activity_id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_check",
+      "type": "c",
+      "definition": "CHECK ((num_nonnulls(activity_id, task_id) = 1))"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_comment_check",
+      "type": "c",
+      "definition": "CHECK ((length(btrim(comment)) >= 5))"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_reviewed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (reviewed_by) REFERENCES brokers(id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_task_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (task_id) REFERENCES tasks(id)"
+    },
+    {
+      "table": "prospect_override_reviews",
+      "name": "prospect_override_reviews_task_id_key",
+      "type": "u",
+      "definition": "UNIQUE (task_id)"
+    },
+    {
+      "table": "prospect_preferred_areas",
+      "name": "prospect_preferred_areas_area_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (area_id) REFERENCES areas(id)"
+    },
+    {
+      "table": "prospect_preferred_areas",
+      "name": "prospect_preferred_areas_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (prospect_id, area_id)"
+    },
+    {
+      "table": "prospect_preferred_areas",
+      "name": "prospect_preferred_areas_prospect_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE"
+    },
+    {
       "table": "prospect_upload_batches",
       "name": "prospect_upload_batches_created_by_fkey",
       "type": "f",
@@ -14464,6 +14662,12 @@
       "name": "tasks_prospect_id_fkey",
       "type": "f",
       "definition": "FOREIGN KEY (prospect_id) REFERENCES prospects(id)"
+    },
+    {
+      "table": "tasks",
+      "name": "tasks_source_activity_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (source_activity_id) REFERENCES prospect_activities(id)"
     },
     {
       "table": "tasks",

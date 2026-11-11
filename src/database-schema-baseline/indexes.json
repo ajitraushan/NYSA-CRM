@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "indexes",
-  "count": 966,
-  "canonicalSha256": "a506bb80d8164a55313dd7f216fe353241dfc0df2f7f0abc2f67a9d7a2165d33",
+  "count": 968,
+  "canonicalSha256": "3602ec865ca5083ea6f6bb01e845651077b1e8836724eda92a4a5d189d03765f",
   "entries": [
     {
       "table": "activities",
@@ -3910,6 +3910,11 @@
       "definition": "CREATE INDEX prospect_activities_timeline_idx ON public.prospect_activities USING btree (prospect_id, occurred_at DESC, id)"
     },
     {
+      "table": "prospect_upload_batches",
+      "name": "prospect_upload_batches_pkey",
+      "definition": "CREATE UNIQUE INDEX prospect_upload_batches_pkey ON public.prospect_upload_batches USING btree (id)"
+    },
+    {
       "table": "prospects",
       "name": "prospects_normalized_email_idx",
       "definition": "CREATE INDEX prospects_normalized_email_idx ON public.prospects USING btree (normalized_email) WHERE (normalized_email IS NOT NULL)"
@@ -3933,6 +3938,11 @@
       "table": "prospects",
       "name": "prospects_team_status_idx",
       "definition": "CREATE INDEX prospects_team_status_idx ON public.prospects USING btree (team_id, status, updated_at DESC)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_upload_batch_idx",
+      "definition": "CREATE INDEX prospects_upload_batch_idx ON public.prospects USING btree (upload_batch_id) WHERE (upload_batch_id IS NOT NULL)"
     },
     {
       "table": "provisional_external_properties",

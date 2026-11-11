@@ -1,26 +1,26 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "generatedFrom": {
-    "sourceCommit": "30b9f74d801deab30474fe61a00ab2288b228b52",
+    "sourceCommit": "3f47cfe0357560a79504ce13e3fb57f531083ca4",
     "postgresqlVersion": "13.23",
-    "migrationCount": 171,
-    "latestMigration": "171_prospect_upload.sql",
+    "migrationCount": 172,
+    "latestMigration": "172_prospect_tracking.sql",
     "sourceFiles": {
       "constraints": {
         "file": "EXPECTED_constraints.txt",
-        "sha256": "f1a50211aef5f6ac770f2f17093d6be91e82bfad372419624ec84870b37cca4f"
+        "sha256": "0e4fcc02fd686a203b5f5088a349f6ab1596b0aaf15b8cacfd915d9b79822445"
       },
       "indexes": {
         "file": "EXPECTED_indexes.txt",
-        "sha256": "ea80211aef069c607f2f4491f0fcdaef30405dacaed2d3fc394f3da366c8440c"
+        "sha256": "1814c15d88edc1832467278d71a507d1528cbe6c7e7ac626415f0191b430bd28"
       },
       "columns": {
         "file": "EXPECTED_columns.txt",
-        "sha256": "6223bc7eb6db7cb6c6660c51d19e8586d1345d4dfd6f950a808e3b2c468997a3"
+        "sha256": "b23a590d447ce133f9b284460bdbab21f5bc81c2058870e3f25a65ff5a42d3c0"
       },
       "functions": {
         "file": "EXPECTED_function_defs.hex.txt",
-        "sha256": "8b5962146c957a99ac5876bac09b65492d524bbfa7a84977e89adecb2971aacd"
+        "sha256": "9b14172ff37e45c7444f0dda929853ec60d91f70fbcb2a91480fdffd7dd1d280"
       },
       "sequencesViews": {
         "file": "EXPECTED_sequences_views.txt",
@@ -31,27 +31,27 @@
   "contracts": {
     "constraints": {
       "file": "constraints.json",
-      "count": 2754,
-      "canonicalSha256": "5057e393b5012d1b5dddd17acc004cc4a1c46d260e8266aab98b0554716fbca3",
-      "fileSha256": "82f5ca2e0379193acec3a967e1735ff1aab10412155e8ecb0dc0e85140989c4a"
+      "count": 2788,
+      "canonicalSha256": "cc5c73ba0ab42a059ab2429d0164dacaff6d6514f212d6f378faceb67ba088ee",
+      "fileSha256": "6f53e94f5bae2f5e58e7425e4cfbf535a655568e85f54abe6bf18639e05e438a"
     },
     "indexes": {
       "file": "indexes.json",
-      "count": 968,
-      "canonicalSha256": "3602ec865ca5083ea6f6bb01e845651077b1e8836724eda92a4a5d189d03765f",
-      "fileSha256": "4f9625b493e1bf4efdbb85dec12d67e132640cb1efdedde234b479491e63b0dd"
+      "count": 986,
+      "canonicalSha256": "5f147d816e9a882a463b74d4301fd4303753a854634ad9ae900acef525e73f41",
+      "fileSha256": "a33a90e1679459c80bd587f369982bc1cb6b9204601b21b49a1d04b5865742d5"
     },
     "columns": {
       "file": "columns.json",
-      "count": 4122,
-      "canonicalSha256": "9c11b36dd2aafde683313a324d9185bb7b43a991f449785f573c5ab03d699470",
-      "fileSha256": "16bf22a4eb79db4a30a395a2cb7a93b208e48548fccf0eeb714be1e9a1e3437f"
+      "count": 4183,
+      "canonicalSha256": "d4dbf775b497cfa018eaddc7df6ceb8d39175debfe2e4925ac193cf72dc932a5",
+      "fileSha256": "a066db695f437c9755788687a7ac4b37d33dab07419fc1f85fa79a11800a865e"
     },
     "functions": {
       "file": "functions.json",
-      "count": 53,
-      "canonicalSha256": "03622f1e6925d9857b2b923073f78f272176c0e0e95549f3b67c87d09a0452fb",
-      "fileSha256": "8af62fc5012a451879fa0446c096bd653779bbb725f59dbe490fe14d7584ee72"
+      "count": 55,
+      "canonicalSha256": "6b61da886837458460752adba035ccfa3bc9edfed793d9c573c6fcc529c0c4d6",
+      "fileSha256": "f4f3dfb893239684153bd689618e7831f13e29e2c5dcac188c02fca02efe9c89"
     },
     "sequencesViews": {
       "file": "sequences-views.json",
@@ -62,9 +62,9 @@
   },
   "triggers": {
     "file": "database-trigger-contract.json",
-    "triggerCount": 111,
-    "tableCount": 95,
-    "canonicalSha256": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
-    "fileSha256": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf"
+    "triggerCount": 113,
+    "tableCount": 96,
+    "canonicalSha256": "61a110b212fee3b3422c8cb61c8725bf26143a21a6e276f764ac04ad6ff7a2e2",
+    "fileSha256": "bbf9640691bbd7c96f415e8e52e5fdbf99adcb4c3edc1045fa6eb07e44b74262"
   }
 }

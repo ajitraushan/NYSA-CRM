@@ -1,13 +1,13 @@
 import {execFileSync} from 'node:child_process';
-const accepted = 'e5db302e12a21d2597ecab0dc340fa2eae534381';
+const accepted = '5c1c350151d6ace33377b33526e2bfedf4ae8f6b';
 const acceptedFile = file => execFileSync('git',['show',`${accepted}:${file}`],{encoding:'utf8'});
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-test('DEV267a technical version and migration-neutral schema baseline equal DEV267 canonical',()=>{
+test('DEV271 technical version and deployment baseline equal accepted DEV270',()=>{
   const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
-  assert.equal(packageJson.version,'2.1.0-dev.270');
+  assert.equal(packageJson.version,'2.1.0-dev.271');
   const files=['columns.json','constraints.json','functions.json','indexes.json','sequences-views.json','manifest.json'];
   for(const file of files){
     const actual=fs.readFileSync('src/database-schema-baseline/'+file,'utf8').replaceAll('\r','');

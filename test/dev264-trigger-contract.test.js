@@ -10,13 +10,13 @@ const contract=JSON.parse(read('src/database-trigger-contract.json'));
 
 test('the cumulative release publishes the exact current migration trigger catalogue',()=>{
   assert.equal(contract.schema,'nysa.database-trigger-contract.v1');
-  assert.equal(contract.generatedFrom.migrationCount,170);
-  assert.equal(contract.generatedFrom.latestMigration,'170_prospect_diary.sql');
-  assert.equal(contract.triggerCount,111);
-  assert.equal(contract.tableCount,95);
-  assert.equal(contract.triggers.length,111);
-  assert.equal(new Set(contract.triggers.map(item=>`${item.table}\0${item.name}`)).size,111);
-  assert.equal(new Set(contract.triggers.map(item=>item.table)).size,95);
+  assert.equal(contract.generatedFrom.migrationCount,172);
+  assert.equal(contract.generatedFrom.latestMigration,'172_prospect_tracking.sql');
+  assert.equal(contract.triggerCount,113);
+  assert.equal(contract.tableCount,96);
+  assert.equal(contract.triggers.length,113);
+  assert.equal(new Set(contract.triggers.map(item=>`${item.table}\0${item.name}`)).size,113);
+  assert.equal(new Set(contract.triggers.map(item=>item.table)).size,96);
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(contract.triggers)).digest('hex'),contract.canonicalSha256);
   for(const item of contract.triggers){
     assert.match(item.table,/^[a-z0-9_]+$/);

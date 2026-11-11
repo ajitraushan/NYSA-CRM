@@ -102,7 +102,32 @@ export function prospectDashboardCte(scoped) {
     )`;
 }
 
-const summary = `
+const summary = `,
+agent_calls AS (
+  SELECT c.created_by AS agent_id,count(*) AS made,count(*) FILTER(WHERE c.connected) AS connected,
+    count(*) FILTER(WHERE cardinality(c.warning_codes)>0) AS overrides
+  FROM period_calls c GROUP BY c.created_by
+), agent_last_call AS (
+  SELECT created_by AS agent_id,max(occurred_at) AS at FROM calls GROUP BY created_by
+), agent_prospects AS (
+  SELECT f.owner_id AS agent_id,
+    count(*) FILTER(WHERE f.first_interested>=w.start_at AND f.first_interested<w.end_at) AS new_interested,
+    count(*) FILTER(WHERE f.status='converted' AND f.converted_at>=w.start_at AND f.converted_at<w.end_at) AS conversions,
+    sum(f.overdue) AS overdue,
+    count(*) FILTER(WHERE f.untouched AND f.created_at<w.at-interval '2 days') AS untouched_two_days,
+    count(*) FILTER(WHERE f.untouched AND f.created_at<w.at-interval '7 days') AS untouched_seven_days,
+    count(*) FILTER(WHERE f.untouched AND f.created_at<w.at-interval '14 days') AS untouched_fourteen_days
+  FROM facts f CROSS JOIN bounds w GROUP BY f.owner_id
+), agent_follow_up_overrides AS (
+  SELECT f.created_by AS agent_id,count(*) AS overrides FROM followups f CROSS JOIN bounds w
+  WHERE cardinality(f.policy_warning_codes)>0 AND f.created_at>=w.start_at AND f.created_at<w.end_at
+  GROUP BY f.created_by
+), agent_follow_ups AS (
+  SELECT f.assignee_id AS agent_id,count(*) AS due,
+    count(*) FILTER(WHERE f.status='completed' AND f.completed_at<=f.due_at+interval '1 hour') AS on_time
+  FROM followups f CROSS JOIN bounds w WHERE f.due_at>=w.start_at AND f.due_at<w.end_at
+  GROUP BY f.assignee_id
+)
 SELECT jsonb_build_object(
   'callsMade',(SELECT count(*) FROM period_calls),
   'callsConnected',(SELECT count(*) FROM period_calls WHERE connected),
@@ -113,21 +138,12 @@ SELECT jsonb_build_object(
 ) AS tiles,
 (SELECT coalesce(jsonb_agg(to_jsonb(row) ORDER BY row.name,row.id),'[]') FROM (
   SELECT b.id,b.name,t.name AS team,
-    (SELECT count(*) FROM period_calls c WHERE c.created_by=b.id) AS calls_made,
-    (SELECT count(*) FROM period_calls c WHERE c.created_by=b.id AND c.connected) AS calls_connected,
-    (SELECT count(*) FROM facts f,bounds w WHERE f.owner_id=b.id AND f.first_interested>=w.start_at AND f.first_interested<w.end_at) AS new_interested,
-    (SELECT count(*) FROM facts f,bounds w WHERE f.owner_id=b.id AND f.status='converted' AND f.converted_at>=w.start_at AND f.converted_at<w.end_at) AS conversions,
-    (SELECT coalesce(sum(f.overdue),0) FROM facts f WHERE f.owner_id=b.id) AS overdue,
-    (SELECT count(*) FROM facts f WHERE f.owner_id=b.id AND f.untouched AND f.created_at<now()-interval '2 days') AS untouched_two_days,
-    (SELECT count(*) FROM facts f WHERE f.owner_id=b.id AND f.untouched AND f.created_at<now()-interval '7 days') AS untouched_seven_days,
-    (SELECT count(*) FROM facts f WHERE f.owner_id=b.id AND f.untouched AND f.created_at<now()-interval '14 days') AS untouched_fourteen_days,
-    (SELECT max(c.occurred_at) FROM calls c WHERE c.created_by=b.id) AS last_call,
-    (SELECT count(*) FROM period_calls c WHERE c.created_by=b.id AND cardinality(c.warning_codes)>0) +
-    (SELECT count(*) FROM followups f,bounds w WHERE f.created_by=b.id AND cardinality(f.policy_warning_codes)>0
-      AND f.created_at>=w.start_at AND f.created_at<w.end_at) AS overrides,
-    (SELECT count(*) FROM followups f,bounds w WHERE f.assignee_id=b.id AND f.due_at>=w.start_at AND f.due_at<w.end_at) AS follow_ups_due,
-    (SELECT count(*) FROM followups f,bounds w WHERE f.assignee_id=b.id AND f.due_at>=w.start_at AND f.due_at<w.end_at
-      AND f.status='completed' AND f.completed_at<=f.due_at+interval '1 hour') AS follow_ups_on_time,
+    coalesce(c.made,0) AS calls_made,coalesce(c.connected,0) AS calls_connected,
+    coalesce(p.new_interested,0) AS new_interested,coalesce(p.conversions,0) AS conversions,coalesce(p.overdue,0) AS overdue,
+    coalesce(p.untouched_two_days,0) AS untouched_two_days,coalesce(p.untouched_seven_days,0) AS untouched_seven_days,
+    coalesce(p.untouched_fourteen_days,0) AS untouched_fourteen_days,l.at AS last_call,
+    coalesce(c.overrides,0)+coalesce(o.overrides,0) AS overrides,
+    coalesce(f.due,0) AS follow_ups_due,coalesce(f.on_time,0) AS follow_ups_on_time,
     (SELECT coalesce(sum(coalesce(override.daily_target,policy.daily_target)),0)
      FROM generate_series($1::date::timestamp,$2::date::timestamp,'1 day') day(at)
      CROSS JOIN LATERAL (
@@ -141,8 +157,12 @@ SELECT jsonb_build_object(
      ) override ON true
      WHERE extract(isodow FROM day.at)::smallint=ANY(policy.working_days)) AS target
   FROM brokers b LEFT JOIN teams t ON t.id=b.team_id
-  WHERE b.job_role='sales_agent' AND b.status='active' AND
-    (EXISTS (SELECT 1 FROM selected p WHERE p.owner_id=b.id) OR EXISTS (SELECT 1 FROM calls c WHERE c.created_by=b.id))
+  LEFT JOIN agent_calls c ON c.agent_id=b.id
+  LEFT JOIN agent_last_call l ON l.agent_id=b.id
+  LEFT JOIN agent_prospects p ON p.agent_id=b.id
+  LEFT JOIN agent_follow_up_overrides o ON o.agent_id=b.id
+  LEFT JOIN agent_follow_ups f ON f.agent_id=b.id
+  WHERE b.job_role='sales_agent' AND b.status='active' AND (p.agent_id IS NOT NULL OR l.agent_id IS NOT NULL)
 ) row) AS agents,
 (SELECT jsonb_build_object('created',count(*),'contacted',count(*) FILTER(WHERE contacted),
  'connected',count(*) FILTER(WHERE contacted AND connected),
@@ -182,12 +202,22 @@ const metrics = {
   callsConnected: 'EXISTS (SELECT 1 FROM period_calls c WHERE c.prospect_id=f.id AND c.connected)',
 };
 
-export function prospectDashboardDrilldown(scoped, metric) {
+export function prospectDashboardDrilldown(scoped, metric, { exportAll = false } = {}) {
   if (!Object.hasOwn(metrics, metric)) return null;
+  const limit=exportAll?50001:50;
+  if(metric==='callsMade'||metric==='callsConnected'){
+    const connected=metric==='callsConnected'?'AND c.connected':'';
+    return prospectDashboardCte(scoped) + `
+      SELECT f.id,f.display_name,f.owner_id,f.status,f.source,f.created_at,c.id AS activity_id,
+        c.occurred_at,c.outcome,count(*) OVER()::int AS total
+      FROM period_calls c JOIN facts f ON f.id=c.prospect_id
+      WHERE $3::text IN ('day','week') ${connected} ORDER BY c.occurred_at DESC,c.id LIMIT ${limit} OFFSET $9`;
+  }
+
   return prospectDashboardCte(scoped) + `
     SELECT f.id,f.display_name,f.owner_id,f.status,f.source,f.created_at,count(*) OVER()::int AS total
     FROM facts f CROSS JOIN bounds b WHERE (${metrics[metric]})
-    AND $3::text IN ('day','week') ORDER BY f.created_at DESC,f.id LIMIT 50 OFFSET $9`;
+    AND $3::text IN ('day','week') ORDER BY f.created_at DESC,f.id LIMIT ${limit} OFFSET $9`;
 }
 
 export function prospectCsvCell(value) {

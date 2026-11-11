@@ -131,6 +131,41 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
     await request('admin/email/test','admin',409,{});
     await request('digest/preference','agent',200,{optOut:true},'PATCH');
     assert.equal((await db.one('SELECT prospect_digest_opt_out FROM brokers WHERE id=$1',[ids.agent])).prospectDigestOptOut,true);
+    const {runProspectDigestTick}=await import('../src/prospect-digest-worker.js');
+    const envKeys=['PROSPECT_DIGEST_EMAIL_ENABLED','PROSPECT_DIGEST_ENVIRONMENT','PROSPECT_DIGEST_TEST_RECIPIENTS','PROSPECT_DIGEST_HOURLY_LIMIT','PROSPECT_DIGEST_SCHEDULE_ENABLED'];
+    const prior=Object.fromEntries(envKeys.map(key=>[key,process.env[key]]));
+    try{
+      const address=ids.admin+'@example.invalid';
+      Object.assign(process.env,{
+        PROSPECT_DIGEST_EMAIL_ENABLED:'true',PROSPECT_DIGEST_ENVIRONMENT:'crm-test',
+        PROSPECT_DIGEST_TEST_RECIPIENTS:address,PROSPECT_DIGEST_HOURLY_LIMIT:'10',
+        PROSPECT_DIGEST_SCHEDULE_ENABLED:'false',
+      });
+      const queued=await request('admin/email/test','admin',202,{});
+      await request('admin/email/test','admin',409,{});
+      let sends=0;
+      await runProspectDigestTick(new Date(),{send:async envelope=>{
+        sends++;
+        assert.equal(envelope.to,address);
+        assert.equal(envelope.text,'Synthetic Prospect Diary email delivery check.');
+        return {state:'retryable',code:'SMTP_CONNECT_FAILED'};
+      }});
+      const retry=await db.one('SELECT status,attempts,next_attempt_at FROM prospect_digest_runs WHERE id=$1',[queued.run.id]);
+      assert.equal(retry.status,'retry');
+      assert.equal(retry.attempts,1);
+      assert.ok(Date.parse(retry.nextAttemptAt)>Date.now()+29*60000);
+      await runProspectDigestTick(new Date(),{send:async()=>{assert.fail('retry ran early');}});
+      await db.execute("UPDATE prospect_digest_runs SET next_attempt_at=now()-interval '1 second' WHERE id=$1",[queued.run.id]);
+      await runProspectDigestTick(new Date(),{send:async()=>{sends++;return {state:'review',code:'SMTP_SUBMISSION_UNCERTAIN'};}});
+      const review=await db.one('SELECT status,attempts,next_attempt_at FROM prospect_digest_runs WHERE id=$1',[queued.run.id]);
+      assert.deepEqual([review.status,review.attempts,review.nextAttemptAt,sends],['review',2,null,2]);
+      await runProspectDigestTick(new Date(),{send:async()=>{assert.fail('ambiguous delivery retried');}});
+    }finally{
+      for(const key of envKeys){
+        if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];
+      }
+    }
+
 
 
   } finally {

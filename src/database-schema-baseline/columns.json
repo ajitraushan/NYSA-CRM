@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "columns",
-  "count": 4113,
-  "canonicalSha256": "91ec25b47a745c7cb86ee57d6ea27656b3b832c0355f6ddd4616c17eaea577d4",
+  "count": 4122,
+  "canonicalSha256": "9c11b36dd2aafde683313a324d9185bb7b43a991f449785f573c5ab03d699470",
   "entries": [
     {
       "table": "activities",
@@ -22867,6 +22867,62 @@
       "defaultExpression": ""
     },
     {
+      "table": "prospect_upload_batches",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "file_name",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "file_sha256",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "owner_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "skipped_rows",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_upload_batches",
+      "name": "status_counts",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
       "table": "prospects",
       "name": "brief_notes",
       "dataType": "text",
@@ -22968,7 +23024,7 @@
       "table": "prospects",
       "name": "normalized_phone",
       "dataType": "text",
-      "nullable": "NO",
+      "nullable": "YES",
       "defaultExpression": ""
     },
     {
@@ -22982,7 +23038,7 @@
       "table": "prospects",
       "name": "phone",
       "dataType": "text",
-      "nullable": "NO",
+      "nullable": "YES",
       "defaultExpression": ""
     },
     {
@@ -23061,6 +23117,13 @@
       "dataType": "timestamp with time zone",
       "nullable": "NO",
       "defaultExpression": "now()"
+    },
+    {
+      "table": "prospects",
+      "name": "upload_batch_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
     },
     {
       "table": "provisional_external_properties",

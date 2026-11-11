@@ -75,15 +75,15 @@ test('DEV266 release source uses typed UUIDs and all reply sends use the shared 
   assert.match(simulator,/Conversation not found or outside your inbox scope/);
 });
 
-test('DEV267a retains the accepted DEV267 schema as the deployment baseline',()=>{
+test('DEV271 retains the accepted DEV270 schema as the deployment baseline',()=>{
   const migrations=fs.readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
-  assert.equal(migrations.length,171);
-  assert.equal(migrations.at(-2),'170_prospect_diary.sql');
-  assert.equal(migrations.at(-1),'171_prospect_upload.sql');
+  assert.equal(migrations.length,172);
+  assert.equal(migrations.at(-3),'170_prospect_diary.sql');
+  assert.equal(migrations.at(-2),'171_prospect_upload.sql');
   const baseline=JSON.parse(read('src/database-schema-baseline/manifest.json'));
   const current=JSON.parse(read('src/database-schema-contract/manifest.json'));
-  assert.equal(baseline.contracts.constraints.count,2748);
-  assert.equal(current.generatedFrom.migrationCount,171);
-  assert.equal(current.contracts.constraints.count,2754);
-  assert.deepEqual(baseline,JSON.parse(acceptedFile('src/database-schema-contract/manifest.json')));
+  assert.equal(baseline.contracts.constraints.count,2754);
+  assert.equal(current.generatedFrom.migrationCount,172);
+  assert.equal(current.contracts.constraints.count,2788);
+  assert.deepEqual(baseline,JSON.parse(execFileSync('git',['show','5c1c350151d6ace33377b33526e2bfedf4ae8f6b:src/database-schema-contract/manifest.json'],{encoding:'utf8'})));
 });
