@@ -15,6 +15,8 @@ import {validateProductionRegistration,verifyProductionCatalog} from './producti
 
 const ROOT='/home/nysareal/nysa-crm', DOMAIN='crm.nysarealty.com';
 const DATABASE='nysareal_nysacrm', ROLE='nysareal_nysacrmapp';
+const NODEVENV='/home/nysareal/nodevenv/nysa-crm/24';
+const SELECTOR_MODULES=path.join(NODEVENV,'lib','node_modules');
 const RC1='b6e013c51f46be482858e733160fa7e675ff3106';
 const WORK='/home/nysareal/crm-release-preparation';
 const digest=data=>createHash('sha256').update(data).digest('hex');
@@ -98,41 +100,63 @@ async function requireHash(file,expected){
   assert.ok(isHash(expected),'Invalid expected SHA-256');
   assert.equal(await fileHash(file),expected,'Hash mismatch: '+path.basename(file));
 }
-async function dependencyTreeHash(root){
+export async function dependencyTreeHash(root,{preserveExternalLinks=false}={}){
   const rows=[];
   async function walk(directory){
     const names=fs.readdirSync(directory).sort();
     for(const name of names){
       const file=path.join(directory,name),relative=path.relative(root,file);
       const stat=fs.lstatSync(file);
-      if(stat.isDirectory())await walk(file);
-      else if(stat.isFile())rows.push([relative,'file',await fileHash(file)]);
+      if(stat.isDirectory()){rows.push([relative,'directory',stat.mode&0o7777]);await walk(file);}
+      else if(stat.isFile())rows.push([relative,'file',stat.mode&0o7777,await fileHash(file)]);
       else if(stat.isSymbolicLink()){
-        assert.ok(fs.realpathSync(file).startsWith(root+'/'),'Dependency symlink escapes its staged directory');
+        if(!preserveExternalLinks)assert.ok(fs.realpathSync(file).startsWith(root+path.sep),'Dependency symlink escapes its staged directory');
         rows.push([relative,'symlink',fs.readlinkSync(file)]);
       }else throw Error('Unexpected dependency file type');
     }
   }
   await walk(root);
   assert.ok(rows.length>0,'Empty dependency tree');
-  return digest(JSON.stringify(rows));
+  return digest(JSON.stringify([fs.statSync(root).mode&0o7777,rows]));
 }
 function dependencyLink(){
   const file=path.join(ROOT,'node_modules');
   assert.ok(fs.lstatSync(file).isSymbolicLink(),'Production dependency path must be a symlink');
-  return {target:fs.readlinkSync(file),resolved:fs.realpathSync(file)};
+  const resolved=fs.realpathSync(file);
+  assert.equal(resolved,SELECTOR_MODULES,'Production dependency link must resolve to the registered nodevenv');
+  return {target:fs.readlinkSync(file),resolved};
 }
-function replaceDependencyLink(target,workspace){
-  const link=path.join(ROOT,'node_modules');
-  const temporary=path.join(ROOT,'.node_modules-'+path.basename(workspace));
-  assert.ok(fs.lstatSync(link).isSymbolicLink(),'Dependency link identity changed');
-  fs.symlinkSync(target,temporary,'dir');
-  try{fs.renameSync(temporary,link);}catch(error){fs.unlinkSync(temporary);throw error;}
+const copyTree=(from,to)=>run('cp',['-a','--',from,to],{timeout:600000});
+export function prepareSelectorModulesSwap(live,staged,suffix,{copy=copyTree}={}){
+  assert.match(suffix,/^[a-z0-9-]+$/);
+  assert.equal(fs.realpathSync(live),live);
+  const parent=path.dirname(live);
+  const next=path.join(parent,'.nysa-modules-next-'+suffix);
+  const prior=path.join(parent,'.nysa-modules-rc1-'+suffix);
+  const failed=path.join(parent,'.nysa-modules-failed-'+suffix);
+  for(const file of [next,prior,failed])assert.throws(()=>fs.lstatSync(file),{code:'ENOENT'});
+  copy(staged,next);
+  let parked=false,activated=false;
+  return {
+    next,prior,
+    activate(){
+      fs.renameSync(live,prior);
+      parked=true;
+      fs.renameSync(next,live);
+      activated=true;
+    },
+    restore(){
+      if(activated){fs.renameSync(live,failed);activated=false;}
+      if(parked){fs.renameSync(prior,live);parked=false;}
+    }
+  };
 }
 async function stageDependencies(config,stageDir){
   assert.equal(fs.realpathSync(process.execPath),config.nodeExecutable);
+  assert.equal(fs.realpathSync(path.join(NODEVENV,'bin','node')),config.nodeExecutable);
+  await requireHash(config.nodeExecutable,config.nodeExecutableSha256);
   assert.ok(process.versions.node.startsWith('24.'),'Production release requires registered Node.js 24');
-  assert.equal(fs.realpathSync(config.npmCli),config.npmCli);
+  assert.equal(fs.realpathSync(path.join(NODEVENV,'bin','npm')),config.npmCli);
   await requireHash(config.npmCli,config.npmCliSha256);
   const cleanEnv={PATH:path.dirname(process.execPath)+':/usr/bin:/bin',HOME:config.workspace,
     npm_config_registry:'https://registry.npmjs.org/',npm_config_cache:path.join(config.workspace,'npm-cache')};
@@ -291,6 +315,15 @@ async function main(args){
       assert.ok(report.workers.length<=1);
       const entries=await stage(config,stageDir);
       report.previousDependencies=dependencyLink();
+      assert.equal(fs.realpathSync(NODEVENV),NODEVENV);
+      const rc1Nodevenv=evidence('rc1-nodevenv');
+      assert.throws(()=>fs.lstatSync(rc1Nodevenv),{code:'ENOENT'});
+      const before=await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true});
+      copyTree(NODEVENV,rc1Nodevenv);
+      assert.equal(await dependencyTreeHash(rc1Nodevenv,{preserveExternalLinks:true}),before,'RC1 nodevenv backup differs');
+      assert.equal(await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true}),before,'RC1 nodevenv changed while copied');
+      report.rc1Nodevenv={copy:rc1Nodevenv,sha256:before,
+        modulesSha256:await dependencyTreeHash(SELECTOR_MODULES,{preserveExternalLinks:true})};
       report.stagedDependencies=await stageDependencies(config,stageDir);
       report.stagedDependencySha256=await dependencyTreeHash(report.stagedDependencies);
       await verifyRuntime(stageDir,entries);
@@ -317,6 +350,10 @@ async function main(args){
       assert.equal(backup.stagedDependencies,path.join(stageDir,'node_modules'));
       assert.equal(fs.realpathSync(backup.stagedDependencies),backup.stagedDependencies);
       assert.equal(await dependencyTreeHash(backup.stagedDependencies),backup.stagedDependencySha256);
+      assert.equal(backup.rc1Nodevenv.copy,evidence('rc1-nodevenv'));
+      assert.equal(await dependencyTreeHash(backup.rc1Nodevenv.copy,{preserveExternalLinks:true}),backup.rc1Nodevenv.sha256);
+      assert.equal(await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true}),backup.rc1Nodevenv.sha256,
+        'RC1 nodevenv changed after backup');
       await catalog(config);
       diskGuard(config.workspace);
       const runtime=path.join(stageDir,'RUNTIME_MANIFEST.sha256');
@@ -350,10 +387,14 @@ async function main(args){
         fs.accessSync(parent,fs.constants.W_OK);
         if(fs.existsSync(file))fs.accessSync(file,fs.constants.W_OK);
       }
+      diskGuard(NODEVENV);
+      const modulesSwap=prepareSelectorModulesSwap(SELECTOR_MODULES,backup.stagedDependencies,path.basename(config.workspace));
+      assert.equal(await dependencyTreeHash(modulesSwap.next),backup.stagedDependencySha256);
+      report.priorNodevenvModules=modulesSwap.prior;
       report.priorSourceDirectory=sourceSwap.previous;
       report.workersBefore=inspectWorkers(ROOT);
       assert.ok(report.workersBefore.length<=1);
-      let ready=false,dependencyChanged=false,startAttempted=false;
+      let ready=false,startAttempted=false;
       const changed=[];
       try{
         await stop();
@@ -367,14 +408,18 @@ async function main(args){
         }
         await verifyRuntime(ROOT,entries);
         environment();
-        replaceDependencyLink(backup.stagedDependencies,config.workspace);
-        dependencyChanged=true;
+        modulesSwap.activate();
+        assert.deepEqual(dependencyLink(),backup.previousDependencies);
+        assert.equal(await dependencyTreeHash(SELECTOR_MODULES),backup.stagedDependencySha256);
         startAttempted=true;
         selector('start');
         for(let attempt=0;attempt<15;attempt++){
           try{report.readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:config.version});ready=true;break;}
           catch(error){if(attempt===14)throw error;await sleep(2000);}
         }
+        report.selectorDependencies=dependencyLink();
+        assert.deepEqual(report.selectorDependencies,backup.previousDependencies);
+        assert.equal(await dependencyTreeHash(SELECTOR_MODULES),backup.stagedDependencySha256);
         report.catalog=await catalog(config,stageDir);
       }catch(error){
         if(!ready){
@@ -383,7 +428,9 @@ async function main(args){
           const restore=changed.filter(name=>prior.has(name));
           for(const name of restore)fs.copyFileSync(filePath(recovery,name),filePath(ROOT,name));
           for(const name of changed.filter(name=>!prior.has(name)))fs.rmSync(filePath(ROOT,name),{force:true});
-          if(dependencyChanged)replaceDependencyLink(backup.previousDependencies.target,config.workspace);
+          modulesSwap.restore();
+          assert.equal(await dependencyTreeHash(SELECTOR_MODULES,{preserveExternalLinks:true}),backup.rc1Nodevenv.modulesSha256);
+          assert.equal(await dependencyTreeHash(backup.rc1Nodevenv.copy,{preserveExternalLinks:true}),backup.rc1Nodevenv.sha256);
           assert.deepEqual(dependencyLink(),backup.previousDependencies);
           await verifyRuntime(ROOT,baseline);
           await verifyRuntime(ROOT,new Map(restore.map(name=>[name,prior.get(name)])));
@@ -430,6 +477,10 @@ async function main(args){
       }
       assert.equal(pending.size,0,'Settled HTTP probes failed');
       report.readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:config.version});
+      const backup=read(receiptPath('backup'));
+      report.selectorDependencies=dependencyLink();
+      assert.deepEqual(report.selectorDependencies,backup.previousDependencies);
+      assert.equal(await dependencyTreeHash(SELECTOR_MODULES),backup.stagedDependencySha256);
     }
     report.result='PASSED';
   }catch(error){
