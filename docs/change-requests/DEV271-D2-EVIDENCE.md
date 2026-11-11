@@ -58,16 +58,17 @@ every Production ACL.
 
 ## Real first-call deadline counts
 
-| Environment and phase | Basis | Past due / total prospects |
+| Environment and phase | Basis | Past due / total prospects and past due / not contacted |
 | --- | --- | --- |
 | CRM Test rehearsal on approved CRM Test data | Stored deadlines immediately after migration 172 | Pending written go and receipt |
 | Production read-only preflight on DEV270 | Projected deadlines using the migration 172 expression | Pending written go and receipt |
 
 Use the aggregate-only query in tools/dev271-first-call-backfill-evidence.sql.
-Capture the database, role, UTC measurement time, basis, total prospects,
+Capture the database, role, measurement timestamp with offset, basis, total prospects,
 prospects with deadlines, and count strictly earlier than the measurement
-time. This counts every backfilled prospect, regardless of whether the
-prospect is still eligible for the Today queue. The Production projection
+time. Report the count for all prospects and separately for the prospects
+still marked not_contacted. The latter is the day-one status-based count;
+Today queue eligibility also applies its normal suppression and contact rules. The Production projection
 reads no individual prospect fields into the receipt. The synthetic fixture
 count is separate. Both hosted reads require the exact phase approval.
 

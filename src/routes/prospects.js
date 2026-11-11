@@ -114,6 +114,64 @@ r.post('/crm/prospects',async(req,res)=>{
   });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
 });
 
+r.get('/crm/prospect-diary/today',async(req,res)=>{
+  const agent=req.query?.agent||req.broker.id;
+  if(typeof agent!=='string'||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(agent)||
+     (agent!==req.broker.id&&(!canManage(req.broker)||!await ownerContext(agent,req.broker)))) {
+    return res.status(404).json({error:'Agent not found'});
+  }
+  const scoped=scope('p',req.broker,[agent]);
+  const rows=await many(`
+    WITH clock AS (
+      SELECT now() AS at, date_trunc('day',now() AT TIME ZONE 'Asia/Dubai') AS day
+    ), candidates AS (
+      SELECT p.id,p.display_name,p.phone,p.source,p.purpose,p.budget_band,p.property_type,p.market,p.timeline,
+        p.first_call_due_at,p.next_retry_at,p.retry_attempts,p.created_at,
+        f.id AS follow_up_id,f.due_at,f.prospect_channel,
+        latest.outcome AS last_outcome,latest.occurred_at AS last_occurred_at,
+        left(latest_note.notes,120) AS last_note,
+        CASE
+          WHEN f.due_at < clock.at THEN 1
+          WHEN f.due_at < (clock.day+interval '1 day') AT TIME ZONE 'Asia/Dubai' AND latest.outcome='callback_requested' THEN 3
+          WHEN f.due_at < (clock.day+interval '1 day') AT TIME ZONE 'Asia/Dubai' THEN 2
+          WHEN p.next_retry_at < (clock.day+interval '1 day') AT TIME ZONE 'Asia/Dubai' THEN 4
+          WHEN p.status='not_contacted' AND NOT EXISTS (
+            SELECT 1 FROM prospect_activities a WHERE a.prospect_id=p.id AND a.activity_type='call' AND a.direction='outbound'
+          ) THEN 5
+        END AS priority
+      FROM prospects p CROSS JOIN clock
+      LEFT JOIN LATERAL (
+        SELECT t.id,t.due_at,t.prospect_channel FROM tasks t
+        WHERE t.prospect_id=p.id AND t.task_type='prospect_follow_up' AND t.status IN('open','in_progress')
+          AND (t.snoozed_until IS NULL OR t.snoozed_until<=clock.at)
+          AND (p.normalized_phone IS NOT NULL OR t.prospect_channel='email')
+        ORDER BY t.due_at,t.id LIMIT 1
+      ) f ON true
+      LEFT JOIN LATERAL (
+        SELECT a.outcome,a.occurred_at FROM prospect_activities a
+        WHERE a.prospect_id=p.id AND a.activity_type='call'
+        ORDER BY a.occurred_at DESC,a.id DESC LIMIT 1
+      ) latest ON true
+      LEFT JOIN LATERAL (
+        SELECT a.notes FROM prospect_activities a WHERE a.prospect_id=p.id
+        ORDER BY a.occurred_at DESC,a.id DESC LIMIT 1
+      ) latest_note ON true
+      WHERE p.owner_id=$1 AND ${scoped.clause}
+        AND p.status NOT IN('do_not_contact','converted','not_interested') AND p.parked_at IS NULL
+        AND (p.normalized_phone IS NOT NULL OR f.prospect_channel='email')
+        AND NOT EXISTS (
+          SELECT 1 FROM wa_contact_suppressions s WHERE s.normalized_phone=p.normalized_phone AND
+          (s.restrictions @> '{"opt_out":{"active":true}}' OR s.restrictions @> '{"do_not_contact":{"active":true}}'
+           OR s.restrictions @> '{"dncr":{"active":true}}' OR s.restrictions @> '{"wrong_number":{"active":true}}')
+        )
+    )
+    SELECT *,count(*) OVER()::int AS queue_total
+    FROM candidates WHERE priority IS NOT NULL
+    ORDER BY priority,CASE WHEN priority<=3 THEN due_at WHEN priority=4 THEN last_occurred_at ELSE created_at END,id
+    LIMIT 500`,scoped.params);
+  return res.json({items:rows,queueTotal:rows[0]?.queueTotal??0,readOnly:agent!==req.broker.id});
+});
+
 r.get('/crm/prospect-diary/overrides',async(req,res)=>{
   if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});
   const params=[],activityScope=scope('p',req.broker,params),taskScope=scope('p',req.broker,params);

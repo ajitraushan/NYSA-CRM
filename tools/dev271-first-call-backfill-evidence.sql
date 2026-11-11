@@ -23,12 +23,15 @@ SELECT count(*) = 172 AS has_backfill FROM public.schema_migrations \gset
   SELECT current_database() AS database, current_user AS role, transaction_timestamp() AS measured_at,
     'stored_after_migration_172' AS basis, count(*) AS prospects_total,
     count(first_call_due_at) AS prospects_with_deadline,
-    count(*) FILTER (WHERE first_call_due_at < transaction_timestamp()) AS first_call_due_in_past
+    count(*) FILTER (WHERE first_call_due_at < transaction_timestamp()) AS first_call_due_in_past,
+    count(*) FILTER (WHERE status = 'not_contacted') AS not_contacted_total,
+    count(*) FILTER (WHERE status = 'not_contacted'
+      AND first_call_due_at < transaction_timestamp()) AS not_contacted_first_call_due_in_past
   FROM public.prospects;
 \else
   -- Same Dubai working-day expression as migration 172, evaluated without writes.
   WITH projected AS (
-    SELECT ((created_at AT TIME ZONE 'Asia/Dubai') +
+    SELECT status, ((created_at AT TIME ZONE 'Asia/Dubai') +
       CASE WHEN extract(isodow FROM created_at AT TIME ZONE 'Asia/Dubai') = 6
         THEN interval '2 days' ELSE interval '1 day' END)
       AT TIME ZONE 'Asia/Dubai' AS first_call_due_at
@@ -37,7 +40,10 @@ SELECT count(*) = 172 AS has_backfill FROM public.schema_migrations \gset
   SELECT current_database() AS database, current_user AS role, transaction_timestamp() AS measured_at,
     'projected_before_migration_172' AS basis, count(*) AS prospects_total,
     count(first_call_due_at) AS prospects_with_deadline,
-    count(*) FILTER (WHERE first_call_due_at < transaction_timestamp()) AS first_call_due_in_past
+    count(*) FILTER (WHERE first_call_due_at < transaction_timestamp()) AS first_call_due_in_past,
+    count(*) FILTER (WHERE status = 'not_contacted') AS not_contacted_total,
+    count(*) FILTER (WHERE status = 'not_contacted'
+      AND first_call_due_at < transaction_timestamp()) AS not_contacted_first_call_due_in_past
   FROM projected;
 \endif
 ROLLBACK;
