@@ -1,0 +1,8 @@
+{
+  "schema": "nysa.wn15.approval1-hash-comparison.v1",
+  "result": "passed",
+  "hostedFileCount": 11,
+  "exportFileCount": 4,
+  "hostedAndLocalMatch": true,
+  "exportDownloadsMatch": true
+}

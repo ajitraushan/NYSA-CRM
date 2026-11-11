@@ -1,0 +1,22 @@
+BEGIN
+SET
+database_name|database_user|transaction_read_only|server_version|checked_at
+nysareal_nysa_dev247_smoke|nysareal_nysar2app|on|13.23|2026-11-11 09:51:00.266503+00
+(1 row)
+team_id|team_name|active|manager_id|manager_name|manager_role|manager_email_domain|manager_has_phone|manager_non_delivery_email|agent_id|agent_name|agent_role|agent_email_domain|agent_has_phone|agent_non_delivery_email
+d2000000-0000-4000-8000-000000000002|CORE Test Leasing Team|0|d1000000-0000-4000-8000-000000000005|CORE Test Leasing Manager|manager|example.invalid|f|t|d1000000-0000-4000-8000-000000000006|CORE Test Agent B1|listing_agent|example.invalid|f|t
+d2000000-0000-4000-8000-000000000001|CORE Test Sales Team|0|d1000000-0000-4000-8000-000000000002|CORE Test Sales Manager|manager|example.invalid|f|t|d1000000-0000-4000-8000-000000000003|CORE Test Agent A1|sales_agent|example.invalid|f|t
+d2000000-0000-4000-8000-000000000001|CORE Test Sales Team|0|d1000000-0000-4000-8000-000000000002|CORE Test Sales Manager|manager|example.invalid|f|t|d1000000-0000-4000-8000-000000000004|CORE Test Agent A2|sales_agent|example.invalid|f|t
+72ed4a72-6546-428b-9371-c007071fe6a2|UAT158 Dubai Off-plan|0|93e88b84-d8c4-4bc4-9525-92791f33dac0|UAT158 Manager Alpha|manager|example.invalid|t|t|1231bfd3-9e6c-4dc8-ab8d-c5d78ca307fc|UAT158 Listing Executive|listing_agent|example.invalid|t|t
+358f45ef-9bc8-4b57-991a-b38662ecf885|UAT158 Dubai Rentals|0|293eb74d-a6d8-41f1-897d-7b00a112f973|UAT158 Manager Beta|manager|example.invalid|t|t|44007102-2153-4c5e-81d8-658c408212a4|UAT158 Agent Beta One|sales_agent|example.invalid|t|t
+7c11d70a-79dd-4ca7-9096-8b3c938eb531|UAT158 Dubai Secondary Sales|0|93e88b84-d8c4-4bc4-9525-92791f33dac0|UAT158 Manager Alpha|manager|example.invalid|t|t|33b2ce28-1ef4-48a3-910a-9975a3498f45|UAT158 Agent Alpha One|sales_agent|example.invalid|t|t
+7c11d70a-79dd-4ca7-9096-8b3c938eb531|UAT158 Dubai Secondary Sales|0|93e88b84-d8c4-4bc4-9525-92791f33dac0|UAT158 Manager Alpha|manager|example.invalid|t|t|a0f1da3c-b823-4b81-a7a7-719965b1c675|UAT158 Agent Alpha Two|sales_agent|example.invalid|t|t
+37836726-5847-4f9f-8ee6-677fb806c255|UAT158 Temporary Governance Team|0|93e88b84-d8c4-4bc4-9525-92791f33dac0|UAT158 Manager Alpha|manager|example.invalid|t|t||||||
+(8 rows)
+job_role|candidate_count|safe_non_delivery_count
+director|2|1
+listing_agent|2|1
+manager|4|2
+sales_agent|5|2
+(4 rows)
+ROLLBACK

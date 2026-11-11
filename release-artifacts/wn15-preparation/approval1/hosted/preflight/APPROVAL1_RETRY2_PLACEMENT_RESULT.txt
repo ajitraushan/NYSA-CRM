@@ -1,0 +1,10 @@
+PLACEMENT_RETRY2_STARTED=2026-11-11T15:40:47Z
+/home/nysareal/crm-release-preparation/20261111-wn15/tools/.whatsapp-simulation-load.mjs.retry2.tmp: OK
+/home/nysareal/crm-release-preparation/20261111-wn15/tools/.whatsapp-simulation-cleanup.mjs.retry2.tmp: OK
+/home/nysareal/crm-release-preparation/20261111-wn15/tools/.wn15-team-state-readonly.sql.retry2.tmp: OK
+/home/nysareal/crm-release-preparation/20261111-wn15/tools/.wn15-load-and-cleanup-tools.test.js.retry2.tmp: OK
+PLACEMENT_RETRY2_COMPLETED=2026-11-11T15:40:48Z
+8c3fce6520a61b75bfdc0dfdeac1796dd05fa550cdd176324883063a166dd8d6  /home/nysareal/crm-release-preparation/20261111-wn15/tools/whatsapp-simulation-load.mjs
+a61e544a22d1d43a8757cd788815b5f1b9ec2dd42ae137922be629237d29b72c  /home/nysareal/crm-release-preparation/20261111-wn15/tools/whatsapp-simulation-cleanup.mjs
+a8f1f8dcf38a353590c257810449ff50e49e7bff73baf3c0e8d785ac871fe09b  /home/nysareal/crm-release-preparation/20261111-wn15/tools/wn15-team-state-readonly.sql
+9827e7adbe3be90077818b82689d6eaaea23eeeb41ad578000b8106f67b7871f  /home/nysareal/crm-release-preparation/20261111-wn15/tools/wn15-load-and-cleanup-tools.test.js

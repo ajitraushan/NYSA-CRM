@@ -1,0 +1,24 @@
+BEGIN
+SET
+database_name|database_user|transaction_read_only|server_version|checked_at
+nysareal_nysa_dev247_smoke|nysareal_nysar2app|on|13.23|2026-11-11 09:51:00.257461+00
+(1 row)
+source|matches|total_matches
+brokers.phone|0|0
+companies.phone|0|0
+company_calling_numbers.normalized_phone|0|0
+company_calling_numbers.phone|0|0
+contact_channels.normalized_value|0|0
+contacts.phone|0|0
+inventory_counterparties.phone|0|0
+opportunity_property_shares.recipient_phone|0|0
+organization_settings.primary_phone|0|0
+prospects.normalized_phone|0|0
+prospects.phone|0|0
+transaction_counterparties.phone|0|0
+wa_campaign_approval_recipients.normalized_phone|0|0
+wa_campaign_recipients.normalized_phone|0|0
+wa_contact_suppressions.normalized_phone|0|0
+wa_conversations.normalized_phone|0|0
+(16 rows)
+ROLLBACK

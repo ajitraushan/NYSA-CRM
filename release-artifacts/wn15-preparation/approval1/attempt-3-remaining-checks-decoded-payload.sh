@@ -1,0 +1,84 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const ROOT='/home/nysareal/nysa-core-dashboard-dd6262a-stage';
+const PRE='/home/nysareal/crm-release-preparation/20261111-wn15/preflight';
+const TOOLROOT='/home/nysareal/crm-release-preparation/20261111-wn15/tools';
+const REC='/home/nysareal/crm-release-preparation/20261111-wn15/recovery/run-a-pre-5703868';
+const RESULT=path.join(PRE,'APPROVAL1_RETRY2_CHECKS_RESULT.json');
+const TEAMOUT=path.join(PRE,'APPROVAL1_RETRY2_TEAM_STATE.txt');
+const LVEOUT=path.join(PRE,'APPROVAL1_RETRY2_LVEINFO.txt');
+const DUMP=path.join(REC,'nysareal_nysa_dev247_smoke.dump');
+const LIST=path.join(REC,'PG_RESTORE_LIST.txt');
+const RECEIPT=path.join(REC,'WN15_RUN_A_RECOVERY_RECEIPT.json');
+const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+function run(file,args,options={}){const result=spawnSync(file,args,{encoding:'utf8',timeout:options.timeout||120000,maxBuffer:options.maxBuffer||64*1024*1024,env:options.env||process.env});if(result.error)throw result.error;if(result.status!==0)throw Error((options.label||file)+' failed (exit '+result.status+'): '+String(result.stderr||result.stdout||'').trim().slice(0,500));return result.stdout;}
+function absent(f){if(fs.existsSync(f))throw Error('Approved output path must be absent: '+f);}
+function writeJson(f,v){fs.writeFileSync(f,JSON.stringify(v,null,2)+'\n',{mode:0o600});}
+function collectStrings(v,out=[]){if(typeof v==='string')out.push(v);else if(Array.isArray(v))for(const x of v)collectStrings(x,out);else if(v&&typeof v==='object')for(const x of Object.values(v))collectStrings(x,out);return out;}
+function collectKeys(v,out=new Set()){if(Array.isArray(v))for(const x of v)collectKeys(x,out);else if(v&&typeof v==='object')for(const [k,x] of Object.entries(v)){out.add(k);collectKeys(x,out);}return [...out].sort();}
+for(const f of [RESULT,TEAMOUT,LVEOUT,REC])absent(f);
+const teamSql=path.join(TOOLROOT,'wn15-team-state-readonly.sql');
+if(sha(teamSql)!=='a8f1f8dcf38a353590c257810449ff50e49e7bff73baf3c0e8d785ac871fe09b')throw Error('Team-state SQL hash mismatch');
+const selectorRaw=run('cloudlinux-selector',['get','--json','--interpreter','nodejs','--domain','crm-test.nysarealty.com'],{label:'selector registration'});
+const selector=JSON.parse(selectorRaw),found=[];
+function walk(v){if(!v||typeof v!=='object')return;for(const [k,x] of Object.entries(v)){if(k===ROOT||k===path.basename(ROOT))found.push(x);else if(k!=='env_vars')walk(x);}}
+walk(selector);
+if(found.length!==1||found[0].domain!=='crm-test.nysarealty.com')throw Error('CRM Test registration identity mismatch');
+const reg=found[0],dbEnv=Object.assign({},process.env,reg.env_vars||{});
+if(dbEnv.PGDATABASE!=='nysareal_nysa_dev247_smoke'||!dbEnv.PGUSER||!dbEnv.PGPASSWORD)throw Error('CRM Test database registration mismatch');
+const packageJson=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
+const provenance=JSON.parse(fs.readFileSync(path.join(ROOT,'RELEASE_PROVENANCE.json'),'utf8'));
+if(packageJson.version!=='2.1.0-dev.269'||provenance.commit!=='e5db302e12a21d2597ecab0dc340fa2eae534381')throw Error('Installed DEV269 provenance mismatch');
+const workerHelper='/home/nysareal/crm-deployment-tools/tools/hosted-worker-lifecycle.mjs';
+if(sha(workerHelper)!=='6bbb2833fbafcaf4f78d7a0f1269b4c0062c022c4292d594bcd40a7f61dae785')throw Error('Hosted worker helper hash mismatch');
+const {verifyReadinessWorker}=await import(pathToFileURL(workerHelper).href+'?wn15='+Date.now());
+const readiness=await verifyReadinessWorker({root:ROOT,expectedVersion:'2.1.0-dev.269'});
+const require=createRequire(path.join(ROOT,'package.json'));
+const {Pool}=require('pg');
+const pool=new Pool({host:dbEnv.PGHOST||'localhost',port:Number(dbEnv.PGPORT||5432),database:dbEnv.PGDATABASE,user:dbEnv.PGUSER,password:dbEnv.PGPASSWORD,max:1});
+let db;
+try{const identity=(await pool.query("SELECT current_database() AS db,current_user AS role,current_setting('server_version') AS server_version,(SELECT COUNT(*)::int FROM schema_migrations) AS migrations")).rows[0];const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")).rows.map(r=>r.tablename);const triggers=(await pool.query("SELECT COUNT(*)::int AS count,COUNT(DISTINCT t.tgrelid)::int AS table_count FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND t.tgenabled<>'D' AND n.nspname='public'")).rows[0];if(identity.db!=='nysareal_nysa_dev247_smoke'||identity.server_version!=='13.23'||identity.migrations!==170||tables.length!==306||triggers.count!==111||triggers.table_count!==95)throw Error('CRM Test database baseline mismatch');db={identity,tableCount:tables.length,tableNames:tables,triggerCount:triggers.count,triggerTableCount:triggers.table_count};}finally{await pool.end();}
+const teamEnv=Object.assign({},dbEnv,{PGOPTIONS:'-c default_transaction_read_only=on'});
+const teamText=run('psql',['-X','-v','ON_ERROR_STOP=1','-A','-F','|','-P','footer=off','-f',teamSql],{env:teamEnv,label:'team-state read-only check'});
+fs.writeFileSync(TEAMOUT,teamText,{mode:0o600});
+const lines=teamText.split(/\r?\n/),teamRows=lines.filter(x=>x.startsWith('d2000000-')),brokerRows=lines.filter(x=>x.startsWith('d1000000-'));
+if(teamRows.length!==2||brokerRows.length!==4)throw Error('Synthetic team/account inventory row count mismatch');
+const teams=teamRows.map(x=>x.split('|')),brokers=brokerRows.map(x=>x.split('|'));
+if(teams.some(x=>x[2]!=='f'))throw Error('CORE Test teams are not both inactive');
+if(brokers.some(x=>String(x[2]).toLowerCase()!=='active'||x[5]!=='t'||x[6]!=='f'))throw Error('Synthetic account safety attributes mismatch');
+const domainsJson=JSON.parse(run('uapi',['--output=json','DomainInfo','list_domains'],{label:'cPanel domain inventory'}));
+const domainStrings=[...new Set(collectStrings(domainsJson).filter(x=>/nysarealty\.com/i.test(x)))].sort();
+if(!domainStrings.some(x=>String(x).toLowerCase()==='nysarealty.com'))throw Error('www.nysarealty.com mapping to nysareal account was not proven');
+const websiteStart=Date.now(),websiteResponse=await fetch('https://www.nysarealty.com/',{redirect:'follow',signal:AbortSignal.timeout(15000)}),websiteMs=Date.now()-websiteStart;
+if(websiteResponse.status<200||websiteResponse.status>=500)throw Error('Website health check failed');
+await websiteResponse.body?.cancel();
+const lveText=run('bash',['-lc',"date -u +%Y-%m-%dT%H:%M:%SZ; /usr/sbin/lveinfo --user=nysareal --period=1m --style=user --show-all --json"],{label:'CloudLinux account sample'});
+fs.writeFileSync(LVEOUT,lveText,{mode:0o600});
+const jsonAt=Math.min(...[lveText.indexOf('{'),lveText.indexOf('[')].filter(x=>x>=0));
+if(!Number.isFinite(jsonAt))throw Error('CloudLinux sample did not contain JSON');
+const lve=JSON.parse(lveText.slice(jsonAt)),lveKeys=collectKeys(lve);
+if(!lveKeys.some(k=>/cpu/i.test(k))||!lveKeys.some(k=>/(mem|pmem|vmem)/i.test(k))||!lveKeys.some(k=>/(fault|fail|fmem|fcpu|fep|fnproc|fio|fiops)/i.test(k)))throw Error('CloudLinux sample lacks required CPU, memory or fault fields');
+fs.mkdirSync(REC,{recursive:true,mode:0o700});
+const pgDumpVersion=run('pg_dump',['--version'],{env:dbEnv,label:'pg_dump version'}).trim();
+const pgRestoreVersion=run('pg_restore',['--version'],{env:dbEnv,label:'pg_restore version'}).trim();
+if(!/13\.23\b/.test(pgDumpVersion)||!/13\.23\b/.test(pgRestoreVersion))throw Error('PostgreSQL client version is not 13.23');
+run('pg_dump',['--format=custom','--no-owner','--no-privileges','--file',DUMP,'nysareal_nysa_dev247_smoke'],{env:dbEnv,label:'database-only recovery dump',timeout:30*60*1000,maxBuffer:4*1024*1024});
+const restoreList=run('pg_restore',['--list',DUMP],{env:dbEnv,label:'pg_restore list verification',timeout:10*60*1000,maxBuffer:64*1024*1024});
+fs.writeFileSync(LIST,restoreList,{mode:0o600});
+const backupHelper='/home/nysareal/crm-deployment-tools/tools/crm-test-backup-verification.mjs';
+if(sha(backupHelper)!=='b682d446d3a422d1c325eb5a6e2bcfd749f3b396ffd58e0df77fef2f862bf215')throw Error('Backup verification helper hash mismatch');
+const {parsePgRestoreListContracts,verifyScopedBackupTableNames}=await import(pathToFileURL(backupHelper).href+'?wn15='+Date.now());
+const parsed=parsePgRestoreListContracts(restoreList),tableSet=verifyScopedBackupTableNames(db.tableNames,parsed.tableNames);
+if(!tableSet.matches||parsed.tableNames.length!==306||parsed.triggerKeys.length!==111)throw Error('Database-only recovery dump contract verification failed');
+const dumpStat=fs.statSync(DUMP),dumpHashLine=run('sha256sum',[DUMP],{label:'dump sha256'}).trim();
+const recovery={schema:'nysa.wn15.database-recovery.v1',scope:'CRM Test database only',createdAt:new Date().toISOString(),path:DUMP,database:'nysareal_nysa_dev247_smoke',bytes:dumpStat.size,sha256:dumpHashLine.split(/\s+/)[0],sha256sum:dumpHashLine,pgDumpVersion,pgRestoreVersion,serverVersion:db.identity.server_version,migrationCount:db.identity.migrations,liveTableCount:306,dumpTableCount:parsed.tableNames.length,tableSetVerified:tableSet.matches,liveTriggerCount:111,dumpTriggerCount:parsed.triggerKeys.length,pgRestoreListOpened:true,noAutomaticRestore:true};
+writeJson(RECEIPT,recovery);
+const report={schema:'nysa.wn15.approval1.v1',result:'passed',completedAt:new Date().toISOString(),placementEvidence:'APPROVAL1_RETRY2_PLACEMENT_RESULT.txt',websiteMapping:{account:'nysareal',matchedDomains:domainStrings,status:websiteResponse.status,responseTimeMs:websiteMs,server:websiteResponse.headers.get('server')},baseline:{version:packageJson.version,commit:provenance.commit,database:db.identity.db,databaseRole:db.identity.role,serverVersion:db.identity.server_version,migrationCount:db.identity.migrations,tableCount:db.tableCount,triggerCount:db.triggerCount,triggerTableCount:db.triggerTableCount,readiness},teamState:{script:teamSql,scriptSha256:sha(teamSql),output:TEAMOUT,outputSha256:sha(TEAMOUT),teamCount:teamRows.length,accountCount:brokerRows.length,teamsInactive:true,accountsActiveNonDeliveryNoPhone:true},cloudLinux:{command:"date -u +%Y-%m-%dT%H:%M:%SZ; /usr/sbin/lveinfo --user=nysareal --period=1m --style=user --show-all --json",output:LVEOUT,outputSha256:sha(LVEOUT),keys:lveKeys},recovery:{receipt:RECEIPT,receiptSha256:sha(RECEIPT),dump:DUMP,dumpBytes:dumpStat.size,dumpSha256:recovery.sha256,list:LIST,listSha256:sha(LIST)}};
+writeJson(RESULT,report);
+console.log('APPROVAL1_RETRY2_COMPLETED='+report.completedAt);
+console.log(dumpHashLine);
+for(const f of [RECEIPT,RESULT,TEAMOUT,LVEOUT,LIST])console.log(run('sha256sum',[f],{label:'evidence sha256'}).trim());

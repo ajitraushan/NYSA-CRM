@@ -1,0 +1,13 @@
+BEGIN
+SET
+database_name|database_user|transaction_read_only|server_version|checked_at
+nysareal_nysa_dev247_smoke|nysareal_nysar2app|on|13.23|2026-11-11 15:48:14.144962+00
+team_id|team_name|active|manager_id|manager_name|manager_status|manager_role
+d2000000-0000-4000-8000-000000000001|CORE Test Sales Team|0|d1000000-0000-4000-8000-000000000002|CORE Test Sales Manager|active|manager
+d2000000-0000-4000-8000-000000000002|CORE Test Leasing Team|0|d1000000-0000-4000-8000-000000000005|CORE Test Leasing Manager|active|manager
+broker_id|name|status|job_role|team_id|non_delivery_email|has_phone
+d1000000-0000-4000-8000-000000000002|CORE Test Sales Manager|active|manager|d2000000-0000-4000-8000-000000000001|t|f
+d1000000-0000-4000-8000-000000000003|CORE Test Agent A1|active|sales_agent|d2000000-0000-4000-8000-000000000001|t|f
+d1000000-0000-4000-8000-000000000004|CORE Test Agent A2|active|sales_agent|d2000000-0000-4000-8000-000000000001|t|f
+d1000000-0000-4000-8000-000000000005|CORE Test Leasing Manager|active|manager|d2000000-0000-4000-8000-000000000002|t|f
+ROLLBACK

@@ -1,0 +1,11 @@
+2026-11-11T09:48:57.9501161920+0000|3519|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/wn15-unused-range-readonly.sql
+2026-11-11T09:49:03.2520775270+0000|2425|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/wn15-synthetic-user-inventory-readonly.sql
+2026-11-11T09:51:00.2612242220+0000|792|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/WN15_UNUSED_RANGE_OUTPUT.txt
+2026-11-11T09:51:00.2662241860+0000|2385|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/WN15_SYNTHETIC_USER_INVENTORY_OUTPUT.txt
+2026-11-11T13:01:08.4317714950+0000|0|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/APPROVAL1_PLACEMENT_RESULT.txt
+2026-11-11T15:40:47.7711761630+0000|9947|/home/nysareal/crm-release-preparation/20261111-wn15/tools/whatsapp-simulation-load.mjs
+2026-11-11T15:40:48.0071743840+0000|15076|/home/nysareal/crm-release-preparation/20261111-wn15/tools/whatsapp-simulation-cleanup.mjs
+2026-11-11T15:40:48.2891722580+0000|1248|/home/nysareal/crm-release-preparation/20261111-wn15/tools/wn15-team-state-readonly.sql
+2026-11-11T15:40:48.5441703350+0000|9759|/home/nysareal/crm-release-preparation/20261111-wn15/tools/wn15-load-and-cleanup-tools.test.js
+2026-11-11T15:40:48.5501702900+0000|1146|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/APPROVAL1_RETRY2_PLACEMENT_RESULT.txt
+2026-11-11T15:48:14.1458107470+0000|1069|/home/nysareal/crm-release-preparation/20261111-wn15/preflight/APPROVAL1_RETRY2_TEAM_STATE.txt
