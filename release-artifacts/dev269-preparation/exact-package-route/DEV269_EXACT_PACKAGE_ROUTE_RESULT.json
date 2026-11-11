@@ -1,7 +1,7 @@
 {
   "schema": "nysa.dev269.exact-package-route.v1",
   "synthetic": true,
-  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-bb50ae7",
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-e5db302",
   "version": "2.1.0-dev.269",
   "identity": {
     "serverVersion": "13.23",
@@ -13,7 +13,7 @@
   "health": 200,
   "readiness": {
     "status": 200,
-    "attempt": 4
+    "attempt": 5
   },
   "root": {
     "status": 200,
@@ -29,5 +29,5 @@
     "materialStorageKeysAbsent": true
   },
   "result": "passed",
-  "checkedAt": "2026-11-11T07:45:53.016Z"
+  "checkedAt": "2026-11-11T08:17:10.939Z"
 }

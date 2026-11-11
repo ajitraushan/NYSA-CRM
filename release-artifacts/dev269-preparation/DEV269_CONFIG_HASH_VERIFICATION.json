@@ -1,23 +1,23 @@
 {
   "schema": "nysa.crm-test.deploy-config-verification.v1",
-  "generatedAt": "2026-11-11T07:46:20.073Z",
+  "generatedAt": "2026-11-11T08:19:29.749Z",
   "spec": "release-artifacts/dev269-preparation/DEV269_CONFIG_SPEC.json",
   "config": "release-artifacts/dev269-preparation/DEV269_DEPLOY_CONFIG.json",
-  "configSha256": "b4db03901639baa7e682d220a4e9b9e27c391ae77c9d4e8fd0297afd394f91c9",
+  "configSha256": "beafa2c490ee6da3063f82883a86632704dd4604ef302366ae2e6279a5aea430",
   "allHashFields64Hex": true,
   "allNamedFilesMatch": true,
   "fileChecks": {
     "archiveHash": {
       "file": "release-artifacts/origin/nysa-core-2.1.0-dev.269-origin.zip",
-      "configured": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
-      "actual": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
+      "configured": "05b27a47641b430e991238673f531e91b2843b644ee3fb7a9473bb313e1a6a64",
+      "actual": "05b27a47641b430e991238673f531e91b2843b644ee3fb7a9473bb313e1a6a64",
       "is64Hex": true,
       "matches": true
     },
     "manifestHash": {
       "file": "release-artifacts/origin/nysa-core-2.1.0-dev.269-origin.manifest.json",
-      "configured": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057",
-      "actual": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057",
+      "configured": "683543c64a27effd1a827f8f1f448a5098ddf7fe1446018ed9c9f3c345d0aa1e",
+      "actual": "683543c64a27effd1a827f8f1f448a5098ddf7fe1446018ed9c9f3c345d0aa1e",
       "is64Hex": true,
       "matches": true
     },
@@ -71,13 +71,13 @@
   },
   "tests": {
     "command": "node tools/run-release-tests.mjs",
-    "startedAt": "2026-11-11T07:44:54.604Z",
-    "completedAt": "2026-11-11T07:45:25.168Z",
+    "startedAt": "2026-11-11T08:13:19.227Z",
+    "completedAt": "2026-11-11T08:13:50.441Z",
     "tests": 1697,
     "passed": 1592,
     "failed": 0,
     "skipped": 105,
-    "outputSha256": "b421a400e6c1ec34c4a4f21cfe0ff9bdacd3d9f22291159b168f74c44dd9ed25",
+    "outputSha256": "5bbe702de9f1699ada9e1f62888d7637e571cc694b14a0cdfea013ae2504a2c7",
     "includedFiles": 328,
     "excludedHistoricalArtifactFiles": 94,
     "includedFilesSha256": "1a69ac84e3e62d822ac0ba3226dae2141581616c7ec9e75f73d6e44c27386a65",
@@ -85,8 +85,8 @@
   },
   "candidate": {
     "version": "2.1.0-dev.269",
-    "commit": "bb50ae76c321c5ccbd67b4ef90030a46d9ae9ec4",
-    "packageSha256": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
-    "manifestSha256": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057"
+    "commit": "e5db302e12a21d2597ecab0dc340fa2eae534381",
+    "packageSha256": "05b27a47641b430e991238673f531e91b2843b644ee3fb7a9473bb313e1a6a64",
+    "manifestSha256": "683543c64a27effd1a827f8f1f448a5098ddf7fe1446018ed9c9f3c345d0aa1e"
   }
 }

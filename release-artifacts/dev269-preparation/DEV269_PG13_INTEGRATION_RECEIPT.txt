@@ -1,7 +1,7 @@
 PostgreSQL 13.23
 {"migrations":170,"latest":"170_prospect_diary.sql","tables":306,"triggers":111,"migration170Idempotent":true}
 DEV267 PostgreSQL 13.23 integration: test/dev267-prospect-diary.integration.test.js
-✔ DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings (1643.0635ms)
+✔ DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings (2309.4574ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -9,9 +9,9 @@ DEV267 PostgreSQL 13.23 integration: test/dev267-prospect-diary.integration.test
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1658.5298
+ℹ duration_ms 2328.12
 DEV267 PostgreSQL 13.23 integration: test/dev267-shared-suppression.integration.test.js
-✔ DEV267 layered restrictions serialize, preserve weaker restrictions and require governed release evidence (1891.1546ms)
+✔ DEV267 layered restrictions serialize, preserve weaker restrictions and require governed release evidence (2506.1551ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -19,9 +19,9 @@ DEV267 PostgreSQL 13.23 integration: test/dev267-shared-suppression.integration.
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1907.1506
+ℹ duration_ms 2529.8405
 DEV267 PostgreSQL 13.23 integration: test/dev267-whatsapp-da-regression.integration.test.js
-✔ DEV267 D-A: STOP before later import remains suppressed at preview and commit (897.732ms)
+✔ DEV267 D-A: STOP before later import remains suppressed at preview and commit (1125.1772ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -29,9 +29,9 @@ DEV267 PostgreSQL 13.23 integration: test/dev267-whatsapp-da-regression.integrat
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 911.6713
+ℹ duration_ms 1142.5886
 DEV267 PostgreSQL 13.23 integration: test/whatsapp-workspace.integration.test.js
-✔ WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture (2146.3918ms)
+✔ WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture (2222.0819ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -39,9 +39,9 @@ DEV267 PostgreSQL 13.23 integration: test/whatsapp-workspace.integration.test.js
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 2161.9118
+ℹ duration_ms 2242.1467
 DEV267 PostgreSQL 13.23 integration: test/whatsapp-simulated-provider.integration.test.js
-✔ DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable (4827.0363ms)
+✔ DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable (4435.1718ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -49,6 +49,7 @@ DEV267 PostgreSQL 13.23 integration: test/whatsapp-simulated-provider.integratio
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 4842.1417
-(node:24456) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+ℹ duration_ms 4456.653
+(node:23968) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
+{"component":"whatsapp-simulator","event":"callback-delivery-failed"}

@@ -2,7 +2,7 @@
   "schema": "nysa.dev267a.hosted-bootstrap-browser.v1",
   "synthetic": true,
   "version": "2.1.0-dev.269",
-  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-bb50ae7",
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-e5db302",
   "loadedThroughActualIndexAndBootstrap": true,
   "requiredOrder": [
     "/bootstrap.js",
@@ -15,7 +15,7 @@
       "sha256": "cd8124b865a49d19cf5d3c664284c4ff92e5451ce75223e8103651baf77411aa"
     },
     "prospect-diary-ui.js": {
-      "sha256": "ee5e42dd57bd9ac79bdff8ba6bd6308d32d2b96e586a723f3c7cc286d00da843"
+      "sha256": "add770ffe4133d1fb2520badfd4cc2cd06d323aca0c3b18b266ea799a9ac0428"
     },
     "dashboard-ui.js": {
       "sha256": "b06419cb2139095bd7f00da18855436d1e76c3dde87a3869e45a7943048be788"
@@ -96,6 +96,24 @@
           ]
         ]
       },
+      "recordState": {
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "headBackgroundImage": "none",
+        "nameColor": "rgb(20, 35, 44)",
+        "headerElements": 0,
+        "editHeaderElements": 0,
+        "conversionHeaderElements": 0
+      },
+      "recordMobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "recordWidth": 358,
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "nameColor": "rgb(20, 35, 44)",
+        "headerElements": 0
+      },
       "mobile": {
         "bodyWidth": 390,
         "viewport": 390,
@@ -106,7 +124,9 @@
       "consoleErrors": [],
       "screenshots": [
         "sales_agent-prospect-diary-desktop.png",
-        "sales_agent-prospect-diary-mobile.png"
+        "sales_agent-prospect-diary-mobile.png",
+        "sales_agent-prospect-record-desktop.png",
+        "sales_agent-prospect-record-mobile.png"
       ]
     },
     {
@@ -147,6 +167,24 @@
           ]
         ]
       },
+      "recordState": {
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "headBackgroundImage": "none",
+        "nameColor": "rgb(20, 35, 44)",
+        "headerElements": 0,
+        "editHeaderElements": 0,
+        "conversionHeaderElements": 0
+      },
+      "recordMobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "recordWidth": 358,
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "nameColor": "rgb(20, 35, 44)",
+        "headerElements": 0
+      },
       "mobile": {
         "bodyWidth": 390,
         "viewport": 390,
@@ -157,9 +195,11 @@
       "consoleErrors": [],
       "screenshots": [
         "manager-prospect-diary-desktop.png",
-        "manager-prospect-diary-mobile.png"
+        "manager-prospect-diary-mobile.png",
+        "manager-prospect-record-desktop.png",
+        "manager-prospect-record-mobile.png"
       ]
     }
   ],
-  "checkedAt": "2026-11-11T07:46:06.653Z"
+  "checkedAt": "2026-11-11T08:17:26.346Z"
 }

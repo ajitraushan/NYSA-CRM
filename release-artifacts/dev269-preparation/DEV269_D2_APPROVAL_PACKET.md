@@ -12,20 +12,20 @@ The installed source of truth remains accepted CRM Test DEV268, taken from
 | Identity | Accepted baseline | DEV269 candidate |
 | --- | --- | --- |
 | Version | `2.1.0-dev.268` | `2.1.0-dev.269` |
-| Git commit | `b6272e9c9f2a17a2c082324ec8810391de7bdf01` | `bb50ae76c321c5ccbd67b4ef90030a46d9ae9ec4` |
-| Git tree | accepted DEV268 receipt | `0f0a82b45fd6c212b18d4d94106f4184fc40d9a5` |
+| Git commit | `b6272e9c9f2a17a2c082324ec8810391de7bdf01` | `e5db302e12a21d2597ecab0dc340fa2eae534381` |
+| Git tree | accepted DEV268 receipt | `48159080f93f77f8ede3b0511f5619ec96d97f16` |
 | Database | `nysareal_nysa_dev247_smoke` | unchanged |
 | Migration ledger | 170 | 170; no migration |
 | Public tables | 306 | 306 |
 | Enabled triggers | 111 | 111 |
 | Schema manifest | `59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944` | unchanged before and after |
 | Baseline trigger file | `70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf` | unchanged |
-| Origin package | — | `5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba` |
-| Origin manifest | — | `de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057` |
-| Deploy config | — | `b4db03901639baa7e682d220a4e9b9e27c391ae77c9d4e8fd0297afd394f91c9` |
+| Origin package | — | `05b27a47641b430e991238673f531e91b2843b644ee3fb7a9473bb313e1a6a64` |
+| Origin manifest | — | `683543c64a27effd1a827f8f1f448a5098ddf7fe1446018ed9c9f3c345d0aa1e` |
+| Deploy config | — | `beafa2c490ee6da3063f82883a86632704dd4604ef302366ae2e6279a5aea430` |
 
 The package was built only with
-`npm run release:package -- --commit bb50ae76c321c5ccbd67b4ef90030a46d9ae9ec4`
+`npm run release:package -- --commit e5db302e12a21d2597ecab0dc340fa2eae534381`
 from the GitHub-advertised commit. The mandatory package verifier passed exact
 commit, tree, archive and manifest provenance. The manifest's detached-origin
 test receipt records 1,697 tests: 1,592 passed, 105 skipped and zero failed.
@@ -54,9 +54,12 @@ yet run.
 - Converted prospects are read-only. No edit weakens or clears an active
   suppression. Every change records exact before/after audit evidence and
   notes retain their prior version.
-- The black banner was removed by using the standard CORE working-page
-  structure. Prospect names use the standard ink color. Today, Upcoming and
-  Overdue share the same prospect-local predicates and refresh with the list.
+- The black banner was removed from both the list and record views by using the
+  standard neutral CORE page-heading structure. The record heading is a
+  transparent `SECTION`, not a generic HTML `header`; its prospect name uses
+  standard CORE ink. The edit form, conversion panel and Manager override
+  register contain no conflicting `header` element. Today, Upcoming and Overdue
+  share the same prospect-local predicates and refresh with the list.
 - Manual DNCR changes refresh the visible record immediately. Warning codes are
   rendered as plain-language messages with the Agent's recorded reason.
 - Outside-scope duplicate matches remain privacy-minimized and never expose an
@@ -149,6 +152,15 @@ Task/call notes and audit/override evidence. Evidence:
 `DEV269_PG13_INTEGRATION_RECEIPT.txt` and
 `DEV269_PG13_INTEGRATION_RECEIPT.json`.
 
+Evidence-collection note for this D-2 refresh: the first disposable fixture
+start attempted an unavailable loopback port and did not start; the first run
+on the replacement port then stopped before migrations because the freshly
+created `public` schema was owned by the fixture bootstrap superuser rather
+than the restricted test role. The synthetic schema ownership was corrected,
+the PostgreSQL 13.23 suite was rerun from a clean schema, and only the final
+zero-failure output is the release receipt. Neither event touched CRM Test or
+the candidate package.
+
 One `pg` deprecation warning reports a test client issuing a concurrent query;
 the five suites still passed. It is test-harness maintenance, not a hosted
 runtime error, and is not represented as resolved.
@@ -165,11 +177,20 @@ routers mounted in production order against PostgreSQL 13.23:
   `storageKey`.
 
 The real browser loaded the exact package through the actual `index.html` and
-`bootstrap.js` order. Agent and Manager both opened Prospect Diary on desktop
-and 390px mobile with zero console/page errors. The page head was a transparent
-standard `SECTION`, names used CORE ink, Today=1 and Upcoming=1, Manager DNCR
-refresh passed, and no mobile overflow was observed. Four screenshots and the
-raw result are under `exact-package-browser/`.
+`bootstrap.js` order. Agent and Manager both opened Prospect Diary and an
+individual prospect record on desktop and 390px mobile with zero console/page
+errors. Both list and record headings were transparent standard `SECTION`
+elements; prospect names were `rgb(20, 35, 44)`, record background images were
+`none`, and the record/edit/conversion/override surfaces contained zero generic
+`header` elements. Today=1 and Upcoming=1, Manager DNCR refresh passed, and no
+mobile overflow was observed. Eight screenshots (including four record-page
+screenshots) and the raw result are under `exact-package-browser/`.
+
+The first D-2 browser check had covered only the list heading. Live review found
+that the prospect record still inherited the generic dark `header` gradient.
+That coverage gap was corrected before Phase A: the record markup was changed,
+the package was rebuilt from the new origin commit, and the expanded assertions
+were run against the extracted replacement package rather than the worktree.
 
 Dashboard implementation continuity: `dashboard-ui.js` remains the active
 dashboard module loaded before `app.js`; the renamed legacy wrappers in
