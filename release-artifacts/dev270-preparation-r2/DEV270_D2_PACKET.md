@@ -10,10 +10,10 @@ This packet supersedes the draft for `15d1b7e7`. The exact application candidate
 | Origin package manifest | `7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211` |
 | CRM Test config | `7edadb1331615b8081bb8be3ed9ce1296a18c07301da7be0918ba8696f6e3e62` |
 | Canonical CRM Test operator | `5af8bbc8b18cfe8afee8d281913911a105150f3b111dba5c0ec04081da029911` |
-| Production preflight source | `4d368dfe29adc0d0e91f2530b539578a0b847b0bfaf5804e4c00c05935c6984d` |
-| Production preflight config | `919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f` |
+| Production preflight source | `d27613422eab3c0d9b3954a98cd7450bce017e793cedc0cf8096143a04678359` |
+| Production preflight config | `2037db6016258b41856fea9396bf1344e51273a2399a79518378cc3a01bb43c8` |
 | Production RC1 schema expectation | `166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0` |
-| Production backup, install and smoke source | `59218d0b6343bdd2db75ed10d14119ecd55f6c3cd17f6669c1088f9fd7223da2` |
+| Production backup, install and smoke source | `ea2827cd759fc562b04d7aa044425ddc0ca066a7c0c3f781ceb2287cdf619807` |
 | Accepted RC1 runtime manifest, 392 files | `c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292` |
 | Candidate schema manifest | `ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b` |
 
@@ -46,6 +46,12 @@ The existing 10:00 CRM Test Phase A and Production preflight commands, configs a
 /opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-selector-readonly-evidence.mjs" --evidence "$PROD_TOOLS/PRODUCTION_SELECTOR_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-selector-readonly
 ```
 
+## Production worker reconciliation
+
+The prior read-only preflight verified all 392 RC1 runtime files and stopped on three exact-root workers. Two referenced the deleted ALT Node executable. The revised preflight and backup inventory each verified Production worker with owner, PID, start time and executable, and mark the stale workers. Install stops the selector, reconciles only reverified exact-root survivors and requires zero workers before one controlled start. The receipt lists the stale workers found and confirmed absent, and the signals issued. Green DEV270 readiness must have exactly one verified worker. A post-readiness mismatch preserves the candidate and stops. The migration advisory lock stays deferred.
+
+The revised source commit is `cf9d78ad2b44fcc08759261a5b87c0263e9d406e`. The revised preflight and its new config require their own exact approval. Download the worker evidence helper with the other preflight inputs and use a new evidence directory.
+
 ## Dubai schedule on 12 November
 
 | Time | Work |
@@ -66,7 +72,7 @@ These are file invocations. Before each run, verify that the new output paths ar
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase backup --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:backup
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase install --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:install
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase smoke --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:smoke
-"$NODE" "$PROD_TOOLS/production-prospect-readonly-preflight.mjs" --config "$PROD_TOOLS/PRODUCTION_PREFLIGHT_CONFIG.json" --schema "$PROD_TOOLS/PRODUCTION_RC1_SCHEMA_EXPECTATION.json" --runtime "$PROD_TOOLS/PRODUCTION_RC1_RUNTIME_MANIFEST.sha256" --evidence "$PROD_TOOLS/PRODUCTION_PREFLIGHT_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-readonly-preflight:919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f
+/opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-readonly-preflight.mjs" --config "$PROD_TOOLS/PRODUCTION_PREFLIGHT_CONFIG_R2.json" --schema "$PROD_TOOLS/PRODUCTION_RC1_SCHEMA_EXPECTATION.json" --runtime "$PROD_TOOLS/PRODUCTION_RC1_RUNTIME_MANIFEST.sha256" --evidence "$PROD_TOOLS/PRODUCTION_PREFLIGHT_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-readonly-preflight:2037db6016258b41856fea9396bf1344e51273a2399a79518378cc3a01bb43c8
 /opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase backup --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-backup:$APPROVED_PROD_CONFIG_SHA"
 /opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase install --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-install:$APPROVED_PROD_CONFIG_SHA"
 /opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase smoke --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-smoke:$APPROVED_PROD_CONFIG_SHA"
