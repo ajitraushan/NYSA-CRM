@@ -61,7 +61,8 @@ if(manifest.version!==spec.version)fail(`Manifest version differs from spec: ${m
 if(manifest.packageSha256!==sha256(files.package))fail('Origin manifest does not bind the package bytes');
 if(!Number.isInteger(manifest.testReceipt?.passed)||manifest.testReceipt.passed<1||manifest.testReceipt.failed!==0)fail('Origin manifest lacks a successful governed test receipt');
 if(source.version!==spec.baselineVersion||source.commit!==spec.baselineCommit)fail('Source config is not the approved installed baseline');
-if(source.expectedMigrationCount!==spec.expectedMigrationCount-1)fail('Expected migration count is not exactly one after the accepted baseline');
+const expectedBaselineMigrationCount=spec.migrationNeutral===true?spec.expectedMigrationCount:spec.expectedMigrationCount-1;
+if(source.expectedMigrationCount!==expectedBaselineMigrationCount)fail(spec.migrationNeutral===true?'Migration-neutral release does not match the accepted baseline migration count':'Expected migration count is not exactly one after the accepted baseline');
 if(source.expectedPostTableNames?.length!==source.expectedPostTableCount)fail('Source config baseline table names are inconsistent');
 if(expectedTableNames.length!==expectedManifest.contracts?.columns?.count&&expectedColumns.count!==expectedManifest.contracts?.columns?.count)fail('Expected columns contract is inconsistent');
 if(triggers.triggers?.length!==triggers.triggerCount)fail('Expected trigger contract is inconsistent');
@@ -108,7 +109,7 @@ const proof={
   schema:'nysa.crm-test.deploy-config-verification.v1',generatedAt:new Date().toISOString(),
   spec:repoPath(specFile),config:repoPath(files.output),configSha256:crypto.createHash('sha256').update(configBytes).digest('hex'),
   allHashFields64Hex:true,allNamedFilesMatch:true,fileChecks:checks,
-  database:{baselineMigrationCount:config.baselineMigrationCount,expectedMigrationCount:config.expectedMigrationCount,expectedTableCount:config.expectedTableCount,expectedPostTableCount:config.expectedPostTableCount,baselineTriggerCount:config.baselineTriggers.length,expectedTriggerCount:config.expectedTriggerCount},
+  database:{migrationNeutral:spec.migrationNeutral===true,baselineMigrationCount:config.baselineMigrationCount,expectedMigrationCount:config.expectedMigrationCount,expectedTableCount:config.expectedTableCount,expectedPostTableCount:config.expectedPostTableCount,baselineTriggerCount:config.baselineTriggers.length,expectedTriggerCount:config.expectedTriggerCount},
   tests:{...manifest.testReceipt},candidate:{version:config.version,commit:config.commit,packageSha256:config.archiveHash,manifestSha256:config.manifestHash}
 };
 atomicWrite(files.output,configBytes);

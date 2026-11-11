@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "indexes",
-  "count": 956,
-  "canonicalSha256": "53e1919a249c34ca2fcfbb12a6131e90c0d68c4a715149a2638954df63e34164",
+  "count": 966,
+  "canonicalSha256": "a506bb80d8164a55313dd7f216fe353241dfc0df2f7f0abc2f67a9d7a2165d33",
   "entries": [
     {
       "table": "activities",
@@ -873,6 +873,16 @@
       "table": "companies",
       "name": "companies_pkey",
       "definition": "CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id)"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_normalized_phone_key",
+      "definition": "CREATE UNIQUE INDEX company_calling_numbers_normalized_phone_key ON public.company_calling_numbers USING btree (normalized_phone)"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "company_calling_numbers_pkey",
+      "definition": "CREATE UNIQUE INDEX company_calling_numbers_pkey ON public.company_calling_numbers USING btree (id)"
     },
     {
       "table": "company_contacts",
@@ -3890,6 +3900,41 @@
       "definition": "CREATE UNIQUE INDEX proposals_proposal_number_uq ON public.proposals USING btree (proposal_number)"
     },
     {
+      "table": "prospect_activities",
+      "name": "prospect_activities_pkey",
+      "definition": "CREATE UNIQUE INDEX prospect_activities_pkey ON public.prospect_activities USING btree (id)"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_activities_timeline_idx",
+      "definition": "CREATE INDEX prospect_activities_timeline_idx ON public.prospect_activities USING btree (prospect_id, occurred_at DESC, id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_normalized_email_idx",
+      "definition": "CREATE INDEX prospects_normalized_email_idx ON public.prospects USING btree (normalized_email) WHERE (normalized_email IS NOT NULL)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_normalized_phone_key",
+      "definition": "CREATE UNIQUE INDEX prospects_normalized_phone_key ON public.prospects USING btree (normalized_phone)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_owner_status_idx",
+      "definition": "CREATE INDEX prospects_owner_status_idx ON public.prospects USING btree (owner_id, status, updated_at DESC)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_pkey",
+      "definition": "CREATE UNIQUE INDEX prospects_pkey ON public.prospects USING btree (id)"
+    },
+    {
+      "table": "prospects",
+      "name": "prospects_team_status_idx",
+      "definition": "CREATE INDEX prospects_team_status_idx ON public.prospects USING btree (team_id, status, updated_at DESC)"
+    },
+    {
       "table": "provisional_external_properties",
       "name": "provisional_external_properties_external_reference_key",
       "definition": "CREATE UNIQUE INDEX provisional_external_properties_external_reference_key ON public.provisional_external_properties USING btree (external_reference)"
@@ -4128,6 +4173,11 @@
       "table": "tasks",
       "name": "tasks_proposal_correction_idx",
       "definition": "CREATE INDEX tasks_proposal_correction_idx ON public.tasks USING btree (proposal_id, proposal_version_id, status) WHERE (task_type = 'proposal_correction'::text)"
+    },
+    {
+      "table": "tasks",
+      "name": "tasks_prospect_due_idx",
+      "definition": "CREATE INDEX tasks_prospect_due_idx ON public.tasks USING btree (prospect_id, status, due_at) WHERE (prospect_id IS NOT NULL)"
     },
     {
       "table": "tasks",

@@ -47,6 +47,13 @@ function requireCreator(req,res){if(!creator.has(req.broker.jobRole)){res.status
 function requireReviewer(req,res){if(!['manager','director'].includes(req.broker.jobRole)){res.status(403).json({error:'Manager or Director review access required'});return false;}return true;}
 function scope(alias,broker,params){const teams=teamIds(broker);if(teams===null)return'1=1';params.push(teams);return`${alias}.owner_team_id=ANY($${params.length}::uuid[])`;}
 async function lock(key,client){await execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[key],client);}
+async function applyCrossChannelSuppression(phone,type,evidenceReference,actorId,client){
+  await recordContactSuppression({phone,type,evidenceReference,actorId,auditExpiresAt:new Date(Date.now()+365*86400000).toISOString(),reason:type==='dncr'?'Manual DNCR evidence (not a registry check)':null},client);
+  const changed=await many(`UPDATE wa_campaign_recipients SET suppression_status='suppressed',suppressed_at=NOW(),suppression_reason=$2,consent_status=CASE WHEN $2='opt_out' THEN 'withdrawn' ELSE 'denied' END WHERE normalized_phone=$1 RETURNING id`,[phone,type],client);
+  await execute(`UPDATE wa_campaign_approval_recipients SET removed_at=COALESCE(removed_at,NOW()),removal_reason=COALESCE(removal_reason,$2) WHERE normalized_phone=$1`,[phone,type],client);
+  await execute(`UPDATE contacts SET do_not_contact=1,contact_restriction_reason=$2,updated_at=NOW() WHERE id IN (SELECT matched_contact_id FROM wa_campaign_recipients WHERE normalized_phone=$1 AND matched_contact_id IS NOT NULL) OR id IN (SELECT contact_id FROM contact_channels WHERE channel_kind='Phone' AND normalized_value=$1)`,[phone,`${type==='dncr'?'Manual DNCR':'WhatsApp '+type} evidence ${evidenceReference}`],client);
+  return changed.length;
+}
 async function accessibleTeams(broker,client){
   const values=teamIds(broker),params=[];let where='t.active=1';
   if(values!==null){params.push(values);where+=` AND t.id=ANY($${params.length}::uuid[])`;}
@@ -267,7 +274,19 @@ r.post('/crm/whatsapp-workspace/campaigns/:id/decision',async(req,res)=>{
 
 r.post('/crm/whatsapp-workspace/recipient-suppressions',async(req,res)=>{
   if(!requireCreator(req,res))return;const phone=normalizeWhatsAppPhone(req.body?.phone),messageText=clean(req.body?.messageText,160),evidenceReference=clean(req.body?.evidenceReference,240),suppressionType=classifyWhatsAppSuppression(messageText);if(!phone)return res.status(400).json({error:'Valid E.164 phone is required'});if(!suppressionType)return res.status(400).json({error:'Message is not a maintained opt-out or wrong-number response'});if(!evidenceReference)return res.status(400).json({error:'Suppression evidence reference is required'});
-  const result=await transaction(async client=>{await lock(`wa-suppression:${phone}`,client);await recordContactSuppression({phone,type:suppressionType,evidenceReference,actorId:req.broker.id,auditExpiresAt:new Date(Date.now()+365*86400000).toISOString()},client);const changed=await many(`UPDATE wa_campaign_recipients SET suppression_status='suppressed',suppressed_at=NOW(),suppression_reason=$2,consent_status=CASE WHEN $2='opt_out' THEN 'withdrawn' ELSE 'denied' END WHERE normalized_phone=$1 RETURNING id`,[phone,suppressionType],client);await execute(`UPDATE wa_campaign_approval_recipients SET removed_at=COALESCE(removed_at,NOW()),removal_reason=COALESCE(removal_reason,$2) WHERE normalized_phone=$1`,[phone,suppressionType],client);await execute(`UPDATE contacts SET do_not_contact=1,contact_restriction_reason=$2,updated_at=NOW() WHERE id IN (SELECT matched_contact_id FROM wa_campaign_recipients WHERE normalized_phone=$1 AND matched_contact_id IS NOT NULL) OR id IN (SELECT contact_id FROM contact_channels WHERE channel_kind='Phone' AND normalized_value=$1)`,[phone,`WhatsApp ${suppressionType} evidence ${evidenceReference}`],client);await audit('WhatsAppRecipientImport',uuid(),'cross_list_suppression_recorded',req.broker.id,{suppressionType,evidenceReference,affectedRecipientRows:changed.length,approvedCampaignRowsOnlyShrunk:true},client);return{suppressionType,affectedRecipientRows:changed.length};});res.status(201).json(result);
+  const result=await transaction(async client=>{await lock(`wa-suppression:${phone}`,client);const affectedRecipientRows=await applyCrossChannelSuppression(phone,suppressionType,evidenceReference,req.broker.id,client);await audit('WhatsAppRecipientImport',uuid(),'cross_list_suppression_recorded',req.broker.id,{suppressionType,evidenceReference,affectedRecipientRows,approvedCampaignRowsOnlyShrunk:true},client);return{suppressionType,affectedRecipientRows};});res.status(201).json(result);
+});
+
+r.post('/crm/whatsapp-workspace/recipient-suppressions/dncr',async(req,res)=>{
+  if(!requireReviewer(req,res))return;
+  const phone=normalizeWhatsAppPhone(req.body?.phone),action=clean(req.body?.action,20),evidenceReference=clean(req.body?.evidenceReference,240),reason=clean(req.body?.reason,500);
+  if(!phone)return res.status(400).json({error:'Valid E.164 phone is required'});
+  if(!['record','release'].includes(action))return res.status(400).json({error:'Action must be record or release'});
+  if(action==='record'&&!evidenceReference)return res.status(400).json({error:'Manual DNCR evidence reference is required'});
+  if(action==='release'&&reason.length<5)return res.status(400).json({error:'A meaningful DNCR release reason is required'});
+  try{
+    const result=await transaction(async client=>{await lock(`wa-suppression:${phone}`,client);let affectedRecipientRows=0;if(action==='record')affectedRecipientRows=await applyCrossChannelSuppression(phone,'dncr',evidenceReference,req.broker.id,client);else await releaseContactSuppression({phone,type:'dncr',reason,actorId:req.broker.id,actorRole:req.broker.jobRole},client);const suppression=await getContactSuppression(phone,client);await audit('WhatsAppRecipientImport',uuid(),action==='record'?'manual_dncr_recorded':'manual_dncr_released',req.broker.id,{label:'Manual DNCR evidence (not a registry check)',evidenceReference:action==='record'?evidenceReference:null,reason:action==='release'?reason:null,affectedRecipientRows,strongest:suppression.strongest},client);return{action,suppressionType:'dncr',affectedRecipientRows,strongest:suppression.strongest};});res.status(action==='record'?201:200).json(result);
+  }catch(error){res.status(409).json({error:error.message});}
 });
 
 r.post('/crm/whatsapp-workspace/recipient-suppressions/release',async(req,res)=>{

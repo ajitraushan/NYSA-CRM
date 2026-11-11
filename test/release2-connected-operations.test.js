@@ -37,7 +37,7 @@ test('connected case and role dashboards guide users without hiding future relea
   assert.doesNotMatch(dashboard,/data\.releaseBoundary/);
   assert.match(routes,/R2\.5 reconciles the accepted Release 2 flow/);
   assert.match(routes,/authoritative closure/);
-  assert.match(dashboard,/openDashboardRecords\(`guided_\$\{button\.dataset\.guidedStep\}`/);
+  assert.match(dashboard,/openDashboardRecordsFeatureModule\(`guided_\$\{button\.dataset\.guidedStep\}`/);
   assert.match(dashboardRoutes,/segment\.startsWith\('guided_'\)/);
   for(const step of ['customer','lead','qualification','opportunity','matching','viewing','offer','booking','deal'])assert.match(dashboardRoutes,new RegExp(step));
   assert.match(dashboard,/filter\(x=>x\.responsibility==='agent'\)/);

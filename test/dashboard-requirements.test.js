@@ -314,7 +314,7 @@ test('lifecycle drill-down refreshes the filtered dashboard after a successful s
   assert.match(app,/openLead\(id,\{afterStageChange\}\)/);
   assert.match(app,/if\(\$\('#crm-results'\)\)loadCRMLeads\(\)/);
   assert.match(app,/cache: opts\.cache \|\| 'no-store'/);
-  assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderCrmDashboard\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
+  assert.match(ui,/afterStageChange:async\(\)=>\{o\.remove\(\);await window\.renderDashboardFeatureModule\(\{\.\.\.filters,_refresh:Date\.now\(\)\}\);\}/);
   assert.match(page,/asset-manifest/);
   assert.match(page,/script\.src=`\/\$\{file\}\?v=\$\{encodeURIComponent\(build\)\}`/);
 });

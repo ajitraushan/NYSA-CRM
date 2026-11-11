@@ -1,8 +1,8 @@
 {
   "schema": "nysa.database-schema-contract.v1",
   "objectType": "columns",
-  "count": 4043,
-  "canonicalSha256": "3f6bc04421b6fdf9da71742e540a3a59c466e695aa6df9b95c60735e776adde2",
+  "count": 4113,
+  "canonicalSha256": "91ec25b47a745c7cb86ee57d6ea27656b3b832c0355f6ddd4616c17eaea577d4",
   "entries": [
     {
       "table": "activities",
@@ -4763,6 +4763,111 @@
       "dataType": "text",
       "nullable": "YES",
       "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "effective_from",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "effective_to",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "label",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "normalized_phone",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "phone",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "status",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": "'active'::text"
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "tdra_evidence_reference",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "tdra_registered_at",
+      "dataType": "date",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "tdra_registered_legal_name",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "tdra_registration_reference",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "tdra_verified_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "company_calling_numbers",
+      "name": "updated_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
     },
     {
       "table": "company_contacts",
@@ -21174,6 +21279,41 @@
     },
     {
       "table": "organization_settings",
+      "name": "prospect_call_end_minute",
+      "dataType": "integer",
+      "nullable": "NO",
+      "defaultExpression": "1080"
+    },
+    {
+      "table": "organization_settings",
+      "name": "prospect_call_start_minute",
+      "dataType": "integer",
+      "nullable": "NO",
+      "defaultExpression": "540"
+    },
+    {
+      "table": "organization_settings",
+      "name": "prospect_decline_warning_threshold",
+      "dataType": "integer",
+      "nullable": "NO",
+      "defaultExpression": "0"
+    },
+    {
+      "table": "organization_settings",
+      "name": "prospect_unanswered_daily_warning_threshold",
+      "dataType": "integer",
+      "nullable": "NO",
+      "defaultExpression": "1"
+    },
+    {
+      "table": "organization_settings",
+      "name": "prospect_unanswered_weekly_warning_threshold",
+      "dataType": "integer",
+      "nullable": "NO",
+      "defaultExpression": "2"
+    },
+    {
+      "table": "organization_settings",
       "name": "prudent_dbr_percent",
       "dataType": "numeric",
       "nullable": "NO",
@@ -22616,6 +22756,307 @@
     },
     {
       "table": "proposals",
+      "name": "updated_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "activity_type",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "company_calling_number_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "correction_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "corrects_activity_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "direction",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "notes",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "occurred_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "outcome",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "prospect_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospect_activities",
+      "name": "warning_acknowledged",
+      "dataType": "boolean",
+      "nullable": "NO",
+      "defaultExpression": "false"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "warning_codes",
+      "dataType": "ARRAY",
+      "nullable": "NO",
+      "defaultExpression": "ARRAY[]::text[]"
+    },
+    {
+      "table": "prospect_activities",
+      "name": "warning_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "brief_notes",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "consent_evidence_reference",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "consent_status",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": "'unknown'::text"
+    },
+    {
+      "table": "prospects",
+      "name": "converted_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "converted_by",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "converted_contact_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "created_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
+    },
+    {
+      "table": "prospects",
+      "name": "created_by",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "display_name",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "do_not_contact_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "do_not_contact_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "email",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "normalized_email",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "normalized_phone",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "owner_id",
+      "dataType": "uuid",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "phone",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "source",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": "'cold_call'::text"
+    },
+    {
+      "table": "prospects",
+      "name": "source_acquired_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "source_batch_reference",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "source_evidence_reference",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "source_supplier",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "status",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": "'not_contacted'::text"
+    },
+    {
+      "table": "prospects",
+      "name": "suppression_snapshot",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": "'{}'::jsonb"
+    },
+    {
+      "table": "prospects",
+      "name": "team_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "timezone",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
+      "name": "timezone_source",
+      "dataType": "text",
+      "nullable": "NO",
+      "defaultExpression": ""
+    },
+    {
+      "table": "prospects",
       "name": "updated_at",
       "dataType": "timestamp with time zone",
       "nullable": "NO",
@@ -24128,6 +24569,27 @@
     },
     {
       "table": "tasks",
+      "name": "policy_warning_acknowledged",
+      "dataType": "boolean",
+      "nullable": "NO",
+      "defaultExpression": "false"
+    },
+    {
+      "table": "tasks",
+      "name": "policy_warning_codes",
+      "dataType": "ARRAY",
+      "nullable": "NO",
+      "defaultExpression": "ARRAY[]::text[]"
+    },
+    {
+      "table": "tasks",
+      "name": "policy_warning_reason",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
       "name": "priority",
       "dataType": "text",
       "nullable": "NO",
@@ -24143,6 +24605,20 @@
     {
       "table": "tasks",
       "name": "proposal_version_id",
+      "dataType": "uuid",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
+      "name": "prospect_channel",
+      "dataType": "text",
+      "nullable": "YES",
+      "defaultExpression": ""
+    },
+    {
+      "table": "tasks",
+      "name": "prospect_id",
       "dataType": "uuid",
       "nullable": "YES",
       "defaultExpression": ""
@@ -25892,10 +26368,24 @@
     },
     {
       "table": "wa_contact_suppressions",
+      "name": "restrictions",
+      "dataType": "jsonb",
+      "nullable": "NO",
+      "defaultExpression": "'{}'::jsonb"
+    },
+    {
+      "table": "wa_contact_suppressions",
       "name": "suppression_type",
       "dataType": "text",
       "nullable": "NO",
       "defaultExpression": ""
+    },
+    {
+      "table": "wa_contact_suppressions",
+      "name": "updated_at",
+      "dataType": "timestamp with time zone",
+      "nullable": "NO",
+      "defaultExpression": "now()"
     },
     {
       "table": "wa_conversation_assignment_history",

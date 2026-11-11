@@ -67,13 +67,14 @@ test('DEV266 release source uses typed UUIDs and all reply sends use the shared 
   assert.match(ui,/item\.replyLock\?\.canRelease/);
 });
 
-test('DEV267 advances the ledger while retaining DEV266 as the deployment baseline',()=>{
+test('DEV267a retains the accepted DEV267 schema as the deployment baseline',()=>{
   const migrations=fs.readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
   assert.equal(migrations.length,170);
   assert.equal(migrations.at(-1),'170_prospect_diary.sql');
   const baseline=JSON.parse(read('src/database-schema-baseline/manifest.json'));
   const current=JSON.parse(read('src/database-schema-contract/manifest.json'));
-  assert.equal(baseline.contracts.constraints.count,2704);
+  assert.equal(baseline.contracts.constraints.count,2748);
   assert.equal(current.generatedFrom.migrationCount,170);
   assert.equal(current.contracts.constraints.count,2748);
+  assert.deepEqual(baseline,current);
 });

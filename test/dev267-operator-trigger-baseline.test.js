@@ -14,28 +14,23 @@ const canonicalTriggerFile=path.join(root,'src','database-trigger-contract.json'
 const sha256=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const clone=value=>JSON.parse(JSON.stringify(value));
 
-test('DEV267 baseline contract is the accepted DEV266 108-trigger contract',()=>{
+test('DEV267a baseline trigger contract is the accepted DEV267 111-trigger contract',()=>{
   const manifest=JSON.parse(fs.readFileSync(path.join(baselineDirectory,'manifest.json'),'utf8'));
   const contract=JSON.parse(fs.readFileSync(baselineTriggerFile,'utf8'));
-  assert.equal(contract.triggerCount,108);
-  assert.equal(contract.tableCount,93);
-  assert.equal(contract.canonicalSha256,'a270024b7f86cb4506fdcec33c19b14589ef3302d9cb5c2e29a0f1248b9cb073');
+  assert.equal(contract.triggerCount,111);
+  assert.equal(contract.tableCount,95);
+  assert.equal(contract.canonicalSha256,'7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8');
   assert.equal(sha256(baselineTriggerFile),manifest.triggers.fileSha256);
-  assert.equal(manifest.triggers.fileSha256,'2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4');
+  assert.equal(manifest.triggers.fileSha256,'70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf');
 });
 
-test('release adding triggers passes the Phase A baseline comparison at migration 169',()=>{
+test('migration-neutral release uses the same 111-trigger contract before and after install',()=>{
   const baseline=loadSchemaContract(baselineDirectory,baselineTriggerFile);
   const canonical=loadSchemaContract(canonicalDirectory,canonicalTriggerFile);
-  assert.equal(baseline.triggers.length,108);
+  assert.equal(baseline.triggers.length,111);
   assert.equal(canonical.triggers.length,111);
   assert.equal(compareSchemaContracts(baseline,clone(baseline)).matches,true);
-  const added=canonical.triggers.filter(item=>!baseline.triggers.some(existing=>existing.table===item.table&&existing.name===item.name));
-  assert.deepEqual(added.map(item=>`${item.table}|${item.name}`),[
-    'prospect_activities|prospect_activities_append_only',
-    'prospect_activities|prospect_activities_outreach_guard',
-    'prospects|prospects_status_effects',
-  ]);
+  assert.equal(compareSchemaContracts(canonical,clone(baseline)).matches,true);
 });
 
 test('Phase A still fails when one accepted baseline trigger is missing',()=>{
@@ -50,13 +45,11 @@ test('Phase A still fails when one accepted baseline trigger is missing',()=>{
 test('post-install comparison still requires all 111 canonical triggers',()=>{
   const baseline=loadSchemaContract(baselineDirectory,baselineTriggerFile);
   const canonical=loadSchemaContract(canonicalDirectory,canonicalTriggerFile);
-  const incomplete=compareSchemaContracts(canonical,baseline);
+  const observed=clone(baseline);
+  const removed=observed.triggers.shift();
+  const incomplete=compareSchemaContracts(canonical,observed);
   assert.equal(incomplete.matches,false);
-  assert.deepEqual(incomplete.triggers.missing,[
-    'prospect_activities|prospect_activities_append_only',
-    'prospect_activities|prospect_activities_outreach_guard',
-    'prospects|prospects_status_effects',
-  ]);
+  assert.deepEqual(incomplete.triggers.missing,[`${removed.table}|${removed.name}`]);
   assert.equal(compareSchemaContracts(canonical,clone(canonical)).matches,true);
 });
 

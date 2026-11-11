@@ -1,6 +1,8 @@
 # DEV267a D-1 — Prospect Diary hosted-bootstrap and validation correction
 
-**Status:** design checkpoint only; no implementation, package, upload or hosted change is authorized by this record.
+**Status:** D-1 approved for implementation, including the subsequently
+approved manual-DNCR addendum below. No upload or hosted change is authorized
+by this record.
 
 **Target:** CRM Test first. Production requires its own reconciliation, package, backup and exact approval.
 
@@ -150,11 +152,38 @@ Expected runtime changes are limited to:
 - `public/dashboard-ui.js` only for collision-free export names and internal
   references, with no dashboard content or business-rule change;
 - `src/routes/prospects.js` for identifier validation;
+- `src/routes/prospects.js`, `src/routes/whatsapp-workspace.js` and their two
+  existing feature UIs for the approved manual-DNCR evidence control;
 - focused static, API and real-browser tests;
-- version/release metadata required for `2.1.0-dev.267a`.
+- version/release metadata required for the numeric technical version
+  `2.1.0-dev.268` (the canonical release tooling does not accept an alphabetic
+  `267a` suffix).
 
-No workflow, access rule, suppression rule, call-window rule, repeat-call
-warning, schema, integration, connector or production change is included.
+No call-window rule, repeat-call warning, schema, integration, connector or
+production change is included. The only suppression/access extension is the
+manual-DNCR addendum in section 7A.
+
+## 7A. Approved manual-DNCR addendum
+
+The owner subsequently added the previously approved DEV267 D-1 decision for
+manual DNCR evidence because DEV267 deployed the shared `dncr` suppression type
+without a route or UI that could record or release it.
+
+- Prospect Diary and the WhatsApp suppression workspace expose a
+  Manager/Director-only control labelled **Manual DNCR evidence (not a registry
+  check)**.
+- Recording requires a non-empty evidence reference and writes the shared
+  phone-level `dncr` restriction. It is explicitly not evidence that CORE
+  queried any external registry.
+- Releasing requires a meaningful reason and the existing governed shared
+  suppression release path. Any weaker active restriction on the same phone
+  remains effective.
+- Agent attempts are rejected. Recording blocks WhatsApp recipient import,
+  campaign eligibility, outbound Prospect calls and follow-up creation through
+  the shared cross-channel suppression reader.
+- Record and release operations are audited with actor, evidence/reason and the
+  resulting effective restriction. Tests cover Manager record, Director
+  release, Agent refusal and every named outbound path.
 
 ## 8. D-2 test and release evidence required
 

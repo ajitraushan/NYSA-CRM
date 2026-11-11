@@ -1,5 +1,36 @@
 # CRM Development Baseline
 
+## DEV267 deployed / DEV267a (technical DEV268) D-2 preparation — 11 November 2026
+
+- CRM Test currently serves deployed-but-not-accepted DEV267
+  `2.1.0-dev.267`, commit
+  `d9133a980390fe375af36ef415b84e2f4f4fda4e`, database
+  `nysareal_nysa_dev247_smoke`, migration 170, 306 public tables and 111
+  enabled triggers across 95 tables. The accepted Phase D receipt is
+  `release-artifacts/dev267-preparation/run2/evidence/SMOKE_RESULT.json`
+  (SHA-256
+  `0e5e142b0affd1e5aab08125bf0bdd8d2461d6100b765eabb1a78d0e0469b74f`)
+  and records green readiness plus one command/CWD-verified exact-root worker.
+  This evidence supersedes the older DEV266/D-1-hold section below.
+- Live review found a deterministic hosted-bootstrap defect: `app.js` replaces
+  the Prospect Diary feature export and recurses. DEV267a corrects that global
+  collision, validates malformed company-calling-number identifiers before the
+  PostgreSQL query, and adds the approved Manager/Director manual-DNCR evidence
+  controls in Prospect Diary and the WhatsApp suppression workspace.
+- The release tooling requires a numeric development version, so DEV267a is
+  represented technically as `2.1.0-dev.268`. It is migration-neutral: expected
+  state stays 170 migrations, 306 tables and 111 triggers. The baseline schema
+  folder is byte-identical to the accepted DEV267 canonical schema manifest
+  `59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944`;
+  the trigger file is
+  `70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf`.
+- This is local build and D-2 preparation only. No DEV267a package has been
+  uploaded and no hosted file, database, selector, worker, configuration,
+  provider or production state is authorized to change. Any later deployment
+  must use the unchanged canonical operator, four separate approvals, a fresh
+  scoped backup, full contract checks and exact-root worker verification under
+  `AGENTS.md` and `CRM_CHANGE_POLICY.md`.
+
 ## DEV266 accepted / DEV267 D-1 hold — 10 November 2026
 
 - Installed CRM Test source of truth is accepted DEV266 `2.1.0-dev.266`, commit

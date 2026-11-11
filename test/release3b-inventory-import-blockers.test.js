@@ -74,11 +74,11 @@ test('R3B-INVENTORY-VERIFY-59 lets an authorized Manager decide a searched Pendi
 });
 
 test('R3B-INVENTORY-VERIFY-60 opens the verification worklist even when selected during dashboard loading',()=>{
-  const ui=read('public/dashboard-ui.js'),renderStart=ui.indexOf('window.renderCrmDashboard=async function'),loadStart=ui.indexOf("const loadCampaignOptions=async",renderStart),early=ui.slice(renderStart,loadStart);
+  const ui=read('public/dashboard-ui.js'),renderStart=ui.indexOf('window.renderDashboardFeatureModule=async function'),loadStart=ui.indexOf("const loadCampaignOptions=async",renderStart),early=ui.slice(renderStart,loadStart);
   assert.match(ui,/let dashboardRenderSequence=0/);
   assert.match(ui,/const renderSequence=\+\+dashboardRenderSequence/);
   assert.match(early,/data-inventory-verification-shortcut/);
-  assert.match(early,/addEventListener\('click',\(\)=>window\.renderCrmDashboard\(\{view:'Inventory verification'\}\)\)/);
+  assert.match(early,/addEventListener\('click',\(\)=>window\.renderDashboardFeatureModule\(\{view:'Inventory verification'\}\)\)/);
   assert.match(ui,/if\(renderSequence!==dashboardRenderSequence\)return/);
   assert.match(ui,/activeDashboardView==='Inventory verification'\?'btn-primary':''/);
 });
