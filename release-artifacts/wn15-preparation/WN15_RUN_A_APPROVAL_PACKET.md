@@ -317,14 +317,22 @@ counters are compared with the immediately preceding sample. If the binary,
 permissions, JSON output, usage, limits or fault fields are unavailable, the
 preflight fails and no load starts; no substitute command is improvised.
 
+If the approved resource tool exposes CPU and memory usage plus limits but no
+fault counters, any HTTP `503` or `508` response from CRM Test, Production or
+`www.nysarealty.com` is treated as a CloudLinux limit hit and aborts the run.
+The 80% CPU/memory threshold and the response-time abort rules below remain in
+force.
+
 Abort the exact load-tool process immediately and create no further work if:
 
 - any load request fails;
 - any monitored service returns a non-success response or times out;
 - Production or website response time exceeds both twice its pre-run median and
   the median plus 500 ms for two consecutive samples, or exceeds 3 seconds once;
-- account CPU or memory reaches 80% of its limit, or any CloudLinux limit/fault
-  counter increases;
+- disk usage reaches 90% or more of its limit;
+- any reported `uapi ResourceUsage get_usages` limit reaches 80% or more for
+  CPU, physical memory, entry processes, process count, IOPS or I/O, or any
+  available CloudLinux limit/fault counter increases;
 - CRM Test readiness/database state changes, or exact-root worker verification
   is no longer exactly one after a readiness request.
 
