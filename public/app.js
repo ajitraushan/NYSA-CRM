@@ -167,7 +167,7 @@ async function api(path, opts = {}) {
     signal: timeoutController?.signal || callerSignal,
     cache: opts.cache || 'no-store',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}), ...(requestOpts.headers || {}) },
+    headers: { 'Content-Type': 'application/json', 'X-Client-Time-Zone':Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}), ...(requestOpts.headers || {}) },
     body: requestOpts.body ? JSON.stringify(requestOpts.body) : undefined
     });
   } catch (error) {

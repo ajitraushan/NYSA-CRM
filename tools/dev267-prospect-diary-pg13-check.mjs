@@ -62,7 +62,7 @@ const integrationRuns=[
 ];
 for(const item of integrationRuns){
   process.stdout.write(`DEV267 PostgreSQL 13.23 integration: ${item.file}\n`);
-  const run=spawnSync(process.execPath,['--test','--test-isolation=none',item.file],{
+  const run=spawnSync(process.execPath,['--test','--test-force-exit','--test-isolation=none',item.file],{
     cwd:process.cwd(),env:{...process.env,[item.flag]:'local-synthetic'},encoding:'utf8'
   });
   process.stdout.write(run.stdout||'');process.stderr.write(run.stderr||'');

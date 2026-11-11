@@ -7,9 +7,9 @@ const uuid=()=>crypto.randomUUID();
 
 test('DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings',{skip:!enabled,timeout:180000},async()=>{
   assert.equal(process.env.PGDATABASE,'nysa_test_fixture');assert.equal(process.env.PGUSER,'nysa_test_user');
-  const db=await import('../src/db.js'),{createApp}=await import('../src/lib/http-kit.js'),{default:prospects}=await import('../src/routes/prospects.js');
+  const db=await import('../src/db.js'),{createApp}=await import('../src/lib/http-kit.js'),{default:prospects}=await import('../src/routes/prospects.js'),callingMode=await import('../src/prospect-calling-policy.js');
   const ids={agent:uuid(),agent2:uuid(),manager:uuid(),director:uuid(),admin:uuid(),team:uuid()},tokens=Object.fromEntries(['agent','agent2','manager','director','admin'].map(x=>[x,crypto.randomBytes(32).toString('hex')]));
-  const suffix=String(crypto.randomBytes(4).readUInt32BE()%9000000+1000000),phone=`+97150${suffix}`,blockedPhone=`+97155${suffix}`,wrongPhone=`+97156${suffix}`;let server;
+  const suffix=String(crypto.randomBytes(4).readUInt32BE()%9000000+1000000),phone=`+97150${suffix}`,blockedPhone=`+97155${suffix}`,wrongPhone=`+97156${suffix}`,ahmedPhone=`+97152${suffix}`,ahmedNewPhone=`+97154${suffix}`;let server;
   const request=async(path,{method='GET',body,as='agent',status=200}={})=>{const response=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{authorization:`Bearer ${tokens[as]}`,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)}),data=await response.json();assert.equal(response.status,status,JSON.stringify({path,method,as,expected:status,observed:response.status,data}));return data;};
   try{
     await db.migrate();assert.match((await db.one("SELECT current_setting('server_version') AS version")).version,/^13\.23/);
@@ -24,7 +24,7 @@ test('DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers 
     for(const role of Object.keys(tokens))await db.execute("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,NOW()+INTERVAL '1 hour')",[crypto.createHash('sha256').update(tokens[role]).digest('hex'),ids[role]]);
     const app=createApp();app.mount('/api',prospects);server=await new Promise((resolve,reject)=>{const listening=app.listen({host:'127.0.0.1',port:0},()=>resolve(listening));listening.once('error',reject);});
 
-    const calling=await request('/crm/prospect-diary/calling-numbers',{method:'POST',as:'director',status:201,body:{label:'DEV267 office',phone:'+971561234567',tdraRegistrationReference:`TDRA-${suffix}`,tdraRegisteredLegalName:'Nysa Realty',tdraRegisteredAt:'2026-11-01',tdraVerifiedAt:'2026-11-10T08:00:00Z',tdraEvidenceReference:`EVID-${suffix}`}});
+    const calling=await request('/crm/prospect-diary/calling-numbers',{method:'POST',as:'director',status:201,body:{label:'DEV267 office',phone:`+97153${suffix}`,tdraRegistrationReference:`TDRA-${suffix}`,tdraRegisteredLegalName:'Nysa Realty',tdraRegisteredAt:'2026-11-01',tdraVerifiedAt:'2026-11-10T08:00:00Z',tdraEvidenceReference:`EVID-${suffix}`}});
     const adminCalling=await request('/crm/prospect-diary/calling-numbers',{method:'POST',as:'admin',status:201,body:{label:'DEV267 admin office',phone:`+97158${suffix}`,tdraRegistrationReference:`TDRA-ADMIN-${suffix}`,tdraRegisteredLegalName:'Nysa Realty',tdraRegisteredAt:'2026-11-01',tdraVerifiedAt:'2026-11-10T08:00:00Z',tdraEvidenceReference:`EVID-ADMIN-${suffix}`}});
     await request(`/crm/prospect-diary/calling-numbers/${adminCalling.id}/retire`,{method:'POST',as:'admin',body:{reason:'Number retired after test verification'}});
     const created=await request('/crm/prospects',{method:'POST',status:201,body:{displayName:'DEV267 Prospect',phone,email:`p-${suffix}@example.invalid`,source:'cold_call'}}),prospect=created.prospect;
@@ -46,11 +46,21 @@ test('DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers 
     await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'call',direction:'outbound',outcome:'not_interested',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T11:00:00+04:00',notes:'Second attempt with warning',warningAcknowledged:true,warningReason:'Agent reviewed prior attempts'}});
     const afterDecline=await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T12:00:00+04:00',notes:'Recorded after decline',warningAcknowledged:true,warningReason:'Customer requested another call'}});assert.ok(afterDecline.warnings.includes('repeat_after_decline'));
     const outside=await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:409,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T20:00:00+04:00',notes:'Late evidence'}});assert.ok(outside.warnings.includes('outside_calling_window'));
-    const retained=await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T20:00:00+04:00',notes:'Late evidence retained',warningAcknowledged:true,warningReason:'Record completed call accurately'}});assert.ok(retained.warnings.includes('outside_calling_window'));
+    assert.match(outside.error,/outside the permitted calling hours/);assert.match(outside.error,/now 20:00 there/);
+    await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:409,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T20:00:00+04:00',notes:'Short override reason must fail',warningAcknowledged:true,warningReason:'no'}});
+    const retained=await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T20:00:00+04:00',notes:'Late evidence retained',warningAcknowledged:true,warningReason:'Record completed call accurately'}});assert.ok(retained.warnings.includes('outside_calling_window'));assert.match(retained.activity.notes,/Outside calling hours — customer request: Record completed call accurately/);
+    const outsideAudit=JSON.parse((await db.one("SELECT details FROM audit_log WHERE entity_type='ProspectActivity' AND entity_id=$1 AND action='created'",[retained.activity.id])).details);assert.equal(outsideAudit.prospectId,prospect.id);assert.equal(outsideAudit.prospectLocalTime,'20:00');assert.equal(outsideAudit.warningReason,'Record completed call accurately');assert.equal(outsideAudit.outsideCallingHoursMode,'warning');
     const original=(await db.one('SELECT id FROM prospect_activities WHERE prospect_id=$1 ORDER BY created_at LIMIT 1',[prospect.id]));
     const correction=await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'note',notes:'Corrected prior note',correctsActivityId:original.id,correctionReason:'Prior evidence wording was inaccurate'}});assert.equal(correction.activity.correctsActivityId,original.id);
     const follow=await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:201,body:{subject:'WhatsApp follow-up',channel:'whatsapp',dueAt:'2026-11-12T20:00:00+04:00',warningAcknowledged:true,warningReason:'Customer asked for follow-up'}});const task=await db.one("SELECT task_type,prospect_channel FROM tasks WHERE id=$1",[follow.followUp.id]);assert.deepEqual({taskType:task.taskType,prospectChannel:task.prospectChannel},{taskType:'prospect_follow_up',prospectChannel:'whatsapp'});
-    await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:409,body:{subject:'Call outside window',channel:'call',dueAt:'2026-11-12T20:00:00+04:00',warningAcknowledged:true,warningReason:'Should still be blocked'}});
+    const callWarning=await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:409,body:{subject:'Call outside window',channel:'call',dueAt:'2026-11-12T20:00:00+04:00'}});assert.match(callWarning.error,/outside the permitted calling hours/);
+    await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:409,body:{subject:'Short reason must fail',channel:'call',dueAt:'2026-11-12T20:00:00+04:00',warningAcknowledged:true,warningReason:'no'}});
+    const warnedCall=await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:201,body:{subject:'Call outside window',channel:'call',dueAt:'2026-11-12T20:00:00+04:00',warningAcknowledged:true,warningReason:'Customer explicitly requested this time'}});assert.match(warnedCall.followUp.details,/Outside calling hours — customer request: Customer explicitly requested this time/);
+    const followAudit=JSON.parse((await db.one("SELECT details FROM audit_log WHERE entity_type='Task' AND entity_id=$1 AND action='created'",[warnedCall.followUp.id])).details);assert.equal(followAudit.prospectId,prospect.id);assert.equal(followAudit.prospectLocalTime,'20:00');assert.equal(followAudit.warningReason,'Customer explicitly requested this time');assert.equal(followAudit.outsideCallingHoursMode,'warning');
+    process.env.PROSPECT_OUTSIDE_CALLING_HOURS_MODE='refuse';callingMode.resetProspectCallingPolicyForTests();
+    await request(`/crm/prospects/${prospect.id}/follow-ups`,{method:'POST',status:409,body:{subject:'Refused outside window',channel:'call',dueAt:'2026-11-13T20:00:00+04:00',warningAcknowledged:true,warningReason:'Customer explicitly requested this time'}});
+    await request(`/crm/prospects/${prospect.id}/activities`,{method:'POST',status:409,body:{activityType:'call',direction:'outbound',outcome:'answered',companyCallingNumberId:calling.id,occurredAt:'2026-11-13T20:00:00+04:00',notes:'Refused late call',warningAcknowledged:true,warningReason:'Customer explicitly requested this time'}});
+    delete process.env.PROSPECT_OUTSIDE_CALLING_HOURS_MODE;callingMode.resetProspectCallingPolicyForTests();
     await request(`/crm/prospects/${prospect.id}/follow-ups/${follow.followUp.id}`,{method:'PATCH',body:{status:'completed',outcome:'Customer reached'}});
     await assert.rejects(db.execute("UPDATE prospect_activities SET notes='changed' WHERE id=$1",[original.id]),/append-only/);
 
@@ -66,13 +76,33 @@ test('DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers 
     const invalidPhone=`+97159${suffix}`,invalid=await request('/crm/prospects',{method:'POST',status:201,body:{displayName:'Invalid number prospect',phone:invalidPhone,email:`invalid-${suffix}@example.invalid`,source:'cold_call'}});
     await request(`/crm/prospects/${invalid.prospect.id}/activities`,{method:'POST',status:201,body:{activityType:'call',direction:'outbound',outcome:'invalid_number',companyCallingNumberId:calling.id,occurredAt:'2026-11-10T13:00:00+04:00',notes:'Confirmed invalid number'}});
     assert.equal((await getContactSuppression(invalidPhone)).strongest,'wrong_number');
+    const overrides=await request('/crm/prospect-diary/overrides',{as:'manager'});assert.ok(overrides.overrides.some(item=>item.prospectId===prospect.id&&item.prospectLocalTime&&item.warningReason));
+    await request('/crm/prospect-diary/overrides',{as:'agent',status:403});
+    const ahmed=(await request('/crm/prospects',{method:'POST',status:201,body:{displayName:'Ahmed',phone:ahmedPhone,briefNotes:'Original note',source:'cold_call'}})).prospect;
+    assert.equal((await request(`/crm/prospects/${ahmed.id}/conversion-matches`)).customerReady,false);
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',status:400,body:{email:'not-an-email'}});
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',status:400,body:{phone:ahmedNewPhone}});
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',status:403,body:{source:'referral',sourceReason:'Customer supplied referral evidence'}});
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',as:'manager',body:{source:'referral',sourceReason:'Manager confirmed referral evidence'}});
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',status:409,body:{phone:wrongPhone,phoneReason:'Customer supplied replacement number'}});
+    const edited=await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',body:{displayName:'Ahmed Khan',email:`ahmed-${suffix}@example.invalid`,phone:ahmedNewPhone,phoneReason:'Customer confirmed corrected mobile',briefNotes:'Updated qualification note'}});assert.equal(edited.prospect.normalizedEmail,`ahmed-${suffix}@example.invalid`);assert.equal(edited.prospect.normalizedPhone,ahmedNewPhone);
+    const history=await request(`/crm/prospects/${ahmed.id}`),historyDetails=JSON.parse(history.editHistory[0].details);assert.equal(historyDetails.before.briefNotes,'Original note');assert.equal(historyDetails.after.briefNotes,'Updated qualification note');
+    assert.equal(historyDetails.phoneReason,'Customer confirmed corrected mobile');assert.equal(historyDetails.before.phone,ahmedPhone);assert.equal(historyDetails.after.phone,ahmedNewPhone);
+    await Promise.all([
+      request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',body:{briefNotes:'Concurrent audit note A'}}),
+      request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',body:{briefNotes:'Concurrent audit note B'}})
+    ]);
+    const concurrentAudits=await db.one("SELECT COUNT(*)::int AS count FROM audit_log WHERE entity_type='Prospect' AND entity_id=$1 AND action='profile_updated' AND details::text LIKE '%Concurrent audit note%'",[ahmed.id]);assert.equal(concurrentAudits.count,2);
+    const preserved=await request(`/crm/prospects/${autoDnc.prospect.id}`,{method:'PATCH',body:{displayName:'Suppressed prospect updated'}});assert.equal(preserved.prospect.status,'do_not_contact');assert.equal(preserved.suppression.strongest,'opt_out');
+    const converted=await request(`/crm/prospects/${ahmed.id}/convert`,{method:'POST',status:201,body:{contactType:'buyer'}});assert.ok(converted.contactId);
+    await request(`/crm/prospects/${ahmed.id}`,{method:'PATCH',status:409,body:{displayName:'Must remain unchanged'}});
   }finally{
     if(server){server.close();server.closeAllConnections?.();}
     await db.execute("DELETE FROM audit_log WHERE performed_by=ANY($1::uuid[])",[Object.values(ids).filter(x=>String(x).includes('-'))]).catch(()=>{});
-    await db.execute("DELETE FROM tasks WHERE prospect_id IN(SELECT id FROM prospects WHERE normalized_phone IN($1,$2))",[phone,blockedPhone]).catch(()=>{});
-    await db.execute("DELETE FROM prospects WHERE normalized_phone IN($1,$2)",[phone,blockedPhone]).catch(()=>{});
-    await db.execute('DELETE FROM wa_contact_suppressions WHERE normalized_phone=ANY($1::text[])',[[phone,blockedPhone,wrongPhone]]).catch(()=>{});
-    await db.execute("DELETE FROM company_calling_numbers WHERE tdra_registration_reference=$1",[`TDRA-${suffix}`]).catch(()=>{});
+    await db.execute("DELETE FROM tasks WHERE prospect_id IN(SELECT id FROM prospects WHERE normalized_phone=ANY($1::text[]))",[[phone,blockedPhone,ahmedPhone,ahmedNewPhone]]).catch(()=>{});
+    await db.execute("DELETE FROM prospects WHERE normalized_phone=ANY($1::text[])",[[phone,blockedPhone,ahmedPhone,ahmedNewPhone]]).catch(()=>{});
+    await db.execute('DELETE FROM wa_contact_suppressions WHERE normalized_phone=ANY($1::text[])',[[phone,blockedPhone,wrongPhone,ahmedPhone,ahmedNewPhone]]).catch(()=>{});
+    await db.execute("DELETE FROM company_calling_numbers WHERE tdra_registration_reference=ANY($1::text[])",[[`TDRA-${suffix}`,`TDRA-ADMIN-${suffix}`]]).catch(()=>{});
     await db.execute('DELETE FROM sessions WHERE broker_id=ANY($1::uuid[])',[[ids.agent,ids.agent2,ids.manager,ids.director]]).catch(()=>{});
     await db.execute('DELETE FROM team_memberships WHERE team_id=$1',[ids.team]).catch(()=>{});await db.execute('DELETE FROM teams WHERE id=$1',[ids.team]).catch(()=>{});await db.execute('DELETE FROM brokers WHERE id=ANY($1::uuid[])',[[ids.agent,ids.agent2,ids.manager,ids.director]]).catch(()=>{});await db.closeDatabase();
   }

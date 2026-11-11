@@ -11,9 +11,12 @@ test('DEV267a actual hosted bootstrap opens Prospect Diary for Agent and Manager
     execFileSync(process.execPath,['tools/dev267a-hosted-bootstrap-browser-check.mjs',output,process.cwd()],{cwd:process.cwd(),encoding:'utf8',stdio:'pipe',timeout:120000});
     const evidence=JSON.parse(fs.readFileSync(path.join(output,'DEV267A_HOSTED_BOOTSTRAP_BROWSER_RESULT.json'),'utf8'));
     assert.equal(evidence.loadedThroughActualIndexAndBootstrap,true);
-    assert.equal(evidence.version,'2.1.0-dev.268');
+    assert.equal(evidence.version,'2.1.0-dev.269');
     assert.deepEqual(evidence.roles.map(item=>[item.role,item.status]),[['sales_agent','passed'],['manager','passed']]);
     assert.ok(evidence.roles.every(item=>item.pageErrors.length===0&&item.consoleErrors.length===0&&item.state.heading==='Prospect Diary'));
+    assert.ok(evidence.roles.every(item=>item.state.headTag==='SECTION'&&item.state.headBackground!=='rgb(0, 0, 0)'&&item.mobile.bodyWidth<=item.mobile.viewport+1));
+    assert.equal(evidence.roles.find(item=>item.role==='manager').dncrRefresh,'passed');
+    assert.ok(evidence.roles.every(item=>item.screenshots.length===2));
     assert.deepEqual(evidence.requiredOrder,['/bootstrap.js','/prospect-diary-ui.js','/dashboard-ui.js','/app.js']);
   }finally{
     fs.rmSync(output,{recursive:true,force:true});

@@ -82,7 +82,7 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     const segment=await request('/crm/whatsapp-workspace/segments',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} consented`,description:'Synthetic verified recipients',definition:{batchIds:[ids.batch],consentStatus:'verified',tagsAny:['investor']}}});
     ids.segment=segment.segment.id;
     const material=await request('/crm/whatsapp-workspace/materials',{method:'POST',status:201,body:{teamId:teams.main,title:`${prefix} brochure`,materialType:'brochure',description:'Synthetic metadata-only catalogue item'}});
-    ids.material=material.material.id;assert.equal(material.material.storageKey,null);
+    ids.material=material.material.id;assert.equal(Object.hasOwn(material.material,'storageKey'),false);assert.equal(material.material.hasFile,false);
 
     const campaign=await request('/crm/whatsapp-workspace/campaigns',{method:'POST',status:201,body:{teamId:teams.main,name:`${prefix} campaign`,purpose:'Synthetic approval-flow verification only',segmentId:ids.segment,templateVersionId:ids.version,materialIds:[ids.material],scheduledAt:'2026-11-24T10:00:00+04:00',budgetAed:500}});
     ids.campaign=campaign.campaign.id;
@@ -106,6 +106,12 @@ test('WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture
     assert.equal(finalAgent.segments[0].recipientCount,1);
     assert.equal(finalAgent.campaigns[0].status,'approved');
     assert.equal(finalAgent.campaigns[0].materialCount,1);
+    assert.equal(Object.hasOwn(finalAgent.materials[0],'storageKey'),false);
+    const retired=await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/retire`,{method:'POST',as:'manager',body:{reason:'Campaign approval is no longer required'}});assert.equal(retired.campaign.status,'retired');
+    await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}/submit`,{method:'POST',status:409,body:{}});
+    await request(`/crm/whatsapp-workspace/campaigns/${ids.campaign}`,{method:'PATCH',status:409,body:{teamId:teams.main,name:`${prefix} retired edit`,purpose:'Retired campaign must remain immutable',segmentId:ids.segment,templateVersionId:ids.version,materialIds:[ids.material],scheduledAt:'2026-11-25T10:00:00+04:00',budgetAed:600}});
+    const retirementAudit=await db.one("SELECT details FROM audit_log WHERE entity_type='WhatsAppCampaign' AND entity_id=$1 AND action='retired' ORDER BY timestamp DESC LIMIT 1",[ids.campaign]);assert.equal(JSON.parse(retirementAudit.details).priorStatus,'approved');
+    const retiredMaterial=await request(`/crm/whatsapp-workspace/materials/${ids.material}/retire`,{method:'POST',body:{}});assert.equal(Object.hasOwn(retiredMaterial.material,'storageKey'),false);assert.equal(retiredMaterial.material.hasFile,false);
     const director=await request('/crm/whatsapp-workspace',{as:'director'});
     assert.ok(director.templates.some(item=>item.id===ids.template));
     const outside=await request('/crm/whatsapp-workspace',{as:'outside'});

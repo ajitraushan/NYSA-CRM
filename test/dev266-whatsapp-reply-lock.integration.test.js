@@ -26,13 +26,13 @@ test('DEV266 reply lock is enforced by the PostgreSQL 13 route transaction',{ski
   let server,conversationId;
 
   const request=async(path,{method='GET',body,as='admin',status=200}={})=>{
-    const response=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{authorization:`Bearer ${tokens[as]}`,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{authorization:`Bearer ${tokens[as]}`,'content-type':'application/json','x-client-time-zone':'Asia/Kolkata'},body:body===undefined?undefined:JSON.stringify(body)});
     const data=await response.json();
     assert.equal(response.status,status,JSON.stringify({path,method,as,expected:status,observed:response.status,data}));
     return data;
   };
   const rawRequest=async(path,{method='GET',body,as='admin'}={})=>{
-    const response=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{authorization:`Bearer ${tokens[as]}`,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api${path}`,{method,headers:{authorization:`Bearer ${tokens[as]}`,'content-type':'application/json','x-client-time-zone':'Asia/Kolkata'},body:body===undefined?undefined:JSON.stringify(body)});
     return{status:response.status,data:await response.json()};
   };
   const lock=(action,as='agent',status=200)=>request(`/crm/whatsapp-workspace/conversations/${conversationId}/reply-lock`,{method:'POST',as,status,body:{action}});
@@ -78,11 +78,13 @@ test('DEV266 reply lock is enforced by the PostgreSQL 13 route transaction',{ski
     assert.equal(acquired.replyLock.ownerId,people.agent);
     assert.equal(acquired.replyLock.active,true);
     assert.equal(acquired.replyLock.timeoutMinutes,expectedTimeout);
+    const detail=await request(`/crm/whatsapp-workspace/conversations/${conversationId}`,{as:'agent'});assert.match(detail.conversation.replyLockOwnerName,/your local time/);assert.doesNotMatch(detail.conversation.replyLockOwnerName,/T\d\d:/);
     assert.equal((await db.one("SELECT COUNT(*)::int AS count FROM audit_log WHERE entity_type='WhatsAppConversation' AND entity_id=$1 AND action='reply_lock_acquired'",[conversationId])).count,2);
 
     // A second in-scope user cannot acquire or send while the Agent holds it.
     const managerAcquire=await lock('acquire','manager',409);
     assert.equal(managerAcquire.code,'WHATSAPP_REPLY_LOCK_HELD');
+    assert.match(managerAcquire.error,/your local time/);assert.doesNotMatch(managerAcquire.error,/T\d\d:/);
     const beforeManagerBlocked=await outboundCount();
     const managerBlocked=await send('manager','Manager must not bypass an Agent lock',409);
     assert.equal(managerBlocked.code,'WHATSAPP_REPLY_LOCK_HELD');

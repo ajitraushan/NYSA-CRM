@@ -51,6 +51,7 @@ import prospectRoutes from './routes/prospects.js';
 import {createWhatsAppSimulatedProviderRoutes,createWhatsAppSimulationControlRoutes} from './routes/whatsapp-simulated-provider.js';
 import {assertSimulatedProviderEnvironment} from './whatsapp-simulated-provider.js';
 import {configureWhatsAppReplyLock} from './whatsapp-reply-lock.js';
+import {configureProspectCallingPolicy} from './prospect-calling-policy.js';
 import { leadConnectionEnvironment } from './lead-integration-connections.js';
 import { requireAuth } from './auth.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
@@ -125,6 +126,7 @@ async function start() {
   writeRuntimeEvent('starting');
   assertSimulatedProviderEnvironment();
   configureWhatsAppReplyLock(process.env);
+  configureProspectCallingPolicy(process.env);
   await migrate();
   startAdviceWorker();
   startWebIntakeWorker({transaction});

@@ -252,7 +252,7 @@ export function createWhatsAppSimulationControlRoutes(){
     const config=requireSimulation(req,res);if(!config)return;
     const result=await transaction(async client=>{
       const conversation=await scopedConversation(req.params.id,req.broker,{client,forUpdate:true});
-      if(!conversation)return{code:404,error:'Simulated conversation not found or outside your scope'};
+      if(!conversation)return{code:404,error:'Conversation not found or outside your inbox scope'};
       const suppression=await getContactSuppression(conversation.normalizedPhone,client);
       if(suppression.blocked){
         const optOutAt=milliseconds(suppression.restrictions.opt_out?.recordedAt),lastInbound=milliseconds(conversation.lastCustomerMessageAt),serviceReply=suppression.strongest==='opt_out'&&Number.isFinite(optOutAt)&&lastInbound>optOutAt&&Date.now()-lastInbound<=24*60*60*1000;

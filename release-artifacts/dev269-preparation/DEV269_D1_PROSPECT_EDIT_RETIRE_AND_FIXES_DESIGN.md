@@ -116,11 +116,15 @@ the regression reference and must be absent.
 4. Activity/follow-up warnings map internal codes to plain-language labels and
    display the Agent's recorded reason. Raw codes remain available only in
    governed audit evidence.
-5. Recorded calls and proposed call follow-ups outside 09:00–18:00
-   Prospect-local time produce a **soft warning**, not a hard limit. Copy will
-   say that the action is outside the maintained prospect-local calling window
-   and requires acknowledgement plus a reason. Repeat-call limits remain soft
-   warnings as already decided.
+5. A completed outbound call recorded outside 09:00–18:00 Prospect-local time
+   and a proposed call follow-up outside that window both use the governed
+   `PROSPECT_OUTSIDE_CALLING_HOURS_MODE` setting. The default is `warning`:
+   acknowledgement and a reason of at least five characters are required and
+   the saved call/Task, Prospect timeline, Manager override register and audit
+   show the customer-request evidence and Prospect-local time. `refuse` returns
+   409 without saving, allowing a hard block without a code change. The warning
+   explains the 09:00–18:00 window and UAE marketing-call rule. Repeat-call
+   limits remain soft warnings.
 6. Duplicate handling will not offer **Open existing prospect** unless that
    exact Prospect is inside the actor's permitted scope. Outside-scope matches
    show only the privacy-safe Manager-review instruction.

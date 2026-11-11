@@ -5,7 +5,7 @@ import test from 'node:test';
 
 test('DEV267a technical version and migration-neutral schema baseline equal DEV267 canonical',()=>{
   const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
-  assert.equal(packageJson.version,'2.1.0-dev.268');
+  assert.equal(packageJson.version,'2.1.0-dev.269');
   const result=JSON.parse(execFileSync(process.execPath,['tools/verify-dev267a-release-contract.mjs'],{encoding:'utf8'}));
   assert.equal(result.migrationNeutral,true);
   assert.equal(result.expected.manifestSha256,'59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944');

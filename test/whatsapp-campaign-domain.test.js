@@ -54,6 +54,15 @@ test('campaign approval preserves Agent draft and audited Manager or Director au
   assert.equal(campaignCommand(self,'approve',{actorId:'director-1',actorRole:'director',activeApproverCount:1}).status,'approved');
 });
 
+test('campaign retirement is limited to owning Agent drafts/returns or scoped leadership',()=>{
+  const draft={id:'c1',status:'draft',preparedBy:'agent-1',ownerTeamId:'team-1'};
+  assert.equal(campaignCommand(draft,'retire',{actorId:'agent-1',actorRole:'sales_agent',reason:'Campaign no longer needed'}).status,'retired');
+  assert.throws(()=>campaignCommand({...draft,preparedBy:'agent-2'},'retire',{actorId:'agent-1',actorRole:'sales_agent',reason:'Campaign no longer needed'}),/owning Agent/);
+  assert.throws(()=>campaignCommand({...draft,status:'approved'},'retire',{actorId:'agent-1',actorRole:'sales_agent',reason:'Campaign no longer needed'}),/owning Agent/);
+  assert.equal(campaignCommand({...draft,status:'pending_approval'},'retire',{actorId:'manager-1',actorRole:'manager',managedTeamIds:['team-1'],reason:'Manager withdrew this campaign'}).status,'retired');
+  assert.equal(campaignCommand({...draft,status:'approved'},'retire',{actorId:'director-1',actorRole:'director',reason:'Director retired this campaign'}).status,'retired');
+});
+
 test('Stage B foundation contains no dispatch implementation',()=>{
   assert.equal(normalizeWhatsAppPhone('0500000001'),null);
   assert.throws(()=>assertStageBDispatchDisabled(),/WA_STAGE_B_DISPATCH_NOT_IMPLEMENTED/);

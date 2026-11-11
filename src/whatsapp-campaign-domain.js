@@ -137,6 +137,11 @@ export function campaignCommand(campaign,command,{actorId,actorRole,managedTeamI
   if(!transitions[command]?.includes(current))throw new Error(`Campaign cannot ${command} from ${current}`);
   if(command==='submit'&&String(campaign?.preparedBy)!==String(actorId)&&!managerInScope)throw new Error('Only the preparer or their Manager may submit this campaign');
   if(['approve','return'].includes(command)&&!approver)throw new Error('Manager or Director approval in campaign scope is required');
+  if(command==='retire'){
+    const ownAgentDraft=actorRole==='sales_agent'&&String(campaign?.preparedBy)===String(actorId)&&['draft','returned'].includes(current);
+    const leadership=approver&&['draft','pending_approval','approved','returned'].includes(current);
+    if(!ownAgentDraft&&!leadership)throw new Error('Only the owning Agent may retire their draft or returned campaign; Manager/Director scope is required for pending or approved campaigns');
+  }
   // Addendum 2 expressly permits Manager/Director self-approval. The route
   // records that fact in the immutable decision audit.
   if(['return','retire'].includes(command)&&!clean(reason,500))throw new Error('A decision reason is required');

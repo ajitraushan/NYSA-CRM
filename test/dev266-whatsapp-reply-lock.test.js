@@ -65,6 +65,11 @@ test('DEV266 release source uses typed UUIDs and all reply sends use the shared 
   assert.match(simulator,/refreshReplyLockAfterSend\(client,conversation,req\.broker\)/);
   assert.match(ui,/Reply lock held by/);
   assert.match(ui,/item\.replyLock\?\.canRelease/);
+  assert.match(workspace,/x-client-time-zone/);
+  assert.match(workspace,/your local time/);
+  assert.match(read('public/app.js'),/X-Client-Time-Zone/);
+  assert.match(workspace,/Conversation not found or outside your inbox scope/);
+  assert.match(simulator,/Conversation not found or outside your inbox scope/);
 });
 
 test('DEV267a retains the accepted DEV267 schema as the deployment baseline',()=>{
