@@ -63,7 +63,15 @@ every Production ACL.
 | CRM Test rehearsal on approved CRM Test data | Stored deadlines immediately after migration 172 | Pending written go and receipt |
 | Production read-only preflight on DEV270 | Projected deadlines using the migration 172 expression | Pending written go and receipt |
 
-Use the aggregate-only query in tools/dev271-first-call-backfill-evidence.sql.
+Use the approved aggregate-only query at origin commit
+`cc5158692e520ff2f377d9440689d4d6513203b8`, file
+`tools/dev271-first-call-backfill-evidence.sql`, SHA-256
+`4d161878586106f0617c0ade70da3b88b71c0236091e7dde95c1af4e2a044031`.
+Fetch it fresh into a new directory for each approved phase, verify with
+`sha256sum -c`, and invoke `psql -X -f <verified-file>` by path using
+the approved phase's database credential handling. Run inside CRM Test
+Phase C immediately after migration 172 and inside Production read-only
+preflight before backup and install. The query has no standalone hosted run.
 Capture the database, role, measurement timestamp with offset, basis, total prospects,
 prospects with deadlines, and count strictly earlier than the measurement
 time. Report the count for all prospects and separately for the prospects

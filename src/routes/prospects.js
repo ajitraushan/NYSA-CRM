@@ -219,8 +219,8 @@ r.post('/crm/prospect-diary/overrides/:id/review',async(req,res)=>{
       'ON CONFLICT ('+key+') DO NOTHING RETURNING id,reviewed_by,reviewed_at,comment',
       [uuid(),id,req.broker.id,comment||null],client);
     if(!review)return {duplicate:true};
-    await audit('ProspectOverrideReview',review.id,'reviewed',req.broker.id,
-      {prospectId:row.id,evidenceType:type,evidenceId:id,comment:review.comment},client);
+    await audit('Prospect',row.id,'override_reviewed',req.broker.id,
+      {reviewId:review.id,evidenceType:type,evidenceId:id,comment:review.comment},client);
     return {review};
   });
   if(!result)return res.status(404).json({error:'Override not found'});
