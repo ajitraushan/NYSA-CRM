@@ -121,6 +121,15 @@ a pass. Raw outputs are `DEV269_GOVERNED_TEST_OUTPUT.txt` and
 `DEV269_GOVERNED_TEST_TAP_OUTPUT.txt`; the structured receipt is
 `DEV269_GOVERNED_TEST_RECEIPT.json`.
 
+Evidence-collection note: the first local wrapper invocation ran inside the
+restricted command sandbox and reported 35 browser/local-server failures. It
+did not change source, package or hosting and was not treated as release
+evidence. Running the same governed selection with the local browser/server
+permissions required by those tests produced the zero-failure receipt above,
+which agrees with the independent detached-origin packager receipt. This
+distinguishes an infrastructure-denied run from the candidate result rather
+than silently discarding the failed attempt.
+
 ### PostgreSQL 13.23
 
 The synthetic fixture reported PostgreSQL 13.23, 170 migrations, 306 tables,
