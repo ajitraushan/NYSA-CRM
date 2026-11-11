@@ -149,6 +149,13 @@ ${assertCatalog(canonical, 'idempotent canonical preflight')}
     RETURN;
   END IF;
 
+  -- Production must match the canonical contract above. The historical
+  -- recovery below is reserved for the CRM Test drift contract.
+  IF current_database() = 'nysareal_nysacrm'
+     OR current_user = 'nysareal_nysacrmapp' THEN
+    RAISE EXCEPTION 'Migration 169 requires the canonical pre-170 schema in Production';
+  END IF;
+
 ${assertCatalog(baseline, 'approved pre-migration baseline')}
 
   SELECT COUNT(*)::int,MIN(m.conversation_id::text)::uuid

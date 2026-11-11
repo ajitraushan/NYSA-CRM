@@ -1,6 +1,6 @@
 {
   "name": "nysa-crm",
-  "version": "2.1.0-dev.269",
+  "version": "2.1.0-dev.270",
   "description": "NYSA CORE consolidated CRM Test candidate - Releases 3 to 6",
   "type": "module",
   "main": "app.cjs",
@@ -35,6 +35,7 @@
   "dependencies": {
     "@fontsource/inter": "5.2.5",
     "@sparticuz/chromium": "153.0.0",
+    "fflate": "0.8.3",
     "imapflow": "2.9.1",
     "mailparser": "3.12.4",
     "nodemailer": "10.2.1",

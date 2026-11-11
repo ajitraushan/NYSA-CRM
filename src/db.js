@@ -100,7 +100,18 @@ export async function migrate() {
     if (applied.has(file)) continue;
     const sql = await fs.readFile(path.join(dir, file), 'utf8');
     await transaction(async (client) => {
-      await client.query(sql);
+      // RC1 already applied 001-140. Map only pending historical grant targets
+      // on the verified Production database and connected runtime role.
+      let migration = sql;
+      if (config.database === 'nysareal_nysacrm' && /^(14[1-9]|15[0-9]|16[0-5])_/.test(file)
+          && /\bTO\s+nysareal_nysar2app\s*;/i.test(sql)) {
+        const identity = await one('SELECT current_database() AS database, current_user AS runtime_role', [], client);
+        if (identity.database !== 'nysareal_nysacrm' || identity.runtimeRole !== 'nysareal_nysacrmapp') {
+          throw new Error('Production migration requires the configured Production runtime role');
+        }
+        migration = sql.replace(/(\bTO\s+)nysareal_nysar2app(?=\s*;)/gi, '$1CURRENT_USER');
+      }
+      await client.query(migration);
       await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [file]);
     });
   }

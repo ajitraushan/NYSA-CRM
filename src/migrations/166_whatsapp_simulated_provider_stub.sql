@@ -96,6 +96,7 @@ ALTER TABLE wa_campaign_audit DROP CONSTRAINT IF EXISTS wa_campaign_audit_entity
 ALTER TABLE wa_campaign_audit ADD CONSTRAINT wa_campaign_audit_entity_type_check
   CHECK(entity_type IN ('recipient_import','segment','template_catalogue','message_template','material_catalogue','campaign','conversation','simulation'));
 
+-- The migration runner connects as the configured PostgreSQL runtime role.
 GRANT SELECT,INSERT,UPDATE,DELETE ON
   wa_simulation_runs,wa_simulated_provider_control,wa_simulated_provider_events
-  TO nysareal_nysar2app;
+  TO CURRENT_USER;

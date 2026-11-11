@@ -518,7 +518,22 @@ function switchTab(tab) {
   tab === 'prospectDiary' ? renderProspectDiaryWorkspace() : tab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : tab === 'whatsappWorkspace' ? window.renderWhatsAppWorkspace?.() : tab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : tab === 'receivables' ? window.renderCommissionReceivables?.() : tab === 'myLeave' ? window.renderMyLeave?.() : tab === 'leaveAdministration' ? renderLeaveAdministration() : tab === 'payout' ? window.renderDirectorPayout?.() : tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'tasks' ? renderTasks() : tab === 'opportunities' ? renderOpportunities() : tab === 'incomingLeads' ? window.renderIncomingLeads?.({root:document.querySelector('#view'),api,escape:esc,openLeadResponse:()=>switchTab('leadResponse')}) : tab === 'leadResponse' ? window.renderLeadResponse?.({root:document.querySelector('#view'),api,escape:esc}) : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : tab === 'externalListings' ? renderExternalPortalListings() : renderListings();
 }
 
-function prospectDiaryOptions(){return{root:document.querySelector('#view'),api,escape:esc,actor:ME,toast,openRecord:recordWorkspace,openCustomer:id=>{switchTab('customers');setTimeout(()=>openCustomer(id),0);},startLead:id=>{switchTab('crm');setTimeout(()=>openNewLeadForm(id),0);}};}
+async function downloadProspectFile(path, name) {
+  const res = await fetch('/api' + path, {
+    credentials: 'same-origin', cache: 'no-store',
+    headers: TOKEN ? {Authorization: 'Bearer ' + TOKEN} : {}
+  });
+  if (!res.ok) throw new Error('The download is unavailable');
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function prospectDiaryOptions(){return{root:document.querySelector('#view'),api,download:downloadProspectFile,escape:esc,actor:ME,toast,openRecord:recordWorkspace,openCustomer:id=>{switchTab('customers');setTimeout(()=>openCustomer(id),0);},startLead:id=>{switchTab('crm');setTimeout(()=>openNewLeadForm(id),0);}};}
 function renderProspectDiaryWorkspace(){return window.renderProspectDiary?.(prospectDiaryOptions());}
 function openProspectRecord(id){return window.openProspectDiaryRecord?.(id,prospectDiaryOptions());}
 
