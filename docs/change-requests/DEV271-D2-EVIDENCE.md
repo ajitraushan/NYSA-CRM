@@ -7,7 +7,7 @@ Candidate package and provenance, hosted sender and delivery evidence are pendin
 
 ## CRM Test delivery recipient
 
-Ajit designated lead@nysarealty.com as the recipient for the synthetic CRM Test digest. Add it to the CRM Test recipient allow-list for that run. The approved digest sender and its credentials are separate. This recipient designation does not change the Admin self-test, which resolves the signed-in Admin address.
+Ajit designated admin@nysarealty.com as the recipient for the synthetic CRM Test digest. Add it to the CRM Test recipient allow-list for that run. Use the staff Outlook inbox to verify cPanel-to-Outlook routing and recipient-side SPF and DKIM. Keep the lead-reply mailbox out of this test. The digest sender and its credentials are separate. This recipient designation does not change the Admin self-test, which resolves the signed-in Admin address.
 
 ## Password-entry interface
 
@@ -50,7 +50,7 @@ with a synthetic credential remains pending.
 two synthetic fixtures. The Production fixture reproduces all 58 owner-held
 tables from the ownership receipt. Both fixtures have 313 tables after the
 migration and accepted a DEV270-shaped call insert without a next step.
-These checks do not exercise the full DEV270 application rollback or reproduce
+The receipt records total, backfilled and past-due deadline counts, as well as append-only interest-history checks. These checks do not exercise the full DEV270 application rollback or reproduce
 every Production ACL.
 
 ## Remaining evidence

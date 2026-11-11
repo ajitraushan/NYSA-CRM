@@ -4,12 +4,22 @@
     "role": "nysa_test_user",
     "postgres": "13.23",
     "migrations": 172,
-    "owner_held": 0,
-    "elapsedMs": 93,
-    "last_activity_at": "2026-11-14T06:00:00.000Z",
-    "first_call_due_at": "2026-11-16T05:00:00.000Z",
+    "last_activity_at": "2020-11-14T06:00:00.000Z",
+    "first_call_due_at": "2020-11-16T05:00:00.000Z",
     "legacy_calls": 2,
     "tables": 313,
+    "owner_held": 0,
+    "elapsedMs": 191,
+    "measured_at": "2026-11-11T21:36:48.298Z",
+    "prospects_total": 2,
+    "first_call_due_backfilled": 2,
+    "first_call_due_in_past": 1,
+    "interest_history": {
+      "insert_accepted": true,
+      "update_rejected": true,
+      "delete_rejected": true,
+      "row_retained": true
+    },
     "scope": "synthetic data, DEV270 INSERT shape only"
   },
   {
@@ -17,12 +27,22 @@
     "role": "nysareal_nysacrmapp",
     "postgres": "13.23",
     "migrations": 172,
-    "owner_held": 58,
-    "elapsedMs": 135,
-    "last_activity_at": "2026-11-14T06:00:00.000Z",
-    "first_call_due_at": "2026-11-16T05:00:00.000Z",
+    "last_activity_at": "2020-11-14T06:00:00.000Z",
+    "first_call_due_at": "2020-11-16T05:00:00.000Z",
     "legacy_calls": 2,
     "tables": 313,
+    "owner_held": 58,
+    "elapsedMs": 90,
+    "measured_at": "2026-11-11T21:37:01.922Z",
+    "prospects_total": 2,
+    "first_call_due_backfilled": 2,
+    "first_call_due_in_past": 1,
+    "interest_history": {
+      "insert_accepted": true,
+      "update_rejected": true,
+      "delete_rejected": true,
+      "row_retained": true
+    },
     "scope": "synthetic data, DEV270 INSERT shape only"
   }
 ]

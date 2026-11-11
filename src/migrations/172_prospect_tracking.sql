@@ -36,6 +36,15 @@ CREATE TABLE prospect_interest_history (
   after_values jsonb NOT NULL
 );
 
+CREATE FUNCTION nysa_prospect_interest_history_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'Prospect interest history is append-only' USING ERRCODE = '23514';
+END;
+$$;
+CREATE TRIGGER prospect_interest_history_append_only
+  BEFORE UPDATE OR DELETE ON prospect_interest_history
+  FOR EACH ROW EXECUTE FUNCTION nysa_prospect_interest_history_append_only();
+
 CREATE TABLE prospect_cadence_policy_versions (
   id uuid PRIMARY KEY,
   status text NOT NULL CHECK (status IN ('draft','active','retired')),
