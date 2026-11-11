@@ -1,6 +1,6 @@
 # DEV270 revised D-2 packet
 
-This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Production option B is implemented in `2197f15a21aed31b24c6488013dc86d421edf021`. The CloudLinux wrapper correction is `9428b805c15123b98a79855639a0d0e09da13212`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
+This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Production option B is implemented in `2197f15a21aed31b24c6488013dc86d421edf021`. The CloudLinux wrapper correction is `9428b805c15123b98a79855639a0d0e09da13212`. The account quota guard is `54251adbebdd1c58afe9c107bfc0d982f075b174`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
 
 ## Identity and hashes
 
@@ -13,7 +13,7 @@ This packet supersedes the draft for `15d1b7e7`. The exact application candidate
 | Production preflight source | `4d368dfe29adc0d0e91f2530b539578a0b847b0bfaf5804e4c00c05935c6984d` |
 | Production preflight config | `919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f` |
 | Production RC1 schema expectation | `166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0` |
-| Production backup, install and smoke source | `697be930028a7af3430338b4afdbdc165f56a8177f593ed6d54829a07358f9aa` |
+| Production backup, install and smoke source | `59218d0b6343bdd2db75ed10d14119ecd55f6c3cd17f6669c1088f9fd7223da2` |
 | Accepted RC1 runtime manifest, 392 files | `c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292` |
 | Candidate schema manifest | `ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b` |
 
@@ -55,7 +55,7 @@ The existing 10:00 CRM Test Phase A and Production preflight commands, configs a
 | 13:30 | Production backup, conditional on accepted UAT and preflight |
 | By 16:00 | Production install, then separately approved settled smoke and authenticated checks |
 
-After each hosted operation, stop and send its receipt. Start the named next phase only after Ajit writes "go" for it. Any failure stops the sequence and is reported without retry. CRM Test A and Production preflight may run in parallel only with separate approvals for both. The 18:00 Dubai cutoff for starting a Production phase remains in force. No upload is authorized by this packet.
+After each hosted operation, stop and send its receipt. Start the named next phase only after Ajit writes "go" for it. Any failure stops the sequence and is reported without retry. CRM Test A and Production preflight may run in parallel only with separate approvals for both. No upload is authorized by this packet.
 
 ## Hosted commands for approval review
 
@@ -72,6 +72,6 @@ These are file invocations. Before each run, verify that the new output paths ar
 /opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase smoke --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-smoke:$APPROVED_PROD_CONFIG_SHA"
 ```
 
-`$PROD_CONFIG` and `$APPROVED_PROD_CONFIG_SHA` must come from the written approval for the actual config after preflight. The Production backup command uses PostgreSQL 13.23 `pg_dump -Fc` and preserves owner and ACL records. The operator checks disk below 90%, and app rollback never restores the database automatically.
+`$PROD_CONFIG` and `$APPROVED_PROD_CONFIG_SHA` must come from the written approval for the actual config after preflight. The Production backup command uses PostgreSQL 13.23 `pg_dump -Fc` and preserves owner and ACL records. The operator checks cPanel account quota before backup, after each large write and before install, and stops at 90%, and app rollback never restores the database automatically.
 
 The mandatory hosted controls in `AGENTS.md` and `CRM_CHANGE_POLICY.md` apply, including fresh backup, exact command/CWD worker checks and one verified worker after readiness. See `docs/DEV270_PRODUCTION_OPERATOR_AND_ROLLBACK.md` at the separate operator commit. Neither hosted output paths nor live registration have been checked. WN-15 remains paused.
