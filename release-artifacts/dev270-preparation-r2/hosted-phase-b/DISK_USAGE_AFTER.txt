@@ -1,0 +1,2 @@
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3844350726144 3391203397632      54% /home/nysareal

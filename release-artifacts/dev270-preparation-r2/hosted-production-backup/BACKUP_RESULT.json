@@ -1,0 +1,206 @@
+{
+  "phase": "backup",
+  "commit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "configSha256": "73aef8661086845f9096bd650cbb7fbab9ac68d4a96b6ba7e916ab0641690121",
+  "startedAt": "2026-11-11T19:41:30.563Z",
+  "result": "PASSED",
+  "nodeTools": {
+    "nodeWrapper": "/usr/share/l.v.e-manager/utils/node_wrapper",
+    "nodeWrapperSha256": "289466eb6bb0513fb5f07e8909080fb5e17c714789e9c415b12232123f02fee0",
+    "nodeExecutable": "/opt/alt/alt-nodejs24/root/usr/bin/node",
+    "nodeExecutableSha256": "2fea41d35739c537a3c54e2b94a86e850b881d6a9c861a63f6aa3350baf584c1",
+    "nodeVersion": "24.22.2",
+    "npmCli": "/opt/alt/alt-nodejs24/root/usr/lib/node_modules/npm/bin/npm-cli.js",
+    "npmCliSha256": "4b8b5183c0943aee9129a137538da7e7002d610c662b5e42772610a1a7070689"
+  },
+  "accountQuota": [
+    {
+      "checkpoint": "before-backup",
+      "checkedAt": "2026-11-11T19:41:30.633Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    },
+    {
+      "checkpoint": "after-candidate-extraction",
+      "checkedAt": "2026-11-11T19:41:32.004Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    },
+    {
+      "checkpoint": "after-rc1-nodevenv-copy",
+      "checkedAt": "2026-11-11T19:41:34.348Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    },
+    {
+      "checkpoint": "after-npm-ci",
+      "checkedAt": "2026-11-11T19:41:36.688Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    },
+    {
+      "checkpoint": "after-application-archive",
+      "checkedAt": "2026-11-11T19:41:43.336Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    },
+    {
+      "checkpoint": "after-database-dump",
+      "checkedAt": "2026-11-11T19:41:44.995Z",
+      "usedMb": 89207.54,
+      "limitMb": 102400,
+      "usedPercent": 87.11673828125,
+      "thresholdPercent": 90,
+      "headroomMb": 2952.4600000000064
+    }
+  ],
+  "catalog": {
+    "identity": {
+      "database": "nysareal_nysacrm",
+      "role": "nysareal_nysacrmapp",
+      "version": "13.23",
+      "read_only": "on"
+    },
+    "migrations": 140,
+    "tables": 258,
+    "comparison": {
+      "constraints": {
+        "expected": 2367,
+        "observed": 2367,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "indexes": {
+        "expected": 828,
+        "observed": 828,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "columns": {
+        "expected": 3464,
+        "observed": 3464,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "functions": {
+        "expected": 50,
+        "observed": 50,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "sequencesViews": {
+        "expected": 7,
+        "observed": 7,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "triggers": {
+        "expected": 108,
+        "observed": 108,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "matches": true
+    }
+  },
+  "workers": [
+    {
+      "pid": 1688401,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 00:54:27 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    },
+    {
+      "pid": 2869591,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Sat Nov  7 00:21:31 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node",
+      "stale": false
+    },
+    {
+      "pid": 3651043,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 08:43:15 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    }
+  ],
+  "staleWorkersFound": [
+    {
+      "pid": 1688401,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 00:54:27 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    },
+    {
+      "pid": 3651043,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 08:43:15 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    }
+  ],
+  "previousDependencies": {
+    "target": "/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules",
+    "resolved": "/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules"
+  },
+  "rc1Nodevenv": {
+    "copy": "/home/nysareal/crm-release-preparation/20261112-dev270-prod-r2/rc1-nodevenv",
+    "sha256": "9f5341e32cc7bbb5b8e34d80edb8ef7680c3d8ffbaa71e711823a9e7565760b4",
+    "modulesSha256": "71b4f8862400300fa5940e0d6ec797729607d644f90810c4613e5dd861013278"
+  },
+  "stagedDependencies": "/home/nysareal/crm-release-preparation/20261112-dev270-prod-r2/candidate/node_modules",
+  "stagedDependencySha256": "eea531ed6a492456dddeddc22687d0954a7c074da93a9dd2733b27aeb4dbc4f1",
+  "backups": {
+    "app": {
+      "bytes": 117952257,
+      "sha256": "d5584f8ba21a12a5e1fabb16dd44fd39717867fe8732012a6a75f66976c1c1ea"
+    },
+    "database": {
+      "bytes": 1442780,
+      "sha256": "7db833336f7a02d5f4a7e8589d2bb0a8a905c61cf0a82829316ad0684a773ee1"
+    },
+    "runtimeFiles": 503,
+    "dumpTables": 258
+  },
+  "completedAt": "2026-11-11T19:41:45.064Z"
+}

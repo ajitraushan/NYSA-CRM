@@ -1,0 +1,22 @@
+---
+apiversion: 3
+func: get_quota_info
+module: Quota
+result:
+  data:
+    backup_warning_threshold_pct: 90
+    inode_limit: '0'
+    inodes_remain: '0'
+    inodes_used: 289942
+    megabyte_limit: 102400
+    megabytes_remain: '13194.72'
+    megabytes_used: '89205.28'
+    under_backup_threshold: 1
+    under_inode_limit: '1'
+    under_megabyte_limit: '1'
+    under_quota_overall: '1'
+  errors: ~
+  messages: ~
+  metadata: {}
+  status: 1
+  warnings: ~

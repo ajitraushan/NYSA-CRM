@@ -1,0 +1,41 @@
+Capture started UTC 2026-11-11T19:19:44.5376344Z
+Read-only exact worker investigation. No /proc/*/environ read.
+=== Production worker ps ===
+    PID    PPID USER                      STARTED     ELAPSED COMMAND
+1688401       1 nysareal Tue Oct 27 00:54:27 2026 15-18:25:17 lsnode:/home/nysareal/nysa-crm/
+2869591       1 nysareal Sat Nov  7 00:21:31 2026  4-18:58:13 lsnode:/home/nysareal/nysa-crm/
+3651043       1 nysareal Tue Oct 27 08:43:15 2026 15-10:36:29 lsnode:/home/nysareal/nysa-crm/
+Exit status 0
+
+=== Production worker parent ps ===
+    PID    PPID USER                      STARTED     ELAPSED COMMAND
+Exit status 1
+
+=== PID 1688401 executable and working directory ===
+/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)
+/home/nysareal/nysa-crm
+Exit status 0
+
+=== PID 2869591 executable and working directory ===
+/opt/alt/alt-nodejs24/root/usr/bin/node
+/home/nysareal/nysa-crm
+Exit status 0
+
+=== PID 3651043 executable and working directory ===
+/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)
+/home/nysareal/nysa-crm
+Exit status 0
+
+=== Production listening UNIX sockets for the three PIDs ===
+bash: line 1: ss: command not found
+Exit status 1
+
+=== Production selector registration, environment fields removed on host ===
+bash: line 1: jq: command not found
+Exit status 127
+
+=== CRM Test exact-root worker ps ===
+1930883       1 nysareal Wed Nov 11 18:47:28 2026       32:27 lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/
+Exit status 0
+
+Capture finished UTC 2026-11-11T19:19:57.4468922Z

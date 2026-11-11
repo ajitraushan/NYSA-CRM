@@ -1,0 +1,14 @@
+{
+  "result": "SELECTOR_DEPENDENCIES_VERIFIED",
+  "root": "/home/nysareal/nysa-crm",
+  "nodevenv": "/home/nysareal/nodevenv/nysa-crm/24",
+  "modules": "/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules",
+  "linkTarget": "/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules",
+  "nodeWrapper": "/usr/share/l.v.e-manager/utils/node_wrapper",
+  "nodeWrapperSha256": "289466eb6bb0513fb5f07e8909080fb5e17c714789e9c415b12232123f02fee0",
+  "nodeExecutable": "/opt/alt/alt-nodejs24/root/usr/bin/node",
+  "nodeExecutableSha256": "2fea41d35739c537a3c54e2b94a86e850b881d6a9c861a63f6aa3350baf584c1",
+  "nodeVersion": "24.22.2",
+  "npmCli": "/opt/alt/alt-nodejs24/root/usr/lib/node_modules/npm/bin/npm-cli.js",
+  "npmCliSha256": "4b8b5183c0943aee9129a137538da7e7002d610c662b5e42772610a1a7070689"
+}

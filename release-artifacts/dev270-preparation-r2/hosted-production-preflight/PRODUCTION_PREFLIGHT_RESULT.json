@@ -1,0 +1,41 @@
+{
+  "candidateCommit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "configSha256": "919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f",
+  "root": "/home/nysareal/nysa-crm",
+  "domain": "crm.nysarealty.com",
+  "startedAt": "2026-11-11T19:17:23.553Z",
+  "result": "FAILED",
+  "installedVersion": "2.1.0-rc.1",
+  "runtimeFiles": {
+    "manifestSha256": "c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292",
+    "verified": 392,
+    "srcMode": "700"
+  },
+  "baselineProvenance": {
+    "commit": "b6e013c51f46be482858e733160fa7e675ff3106",
+    "sha256": "6f1060f719a81bde0f451645cf531154ab9d13efa7d574a623bf512008dc1344"
+  },
+  "registeredSettingNames": [
+    "PGDATABASE",
+    "PGUSER"
+  ],
+  "workers": [
+    {
+      "pid": 1688401,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm"
+    },
+    {
+      "pid": 2869591,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm"
+    },
+    {
+      "pid": 3651043,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm"
+    }
+  ],
+  "errorCode": "Error",
+  "completedAt": "2026-11-11T19:17:23.916Z"
+}

@@ -1,0 +1,314 @@
+{
+  "candidateCommit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "scriptSha256": "411daa513d315d19728a5e1d6f6e1c926b08b1d6c78f5c6cb1773dda9084fe49",
+  "preflightSha256": "112bd0b1914306bb650b5dc4befa3f9f1735dca882c90b39e6c6bdf4b1c5a107",
+  "startedAt": "2026-11-11T19:38:33.581Z",
+  "result": "READ_ONLY_OWNERSHIP_CHECK_COMPLETE",
+  "identity": {
+    "database": "nysareal_nysacrm",
+    "role": "nysareal_nysacrmapp",
+    "postgres": "13.23",
+    "transaction_read_only": "on"
+  },
+  "ownerRole": "nysareal_nysacrm",
+  "role": {
+    "role": "nysareal_nysacrmapp",
+    "rolinherit": true,
+    "member": true,
+    "usage": true
+  },
+  "tables": [
+    {
+      "table_name": "activities",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "activity_corrections",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "ai_assistance_runs",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "audit_log",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "brokers",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "comments",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "companies",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "company_contacts",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "consent_evidence",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "contact_channels",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "contact_roles",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "contacts",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "controlled_value_consumers",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "dashboard_metric_snapshots",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "dashboard_targets",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "document_links",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "document_templates",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "document_versions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "documents",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "external_company_roles",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "financial_scenarios",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "invitations",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "lead_assignments",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "lead_conversions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "lead_inventory_matches",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "lead_requirements",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "lead_stage_history",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "leads",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "listings",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "marketing_agreements",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "organization_settings",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "password_reset_requests",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "property_media",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposal_media",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposal_number_counters",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposal_properties",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposal_templates",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposal_versions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "proposals",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "qualification_assessments",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "qualification_models",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "regulatory_assumption_versions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "routing_rules",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "saved_dashboard_views",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "schema_migrations",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "sessions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "sla_alerts",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "sla_policies",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "tasks",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "team_memberships",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "teams",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "user_role_assignments",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "value_briefs",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "value_definition_usage",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "value_definitions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "value_sets",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "website_intake_events",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    },
+    {
+      "table_name": "workflow_transitions",
+      "owner": "nysareal_nysacrm",
+      "app_role_select": true
+    }
+  ],
+  "tablesWithSelect": 58,
+  "completedAt": "2026-11-11T19:38:33.901Z"
+}

@@ -1,0 +1,1517 @@
+{
+  "candidateCommit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "configSha256": "2037db6016258b41856fea9396bf1344e51273a2399a79518378cc3a01bb43c8",
+  "root": "/home/nysareal/nysa-crm",
+  "domain": "crm.nysarealty.com",
+  "startedAt": "2026-11-11T19:29:25.119Z",
+  "result": "READ_ONLY_PREFLIGHT_PASSED",
+  "installedVersion": "2.1.0-rc.1",
+  "runtimeFiles": {
+    "manifestSha256": "c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292",
+    "verified": 392,
+    "srcMode": "700"
+  },
+  "baselineProvenance": {
+    "commit": "b6e013c51f46be482858e733160fa7e675ff3106",
+    "sha256": "6f1060f719a81bde0f451645cf531154ab9d13efa7d574a623bf512008dc1344"
+  },
+  "registeredSettingNames": [
+    "PGDATABASE",
+    "PGUSER"
+  ],
+  "workers": [
+    {
+      "pid": 1688401,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 00:54:27 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    },
+    {
+      "pid": 2869591,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Sat Nov  7 00:21:31 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node",
+      "stale": false
+    },
+    {
+      "pid": 3651043,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 08:43:15 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    }
+  ],
+  "staleWorkersFound": [
+    {
+      "pid": 1688401,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 00:54:27 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    },
+    {
+      "pid": 3651043,
+      "command": "lsnode:/home/nysareal/nysa-crm/",
+      "cwd": "/home/nysareal/nysa-crm",
+      "user": "nysareal",
+      "startedAt": "Tue Oct 27 08:43:15 2026",
+      "exe": "/opt/alt/alt-nodejs24/root/usr/bin/node (deleted)",
+      "stale": true
+    }
+  ],
+  "disk": {
+    "usedPercent": 54,
+    "availableBytes": 3391117619200
+  },
+  "catalog": {
+    "identity": {
+      "database": "nysareal_nysacrm",
+      "role": "nysareal_nysacrmapp",
+      "version": "13.23",
+      "read_only": "on"
+    },
+    "migrations": 140,
+    "tables": 258,
+    "comparison": {
+      "constraints": {
+        "expected": 2367,
+        "observed": 2367,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "indexes": {
+        "expected": 828,
+        "observed": 828,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "columns": {
+        "expected": 3464,
+        "observed": 3464,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "functions": {
+        "expected": 50,
+        "observed": 50,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "sequencesViews": {
+        "expected": 7,
+        "observed": 7,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "triggers": {
+        "expected": 108,
+        "observed": 108,
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "matches": true
+    }
+  },
+  "usersByRoleAndTeam": [
+    {
+      "job_role": "admin",
+      "team_id": null,
+      "total": 2
+    },
+    {
+      "job_role": "director",
+      "team_id": "4b584d4c-9ce8-4dbe-8c72-5826295845fe",
+      "total": 1
+    },
+    {
+      "job_role": "sales_agent",
+      "team_id": "4b584d4c-9ce8-4dbe-8c72-5826295845fe",
+      "total": 1
+    }
+  ],
+  "publicTables": [
+    {
+      "table_name": "activities",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "activity_calendar_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "activity_corrections",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_area_assignments",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "agent_employment_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_employments",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_adjustment_slabs",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_adjustment_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_advices",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_calculation_bands",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_calculations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_decision_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_payout_release_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "agent_social_media_payout_status_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "ai_assistance_runs",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "approved_document_drafts",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "approved_document_issuances",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "areas",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "audit_log",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "booking_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "booking_reservation_extensions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "booking_status_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "bookings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "brokers",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "business_line_kpis",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "business_lines",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendar_connections",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_bookings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_connections",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_event_type_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_host_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_oauth_states",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_projection_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_provider_event_processing",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_provider_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "calendly_scheduling_intents",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "campaign_external_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "checklist_template_items",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "checklist_templates",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "classification_catalogue_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "classification_dimensions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "classification_legacy_exceptions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "classification_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "classification_values",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "comments",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_invoice_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_payment_batch_items",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_payment_batches",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_payout_policy_slabs",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_payout_policy_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_adjustment_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_collections",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_invoices",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_reversals",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "commission_receivable_schedules",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "communication_policy_decisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "companies",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "company_contacts",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "company_identity_documents",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "consent_evidence",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "contact_channels",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "contact_roles",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "contacts",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "controlled_value_consumers",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_action_suggestions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_change_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_document_requirement_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_evidence_facts",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_identity_documents",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "customer_response_task_provenance",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dashboard_metric_snapshots",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dashboard_target_revisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dashboard_targets",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_agent_credit_lines",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_agent_credit_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_cancellation_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_checklist_items",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_checklists",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "deal_commission_expectation_components",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_commission_expectation_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_commission_proofs",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_commission_receipt_confirmations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_commission_receipts",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_commission_variance_decisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_document_compliance_snapshots",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_document_requirement_instances",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_inventory_linkages",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deal_parties",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "deal_status_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "deals",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "developer_brokerage_arrangement_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dld_community_mapping_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dld_market_observations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dld_market_source_batches",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "dld_market_source_rows",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_evidence_review_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_evidence_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_followup_task_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_official_evidence_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_requirement_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_compliance_requirements",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_links",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_templates",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "document_versions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "documents",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_drafts",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_message_evidence",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_message_state_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_outbox",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_projection_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_provider_event_processing",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_provider_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_sync_checkpoints",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "email_threads",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "external_company_roles",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "external_listing_preparation_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "external_listing_publications",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "external_portal_field_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "external_portal_mapping_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "external_portal_permit_evidence_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "financial_scenarios",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "integration_oauth_states",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_agent_assignment_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_agreements",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "inventory_assignment_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_assignment_expiry_changes",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_assignments",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_buildings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_counterparties",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "inventory_market_intelligence_review_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_market_intelligence_snapshots",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_match_candidate_assessments",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_match_decisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_match_feedback",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_matching_candidates",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_matching_runs",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_organization_link_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_reopen_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "inventory_verification_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "invitations",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_assignments",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_conversions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_inventory_matches",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_inventory_selections",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "lead_month_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "lead_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "lead_recovery_cases",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_requirement_confirmations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_requirement_conflict_resolutions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_requirement_website_conflicts",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_requirements",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "lead_stage_history",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leads",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_application_decisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_application_task_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_applications",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_balance_ledger",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_policy_entitlements",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_policy_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_type_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "leave_types",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_approval_policy",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_intake_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_mapping_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_noc_evidence_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_units",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listing_value_mappings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "listings",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "market_communities",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "market_community_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_agreements",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_campaigns",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_channel_rule_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_channel_requests",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_media_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_official_evidence_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_permit_snapshots",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_review_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_task_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_type_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_types",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_material_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "marketing_materials",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "matching_policy_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "microsoft365_mailbox_connections",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "microsoft365_oauth_states",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "microsoft365_subscription_leases",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "negotiation_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "offer_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "offer_replacement_actions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "offer_revisions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "offers",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_definition_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_definitions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_evidence_review_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_evidence_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_followup_task_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "official_document_step_rule_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunities",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_assignment_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_attribution",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_number_counters",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_participants",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_property_share_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_property_share_items",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "opportunity_property_shares",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "opportunity_representation_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT"
+      ]
+    },
+    {
+      "table_name": "opportunity_stage_draft_finalizations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_stage_draft_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "opportunity_stage_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "organization_settings",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "partner_organization_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "password_reset_requests",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_listing_noc_versions",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_match_governed_origins",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_match_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_matches",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_media",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "property_media_approval_policy",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposal_media",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposal_number_counters",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposal_properties",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposal_templates",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposal_versions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "proposals",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "provisional_external_properties",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "purchased_data_import_authorizations",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "purchased_data_import_batches",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "purchased_data_import_rows",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "qualification_assessments",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "qualification_follow_up_task_links",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "qualification_models",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "r2_legacy_lead_review",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "regulatory_assumption_versions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "routing_rules",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "saved_dashboard_views",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "schema_migrations",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "sessions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "sla_alerts",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "sla_policies",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "tasks",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "team_business_line_assignments",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "team_memberships",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "teams",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "transaction_counterparties",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ]
+    },
+    {
+      "table_name": "user_role_assignments",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "value_briefs",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "value_definition_usage",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "value_definitions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "value_sets",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "viewing_attendees",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "viewing_calendar_events",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "viewing_status_history",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "viewings",
+      "owner": "nysareal_nysacrmapp",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "website_intake_events",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    },
+    {
+      "table_name": "workflow_transitions",
+      "owner": "nysareal_nysacrm",
+      "legacy_role_privileges": []
+    }
+  ],
+  "legacyRole": {
+    "name": "nysareal_nysar2app",
+    "exists": true,
+    "connect": true
+  },
+  "backupSizeEstimate": {
+    "appBytes": 242756138,
+    "databaseBytes": 32078903,
+    "uncompressedInputBytes": 274835041
+  },
+  "completedAt": "2026-11-11T19:29:25.566Z"
+}
