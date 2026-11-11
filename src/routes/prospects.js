@@ -117,16 +117,57 @@ r.post('/crm/prospects',async(req,res)=>{
 r.get('/crm/prospect-diary/overrides',async(req,res)=>{
   if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});
   const params=[],activityScope=scope('p',req.broker,params),taskScope=scope('p',req.broker,params);
-  const rows=await many(`SELECT * FROM(
-    SELECT p.id AS prospect_id,p.id::text AS prospect_reference,p.display_name,o.name AS owner_name,'activity'::text AS evidence_type,a.id AS evidence_id,a.warning_codes,a.warning_reason,a.occurred_at AS recorded_at,b.name AS actor_name,to_char(a.occurred_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI') AS prospect_local_time
+  const rows=await many(`WITH evidence AS (
+    SELECT p.id AS prospect_id,p.id::text AS prospect_reference,p.display_name,o.name AS owner_name,'activity'::text AS evidence_type,a.id AS evidence_id,a.warning_codes,a.warning_reason,a.occurred_at AS recorded_at,b.name AS actor_name,to_char(a.occurred_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI') AS prospect_local_time, right(p.normalized_phone,4) AS phone_last_four
       FROM prospects p JOIN brokers o ON o.id=p.owner_id JOIN prospect_activities a ON a.prospect_id=p.id JOIN brokers b ON b.id=a.created_by
      WHERE ${activityScope.clause} AND cardinality(a.warning_codes)>0
     UNION ALL
-    SELECT p.id,p.id::text,p.display_name,o.name,'follow_up',f.id,f.policy_warning_codes,f.policy_warning_reason,f.created_at,b.name,to_char(f.due_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI')
+    SELECT p.id,p.id::text,p.display_name,o.name,'follow_up',f.id,f.policy_warning_codes,f.policy_warning_reason,f.created_at,b.name,to_char(f.due_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI'),right(p.normalized_phone,4)
       FROM prospects p JOIN brokers o ON o.id=p.owner_id JOIN tasks f ON f.prospect_id=p.id JOIN brokers b ON b.id=f.created_by
      WHERE ${taskScope.clause} AND f.task_type='prospect_follow_up' AND cardinality(f.policy_warning_codes)>0
-  ) evidence ORDER BY recorded_at DESC LIMIT 500`,params);
-  res.json({overrides:rows});
+  )
+    SELECT e.*,v.reviewed_by,v.reviewed_at,v.comment,b.name AS reviewed_by_name,
+      (count(*) FILTER (WHERE v.id IS NULL) OVER())::int AS unreviewed_count
+    FROM evidence e LEFT JOIN prospect_override_reviews v ON
+      (e.evidence_type='activity' AND v.activity_id=e.evidence_id)
+      OR (e.evidence_type='follow_up' AND v.task_id=e.evidence_id)
+    LEFT JOIN brokers b ON b.id=v.reviewed_by
+    ORDER BY (v.id IS NULL AND 'repeat_after_decline'=ANY(e.warning_codes)) DESC,
+      e.recorded_at DESC,e.evidence_id LIMIT 500`,params);
+  res.json({overrides:rows,unreviewedCount:rows[0]?.unreviewedCount ?? 0});
+});
+
+
+r.post('/crm/prospect-diary/overrides/:id/review',async(req,res)=>{
+  if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});
+  const id=req.params.id;
+  if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))return res.status(404).json({error:'Override not found'});
+  const type=req.body?.evidenceType;
+  const comment=typeof req.body?.comment==='string'?req.body.comment.trim():null;
+  if(!['activity','follow_up'].includes(type)||(comment&&(comment.length<5||comment.length>1000))) {
+    return res.status(400).json({error:'Select an evidence type and provide an optional comment of 5–1000 characters'});
+  }
+  const result=await transaction(async client=>{
+    const scoped=scope('p',req.broker,[id]);
+    const activity=type==='activity';
+    const source=activity
+      ? "prospect_activities e JOIN prospects p ON p.id=e.prospect_id WHERE e.id=$1 AND cardinality(e.warning_codes)>0"
+      : "tasks e JOIN prospects p ON p.id=e.prospect_id WHERE e.id=$1 AND e.task_type='prospect_follow_up' AND cardinality(e.policy_warning_codes)>0";
+    const row=await one('SELECT p.id FROM '+source+' AND '+scoped.clause+' FOR SHARE OF p',scoped.params,client);
+    if(!row)return null;
+    const key=activity?'activity_id':'task_id';
+    const review=await one(
+      'INSERT INTO prospect_override_reviews(id,'+key+',reviewed_by,comment) VALUES($1,$2,$3,$4) '+
+      'ON CONFLICT ('+key+') DO NOTHING RETURNING id,reviewed_by,reviewed_at,comment',
+      [uuid(),id,req.broker.id,comment||null],client);
+    if(!review)return {duplicate:true};
+    await audit('ProspectOverrideReview',review.id,'reviewed',req.broker.id,
+      {prospectId:row.id,evidenceType:type,evidenceId:id,comment:review.comment},client);
+    return {review};
+  });
+  if(!result)return res.status(404).json({error:'Override not found'});
+  if(result.duplicate)return res.status(409).json({error:'Override was already reviewed'});
+  return res.status(201).json(result);
 });
 
 r.get('/crm/prospects/:id',async(req,res)=>{const prospect=await visibleProspect(req.params.id,req.broker);if(!prospect)return res.status(404).json({error:'Prospect not found or outside your scope'});const [activities,followUps,suppression,callingNumbers,editHistory]=await Promise.all([many(`SELECT a.*,b.name AS created_by_name,n.label AS company_calling_number_label FROM prospect_activities a JOIN brokers b ON b.id=a.created_by LEFT JOIN company_calling_numbers n ON n.id=a.company_calling_number_id WHERE a.prospect_id=$1 ORDER BY a.occurred_at DESC,a.id DESC`,[prospect.id]),many(`SELECT f.*,b.name AS assignee_name,c.name AS created_by_name FROM tasks f JOIN brokers b ON b.id=f.assignee_id JOIN brokers c ON c.id=f.created_by WHERE f.prospect_id=$1 AND f.task_type='prospect_follow_up' ORDER BY CASE WHEN f.status IN('open','in_progress') THEN 0 ELSE 1 END,f.due_at,f.id`,[prospect.id]),getContactSuppression(prospect.normalizedPhone),many("SELECT id,label,phone,normalized_phone FROM company_calling_numbers WHERE status='active' ORDER BY label"),many("SELECT a.timestamp,a.details,b.name AS actor_name FROM audit_log a LEFT JOIN brokers b ON b.id=a.performed_by WHERE a.entity_type='Prospect' AND a.entity_id=$1 AND a.action='profile_updated' ORDER BY a.timestamp DESC",[prospect.id])]);res.json({prospect,activities,followUps,editHistory,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});

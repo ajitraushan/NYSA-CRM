@@ -56,6 +56,21 @@ migration and accepted a DEV270-shaped call insert without a next step.
 The receipt records total, backfilled and past-due deadline counts, as well as append-only interest-history checks. These checks do not exercise the full DEV270 application rollback or reproduce
 every Production ACL.
 
+## Real first-call deadline counts
+
+| Environment and phase | Basis | Past due / total prospects |
+| --- | --- | --- |
+| CRM Test rehearsal on approved CRM Test data | Stored deadlines immediately after migration 172 | Pending written go and receipt |
+| Production read-only preflight on DEV270 | Projected deadlines using the migration 172 expression | Pending written go and receipt |
+
+Use the aggregate-only query in tools/dev271-first-call-backfill-evidence.sql.
+Capture the database, role, UTC measurement time, basis, total prospects,
+prospects with deadlines, and count strictly earlier than the measurement
+time. This counts every backfilled prospect, regardless of whether the
+prospect is still eligible for the Today queue. The Production projection
+reads no individual prospect fields into the receipt. The synthetic fixture
+count is separate. Both hosted reads require the exact phase approval.
+
 ## Remaining evidence
 
 - Complete R1–R8 build and tests, including digest scheduling and Admin settings.
