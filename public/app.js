@@ -533,7 +533,7 @@ async function downloadProspectFile(path, name) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function prospectDiaryOptions(){return{root:document.querySelector('#view'),api,download:downloadProspectFile,escape:esc,actor:ME,toast,openRecord:recordWorkspace,openCustomer:id=>{switchTab('customers');setTimeout(()=>openCustomer(id),0);},startLead:id=>{switchTab('crm');setTimeout(()=>openNewLeadForm(id),0);}};}
+function prospectDiaryOptions(){return{actorJobRole:ME?.jobRole,root:document.querySelector('#view'),api,download:downloadProspectFile,escape:esc,actor:ME,toast,openRecord:recordWorkspace,openCustomer:id=>{switchTab('customers');setTimeout(()=>openCustomer(id),0);},startLead:id=>{switchTab('crm');setTimeout(()=>openNewLeadForm(id),0);}};}
 function renderProspectDiaryWorkspace(){return window.renderProspectDiary?.(prospectDiaryOptions());}
 function openProspectRecord(id){return window.openProspectDiaryRecord?.(id,prospectDiaryOptions());}
 

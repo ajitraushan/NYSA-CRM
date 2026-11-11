@@ -1,5 +1,5 @@
 (()=>{
-const state={q:'',status:'',due:'',ownerId:'',scrollTop:0};
+const state={q:'',status:'',due:'',ownerId:'',scrollTop:0,view:null};
 let context=null;
 const labels={not_contacted:'Not contacted',no_answer:'No answer',call_back:'Call back',interested:'Interested',not_interested:'Not interested',do_not_contact:'Do not contact',converted:'Converted'};
 const warningLabels={outside_calling_window:'Recorded call outside the maintained prospect-local calling window',repeat_after_decline:'Customer previously declined. Confirm a renewed customer request or record the specific business reason before further outreach.',unanswered_daily_threshold:'Unanswered-call daily warning',unanswered_weekly_threshold:'Unanswered-call weekly warning'};
@@ -99,7 +99,75 @@ function bindUpload(root) {
     finally { lock(false); }
   };
 }
+async function renderToday(){
+ const root=context.root;
+ root.innerHTML='<div class="loading-state">Loading Today…</div>';
+ let data;
+ try{data=await context.api('/crm/prospect-diary/today');}
+ catch(error){root.textContent=error.message;return;}
+ const esc=context.escape;
+ const reason=item=>{
+   if(item.priority===1)return 'Overdue follow-up · '+fmt(item.dueAt);
+   if(item.priority===2)return 'Follow-up today · '+fmt(item.dueAt);
+   if(item.priority===3)return 'Callback · '+fmt(item.dueAt);
+   if(item.priority===4)return 'Retry '+item.retryAttempts+' · '+fmt(item.nextRetryAt);
+   return 'Untouched · added '+fmt(item.createdAt);
+ };
+ const list=data.items.map(item=>{
+   const interest=[item.purpose,item.budgetBand,item.propertyType,item.market,item.timeline].filter(Boolean)
+     .map(value=>value.replaceAll('_',' ')).join(' · ');
+   return `<article class="prospect-follow-up">
+     <div><strong>${esc(item.displayName||'Unnamed prospect')}</strong>
+     <p>${esc([item.phone,item.source].filter(Boolean).join(' · '))}</p>
+     <p>${esc(reason(item))}</p>
+     ${item.lastOutcome?`<small>${esc(item.lastOutcome.replaceAll('_',' '))} · ${esc(fmt(item.lastOccurredAt))}</small>`:''}
+     ${interest?`<p>${esc(interest)}</p>`:''}
+     ${item.lastNote?`<p>${esc(item.lastNote)}</p>`:''}</div>
+     <div><button class="btn btn-sm" type="button" data-today-open="${esc(item.id)}">Open record</button>
+     ${item.phone&&!data.readOnly?`<button class="btn btn-sm" type="button" data-today-call="${esc(item.id)}">Log call</button>`:''}</div>
+   </article>`;
+ }).join('');
+ root.innerHTML=`<section class="prospect-diary"><header class="dashboard-head">
+   <div><h2>Today</h2><p>${Number(data.queueTotal)} remaining</p></div>
+   <button class="btn" type="button" data-today-diary>All prospects</button></header>
+   <section class="dashboard-panel">${list||'<p>There are no eligible prospects in your queue.</p>'}</section></section>`;
+ root.querySelector('[data-today-diary]').onclick=()=>{state.view='diary';render();};
+ for(const button of root.querySelectorAll('[data-today-open]'))button.onclick=()=>open(button.dataset.todayOpen);
+ for(const button of root.querySelectorAll('[data-today-call]'))button.onclick=()=>open(button.dataset.todayCall,{focusCall:true});
+}
+
+async function loadOverridePanel(root,panel){
+ const result=await context.api('/crm/prospect-diary/overrides');
+ const esc=context.escape;
+ panel.hidden=false;
+ panel.innerHTML=`<section class="dashboard-panel"><h3>Team warning overrides · ${Number(result.unreviewedCount)} unreviewed</h3>
+   ${result.overrides.map(item=>`<article class="prospect-event">
+   <b>${esc(item.displayName||'Unnamed prospect')}${item.phoneLastFour?' · ••••'+esc(item.phoneLastFour):''}</b>
+   <p>${item.warningCodes.map(code=>esc(warningLabels[code]||code.replaceAll('_',' '))).join('<br>')}</p>
+   <p>${esc(item.warningReason||'Reason not recorded')}</p>
+   <small>${esc(item.actorName)} · ${esc(fmt(item.recordedAt))}</small>
+   <div><button class="btn btn-sm" type="button" data-override-open="${esc(item.prospectId)}">Open record</button></div>
+   ${item.reviewedAt?`<p>Reviewed by ${esc(item.reviewedByName||'Unknown reviewer')} · ${esc(fmt(item.reviewedAt))}${item.comment?' · '+esc(item.comment):''}</p>`:
+   `<form data-override-review="${esc(item.evidenceId)}" data-evidence-type="${esc(item.evidenceType)}">
+     <label>Review comment (optional)<input name="comment" minlength="5" maxlength="1000"></label>
+     <button class="btn btn-sm" type="submit">Mark reviewed</button>
+   </form>`}</article>`).join('')||'<p>No warning overrides in your permitted team scope.</p>'}</section>`;
+ for(const button of panel.querySelectorAll('[data-override-open]'))button.onclick=()=>open(button.dataset.overrideOpen);
+ for(const form of panel.querySelectorAll('[data-override-review]'))form.onsubmit=async event=>{
+   event.preventDefault();
+   const button=form.querySelector('button');
+   button.disabled=true;
+   try{
+     await context.api('/crm/prospect-diary/overrides/'+encodeURIComponent(form.dataset.overrideReview)+'/review',
+       {method:'POST',body:{evidenceType:form.dataset.evidenceType,comment:form.elements.comment.value}});
+     await loadOverridePanel(root,panel);
+   }catch(error){errorBox(root,error.message);}
+   finally{button.disabled=false;}
+ };
+}
+
 async function render(){
+ if(state.view==='today')return renderToday();
  const root=context.root;root.innerHTML='<div class="loading-state">Loading Prospect DiaryÃ¢â‚¬Â¦</div>';let data;try{data=await loadList();}catch(error){root.innerHTML=`<div class="prospect-error">${context.escape(error.message)}</div>`;return;}
  const s=data.summary||{},ownerOptions=(data.agents||[]).map(x=>`<option value="${x.id}" ${state.ownerId===x.id?'selected':''}>${context.escape(x.name)} Ã‚Â· ${context.escape(x.jobRole.replaceAll('_',' '))}</option>`).join('');
  root.innerHTML=`<section class="prospect-diary"><section class="dashboard-head"><div><div class="eyebrow">NYSA CORE / AGENT PROSPECTING</div><h2>Prospect Diary</h2><p>Record cold-call prospects, every conversation and every follow-up before you decide to create a Customer.</p></div></section><div class="prospect-summary">${[['today','Today'],['overdue','Overdue'],['upcoming','Upcoming'],['interested','Interested'],['doNotContact','Do not contact']].map(([key,label])=>`<button type="button" data-summary="${key}"><span>${label}</span><strong>${Number(s[key]||0)}</strong></button>`).join('')}</div><form class="prospect-toolbar" data-prospect-filters><label>Search<input name="q" value="${context.escape(state.q)}" placeholder="Name, phone or email"></label><label>Status<select name="status"><option value="">All statuses</option>${options(Object.entries(labels),state.status)}</select></label><label>Due<select name="due"><option value="">Any due date</option>${options([['overdue','Overdue'],['today','Today'],['upcoming','Upcoming']],state.due)}</select></label>${data.canManage?`<label>Owner<select name="ownerId"><option value="">All permitted owners</option>${ownerOptions}</select></label>`:'<span></span>'}<button class="btn btn-primary">Apply</button></form>${data.canManage?'<div class="prospect-manager-tools"><button class="btn" type="button" data-load-overrides>Review team warning overrides</button><div data-overrides hidden></div></div>':''}${uploadPanel(data)}<div class="prospect-layout"><div class="prospect-list">${data.prospects.map(p=>`<button class="prospect-card" type="button" data-prospect="${p.id}"><span><b class="prospect-card-name">${context.escape(p.displayName||'Unnamed prospect')}</b><small>${context.escape(p.phone)}${p.email?' Ã‚Â· '+context.escape(p.email):''}</small></span><span>${statusPill(p.status)}<small>${context.escape(p.ownerName)}${p.teamName?' Ã‚Â· '+context.escape(p.teamName):''}</small></span><span><b>${context.escape(p.nextActionSubject||'No next action')}</b><small>${p.nextActionDueAt?fmt(p.nextActionDueAt):p.lastContactAt?'Last call '+fmt(p.lastContactAt):'No call recorded'}</small></span><span>Open Ã¢â€ â€™</span></button>`).join('')||'<div class="prospect-empty">No prospects match these filters.</div>'}</div>${quickForm()}</div></section>`;
@@ -109,7 +177,19 @@ async function render(){
  root.querySelectorAll('[data-summary]').forEach(button=>button.onclick=()=>{const key=button.dataset.summary;state.status=key==='interested'?'interested':key==='doNotContact'?'do_not_contact':'';state.due=['today','overdue','upcoming'].includes(key)?key:'';state.scrollTop=0;render();});
  root.querySelector('[data-prospect-create]').onsubmit=async event=>{event.preventDefault();clearError(root);const submit=event.currentTarget.querySelector('button');submit.disabled=true;try{const created=await context.api('/crm/prospects',{method:'POST',body:Object.fromEntries(new FormData(event.currentTarget))});await render();open(created.prospect.id);}catch(error){errorBox(root,error.message);}finally{submit.disabled=false;}};
  root.querySelectorAll('[data-prospect]').forEach(button=>button.onclick=()=>{state.scrollTop=document.querySelector('main')?.scrollTop||0;open(button.dataset.prospect);});
- root.querySelector('[data-load-overrides]')?.addEventListener('click',async event=>{const panel=root.querySelector('[data-overrides]'),button=event.currentTarget;button.disabled=true;try{const result=await context.api('/crm/prospect-diary/overrides');panel.hidden=false;panel.innerHTML=`<section class="dashboard-panel"><h3>Team warning overrides</h3>${result.overrides.map(item=>`<article class="prospect-event"><b>${context.escape(item.prospectReference)} Ã‚Â· ${context.escape(item.displayName||'Unnamed prospect')}</b><p>${item.warningCodes.map(code=>context.escape(warningLabels[code]||code.replaceAll('_',' '))).join('<br>')}</p><small>${context.escape(item.evidenceType==='follow_up'?'Follow-up Task':'Call record')} Ã‚Â· ${context.escape(item.ownerName)} Ã‚Â· Agent: ${context.escape(item.actorName)} Ã‚Â· Prospect local time: ${context.escape(item.prospectLocalTime||'Not recorded')} Ã‚Â· Reason: ${context.escape(item.warningReason||'Not recorded')}</small></article>`).join('')||'<p>No warning overrides in your permitted team scope.</p>'}</section>`;}catch(error){errorBox(root,error.message);}finally{button.disabled=false;}});
+ root.querySelector('[data-load-overrides]')?.addEventListener('click',async event=>{
+   const panel=root.querySelector('[data-overrides]'),button=event.currentTarget;
+   button.disabled=true;
+   try{await loadOverridePanel(root,panel);}catch(error){errorBox(root,error.message);}finally{button.disabled=false;}
+ });
+ if(!data.canManage){
+   const button=document.createElement('button');
+   button.type='button';
+   button.className='btn';
+   button.textContent='Today queue';
+   button.onclick=()=>{state.view='today';render();};
+   root.querySelector('.dashboard-head')?.append(button);
+ }
 }
 
 function detailHtml(data){const p=data.prospect,open=data.followUps.filter(x=>['open','in_progress'].includes(x.status)),history=data.followUps.filter(x=>!['open','in_progress'].includes(x.status));return`<article class="record-workspace-surface"><section class="prospect-detail-header ui-page-head"><div><div class="eyebrow">PROSPECT DIARY / PRE-CUSTOMER RECORD</div><h2>${context.escape(p.displayName||'Unnamed prospect')}</h2><div class="prospect-detail-meta">${statusPill(p.status)}<span>${context.escape(p.phone)}</span>${p.email?`<span>${context.escape(p.email)}</span>`:''}<span>Owner: ${context.escape(p.ownerName)}</span></div></div><button class="close-x" type="button">Ãƒâ€”</button></section><div data-prospect-detail><div class="loading-state">Loading prospectÃ¢â‚¬Â¦</div></div></article>`;}
@@ -134,8 +214,13 @@ async function bindDetail(host,data){
  body.querySelector('[data-check-conversion]')?.addEventListener('click',async()=>{try{const result=await context.api(`/crm/prospects/${data.prospect.id}/conversion-matches`),panel=body.querySelector('[data-conversion-panel]');if(result.outsideScopeMatch){panel.innerHTML='<div class="prospect-error">A matching Customer or Lead exists outside your scope. Ask your Manager to review it.</div>';return;}panel.innerHTML=`<form data-convert-form class="form-grid compact-form"><div class="span3 prospect-conversion-matches">${result.matches.length?result.matches.map((m,index)=>`<label><input type="radio" name="existingContactId" value="${m.id}" ${index===0?'checked':''}><span><b>${context.escape(m.fullName)}</b></span></label>`).join(''):'<p>No matching Customer. A new Customer will be created if name and email are present.</p>'}</div>${result.matches.length?'':`<label>Customer role<select name="contactType"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>investor</option><option>other</option></select></label>`}<button class="btn btn-primary span3">${result.matches.length?'Link Customer and convert':'Create Customer and convert'}</button></form>`;panel.querySelector('[data-convert-form]').onsubmit=async event=>{event.preventDefault();try{const converted=await context.api(`/crm/prospects/${data.prospect.id}/convert`,{method:'POST',body:Object.fromEntries(new FormData(event.currentTarget))});context.toast(converted.idempotent?'Prospect was already converted':'Prospect converted to Customer');host.remove();await render();context.openCustomer(converted.contactId);}catch(error){showError(error.message);}};}catch(error){showError(error.message);}});
  body.querySelector('[data-open-customer]')?.addEventListener('click',event=>{host.remove();context.openCustomer(event.currentTarget.dataset.openCustomer);});
 }
-async function open(id){try{const data=await context.api(`/crm/prospects/${id}`),host=context.openRecord(detailHtml(data),{type:'prospect',id,returnTab:'prospectDiary'});await bindDetail(host,data);}catch(error){context.toast(error.message,8000);}}
-window.renderProspectDiary=async options=>{context=options;await render();};
+async function open(id,{focusCall=false}={}){try{const data=await context.api(`/crm/prospects/${id}`),host=context.openRecord(detailHtml(data),{type:'prospect',id,returnTab:'prospectDiary'});await bindDetail(host,data);
+ if(focusCall){
+   const form=host.querySelector('[data-activity-form]');
+   if(form){form.scrollIntoView({block:'center'});form.elements.outcome?.focus();}
+ }
+}catch(error){context.toast(error.message,8000);}}
+window.renderProspectDiary=async options=>{context=options;if(state.view===null)state.view=options.actorJobRole==='sales_agent'?'today':'diary';await render();};
 window.openProspectDiaryRecord=async(id,options)=>{context=options;await open(id);};
-window.resetProspectDiaryState=()=>Object.assign(state,{q:'',status:'',due:'',ownerId:'',scrollTop:0});
+window.resetProspectDiaryState=()=>Object.assign(state,{q:'',status:'',due:'',ownerId:'',scrollTop:0,view:null});
 })();
