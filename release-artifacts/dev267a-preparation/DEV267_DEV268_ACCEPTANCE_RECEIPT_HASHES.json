@@ -1,0 +1,100 @@
+{
+  "schema": "nysa.dev267-dev268.acceptance-receipt-hashes.v1",
+  "generatedAt": "2026-11-11T06:07:31.005Z",
+  "generator": "Node.js SHA-256 over retained receipt bytes with 64-hex and identity/result assertions",
+  "allHashesValid": true,
+  "releases": [
+    {
+      "release": "DEV267",
+      "version": "2.1.0-dev.267",
+      "commit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+      "configSha256": "809e4d84168f39bc43613f5ca28ce15b4fbc6893cba30d18fd397464ba9829b9",
+      "packageSha256": "62b8f0c6d1c96224e134b5764b66d5010128614a670e593eeef47b228af20ccc",
+      "manifestSha256": "dac329aefa0e0749e4567ec16b84fbc8b53b9b1ea8837b3baa411250a3c5a15f",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261110-dev267-run2/scoped-backup-dev267-phased-run2-63ad3c5",
+      "receipts": [
+        {
+          "file": "STAGE_RESULT.json",
+          "sha256": "52e619634cfeda73abe2686e612c01365870ed4cf7cbaa8bde36c913f59ef1c0",
+          "sha256Length": 64,
+          "phase": "stage",
+          "result": "STAGED_AND_VERIFIED"
+        },
+        {
+          "file": "BACKUP_RESULT.json",
+          "sha256": "26405a16143392611978a0823629c7b1c7d6f6d74cf38d9a17879d7572c7848b",
+          "sha256Length": 64,
+          "phase": "backup",
+          "result": "SCOPED_BACKUP_VERIFIED"
+        },
+        {
+          "file": "SCOPED_BACKUP_VERIFIED.json",
+          "sha256": "6e4ef977f77583cb786fe9332356ba75b6e7e2b67207d9989a952965830308a6",
+          "sha256Length": 64,
+          "phase": null,
+          "result": null
+        },
+        {
+          "file": "INSTALL_RESULT.json",
+          "sha256": "eff118efca8fa8e0236c75a11ea541849d85caf3f68619083838c05218fe3c4b",
+          "sha256Length": 64,
+          "phase": "install",
+          "result": "INSTALLED_STARTED_AND_READY"
+        },
+        {
+          "file": "SMOKE_RESULT.json",
+          "sha256": "0e5e142b0affd1e5aab08125bf0bdd8d2461d6100b765eabb1a78d0e0469b74f",
+          "sha256Length": 64,
+          "phase": "smoke",
+          "result": "SETTLED_SMOKE_PASSED"
+        }
+      ]
+    },
+    {
+      "release": "DEV268",
+      "version": "2.1.0-dev.268",
+      "commit": "b6272e9c9f2a17a2c082324ec8810391de7bdf01",
+      "configSha256": "3a1fa077651a99e036658d99787fe5627e5da391484f65f98b95300fa4baf74d",
+      "packageSha256": "6ebacdb5f19e7c65b5a99e31cbf62d88e7a0b737d736a96367f382b463c43b3c",
+      "manifestSha256": "447f6a655219c4d108e2cb164d0520bc502cefac2ee55d40b180bece81ca5b5d",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261111-dev268/scoped-backup-dev268-phased-run1-63ad3c5",
+      "receipts": [
+        {
+          "file": "STAGE_RESULT.json",
+          "sha256": "1b72246d0f7f35fe968b3cbcecc5d5b42634976c0dd0279fa38115bd2b5b200c",
+          "sha256Length": 64,
+          "phase": "stage",
+          "result": "STAGED_AND_VERIFIED"
+        },
+        {
+          "file": "BACKUP_RESULT.json",
+          "sha256": "5fc69528af95b9214111308d682800c4bbabfab7c0af5d4c34859972b3a2196d",
+          "sha256Length": 64,
+          "phase": "backup",
+          "result": "SCOPED_BACKUP_VERIFIED"
+        },
+        {
+          "file": "SCOPED_BACKUP_VERIFIED.json",
+          "sha256": "820dc04bb1bb7aa8e62d300dea3e91523b23db81f20263aac44641e29f5400e4",
+          "sha256Length": 64,
+          "phase": null,
+          "result": null
+        },
+        {
+          "file": "INSTALL_RESULT.json",
+          "sha256": "9999a053c86b994ef2ff7c94261dc85a3e3cec4bbe101a30eef024783b642f01",
+          "sha256Length": 64,
+          "phase": "install",
+          "result": "INSTALLED_STARTED_AND_READY"
+        },
+        {
+          "file": "SMOKE_RESULT.json",
+          "sha256": "b196a7a0c38bab0d83eeb9ee906f58b77ac70861ecf012c7ca56f7c1580cc6f0",
+          "sha256Length": 64,
+          "phase": "smoke",
+          "result": "SETTLED_SMOKE_PASSED"
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,29 @@
 # CRM Development Baseline
 
+## DEV268 accepted / DEV269 D-1 — 11 November 2026
+
+- CRM Test serves accepted DEV268 `2.1.0-dev.268`, commit
+  `b6272e9c9f2a17a2c082324ec8810391de7bdf01`, database
+  `nysareal_nysa_dev247_smoke`, migration 170, 306 public tables and 111
+  enabled triggers across 95 tables. The canonical schema manifest remains
+  `59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944`;
+  the trigger-contract file remains
+  `70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf`.
+- All four separately approved DEV267 and DEV268 phases passed. DEV268 Phase D
+  receipt SHA-256 is
+  `b196a7a0c38bab0d83eeb9ee906f58b77ac70861ecf012c7ca56f7c1580cc6f0`;
+  it records green readiness and exactly one command/CWD-verified worker. The
+  combined acceptance record and script-generated receipt index are under
+  `release-artifacts/dev267a-preparation/`.
+- Ajit separately performed authenticated Prospect Diary and manual-DNCR
+  browser UAT on 11 November and reported it passed. Remaining visual/workflow
+  defects move to DEV269, including the non-standard dark Prospect Diary
+  banner, near-invisible prospect name, stale Today/Upcoming tiles, DNCR refresh,
+  warning wording/reasons and duplicate action wording.
+- DEV269 starts at D-1 from the exact deployed DEV268 candidate. No DEV269
+  runtime implementation, package, upload or hosted change is authorized yet.
+  Production, website and REM remain unchanged.
+
 ## DEV267 deployed / DEV267a (technical DEV268) D-2 preparation — 11 November 2026
 
 - CRM Test currently serves deployed-but-not-accepted DEV267

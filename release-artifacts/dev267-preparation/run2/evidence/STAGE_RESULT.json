@@ -1,0 +1,295 @@
+{
+  "phase": "stage",
+  "root": "/home/nysareal/nysa-core-dashboard-dd6262a-stage",
+  "domain": "crm-test.nysarealty.com",
+  "commit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+  "version": "2.1.0-dev.267",
+  "configSha256": "809e4d84168f39bc43613f5ca28ce15b4fbc6893cba30d18fd397464ba9829b9",
+  "backupPath": "/home/nysareal/crm-release-preparation/20261110-dev267-run2/scoped-backup-dev267-phased-run2-63ad3c5",
+  "startedAt": "2026-11-11T03:38:02.225Z",
+  "productionMutation": false,
+  "websiteMutation": false,
+  "remMutation": false,
+  "result": "STAGED_AND_VERIFIED",
+  "candidateFiles": 498,
+  "candidatePdfFormats": [
+    {
+      "documentCode": "buyer_proposal",
+      "bytes": 51246
+    },
+    {
+      "documentCode": "financial_illustration",
+      "bytes": 51983
+    },
+    {
+      "documentCode": "offer_letter",
+      "bytes": 68624
+    },
+    {
+      "documentCode": "viewing_confirmation",
+      "bytes": 69291
+    },
+    {
+      "documentCode": "a2a_buyer",
+      "bytes": 68284
+    },
+    {
+      "documentCode": "a2a_seller",
+      "bytes": 68285
+    },
+    {
+      "documentCode": "listing_noc",
+      "bytes": 65936
+    },
+    {
+      "documentCode": "agent_payout",
+      "bytes": 54036
+    },
+    {
+      "documentCode": "tax_invoice",
+      "bytes": 37259
+    },
+    {
+      "documentCode": "payout_advice",
+      "bytes": 18298
+    }
+  ],
+  "candidateTriggerCount": 111,
+  "stageLedger": {
+    "db": "nysareal_nysa_dev247_smoke",
+    "role": "nysareal_nysar2app",
+    "count": 169
+  },
+  "tableComparison": {
+    "sql": "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",
+    "label": "stage",
+    "expectedCount": 303,
+    "observedCount": 303,
+    "expectedNamesSha256": "69e336181d98d9965ac6916b032a6bdb1496951917ecf912831f769738dbfeec",
+    "observedNamesSha256": "69e336181d98d9965ac6916b032a6bdb1496951917ecf912831f769738dbfeec",
+    "extra": [],
+    "missing": [],
+    "matches": true
+  },
+  "triggerComparison": {
+    "sql": "SELECT c.relname AS table_name,t.tgname AS trigger_name,\n      pn.nspname||'.'||p.proname AS function_name,t.tgenabled AS enabled\n    FROM pg_trigger t\n    JOIN pg_class c ON c.oid=t.tgrelid\n    JOIN pg_namespace n ON n.oid=c.relnamespace\n    JOIN pg_proc p ON p.oid=t.tgfoid\n    JOIN pg_namespace pn ON pn.oid=p.pronamespace\n   WHERE NOT t.tgisinternal AND n.nspname='public'\n   ORDER BY c.relname,t.tgname",
+    "label": "stage",
+    "expectedCount": 108,
+    "observedCount": 108,
+    "expectedTableCount": 93,
+    "observedTableCount": 93,
+    "expectedSha256": "3bca0751b3582b3058f0845b47ba495173658af702cb9414b6bcdf89c9306172",
+    "observedSha256": "3bca0751b3582b3058f0845b47ba495173658af702cb9414b6bcdf89c9306172",
+    "missing": [],
+    "extra": [],
+    "wrongFunction": [],
+    "wrongEnabled": [],
+    "matches": true
+  },
+  "schemaContractComparison": {
+    "label": "stage",
+    "kind": "baseline",
+    "helperPath": "/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs",
+    "helperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+    "manifestPath": "/home/nysareal/crm-release-preparation/20261110-dev267-run2/candidate/src/database-schema-baseline/manifest.json",
+    "manifestSha256": "496377945ba34038c39c20026c6972a5bc400a37efa9e2f22e7f5e813d8e3daa",
+    "triggerContractPath": "/home/nysareal/crm-release-preparation/20261110-dev267-run2/candidate/src/database-schema-baseline/database-trigger-contract.json",
+    "triggerContractSha256": "2c5ccb6df5a24e6b3040e56b02965de0c06874451b988cf7a014daf17aef38f4",
+    "matches": true,
+    "objects": {
+      "constraints": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "indexes": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "columns": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "functions": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "sequencesViews": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      },
+      "triggers": {
+        "missing": [],
+        "extra": [],
+        "changed": [],
+        "matches": true
+      }
+    }
+  },
+  "triggerDriftDataComparison": {
+    "label": "stage",
+    "expected": [
+      {
+        "name": "active_agent_adjustment_invalid_slab_sets",
+        "count": 0
+      },
+      {
+        "name": "active_agent_adjustment_overlap_pairs",
+        "count": 0
+      },
+      {
+        "name": "active_commission_policy_invalid_slab_sets",
+        "count": 0
+      },
+      {
+        "name": "active_commission_policy_overlap_pairs",
+        "count": 0
+      },
+      {
+        "name": "booking_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "booking_extension_without_exact_evidence",
+        "count": 0
+      },
+      {
+        "name": "booking_initial_term_over_seven_days",
+        "count": 0
+      },
+      {
+        "name": "booking_term_over_fourteen_days",
+        "count": 0
+      },
+      {
+        "name": "deal_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "invalid_lead_stage_history",
+        "count": 0
+      },
+      {
+        "name": "leave_approval_task_assignment_mismatch",
+        "count": 0
+      },
+      {
+        "name": "leave_self_approval_decisions",
+        "count": 0
+      },
+      {
+        "name": "offer_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "terminal_leads_with_open_followups",
+        "count": 0
+      },
+      {
+        "name": "terminal_leads_with_stale_next_followup",
+        "count": 0
+      }
+    ],
+    "observed": [
+      {
+        "name": "active_agent_adjustment_invalid_slab_sets",
+        "count": 0
+      },
+      {
+        "name": "active_agent_adjustment_overlap_pairs",
+        "count": 0
+      },
+      {
+        "name": "active_commission_policy_invalid_slab_sets",
+        "count": 0
+      },
+      {
+        "name": "active_commission_policy_overlap_pairs",
+        "count": 0
+      },
+      {
+        "name": "booking_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "booking_extension_without_exact_evidence",
+        "count": 0
+      },
+      {
+        "name": "booking_initial_term_over_seven_days",
+        "count": 0
+      },
+      {
+        "name": "booking_term_over_fourteen_days",
+        "count": 0
+      },
+      {
+        "name": "deal_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "invalid_lead_stage_history",
+        "count": 0
+      },
+      {
+        "name": "leave_approval_task_assignment_mismatch",
+        "count": 0
+      },
+      {
+        "name": "leave_self_approval_decisions",
+        "count": 0
+      },
+      {
+        "name": "offer_bilateral_acceptance_incomplete",
+        "count": 0
+      },
+      {
+        "name": "terminal_leads_with_open_followups",
+        "count": 0
+      },
+      {
+        "name": "terminal_leads_with_stale_next_followup",
+        "count": 0
+      }
+    ],
+    "differences": [],
+    "matches": true
+  },
+  "leadCounterComparison": {
+    "sql": "WITH refs AS (\n      SELECT substring(lead_reference FROM '^NYSA-LD-([0-9]{6})-[0-9]{6}$') AS period_code,\n             MAX(right(lead_reference,6)::int)::int AS max_reference_number\n        FROM leads\n       WHERE lead_reference ~ '^NYSA-LD-[0-9]{6}-[0-9]{6}$'\n       GROUP BY 1\n    )\n    SELECT refs.period_code,refs.max_reference_number,COALESCE(c.last_value,0)::int AS counter_value,\n           (COALESCE(c.last_value,0)>=refs.max_reference_number) AS safe\n      FROM refs LEFT JOIN lead_month_number_counters c USING(period_code)\n     ORDER BY refs.period_code",
+    "rows": [
+      {
+        "period_code": "202610",
+        "max_reference_number": 209,
+        "counter_value": 209,
+        "safe": true
+      },
+      {
+        "period_code": "202611",
+        "max_reference_number": 15,
+        "counter_value": 15,
+        "safe": true
+      }
+    ],
+    "mismatches": [],
+    "safe": true
+  },
+  "workers": [
+    {
+      "pid": 2100505,
+      "command": "lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/",
+      "cwd": "/home/nysareal/nysa-core-dashboard-dd6262a-stage"
+    }
+  ],
+  "completedAt": "2026-11-11T03:38:14.634Z",
+  "elapsedSeconds": 12
+}
