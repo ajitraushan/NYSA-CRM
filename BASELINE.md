@@ -1,5 +1,37 @@
 # CRM Development Baseline
 
+## DEV269 D-2 candidate — 11 November 2026
+
+- Installed CRM Test source of truth remains accepted DEV268
+  `2.1.0-dev.268`, commit
+  `b6272e9c9f2a17a2c082324ec8810391de7bdf01`, database
+  `nysareal_nysa_dev247_smoke`, migration 170, 306 public tables and 111
+  enabled triggers. No DEV269 upload or hosted action has occurred.
+- DEV269 candidate is `2.1.0-dev.269`, GitHub-advertised commit
+  `bb50ae76c321c5ccbd67b4ef90030a46d9ae9ec4`. Origin package SHA-256 is
+  `5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba`;
+  manifest SHA-256 is
+  `de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057`;
+  generated deploy-config SHA-256 is
+  `b4db03901639baa7e682d220a4e9b9e27c391ae77c9d4e8fd0297afd394f91c9`.
+- DEV269 is migration-neutral. Baseline and canonical schema remain byte-
+  identical at 170 migrations, 306 tables and 111 triggers, schema manifest
+  `59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944`.
+- The corrected calling-hours rule is implemented for scheduled call follow-ups
+  and logged outbound calls: default warning, acknowledgement plus reason,
+  visible Task/call evidence and Manager/audit register; optional `refuse` mode
+  returns 409. Repeat-call limits remain warnings.
+- Origin regression passed 1,592 of 1,697 tests with zero failures and 105
+  named fixture/process-gated skips. PostgreSQL 13.23 integration, exact-package
+  full-router checks and exact-package Agent/Manager desktop/mobile browser
+  checks passed. Full evidence is in
+  `release-artifacts/dev269-preparation/DEV269_D2_APPROVAL_PACKET.md`.
+- Next authorization requested is artifact placement plus one non-mutating CRM
+  Test Phase A only. Phases B, C, D, production and any configuration change
+  remain separately controlled. A fresh scoped Phase B backup does not yet
+  exist. The canonical operator/worker controls in `AGENTS.md` and
+  `CRM_CHANGE_POLICY.md` remain mandatory.
+
 ## DEV268 accepted / DEV269 D-1 — 11 November 2026
 
 - CRM Test serves accepted DEV268 `2.1.0-dev.268`, commit

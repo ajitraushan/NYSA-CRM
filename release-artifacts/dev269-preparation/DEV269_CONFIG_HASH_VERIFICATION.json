@@ -1,0 +1,92 @@
+{
+  "schema": "nysa.crm-test.deploy-config-verification.v1",
+  "generatedAt": "2026-11-11T07:46:20.073Z",
+  "spec": "release-artifacts/dev269-preparation/DEV269_CONFIG_SPEC.json",
+  "config": "release-artifacts/dev269-preparation/DEV269_DEPLOY_CONFIG.json",
+  "configSha256": "b4db03901639baa7e682d220a4e9b9e27c391ae77c9d4e8fd0297afd394f91c9",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.269-origin.zip",
+      "configured": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
+      "actual": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.269-origin.manifest.json",
+      "configured": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057",
+      "actual": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "src/database-schema-baseline/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineTriggerContractFileSha256": {
+      "file": "src/database-schema-baseline/database-trigger-contract.json",
+      "configured": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "actual": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "comparison": "raw file SHA-256 pinned by baseline manifest",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "src/database-schema-contract/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedTriggerContractSha256": {
+      "file": "src/database-trigger-contract.json",
+      "configured": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "actual": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "comparison": "SHA-256(JSON.stringify(triggers))",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "database": {
+    "migrationNeutral": true,
+    "baselineMigrationCount": 170,
+    "expectedMigrationCount": 170,
+    "expectedTableCount": 306,
+    "expectedPostTableCount": 306,
+    "baselineTriggerCount": 111,
+    "expectedTriggerCount": 111
+  },
+  "tests": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-11T07:44:54.604Z",
+    "completedAt": "2026-11-11T07:45:25.168Z",
+    "tests": 1697,
+    "passed": 1592,
+    "failed": 0,
+    "skipped": 105,
+    "outputSha256": "b421a400e6c1ec34c4a4f21cfe0ff9bdacd3d9f22291159b168f74c44dd9ed25",
+    "includedFiles": 328,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "1a69ac84e3e62d822ac0ba3226dae2141581616c7ec9e75f73d6e44c27386a65",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  },
+  "candidate": {
+    "version": "2.1.0-dev.269",
+    "commit": "bb50ae76c321c5ccbd67b4ef90030a46d9ae9ec4",
+    "packageSha256": "5fdbdeffc41ec24396de12eb496327972ac8453faeb4024603bf852965d743ba",
+    "manifestSha256": "de263d16c5f0b3917d5ec0420ec83cd8ea87c295ec543684db870b693a1d6057"
+  }
+}

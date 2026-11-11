@@ -1,0 +1,105 @@
+ok 293 - M-04/J POST coordinated reassignment preserves an Accepted Offer in PostgreSQL # SKIP Set NYSA_RUN_DB_INTEGRATION=1 with dedicated PostgreSQL test credentials
+ok 304 - FIT-DECLARATIONS-RANKING-ONLY-156 permits an unassessed customer-fit variance while preserving evidence # SKIP Set NYSA_RUN_INVENTORY_ELIGIBILITY_DB_INTEGRATION=1 inside a disposable fixture schema
+ok 305 - P0-INVENTORY-EFFECTIVE-STATUS-PARITY-157 reports canonical status when stored Inventory status is stale # SKIP Set NYSA_RUN_INVENTORY_ELIGIBILITY_DB_INTEGRATION=1 inside a disposable fixture schema
+ok 332 - UAT-040-DB authorized Manager creates and auto-activates a corporate Developer version # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 333 - UAT-041-DB owner/represented party persists without creating a Customer or Contact # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 334 - UAT-042-DB Community and Developer linkage persist without mutating Inventory operations # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 335 - UAT-043-DB Manager queue returns the exact submitted Inventory ID used by navigation # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 336 - UAT-048-DB quick availability update persists exact effective/expiry values and audit evidence # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 340 - 2.1 non-Manager attempting administrative closure receives 403 # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 341 - 2.2 Manager attempting closure with no reason receives 400 # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 342 - 2.5 Manager closing eligible Inventory with a reason succeeds and the reason persists # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 343 - 5.1 new assignment expires_at is exactly 7 days from creation # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 344 - 5.3 non-Manager attempting to extend assignment expiry receives 403 # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 345 - 5.4 Manager extending expiry with reason: old/new/actor/reason all persisted # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 346 - 7.1/7.2/7.3 detaching Inventory keeps the linkage visible in history with actor, reason, and both creator and servicing agent # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 347 - 9.1 a property meeting the strict size minimum is not wrongly excluded (size_sqft regression guard) # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 348 - 3.1 offer creation is blocked while the Inventory assignment is expired # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 349 - 3.5 renewing the assignment restores the ability to create an Offer # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 350 - 3.2 offer revision is blocked while the Inventory assignment is expired # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 351 - 3.3/3.4 Negotiation acceptance and the separate Booking creation are each blocked while the Inventory assignment is expired # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 362 - UAT-067/068 real HTTP and PostgreSQL journey commits acceptance, separate reservation and exact Deal lineage # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 363 - Manager closes with commission outstanding; Accountant collects afterward without changing transaction closure # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 368 - UAT-072 and UAT-074 expose one-time delivery evidence and explicit persistent-session behavior # SKIP Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 369 - UAT-075 creates Building and audit atomically, then reports exact duplicate without another row # SKIP Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 370 - UAT-078 creates objective-specific version 1 rows under one stable model code # SKIP Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 371 - UAT-077 completed assessment atomically records score and advances Contacted Lead to Qualified # SKIP Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 372 - UAT-079 retires the active objective model with reasoned audit evidence # SKIP Set NYSA_RUN_DEV160_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 379 - UAT-081 real HTTP and PostgreSQL evidence creates deadline, supersedes reassessment, and recurs Cold nurture # SKIP Set NYSA_RUN_DEV163_DB_INTEGRATION=1 inside the disposable fixture schema
+ok 385 - UAT-082/084/085 binds the visible Opportunity, preserves AI summary, and atomically shortlists plus assigns # SKIP Set NYSA_RUN_DEV164_DB_INTEGRATION=1 inside a disposable fixture schema
+ok 386 - UAT-082 realigns exact confirmed lineage before UAT-083/085 rerun and atomic assignment # SKIP Set NYSA_RUN_DEV164_DB_INTEGRATION=1 inside a disposable fixture schema
+ok 435 - DEF-107/114 Lead detail loads with real SQL # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 436 - DEF-109 Inventory list executes with real SQL # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 437 - DEF-116 stage draft is durably saved and audited # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 438 - DEF-112 official requirements query accepts empty evidence and active rules # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 439 - DEF-117 lifecycle drilldown uses active Deal, not historical Qualified # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 440 - DEF-117 Closed Won remains current when the same Lead has another Qualified pursuit # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 441 - DEF-112 PDF upload persists private immutable evidence and remains pending independent review # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 442 - DEF-117 first contact advances New only, never regresses Qualified or prematurely marks Won # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 443 - DEF-116 stale drafts reject without changing governed business state # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 444 - DEF-117 dashboard counts and contributing records reconcile # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 445 - DEF-115 Agent and Manager cannot record or confirm finance receipts # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 446 - Unassigned Agent retains permitted Lead reading but cannot operate, draft or see it in own pipeline # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 449 - Scoped agent uploads private proof and bytes survive download/reload; upload does not record receipt # SKIP Restricted local synthetic database required
+ok 450 - Proof retries are idempotent, conflicting keys rejected, concurrent retries produce one immutable attachment # SKIP Restricted local synthetic database required
+ok 451 - Reject unauthorized reads/writes, cross-Deal downloads and unsupported/spoofed/oversize proof # SKIP Restricted local synthetic database required
+ok 452 - Accountant has a finance-only Deal list and can retrieve proof; agent cannot confirm actual receipt # SKIP Restricted local synthetic database required
+ok 453 - Finance links the exact proof to an immutable receipt, confirms actual receipt, leaves closure separate # SKIP Restricted local synthetic database required
+ok 454 - Accountant four-workspace scope: searchable finance Opportunity projection, own leave and denied unrelated access # SKIP Restricted local synthetic database required
+ok 455 - Finance-only selectors expose uninvoiced Closed Won commission balances and reject other roles # SKIP Restricted local synthetic database required
+ok 456 - Closed Won Opportunity automatically enters awaiting invoicing and leaves only after an active schedule exists # SKIP Restricted local synthetic database required
+ok 457 - Create two separate planned invoices with correct VAT; atomic validation and idempotent retries # SKIP Restricted local synthetic database required
+ok 458 - Each instalment requires its own issued invoice; bad dates, duplicate references and role escalation rejected # SKIP Restricted local synthetic database required
+ok 459 - Gross partial collection drives balance; repeated bank reference and overpayment are blocked # SKIP Restricted local synthetic database required
+ok 460 - Concurrent remaining payments cannot overcollect; invoice is paid after reload with full audit # SKIP Restricted local synthetic database required
+ok 461 - Audited reversals restore balance; cancellation preserves invoice and blocks further collection # SKIP Restricted local synthetic database required
+ok 462 - Concurrent schedule retry writes once; customer/agency/developer all supported without touching closure # SKIP Restricted local synthetic database required
+ok 463 - Pagination keeps complete filtered totals and invalid inputs do not become server errors # SKIP Restricted local synthetic database required
+ok 464 - Receivables reads live Opportunity split without exposing customer or sales details # SKIP Restricted local synthetic database required
+ok 465 - Finance displays linked invoice references and rejects recording the same payment again # SKIP Restricted local synthetic database required
+ok 466 - Direct Finance receipt cannot be duplicated as an invoice payment; failures preserve balances # SKIP Restricted local synthetic database required
+ok 467 - A new partial payment supersedes confirmation, preserves evidence and permits fresh reconciliation # SKIP Restricted local synthetic database required
+ok 468 - Receipt posting rolls back if the linked collection write fails # SKIP Restricted local synthetic database required
+ok 469 - VAT-only rounding is linked and reversible without inventing a zero Finance receipt # SKIP Restricted local synthetic database required
+ok 470 - Opportunity without any Deal: issue invoice, upload proof, collect partial payments and reconcile # SKIP Restricted local synthetic database required
+ok 471 - No-Deal Opportunity receipts reject unauthorized access, wrong proof, duplicate bank references and conflicting retries # SKIP Restricted local synthetic database required
+ok 472 - No-Deal payment reversal restores invoice and supersedes reconciliation; later Deal creation does not copy receipts # SKIP Restricted local synthetic database required
+ok 473 - Opportunity direct receipts and confirmations serialize retries and preserve parent identity # SKIP Restricted local synthetic database required
+ok 482 - transaction completion document blocks Close Won until uploaded without any seller master record # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 530 - database accepts the maintained quarterly achieved-rate method and true-up accounting # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 531 - effective-dated Agent social-media statuses cannot overlap # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 557 - split payout output satisfies the deployed immutable payout-band constraint # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 588 - migration 127 installs private, auditable import schema without granting authority # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 589 - Customer reference, Sales Agent importer identity and batch provenance are enforced by the database # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 604 - Admin can maintain official-document and marketing configuration but cannot open operational evidence # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 605 - Sales Agent populated leave and Manager task endpoints return governed states instead of server errors # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 606 - Sales Agent can create and submit leave and the maintained Line Manager receives one approval task # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 607 - purchased-data register follows the central Sales Agent and Admin role capability # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 624 - migration 128 installs all DEV211 governed schema contracts # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 625 - DEV211 approval queues permit only one pending request per governed record # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 636 - DEV214 migration accepts booking-free Developer-stock linkage and rollback-only Sold Inventory creation # SKIP Set NYSA_RUN_DEV214_DB_INTEGRATION=1 inside the restricted synthetic fixture
+ok 652 - routing priority wins, Manager assignment works, and an expired Agent cannot reclaim the same Lead # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 677 - DEV218 migration installs the approved-document, BRN, ORN and Listing NOC contracts # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 678 - DEV218 database enforces conditional BRN and immutable issuance/evidence identities # SKIP Requires the restricted local synthetic PostgreSQL fixture
+ok 734 - customer requirement HTTP saves persist and audit both identity kinds # SKIP
+ok 775 - DEV236 actual PostgreSQL migration and lifecycle regression # SKIP Dedicated local PostgreSQL fixture required
+ok 776 - DEV238 target API lifecycle, authorization, period values and optimistic concurrency # SKIP Dedicated local fixture required
+ok 797 - DEV239 business-line maintenance, dated reporting, role scope and targets # SKIP
+ok 817 - Phase 1 WEB intake lifecycle on the guarded PostgreSQL fixture # SKIP
+ok 828 - Dashboard cards reconcile with paginated records for Agent, Manager and all Director views # SKIP
+ok 831 - DEV263 full in-process simulator flow works while loopback is unreachable # SKIP
+ok 838 - DEV264 restores the triggerless CRM Test shape idempotently and enforces Lead rules # SKIP
+ok 842 - DEV265 exact drift restoration, audit actor, idempotency and cascade contract # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 843 - DEV265 preflight rejects any schema state other than the exact baseline or canonical contract # SKIP Set NYSA_RUN_DB_INTEGRATION=1 inside the disposable PostgreSQL fixture
+ok 853 - DEV266 reply lock is enforced by the PostgreSQL 13 route transaction # SKIP
+ok 867 - DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings # SKIP
+ok 871 - DEV267 layered restrictions serialize, preserve weaker restrictions and require governed release evidence # SKIP
+ok 874 - DEV267 D-A: STOP before later import remains suppressed at preview and commit # SKIP
+ok 1045 - Local migration removes only the closure trigger; rollback DDL is reversible and finance immutability remains # SKIP
+ok 1209 - durable nonvoice workflow on dedicated synthetic PostgreSQL # SKIP
+ok 1616 - DEF-137 query includes exact linked Offer issuances, preserves Opportunity issuances and excludes another Opportunity # SKIP Requires restricted local synthetic fixture
+ok 1617 - ENH-004–008 migration, exact storage, SQL projections, legacy preservation and rollback # SKIP Requires restricted synthetic fixture
+ok 1645 - UI-001 task source projection retains exact assignee scope and exposes only a masked provisional hint # SKIP
+ok 1672 - sandbox durable lifecycle, quota, encryption and concurrent idempotency on isolated PostgreSQL # SKIP
+ok 1685 - DEV263 simulated provider uses in-process actions when the configured loopback port is unreachable # SKIP
+ok 1697 - WA-001 Stage B number-independent workspaces on guarded PostgreSQL fixture # SKIP

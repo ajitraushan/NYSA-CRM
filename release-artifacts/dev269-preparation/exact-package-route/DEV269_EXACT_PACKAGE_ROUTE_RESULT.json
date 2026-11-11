@@ -1,0 +1,33 @@
+{
+  "schema": "nysa.dev269.exact-package-route.v1",
+  "synthetic": true,
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-bb50ae7",
+  "version": "2.1.0-dev.269",
+  "identity": {
+    "serverVersion": "13.23",
+    "database": "nysa_test_fixture",
+    "username": "nysa_test_user",
+    "migrations": 170
+  },
+  "fullRouter": true,
+  "health": 200,
+  "readiness": {
+    "status": 200,
+    "attempt": 4
+  },
+  "root": {
+    "status": 200,
+    "containsNysaCore": true
+  },
+  "checks": {
+    "createdWithoutEmail": 201,
+    "preEditConversionReady": false,
+    "edited": 200,
+    "conversion": 201,
+    "profileAuditRows": 1,
+    "workspace": 200,
+    "materialStorageKeysAbsent": true
+  },
+  "result": "passed",
+  "checkedAt": "2026-11-11T07:45:53.016Z"
+}

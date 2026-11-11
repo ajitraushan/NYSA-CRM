@@ -1,0 +1,165 @@
+{
+  "schema": "nysa.dev267a.hosted-bootstrap-browser.v1",
+  "synthetic": true,
+  "version": "2.1.0-dev.269",
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev269-exact-package-bb50ae7",
+  "loadedThroughActualIndexAndBootstrap": true,
+  "requiredOrder": [
+    "/bootstrap.js",
+    "/prospect-diary-ui.js",
+    "/dashboard-ui.js",
+    "/app.js"
+  ],
+  "files": {
+    "bootstrap.js": {
+      "sha256": "cd8124b865a49d19cf5d3c664284c4ff92e5451ce75223e8103651baf77411aa"
+    },
+    "prospect-diary-ui.js": {
+      "sha256": "ee5e42dd57bd9ac79bdff8ba6bd6308d32d2b96e586a723f3c7cc286d00da843"
+    },
+    "dashboard-ui.js": {
+      "sha256": "b06419cb2139095bd7f00da18855436d1e76c3dde87a3869e45a7943048be788"
+    },
+    "app.js": {
+      "sha256": "dfb28c372aacb139d97b2b0571e2b9642bf19d4e14db090a608fdab945ccf2f2"
+    }
+  },
+  "requestedScripts": [
+    "/bootstrap.js",
+    "/ui-design-system.js",
+    "/money-input.js",
+    "/review-task-ui.js",
+    "/director-commission-summary-ui.js",
+    "/customer-lookup-ui.js",
+    "/finance-workspace-ui.js",
+    "/shared-review-panel.js",
+    "/accountant-workspace-ui.js",
+    "/purchased-data-import-ui.js",
+    "/whatsapp-workspace-ui.js",
+    "/prospect-diary-ui.js",
+    "/offer-ui.js",
+    "/deal-ui.js",
+    "/inventory-workspace-ui.js",
+    "/dashboard-ui.js",
+    "/official-document-ui.js",
+    "/market-intelligence-ui.js",
+    "/commission-payout-ui.js",
+    "/receivables-ui.js",
+    "/opportunity-finance-ui.js",
+    "/agent-leave-ui.js",
+    "/document-compliance-ui.js",
+    "/marketing-material-compliance-ui.js",
+    "/matching-completion-ui.js",
+    "/email-calendly-ui.js",
+    "/lead-integration-ui.js",
+    "/lead-response-dev244-ui.js",
+    "/incoming-leads-ui.js",
+    "/web-intake-phase1-ui.js",
+    "/app.js"
+  ],
+  "roles": [
+    {
+      "role": "sales_agent",
+      "status": "passed",
+      "state": {
+        "heading": "Prospect Diary",
+        "cards": 1,
+        "active": true,
+        "featureType": "function",
+        "wrapperType": "function",
+        "dashboardModuleType": "function",
+        "legacyDashboardGlobalType": "function",
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "headColor": "rgb(20, 35, 44)",
+        "nameColor": "rgb(20, 35, 44)",
+        "tiles": [
+          [
+            "Today",
+            "1"
+          ],
+          [
+            "Overdue",
+            "0"
+          ],
+          [
+            "Upcoming",
+            "1"
+          ],
+          [
+            "Interested",
+            "0"
+          ],
+          [
+            "Do not contact",
+            "0"
+          ]
+        ]
+      },
+      "mobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "cardWidth": 358
+      },
+      "dncrRefresh": "not-applicable",
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshots": [
+        "sales_agent-prospect-diary-desktop.png",
+        "sales_agent-prospect-diary-mobile.png"
+      ]
+    },
+    {
+      "role": "manager",
+      "status": "passed",
+      "state": {
+        "heading": "Prospect Diary",
+        "cards": 1,
+        "active": true,
+        "featureType": "function",
+        "wrapperType": "function",
+        "dashboardModuleType": "function",
+        "legacyDashboardGlobalType": "function",
+        "headTag": "SECTION",
+        "headBackground": "rgba(0, 0, 0, 0)",
+        "headColor": "rgb(20, 35, 44)",
+        "nameColor": "rgb(20, 35, 44)",
+        "tiles": [
+          [
+            "Today",
+            "1"
+          ],
+          [
+            "Overdue",
+            "0"
+          ],
+          [
+            "Upcoming",
+            "1"
+          ],
+          [
+            "Interested",
+            "0"
+          ],
+          [
+            "Do not contact",
+            "0"
+          ]
+        ]
+      },
+      "mobile": {
+        "bodyWidth": 390,
+        "viewport": 390,
+        "cardWidth": 358
+      },
+      "dncrRefresh": "passed",
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshots": [
+        "manager-prospect-diary-desktop.png",
+        "manager-prospect-diary-mobile.png"
+      ]
+    }
+  ],
+  "checkedAt": "2026-11-11T07:46:06.653Z"
+}

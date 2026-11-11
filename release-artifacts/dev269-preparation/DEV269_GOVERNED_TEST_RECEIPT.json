@@ -1,0 +1,16 @@
+{
+  "schema": "nysa.dev269.governed-test-evidence.v1",
+  "exitCode": 0,
+  "tests": 1697,
+  "passed": 1592,
+  "failed": 0,
+  "skipped": 105,
+  "includedFiles": 328,
+  "excludedFiles": 94,
+  "includedFilesSha256": "1a69ac84e3e62d822ac0ba3226dae2141581616c7ec9e75f73d6e44c27386a65",
+  "outputSha256": "da98d5c4de80b31fb49e80ce9972dd5e6d735da3e94bb5d01c2ce8f0676bb59f",
+  "tapExitCode": 0,
+  "tapOutputSha256": "144a9c5ebe2f3fb8aa5deda341b363086d546da7984037f81f333a278b50ff08",
+  "skipInventoryCount": 105,
+  "skipInventorySha256": "f7a9806e8729a3f88bfd10e136fa2cc771b358960dc5eba4b9e5568a1032ef4a"
+}
