@@ -1,5 +1,41 @@
 # CRM Development Baseline
 
+## Accepted DEV270 Production / CRM Test baseline — 12 November 2026
+
+- Ajit confirmed DEV270 acceptance in this chat on 12 November Dubai time.
+  The installed candidate on both environments is `2.1.0-dev.270`, origin commit
+  `5c1c350151d6ace33377b33526e2bfedf4ae8f6b`. The package SHA-256 is
+  `1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c`.
+  This entry supersedes the installed states below.
+- **Production:** `nysareal_nysacrm`, 171 migrations, 307 public tables, and
+  111 enabled triggers. Install matched the candidate catalog. Smoke passed
+  seven checks and observed one verified exact-root worker, PID `3146336`,
+  with database readiness green. Campaign governance remains enabled.
+  Production WhatsApp and the simulator remain off.
+- Production install receipt SHA-256
+  `fb147a792fd86a46906cf169513df4daf5a6b8041671638e1a3b624de5c0bbfc`.
+  Smoke receipt SHA-256
+  `696d19fb2eb633607fb030f357295cc6a8030d35487e947093d4cb3ba511a274`.
+  Production backup receipt SHA-256
+  `bc7934c35e2bfaef4879a88849baf2dcf5fa7ea6663072d3ce89f3c5513d2566`.
+  The verified RC1 application archive, database dump and nodevenv copy are
+  retained under `/home/nysareal/crm-release-preparation/20261112-dev270-prod-r2`.
+  No rollback or database restore occurred during install.
+- **CRM Test:** `nysareal_nysa_dev247_smoke`, 171 migrations, 307 public tables
+  and 111 enabled triggers. Install and all eight smoke checks passed.
+  Smoke observed one verified exact-root worker, PID `1930883`. The CRM Test
+  simulator was enabled under its scoped configuration. Install receipt SHA-256
+  `bd4eead9b9a7f922bfb503b3e1a0464a706af4c7c6d2e9728063c61bc615b259`.
+  Smoke receipt SHA-256
+  `07692c8cc0e2d4b09c4a99c2cb22339efc9a4d49c0f9510c0f1c00b7f3bee635`.
+  The verified scoped rollback point is
+  `/home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup`.
+- Receipt files are retained locally under `release-artifacts/dev270-preparation-r2/`.
+  Worker PIDs describe the deployment receipts. This acceptance entry did not
+  query either hosted environment. The migration advisory lock and legacy
+  Production privilege review remain follow-up items. WN-15 remains paused.
+
+
 ## Accepted DEV269 CRM Test / Production RC1 source of truth — 11 November 2026
 
 - **CRM Test installed and accepted:** `2.1.0-dev.269`, origin commit
