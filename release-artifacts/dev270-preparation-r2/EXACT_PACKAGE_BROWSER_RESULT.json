@@ -1,0 +1,37 @@
+{
+  "version": "2.1.0-dev.270",
+  "postgres": "13.23",
+  "ready": {
+    "ok": true,
+    "database": "ready",
+    "version": "2.1.0-dev.270"
+  },
+  "unavailable": [
+    {
+      "route": "/crm/whatsapp-workspace",
+      "status": 404
+    },
+    {
+      "route": "/providers/whatsapp-simulated/health",
+      "status": 404
+    }
+  ],
+  "results": [
+    {
+      "role": "agent",
+      "path": "/index.html",
+      "preview": "passed",
+      "commit": "passed",
+      "campaignNavigation": "absent",
+      "pageErrors": []
+    },
+    {
+      "role": "manager",
+      "path": "/index.html",
+      "preview": "passed",
+      "commit": "passed",
+      "campaignNavigation": "absent",
+      "pageErrors": []
+    }
+  ]
+}

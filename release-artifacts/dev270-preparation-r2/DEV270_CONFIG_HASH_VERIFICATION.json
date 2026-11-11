@@ -1,0 +1,92 @@
+{
+  "schema": "nysa.crm-test.deploy-config-verification.v1",
+  "generatedAt": "2026-11-11T17:59:53.668Z",
+  "spec": "../../../../AppData/Local/Temp/nysa-dev270-rehearsal-d2-r2/DEV270_R2_CONFIG_SPEC.json",
+  "config": "release-artifacts/dev270-preparation-r2/DEV270_DEPLOY_CONFIG.json",
+  "configSha256": "7edadb1331615b8081bb8be3ed9ce1296a18c07301da7be0918ba8696f6e3e62",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.270-origin.zip",
+      "configured": "1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c",
+      "actual": "1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.270-origin.manifest.json",
+      "configured": "7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211",
+      "actual": "7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "../../../../AppData/Local/Temp/nysa-dev270-rehearsal-d2-r2/exact-package/src/database-schema-baseline/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineTriggerContractFileSha256": {
+      "file": "../../../../AppData/Local/Temp/nysa-dev270-rehearsal-d2-r2/exact-package/src/database-schema-baseline/database-trigger-contract.json",
+      "configured": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "actual": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "comparison": "raw file SHA-256 pinned by baseline manifest",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "../../../../AppData/Local/Temp/nysa-dev270-rehearsal-d2-r2/exact-package/src/database-schema-contract/manifest.json",
+      "configured": "ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b",
+      "actual": "ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedTriggerContractSha256": {
+      "file": "../../../../AppData/Local/Temp/nysa-dev270-rehearsal-d2-r2/exact-package/src/database-trigger-contract.json",
+      "configured": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "actual": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "comparison": "SHA-256(JSON.stringify(triggers))",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "database": {
+    "migrationNeutral": false,
+    "baselineMigrationCount": 170,
+    "expectedMigrationCount": 171,
+    "expectedTableCount": 306,
+    "expectedPostTableCount": 307,
+    "baselineTriggerCount": 111,
+    "expectedTriggerCount": 111
+  },
+  "tests": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-11T17:57:04.612Z",
+    "completedAt": "2026-11-11T17:57:39.879Z",
+    "tests": 1699,
+    "passed": 1593,
+    "failed": 0,
+    "skipped": 106,
+    "outputSha256": "be0110ab76fe178ecb6a58c69b32feba57501b228f2719a116e05665b7320bab",
+    "includedFiles": 329,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "9cd325378e7e5f9d6d4fd2f013b8bd1182e978ade01edde133fac174b4b4716a",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  },
+  "candidate": {
+    "version": "2.1.0-dev.270",
+    "commit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+    "packageSha256": "1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c",
+    "manifestSha256": "7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211"
+  }
+}

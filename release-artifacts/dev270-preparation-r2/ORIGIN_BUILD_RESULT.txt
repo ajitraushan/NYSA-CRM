@@ -1,0 +1,30 @@
+
+> nysa-crm@2.1.0-dev.270 release:package
+> node tools/build-release-from-origin.mjs --commit 5c1c350151d6ace33377b33526e2bfedf4ae8f6b
+
+{
+  "package": "C:\\Users\\ajitr\\.codex\\worktrees\\prod-prospect-upload\\canonical-worktree\\release-artifacts\\origin\\nysa-core-2.1.0-dev.270-origin.zip",
+  "repositoryUrl": "https://github.com/ajitraushan/NYSA-CRM.git",
+  "commit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "tree": "2b9827cb9b2c65a8177ed244bd3188d191c0403d",
+  "sourceRef": "refs/heads/codex/prod-prospect-upload",
+  "packageSha256": "1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c",
+  "manifestSha256": "7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211",
+  "testReceipt": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-11T17:57:04.612Z",
+    "completedAt": "2026-11-11T17:57:39.879Z",
+    "tests": 1699,
+    "passed": 1593,
+    "failed": 0,
+    "skipped": 106,
+    "outputSha256": "be0110ab76fe178ecb6a58c69b32feba57501b228f2719a116e05665b7320bab",
+    "includedFiles": 329,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "9cd325378e7e5f9d6d4fd2f013b8bd1182e978ade01edde133fac174b4b4716a",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  },
+  "version": "2.1.0-dev.270",
+  "migrationCount": 171,
+  "latestMigration": "171_prospect_upload.sql"
+}

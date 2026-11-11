@@ -1,0 +1,2 @@
+{"phase":"historical-drift","database":"nysa_test_fixture","role":"nysa_test_user","postgres":"13.23","migrations":168,"contractMatches":true}
+{"phase":"restored","database":"nysa_test_fixture","role":"nysa_test_user","postgres":"13.23","migrations":171,"contractMatches":true,"auditCount":1,"deletedMessages":12,"deletedNotifications":5}

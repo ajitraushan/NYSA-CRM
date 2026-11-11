@@ -1,0 +1,11 @@
+✔ Production operator rejects invalid runtime entries, escaped paths and stale or unrelated receipts (5.0685ms)
+✔ Production preflight refuses Test identity and an enabled simulator (0.2003ms)
+✔ Production preflight reports public owners and effective legacy privileges in PostgreSQL 13.23 (68.4094ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 224.325

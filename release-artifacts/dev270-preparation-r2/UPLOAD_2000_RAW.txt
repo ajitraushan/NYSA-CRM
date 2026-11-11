@@ -1,0 +1,3 @@
+(node:3332) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"database":"nysa_test_fixture","role":"nysa_test_user","postgres":"13.23","rowsSaved":2000,"notesSaved":2000,"previewMs":5876,"commitMs":11191,"lockSamplingIntervalMs":10,"lockSamples":854,"firstFourLocksMs":134,"lastFourLocksMs":11178,"observedLockSpanMs":11044,"tables":["contact_channels","contacts","leads","prospects"],"concurrentBusinessTraffic":false}

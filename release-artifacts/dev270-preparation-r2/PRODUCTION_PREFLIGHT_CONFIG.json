@@ -1,0 +1,10 @@
+{
+  "root": "/home/nysareal/nysa-crm",
+  "domain": "crm.nysarealty.com",
+  "baselineCommit": "b6e013c51f46be482858e733160fa7e675ff3106",
+  "candidateCommit": "5c1c350151d6ace33377b33526e2bfedf4ae8f6b",
+  "baselineSchemaSha256": "166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0",
+  "scriptSha256": "103acbc56bfd4fd44cb6def8a4a773a3bcfda77ad3ae9eab6e692ba74565df1b",
+  "schemaHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+  "workerHelperSha256": "6bbb2833fbafcaf4f78d7a0f1269b4c0062c022c4292d594bcd40a7f61dae785"
+}
