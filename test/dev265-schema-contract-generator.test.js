@@ -16,7 +16,7 @@ function sha256(value) {
 }
 
 function sha256File(file) {
-  return sha256(fs.readFileSync(file));
+  return sha256(fs.readFileSync(file,'utf8').replaceAll('\r',''));
 }
 
 function writeFixture(input) {
@@ -109,15 +109,15 @@ test('the committed cumulative schema contracts match their manifest', () => {
   const contractDir = path.join(root, 'src', 'database-schema-contract');
   const manifest = JSON.parse(fs.readFileSync(path.join(contractDir, 'manifest.json'), 'utf8'));
   assert.equal(manifest.schema, 'nysa.database-schema-contract.v1');
-  assert.equal(manifest.generatedFrom.sourceCommit, 'a4df366912689306244436623fa2d11a6b5bff4e');
+  assert.equal(manifest.generatedFrom.sourceCommit, '30b9f74d801deab30474fe61a00ab2288b228b52');
   assert.equal(manifest.generatedFrom.postgresqlVersion, '13.23');
-  assert.equal(manifest.generatedFrom.migrationCount, 170);
+  assert.equal(manifest.generatedFrom.migrationCount, 171);
   assert.equal(manifest.generatedFrom.sourcePrefix, undefined);
 
   const expectedCounts = {
-    constraints: 2748,
-    indexes: 966,
-    columns: 4113,
+    constraints: 2754,
+    indexes: 968,
+    columns: 4122,
     functions: 53,
     sequencesViews: 7,
   };

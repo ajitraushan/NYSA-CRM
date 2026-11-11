@@ -10,10 +10,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const canonicalDir = path.join(root, 'src', 'database-schema-contract');
 const triggerFile = path.join(root, 'src', 'database-trigger-contract.json');
 const migration = path.join(root, 'src', 'migrations', '169_restore_full_schema_contract.sql');
-const sha256File = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-
-test('DEV265 migration remains the frozen accepted Step 3 recovery artifact', () => {
-  assert.equal(sha256File(migration), 'ca0ab210ba6d65875e3494a81d93bc138fc1e89a3a36ac2cccf6a25eb3ec2e97');
+test('migration 169 preserves every accepted recovery byte outside its Production gate', () => {
+  const sql = fs.readFileSync(migration,'utf8').replaceAll('\r','');
+  const gate = /  -- Production must match the canonical contract above\.[\s\S]*?  END IF;\n\n/;
+  assert.match(sql,gate);
+  assert.match(sql,/current_database\(\) = 'nysareal_nysacrm'/);
+  assert.match(sql,/current_user = 'nysareal_nysacrmapp'/);
+  assert.ok(sql.indexOf('requires the canonical pre-170 schema') < sql.indexOf('DELETE FROM wa_inbox_notifications'));
+  assert.equal(crypto.createHash('sha256').update(sql.replace(gate,'')).digest('hex'),
+    'ca0ab210ba6d65875e3494a81d93bc138fc1e89a3a36ac2cccf6a25eb3ec2e97');
 });
 test('DEV265 migration generator proves the 33/371 index split', () => {
   const sql = fs.readFileSync(migration, 'utf8');

@@ -1,17 +1,20 @@
-import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
+const accepted = 'e5db302e12a21d2597ecab0dc340fa2eae534381';
+const acceptedFile = file => execFileSync('git',['show',`${accepted}:${file}`],{encoding:'utf8'});
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
 test('DEV267a technical version and migration-neutral schema baseline equal DEV267 canonical',()=>{
   const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
-  assert.equal(packageJson.version,'2.1.0-dev.269');
-  const result=JSON.parse(execFileSync(process.execPath,['tools/verify-dev267a-release-contract.mjs'],{encoding:'utf8'}));
-  assert.equal(result.migrationNeutral,true);
-  assert.equal(result.expected.manifestSha256,'59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944');
-  assert.equal(result.expected.triggerFileSha256,'70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf');
-  assert.deepEqual([result.expected.migrationsBefore,result.expected.migrationsAfter,result.expected.tablesBefore,result.expected.tablesAfter,result.expected.triggersBefore,result.expected.triggersAfter],[170,170,306,306,111,111]);
-  assert.ok(result.files.every(file=>file.byteIdentical&&file.baselineSha256===file.canonicalSha256));
+  assert.equal(packageJson.version,'2.1.0-dev.270');
+  const files=['columns.json','constraints.json','functions.json','indexes.json','sequences-views.json','manifest.json'];
+  for(const file of files){
+    const actual=fs.readFileSync('src/database-schema-baseline/'+file,'utf8').replaceAll('\r','');
+    assert.equal(actual,acceptedFile('src/database-schema-contract/'+file),file);
+  }
+  assert.equal(fs.readFileSync('src/database-schema-baseline/database-trigger-contract.json','utf8').replaceAll('\r',''),
+    acceptedFile('src/database-trigger-contract.json'));
 });
 
 test('canonical config generator accepts numeric DEV versions and migration-neutral baselines',()=>{

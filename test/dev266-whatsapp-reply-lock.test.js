@@ -1,3 +1,6 @@
+import {execFileSync} from 'node:child_process';
+const accepted = 'e5db302e12a21d2597ecab0dc340fa2eae534381';
+const acceptedFile = file => execFileSync('git',['show',`${accepted}:${file}`],{encoding:'utf8'});
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -74,12 +77,13 @@ test('DEV266 release source uses typed UUIDs and all reply sends use the shared 
 
 test('DEV267a retains the accepted DEV267 schema as the deployment baseline',()=>{
   const migrations=fs.readdirSync(new URL('../src/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort();
-  assert.equal(migrations.length,170);
-  assert.equal(migrations.at(-1),'170_prospect_diary.sql');
+  assert.equal(migrations.length,171);
+  assert.equal(migrations.at(-2),'170_prospect_diary.sql');
+  assert.equal(migrations.at(-1),'171_prospect_upload.sql');
   const baseline=JSON.parse(read('src/database-schema-baseline/manifest.json'));
   const current=JSON.parse(read('src/database-schema-contract/manifest.json'));
   assert.equal(baseline.contracts.constraints.count,2748);
-  assert.equal(current.generatedFrom.migrationCount,170);
-  assert.equal(current.contracts.constraints.count,2748);
-  assert.deepEqual(baseline,current);
+  assert.equal(current.generatedFrom.migrationCount,171);
+  assert.equal(current.contracts.constraints.count,2754);
+  assert.deepEqual(baseline,JSON.parse(acceptedFile('src/database-schema-contract/manifest.json')));
 });

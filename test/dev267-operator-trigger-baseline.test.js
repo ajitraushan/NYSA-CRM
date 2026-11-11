@@ -1,3 +1,6 @@
+import {execFileSync} from 'node:child_process';
+const accepted = 'e5db302e12a21d2597ecab0dc340fa2eae534381';
+const acceptedFile = file => execFileSync('git',['show',`${accepted}:${file}`],{encoding:'utf8'});
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -11,7 +14,7 @@ const baselineDirectory=path.join(root,'src','database-schema-baseline');
 const baselineTriggerFile=path.join(baselineDirectory,'database-trigger-contract.json');
 const canonicalDirectory=path.join(root,'src','database-schema-contract');
 const canonicalTriggerFile=path.join(root,'src','database-trigger-contract.json');
-const sha256=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const sha256=file=>crypto.createHash('sha256').update(fs.readFileSync(file,'utf8').replaceAll('\r','')).digest('hex');
 const clone=value=>JSON.parse(JSON.stringify(value));
 
 test('DEV267a baseline trigger contract is the accepted DEV267 111-trigger contract',()=>{
@@ -24,13 +27,35 @@ test('DEV267a baseline trigger contract is the accepted DEV267 111-trigger contr
   assert.equal(manifest.triggers.fileSha256,'70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf');
 });
 
-test('migration-neutral release uses the same 111-trigger contract before and after install',()=>{
+test('migration 171 uses the same 111-trigger contract before and after install',()=>{
   const baseline=loadSchemaContract(baselineDirectory,baselineTriggerFile);
   const canonical=loadSchemaContract(canonicalDirectory,canonicalTriggerFile);
   assert.equal(baseline.triggers.length,111);
   assert.equal(canonical.triggers.length,111);
   assert.equal(compareSchemaContracts(baseline,clone(baseline)).matches,true);
-  assert.equal(compareSchemaContracts(canonical,clone(baseline)).matches,true);
+  const historicalManifest=JSON.parse(acceptedFile('src/database-schema-contract/manifest.json'));
+  const expected={...Object.fromEntries(Object.entries(historicalManifest.contracts).map(([name,{file}])=>
+    [name,JSON.parse(acceptedFile('src/database-schema-contract/'+file)).entries])),
+    triggers:JSON.parse(acceptedFile('src/database-trigger-contract.json')).triggers.map(({table,name,function:fn,enabled})=>({table,name,function:fn,enabled}))};
+  assert.equal(compareSchemaContracts(expected,clone(baseline)).matches,true);
+  const delta=compareSchemaContracts(baseline,canonical);
+  assert.deepEqual(delta.constraints.extra,[
+    'prospect_upload_batches|prospect_upload_batches_created_by_fkey|f',
+    'prospect_upload_batches|prospect_upload_batches_file_sha256_check|c',
+    'prospect_upload_batches|prospect_upload_batches_owner_id_fkey|f',
+    'prospect_upload_batches|prospect_upload_batches_pkey|p',
+    'prospects|prospects_contact_identity_check|c',
+    'prospects|prospects_upload_batch_id_fkey|f']);
+  assert.deepEqual(delta.constraints.changed,['prospect_activities|prospect_activities_notes_check|c','prospects|prospects_source_check|c']);
+  assert.deepEqual(delta.indexes.extra,['prospect_upload_batches|prospect_upload_batches_pkey','prospects|prospects_upload_batch_idx']);
+  assert.deepEqual(delta.columns.extra,['prospect_upload_batches|created_at','prospect_upload_batches|created_by',
+    'prospect_upload_batches|file_name','prospect_upload_batches|file_sha256','prospect_upload_batches|id',
+    'prospect_upload_batches|owner_id','prospect_upload_batches|skipped_rows','prospect_upload_batches|status_counts','prospects|upload_batch_id']);
+  assert.deepEqual(delta.columns.changed,['prospects|normalized_phone','prospects|phone']);
+  for(const name of ['constraints','indexes','columns']) assert.deepEqual(delta[name].missing,[]);
+  assert.deepEqual(delta.indexes.changed,[]);
+  for(const name of ['functions','sequencesViews','triggers']) assert.equal(delta[name].matches,true);
+
 });
 
 test('Phase A still fails when one accepted baseline trigger is missing',()=>{

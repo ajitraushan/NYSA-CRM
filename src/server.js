@@ -54,6 +54,7 @@ import {configureWhatsAppReplyLock} from './whatsapp-reply-lock.js';
 import {configureProspectCallingPolicy} from './prospect-calling-policy.js';
 import { leadConnectionEnvironment } from './lead-integration-connections.js';
 import { requireAuth } from './auth.js';
+import { productionCampaignsDisabled } from './production-campaign-policy.js';
 import { configureHttpServer, createShutdownHandler, writeRuntimeEvent } from './lib/runtime-lifecycle.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -75,12 +76,14 @@ app.mount('/api', createLeadIntegrationSetupRoutes({requireAuth,transaction}));
 app.mount('/api', createLeadResponseRoutes({requireAuth,transaction}));
 app.mount('/api', createWebIntakePhase1Routes({requireAuth,transaction}));
 app.mount('/api', createLeadChannelInboxRoutes({transaction}));
-app.mount('/api', createNativeLeadWhatsAppRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
-app.mount('/api', createWhatsAppSandboxAdminRoutes({requireAuth,transaction}));
-app.mount('/api', createWhatsAppSandboxInboxRoutes({transaction}));
-app.mount('/api', whatsappWorkspaceRoutes);
-app.mount('/api', createWhatsAppSimulatedProviderRoutes());
-app.mount('/api', createWhatsAppSimulationControlRoutes());
+if (!productionCampaignsDisabled()) {
+  app.mount('/api', createNativeLeadWhatsAppRoutes({transaction,loadEnvironment:loadLeadEnvironment}));
+  app.mount('/api', createWhatsAppSandboxAdminRoutes({requireAuth,transaction}));
+  app.mount('/api', createWhatsAppSandboxInboxRoutes({transaction}));
+  app.mount('/api', whatsappWorkspaceRoutes);
+  app.mount('/api', createWhatsAppSimulatedProviderRoutes());
+  app.mount('/api', createWhatsAppSimulationControlRoutes());
+}
 app.mount('/api', listingIntakeRoutes);
 app.mount('/api', listingMappingRoutes);
 app.mount('/api', crmRoutes);
@@ -97,7 +100,7 @@ app.mount('/api', propertyFinderMediaDeliveryRoutes);
 app.mount('/api', propertyFinderSandboxRoutes);
 app.mount('/api', diaryRoutes);
 app.mount('/api', transactionRepresentationRoutes);
-app.mount('/api', campaignRoutes);
+if (!productionCampaignsDisabled()) app.mount('/api', campaignRoutes);
 app.mount('/api', governedMatchingRoutes);
 app.mount('/api', inventoryImportRoutes);
 app.mount('/api', partnerOrganizationRoutes);
