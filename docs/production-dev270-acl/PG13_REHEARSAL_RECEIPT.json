@@ -1,0 +1,49 @@
+{
+  "started_at": "2026-11-11T20:41:36.588981+00:00",
+  "finished_at": "2026-11-11T20:41:49.543423+00:00",
+  "runtime": {
+    "postgres": "postgres (PostgreSQL) 13.23",
+    "psql": "psql (PostgreSQL) 13.23",
+    "pg_restore": "pg_restore (PostgreSQL) 13.23"
+  },
+  "target": "isolated loopback cluster with synthetic columns and no row data",
+  "source_inventory_sha256": "24d68854cc3c5a383a5dbc448aa24f6c6cb40788af6a8c99882ac4362ace4b7d",
+  "source_sql_sha256": {
+    "revoke-table-grants.sql": "0c4626ba44220196261b62123fd491cbd567139b0de108e1ab9edb2b62ef090a",
+    "restore-table-grants.sql": "af64cb965298947aa5defb318f183d0b9a24cdc46b570b24088d4b14e8fe13aa"
+  },
+  "baseline_matches_inventory": true,
+  "final_state_matches_baseline": true,
+  "cases": [
+    {
+      "case": "forward",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "psql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/revoke-table-grants.sql:166: NOTICE:  ACL check 1 passed: ACL b35b9cad0e24de7b49345211c29dd6f43afb54b9eb9c0533f2ad155877fa8405, effective rights 7c818d86d2ae0ad776264d12976ebe693fd6f06fc32ca5f27205c6648675797a\npsql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/revoke-table-grants.sql:166: NOTICE:  ACL check 2 passed: ACL fc357923ab106675adba7f03015e0557bfcffb25a564e426cf2e93b463da453e, effective rights 47a571d49b0beae58f739294dbef329f6ac57650f084434da1017840a75339f1\n"
+    },
+    {
+      "case": "inverse",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "psql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/restore-table-grants.sql:166: NOTICE:  ACL check 1 passed: ACL fc357923ab106675adba7f03015e0557bfcffb25a564e426cf2e93b463da453e, effective rights 47a571d49b0beae58f739294dbef329f6ac57650f084434da1017840a75339f1\npsql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/restore-table-grants.sql:166: NOTICE:  ACL check 2 passed: ACL b35b9cad0e24de7b49345211c29dd6f43afb54b9eb9c0533f2ad155877fa8405, effective rights 7c818d86d2ae0ad776264d12976ebe693fd6f06fc32ca5f27205c6648675797a\n"
+    },
+    {
+      "case": "ACL drift",
+      "exit_code": 3,
+      "stdout": "",
+      "stderr": "psql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/revoke-table-grants.sql:166: ERROR:  ACL fingerprint mismatch (check 1): f876b1b2c79ce8ce21dc1021dd3d18cd8fc3371b8f66acba1abeb06dfaf702a0\nCONTEXT:  PL/pgSQL function inline_code_block line 128 at RAISE\n"
+    },
+    {
+      "case": "postcondition failure rolls back entire transaction",
+      "exit_code": 3,
+      "stdout": "",
+      "stderr": "psql:C:/Users/ajitr/AppData/Local/Temp/nysa-dev270-acl-pg13-jygdae4b/postcondition-fault.sql:167: NOTICE:  ACL check 1 passed: ACL b35b9cad0e24de7b49345211c29dd6f43afb54b9eb9c0533f2ad155877fa8405, effective rights 7c818d86d2ae0ad776264d12976ebe693fd6f06fc32ca5f27205c6648675797a\npsql:C:/Users/ajitr/AppData/Local/Temp/nysa-dev270-acl-pg13-jygdae4b/postcondition-fault.sql:167: ERROR:  ACL fingerprint mismatch (check 2): ca93bf28bb163bb6fee54db87336ca7f4fcdf2e1d640e67d11182e6c1a95024a\nCONTEXT:  PL/pgSQL function inline_code_block line 128 at RAISE\n"
+    },
+    {
+      "case": "NOWAIT contention",
+      "exit_code": 3,
+      "stdout": "",
+      "stderr": "psql:C:/Users/ajitr/.codex/worktrees/prod-prospect-upload/canonical-worktree/docs/production-dev270-acl/revoke-table-grants.sql:166: ERROR:  could not obtain lock on relation \"public.agent_area_assignments\"\nCONTEXT:  SQL statement \"LOCK TABLE\n    ONLY public.agent_area_assignments,\n    ONLY public.deal_checklists,\n    ONLY public.deal_parties,\n    ONLY public.external_listing_publications,\n    ONLY public.inventory_agreements,\n    ONLY public.inventory_counterparties,\n    ONLY public.inventory_verification_requests,\n    ONLY public.lead_inventory_selections,\n    ONLY public.lead_month_number_counters,\n    ONLY public.lead_number_counters,\n    ONLY public.listings,\n    ONLY public.opportunity_property_share_items,\n    ONLY public.opportunity_property_shares,\n    ONLY public.opportunity_representation_history,\n    ONLY public.provisional_external_properties,\n    ONLY public.transaction_counterparties\n    IN ACCESS EXCLUSIVE MODE NOWAIT\"\nPL/pgSQL function inline_code_block line 21 at SQL statement\n"
+    }
+  ]
+}
