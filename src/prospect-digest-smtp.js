@@ -99,3 +99,17 @@ export async function sendProspectDigest({ to, subject, text, html, messageId },
     try { transport?.close(); } catch { /* Closing cannot change delivery status. */ }
   }
 }
+
+export function previousProspectWorkingDay(date, workingDays) {
+  if (!workingDays.length) throw new Error('A working-day policy is required');
+  const result = new Date(date + 'T00:00:00Z');
+  do { result.setUTCDate(result.getUTCDate() - 1); }
+  while (!workingDays.includes(result.getUTCDay() || 7));
+  return result.toISOString().slice(0,10);
+}
+
+export function digestDeliveryTransition(result, attempts) {
+  if (result.state === 'retryable') return attempts === 1 ? 'retry' : 'failed';
+  if (result.state === 'accepted' || result.state === 'skipped') return result.state;
+  return 'review';
+}

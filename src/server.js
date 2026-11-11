@@ -1,3 +1,4 @@
+import { startProspectDigestWorker } from './prospect-digest-worker.js';
 import {startAdviceWorker} from './payout-advice.js';
 import {startWebIntakeWorker} from './web-intake-worker.js';
 import path from 'node:path';
@@ -133,6 +134,7 @@ async function start() {
   await migrate();
   startAdviceWorker();
   startWebIntakeWorker({transaction});
+  startProspectDigestWorker();
   await new Promise((resolve, reject) => {
     server = app.listen(PORT, () => {
       server.off('error', reject);

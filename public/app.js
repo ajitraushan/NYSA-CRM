@@ -2456,6 +2456,7 @@ function setupAdminWorkspace(){
   const view=$('#view'),sections=Array.from(view.children).filter(x=>x.classList.contains('admin-section'));
   const definitions=new Map([
     ['NYSA company profile and document defaults',['organization','Company profile']],
+    ['Prospect digest email',['prospect_email','Email settings']],
     ['Controlled values',['controlled_values','Controlled values']],
     ['Business hours and SLA policies',['sla','Business hours & SLA']],
     ['Area maintenance',['areas','Area maintenance']],
@@ -2554,6 +2555,7 @@ async function renderAdmin() {
     </div>
     <div id="audit-table">Loading…</div>
   </div>
+  <div class="admin-section"><h2>Prospect digest email</h2><div id="prospect-email-settings"></div></div>
   <div class="admin-section"><h2>About NYSA CORE</h2><p class="tool-note">Deployment identity for support and release traceability.</p><div class="about-application-grid"><div><span>Application</span><b>NYSA CORE</b></div><div><span>Application version</span><b>${esc(APP_VERSION)}</b></div><div><span>Environment</span><b>${esc(environmentLabel()||'Production')}</b></div></div></div>`;
   setupAdminWorkspace();
   window.renderLeadIntegrationSetup?.({root:document.querySelector('#lead-integration-setup'),api,escape:esc});
@@ -2566,6 +2568,14 @@ async function renderAdmin() {
   $('#al-type').addEventListener('change',loadAudit);
   $('#organization-form').addEventListener('submit',saveOrganization);
   $('#calling-number-form')?.addEventListener('submit',saveCallingNumber);
+  loadProspectEmailSettings();
+  const callingNumbers=$('#calling-number-table');
+  if(callingNumbers){
+    const cadence=document.createElement('section');
+    cadence.id='prospect-cadence-settings';
+    callingNumbers.insertAdjacentElement('afterend',cadence);
+    loadProspectCadenceSettings();
+  }
   $('#organization-reset').addEventListener('click',()=>resetOrganizationForm(true));
   $('#value-set-form').addEventListener('submit',createValueSet);
   $('#listing-mapping-version-form').addEventListener('submit',createListingMappingVersion);$('#listing-mapping-entry-form').addEventListener('submit',addListingMappingEntry);$('#listing-mapping-field').addEventListener('change',refreshListingMappingCoreOptions);
@@ -2732,6 +2742,68 @@ async function openDashboardTargetPeriods(params,page=1){
  }catch(error){toast(error.message,9000);}
 }
 
+
+async function loadProspectEmailSettings(){
+  const panel=$('#prospect-email-settings');
+  if(!panel)return;
+  try{
+    const {settings,flagged}=await api('/crm/prospect-diary/admin/email');
+    panel.innerHTML=`<dl><dt>Sender</dt><dd>${esc(settings.sender||'Unconfigured')}</dd>
+      <dt>SMTP server</dt><dd>${esc(settings.host)}:${Number(settings.port)} · TLS</dd>
+      <dt>Sending</dt><dd>${settings.enabled?'Enabled':'Off'}</dd></dl>
+      <button type="button" class="btn" data-prospect-email-test ${settings.enabled&&settings.environment==='crm-test'?'':'disabled'}>Send test email to me</button>
+      <p class="tool-note">Ajit enters the mailbox password at the masked cPanel Terminal prompt.</p>
+      ${flagged.length?`<h3>Addresses to review</h3><ul>${flagged.map(row=>`<li>${esc(row.recipientEmail)} · ${Number(row.failedDays)} failed days</li>`).join('')}</ul>`:''}
+      <p data-prospect-email-result role="status"></p>`;
+    const button=panel.querySelector('[data-prospect-email-test]');
+    button.onclick=async()=>{
+      button.disabled=true;
+      const status=panel.querySelector('[data-prospect-email-result]');
+      try{
+        await api('/crm/prospect-diary/admin/email/test',{method:'POST',body:{}});
+        status.textContent='Test queued for your CRM email address.';
+      }catch(error){status.textContent=error.message;}
+      finally{button.disabled=false;}
+    };
+  }catch(error){panel.textContent=error.message;}
+}
+
+async function loadProspectCadenceSettings(){
+  const panel=$('#prospect-cadence-settings');
+  if(!panel)return;
+  const path='/crm/prospect-diary/admin/cadence-policy';
+  try{
+    const {versions}=await api(path);
+    const active=versions.find(version=>version.status==='active');
+    if(!active)return;
+    panel.innerHTML=`<h3>Prospect targets and cadence</h3><form class="form-grid compact-form" data-cadence-form>
+      <label>Daily target<input name="dailyTarget" type="number" min="0" max="300" required value="${active.dailyTarget}"></label>
+      <label>First-call deadline (working days)<input name="firstCallDays" type="number" min="1" max="14" required value="${active.firstCallDays}"></label>
+      <label>Retry gaps (working days, comma-separated)<input name="retryGaps" required value="${esc(active.retryGaps.join(','))}"></label>
+      <fieldset><legend>Working days</legend>${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map((day,index)=>
+        `<label><input type="checkbox" name="workingDays" value="${index+1}" ${active.workingDays.includes(index+1)?'checked':''}>${day}</label>`).join('')}</fieldset>
+      <label><input type="checkbox" name="parkOnExhaustion" ${active.parkOnExhaustion?'checked':''}>Park after retries</label>
+      <button class="btn" type="submit">Create cadence draft</button>
+    </form>
+    ${versions.filter(version=>version.status==='draft').map(version=>`<p>
+      Target ${version.dailyTarget} · deadline ${version.firstCallDays} · gaps ${esc(version.retryGaps.join(', '))}
+      <button class="btn" type="button" data-cadence-approve="${esc(version.id)}">Approve draft</button></p>`).join('')}`;
+    panel.querySelector('[data-cadence-form]').onsubmit=async event=>{
+      event.preventDefault();
+      const form=new FormData(event.currentTarget);
+      const body={dailyTarget:Number(form.get('dailyTarget')),firstCallDays:Number(form.get('firstCallDays')),
+        retryGaps:form.get('retryGaps').split(',').map(value=>Number(value.trim())),workingDays:form.getAll('workingDays').map(Number),
+        parkOnExhaustion:form.has('parkOnExhaustion')};
+      try{await api(path,{method:'POST',body});await loadProspectCadenceSettings();}catch(error){toast(error.message);}
+    };
+    for(const button of panel.querySelectorAll('[data-cadence-approve]'))button.onclick=async()=>{
+      button.disabled=true;
+      try{await api(path+'/'+encodeURIComponent(button.dataset.cadenceApprove)+'/approve',{method:'POST',body:{}});await loadProspectCadenceSettings();}
+      catch(error){toast(error.message);}
+      finally{button.disabled=false;}
+    };
+  }catch(error){panel.textContent=error.message;}
+}
 
 let organizationVersions=[],organizationDocumentAgents=[];
 async function loadCallingNumbers(){const target=$('#calling-number-table');if(!target)return;try{const{numbers}=await api('/crm/prospect-diary/calling-numbers');target.innerHTML=`<table><tr><th>Number</th><th>TDRA evidence</th><th>Status</th><th>Action</th></tr>${numbers.map(n=>`<tr><td><b>${esc(n.label)}</b><small>${esc(n.phone)}</small></td><td>${esc(n.tdraRegistrationReference)}<small>${esc(n.tdraRegisteredLegalName)} · ${esc(n.tdraEvidenceReference)}</small></td><td>${esc(n.status)}</td><td>${n.status==='active'?`<button class="btn btn-sm" data-retire-calling-number="${n.id}">Retire</button>`:'Retained history'}</td></tr>`).join('')||'<tr><td colspan="4">No company calling numbers maintained.</td></tr>'}</table>`;target.querySelectorAll('[data-retire-calling-number]').forEach(button=>button.onclick=async()=>{const reason=prompt('Retirement reason (required)');if(!reason)return;try{await api(`/crm/prospect-diary/calling-numbers/${button.dataset.retireCallingNumber}/retire`,{method:'POST',body:{reason}});toast('Calling number retired');loadCallingNumbers();}catch(error){toast(error.message);}});}catch(error){target.textContent=error.message;}}

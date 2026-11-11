@@ -1,6 +1,5 @@
 const nextSteps = ['follow_up','retry_cadence','close_not_interested','close_dnc','close_wrong_number','convert'];
 const noContact = new Set(['no_answer','voicemail','consumer_ended']);
-const reasons = new Set(['budget','timing','committed','not_investor','location_product','other_agent','other']);
 const closeSteps = ['close_not_interested','close_dnc','close_wrong_number'];
 const text = value => typeof value === 'string' ? value.trim() : '';
 
@@ -18,7 +17,7 @@ export function validateProspectNextStep(body, now = Date.now()) {
   const reason = text(body.notInterestedReason);
   const note = text(body.notInterestedNote);
   const month = text(body.recontactMonth);
-  if ((step === 'close_not_interested' || outcome === 'declined' || reason) && !reasons.has(reason)) {
+  if ((step === 'close_not_interested' || outcome === 'declined' || reason) && !/^[a-z][a-z0-9_]{0,63}$/.test(reason)) {
     return { error: 'Select a valid not-interested reason' };
   }
   if (reason === 'other' && note.length < 5) return { error: 'Explain the Other reason in at least five characters' };

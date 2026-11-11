@@ -9,7 +9,7 @@ Candidate package and provenance, hosted sender verification and delivery eviden
 
 - Sender confirmed by Ajit: `PROSPECT_DIGEST_SMTP_SENDER=crm@nysarealty.com`.
 - CRM Test allow-list for the synthetic digest: `PROSPECT_DIGEST_TEST_RECIPIENTS=admin@nysarealty.com`. Verify inbox delivery and SPF/DKIM in the staff Outlook mailbox. Keep the lead-reply mailbox out of this test.
-- The Admin self-test resolves the signed-in Admin address and remains subject to the CRM Test allow-list.
+- The Admin self-test resolves the signed-in Admin address and remains subject to the CRM Test allow-list. Keep `PROSPECT_DIGEST_SCHEDULE_ENABLED` off during the separately approved self-test so the worker only processes the queued Admin test. Enable recurring delivery separately.
 - Obtain Ajit's written go separately for hosted configuration, credential setup and the test send. Ajit enters the password himself at the prompt below.
 
 ## Password-entry interface

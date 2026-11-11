@@ -9,6 +9,11 @@ import { advanceProspectRetry, validateProspectAgentTarget, validateProspectCade
 import {registerProspectUpload} from './prospect-upload.js';
 import {UPLOAD_SOURCES} from '../prospect-upload.js';
 
+import { connectedOutcomes, prospectCsvCell, prospectDashboardDrilldown, prospectDashboardFilters, prospectDashboardSummary } from '../prospect-dashboard.js';
+
+import { digestEmailSettings } from '../prospect-digest-smtp.js';
+import { prospectDigestPreview } from '../prospect-digest-worker.js';
+
 const r=Router();
 const STATUS=['not_contacted','no_answer','call_back','interested','not_interested','do_not_contact','converted'];
 const SOURCES=['cold_call','referral','event','personal_network','purchased_data','other'];
@@ -19,7 +24,7 @@ const email=value=>clean(value)?.toLowerCase()||null;
 const canManage=broker=>['manager','director'].includes(broker.jobRole);
 
 r.use(requireAuth,(req,res,next)=>{
-  const adminSettings=req.broker?.role==='admin'&&(req.path.startsWith('/api/crm/prospect-diary/calling-numbers')||req.path.startsWith('/api/crm/prospect-diary/admin/cadence-policy'));
+  const adminSettings=req.broker?.role==='admin'&&(req.path.startsWith('/api/crm/prospect-diary/calling-numbers')||req.path.startsWith('/api/crm/prospect-diary/admin/cadence-policy')||['/api/crm/prospect-diary/admin/email','/api/crm/prospect-diary/admin/email/test'].includes(req.path));
   if(!adminSettings&&(!hasInternalCrmIdentity(req.broker)||!['sales_agent','manager','director'].includes(req.broker.jobRole)))return res.status(403).json({error:'Prospect Diary access is restricted to Sales Agents and CRM leadership'});
   next();
 });
@@ -65,7 +70,7 @@ function requireWarningAcknowledgement(body,result){
   const outsideWindow=result.warnings.includes('outside_calling_window');
   return{code:409,error:outsideWindow?result.outsideCallingHoursMessage:'Repeat-call policy warning requires acknowledgement and a reason; it does not block the call',warning:true,...result};
 }
-function applyOutsideCallingHours(result,{at,timezone}){const minute=localMinute(at,timezone),outside=minute<Number(result.policy.prospectCallStartMinute)||minute>=Number(result.policy.prospectCallEndMinute);if(!outside)return null;const mode=prospectCallingPolicyConfig().outsideCallingHoursMode,clock=localClock(at,timezone),message=`This is outside the permitted calling hours (09:00â€“18:00 in the prospectâ€™s local time â€” now ${clock} there). UAE rules limit marketing calls to these hours. Confirm the customer requested this time and give the reason.`;result.outsideCallingHoursMode=mode;result.outsideCallingHoursMessage=message;result.prospectLocalTime=clock;if(mode==='refuse')return{code:409,error:message,warning:false,mode,prospectTimezone:timezone,prospectLocalTime:clock};result.warnings.push('outside_calling_window');return null;}
+function applyOutsideCallingHours(result,{at,timezone}){const minute=localMinute(at,timezone),outside=minute<Number(result.policy.prospectCallStartMinute)||minute>=Number(result.policy.prospectCallEndMinute);if(!outside)return null;const mode=prospectCallingPolicyConfig().outsideCallingHoursMode,clock=localClock(at,timezone),message=`This is outside the permitted calling hours (09:00–18:00 in the prospect’s local time — now ${clock} there). UAE rules limit marketing calls to these hours. Confirm the customer requested this time and give the reason.`;result.outsideCallingHoursMode=mode;result.outsideCallingHoursMessage=message;result.prospectLocalTime=clock;if(mode==='refuse')return{code:409,error:message,warning:false,mode,prospectTimezone:timezone,prospectLocalTime:clock};result.warnings.push('outside_calling_window');return null;}
 
 async function duplicateSummary(phone,mail,broker,client,{excludeProspectId=null}={}){
   const global=await one(`SELECT
@@ -114,6 +119,122 @@ r.post('/crm/prospects',async(req,res)=>{
   });if(result.error)return res.status(result.code).json({error:result.error});res.status(201).json(result);
 });
 
+
+
+async function dashboardRequest(req){
+  const filters=prospectDashboardFilters(req.query);
+  if(filters.error)return {code:400,error:filters.error};
+  const actor=req.broker;
+  if(filters.agent&&filters.agent!==actor.id&&(!canManage(actor)||!await ownerContext(filters.agent,actor))) {
+    return {code:404,error:'Agent not found'};
+  }
+  if(filters.team){
+    const team=await one(
+      "SELECT id FROM teams WHERE id=$1 AND ($2='director' OR EXISTS (SELECT 1 FROM team_memberships m WHERE m.team_id=teams.id AND m.broker_id=$3 AND m.ends_at IS NULL AND ($2='sales_agent' OR m.membership_role='manager')))",
+      [filters.team,actor.jobRole,actor.id]);
+    if(!team)return {code:404,error:'Team not found'};
+  }
+  if(filters.batch){
+    const scoped=scope('p',actor,[filters.batch]);
+    const batch=await one('SELECT 1 FROM prospects p WHERE p.upload_batch_id=$1 AND '+scoped.clause+' LIMIT 1',scoped.params);
+    if(!batch)return {code:404,error:'Upload batch not found'};
+  }
+  const page=Number(req.query?.page??1);
+  if(!Number.isInteger(page)||page<1||page>2000)return {code:400,error:'Invalid page'};
+  const params=[filters.from,filters.to,filters.bucket,filters.team,filters.agent,filters.batch,filters.source,connectedOutcomes,(page-1)*50];
+  // Keep the first nine positions stable for the SQL and append actor scope last.
+  return {filters,scoped:scope('p',actor,params)};
+}
+
+r.get('/crm/prospect-diary/dashboard',async(req,res)=>{
+  const input=await dashboardRequest(req);
+  if(input.error)return res.status(input.code).json({error:input.error});
+  const data=await one(prospectDashboardSummary(input.scoped),input.scoped.params);
+  const rate=data.tiles.callsMade ? data.tiles.callsConnected/data.tiles.callsMade : null;
+  const visible=scope('p',req.broker);
+  const [teams,agents,batches]=await Promise.all([
+    many('SELECT DISTINCT t.id,t.name FROM prospects p JOIN teams t ON t.id=p.team_id WHERE '+visible.clause+' ORDER BY t.name,t.id',visible.params),
+    canManage(req.broker)?many('SELECT DISTINCT b.id,b.name FROM prospects p JOIN brokers b ON b.id=p.owner_id WHERE '+visible.clause+' ORDER BY b.name,b.id',visible.params):[],
+    many('SELECT DISTINCT p.upload_batch_id AS id FROM prospects p WHERE p.upload_batch_id IS NOT NULL AND '+visible.clause+' ORDER BY id LIMIT 500',visible.params),
+  ]);
+  return res.json({...data,agents:canManage(req.broker)?data.agents:[],tiles:{...data.tiles,connectRate:rate},filters:input.filters,options:{teams,agents,batches}});
+});
+
+r.get('/crm/prospect-diary/dashboard/drilldown',async(req,res)=>{
+  const input=await dashboardRequest(req);
+  if(input.error)return res.status(input.code).json({error:input.error});
+  const sql=prospectDashboardDrilldown(input.scoped,req.query?.metric);
+  if(!sql)return res.status(400).json({error:'Unknown drill-down metric'});
+  const rows=await many(sql,input.scoped.params);
+  return res.json({rows,total:rows[0]?.total??0});
+});
+
+r.get('/crm/prospect-diary/dashboard/export.csv',async(req,res)=>{
+  const input=await dashboardRequest(req);
+  if(input.error)return res.status(input.code).json({error:input.error});
+  const sql=prospectDashboardDrilldown(input.scoped,req.query?.metric);
+  if(!sql)return res.status(400).json({error:'Unknown export metric'});
+  input.scoped.params[8]=0;
+  const rows=await many(sql,input.scoped.params);
+  const fields=['id','displayName','ownerId','status','source','createdAt'];
+  const csv=[fields.join(','),...rows.map(row=>fields.map(key=>prospectCsvCell(row[key])).join(','))].join('\r\n');
+  await audit('Broker',req.broker.id,'prospect_dashboard_export',req.broker.id,{metric:req.query.metric,filters:input.filters,rows:rows.length});
+  res.setHeader('Content-Type','text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition','attachment; filename="prospect-dashboard.csv"');
+  return res.end(csv);
+});
+
+
+r.get('/crm/prospect-diary/admin/email',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  const flagged=await many(
+    "SELECT recipient_email,count(DISTINCT (last_attempt_at AT TIME ZONE 'Asia/Dubai')::date)::int AS failed_days " +
+    "FROM prospect_digest_runs WHERE status='failed' GROUP BY recipient_email HAVING count(DISTINCT (last_attempt_at AT TIME ZONE 'Asia/Dubai')::date)>=3 ORDER BY recipient_email");
+  return res.json({settings:digestEmailSettings(),flagged});
+});
+
+
+r.post('/crm/prospect-diary/admin/email/test',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  if(Object.keys(req.body||{}).length)return res.status(400).json({error:'The test recipient is the signed-in Admin'});
+  const settings=digestEmailSettings();
+  const limit=Number(process.env.PROSPECT_DIGEST_HOURLY_LIMIT);
+  if(settings.environment!=='crm-test'||!settings.enabled||!Number.isSafeInteger(limit)||limit<1) {
+    return res.status(409).json({error:'Admin test delivery is not enabled on CRM Test'});
+  }
+  const email=req.broker.email?.trim().toLowerCase();
+  const allowList=String(process.env.PROSPECT_DIGEST_TEST_RECIPIENTS??'').toLowerCase().split(',').map(value=>value.trim());
+  if(!email||!allowList.includes(email))return res.status(403).json({error:'Your CRM address is outside the CRM Test allow-list'});
+  const run=await transaction(async client=>{
+    const row=await one(
+      "INSERT INTO prospect_digest_runs(id,recipient_id,recipient_email,audience,report_date,status,next_attempt_at) "+
+      "VALUES($1,$2,$3,'admin_test',(now() AT TIME ZONE 'Asia/Dubai')::date,'pending',now()) "+
+      "ON CONFLICT(recipient_id,audience,report_date) DO NOTHING RETURNING id,status",
+      [uuid(),req.broker.id,email],client);
+    if(row)await audit('Broker',req.broker.id,'prospect_digest_admin_test_queued',req.broker.id,{runId:row.id},client);
+    return row;
+  });
+  if(!run)return res.status(409).json({error:'A test email was already queued today'});
+  return res.status(202).json({run});
+});
+
+r.patch('/crm/prospect-diary/digest/preference',async(req,res)=>{
+  const optOut=req.body?.optOut;
+  if(typeof optOut!=='boolean')return res.status(400).json({error:'Specify the digest preference'});
+  await transaction(async client=>{
+    await execute('UPDATE brokers SET prospect_digest_opt_out=$2 WHERE id=$1',[req.broker.id,optOut],client);
+    await audit('Broker',req.broker.id,'prospect_digest_preference_changed',req.broker.id,{optOut},client);
+  });
+  return res.json({optOut});
+});
+
+r.get('/crm/prospect-diary/digest/preview',async(req,res)=>{
+  const today=new Date(Date.now()+4*3600000).toISOString().slice(0,10);
+  const date=req.query?.date??today;
+  const filter=prospectDashboardFilters({period:'custom',from:date,to:date});
+  if(filter.error)return res.status(400).json({error:filter.error});
+  return res.json(await prospectDigestPreview(req.broker,date));
+});
 
 const cadencePath = '/crm/prospect-diary/admin/cadence-policy';
 
@@ -198,6 +319,9 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
           WHEN f.due_at < (clock.day+interval '1 day') AT TIME ZONE 'Asia/Dubai' THEN 2
           WHEN p.next_retry_at < (clock.day+interval '1 day') AT TIME ZONE 'Asia/Dubai' THEN 4
           WHEN p.status='not_contacted' AND NOT EXISTS (
+            SELECT 1 FROM tasks snoozed WHERE snoozed.prospect_id=p.id AND snoozed.task_type='prospect_follow_up'
+              AND snoozed.status IN('open','in_progress') AND snoozed.snoozed_until>clock.at
+          ) AND NOT EXISTS (
             SELECT 1 FROM prospect_activities a WHERE a.prospect_id=p.id AND a.activity_type='call' AND a.direction='outbound'
           ) THEN 5
         END AS priority
@@ -231,7 +355,64 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
     FROM candidates WHERE priority IS NOT NULL
     ORDER BY priority,CASE WHEN priority<=3 THEN due_at WHEN priority=4 THEN last_occurred_at ELSE created_at END,id
     LIMIT 500`,scoped.params);
-  return res.json({items:rows,queueTotal:rows[0]?.queueTotal??0,readOnly:agent!==req.broker.id});
+  const filters=prospectDashboardFilters({});
+  const metrics=scope('p',req.broker,[filters.from,filters.to,'day',null,agent,null,null,connectedOutcomes,0]);
+  const performance=await one(prospectDashboardSummary(metrics),metrics.params);
+  const target=performance.agents.find(row=>row.id===agent)?.target??0;
+  const calling=await policy();
+  const local=localMinute(new Date(),'Asia/Dubai');
+  return res.json({items:rows,queueTotal:rows[0]?.queueTotal??0,readOnly:agent!==req.broker.id,
+    callsMade:performance.tiles.callsMade,connected:performance.tiles.callsConnected,target,
+    outsideCallingHours:local<calling.prospectCallStartMinute||local>=calling.prospectCallEndMinute});
+});
+
+
+
+r.post('/crm/prospects/:id/retry-again',async(req,res)=>{
+  if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Prospect not found'});
+  const reason=typeof req.body?.reason==='string'?req.body.reason.trim():'';
+  if(reason.length<5||reason.length>1000)return res.status(400).json({error:'Enter a meaningful reason'});
+  const result=await transaction(async client=>{
+    const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});
+    if(!prospect)return {code:404,error:'Prospect not found'};
+    if(prospect.ownerId!==req.broker.id)return {code:403,error:'Only the owning Agent can reopen retries'};
+    if(!prospect.parkedAt||!prospect.normalizedPhone||['do_not_contact','converted','not_interested'].includes(prospect.status)) {
+      return {code:409,error:'This prospect is not eligible for another retry'};
+    }
+    if(blocksOutbound(await getContactSuppression(prospect.normalizedPhone,client)))return {code:409,error:'Outreach is blocked by suppression'};
+    const at=new Date();
+    const warnings=await callWarnings(prospect,at,client);
+    if(warnings.warnings.length)return {code:409,error:'The existing repeat-call policy does not yet permit another retry'};
+    await execute('UPDATE prospects SET parked_at=NULL,retry_attempts=0,next_retry_at=now(),updated_at=now() WHERE id=$1',[prospect.id],client);
+    await audit('Prospect',prospect.id,'retry_reopened',req.broker.id,{reason},client);
+    return {reopened:true};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  return res.json(result);
+});
+
+r.patch('/crm/prospects/:id/follow-ups/:taskId/snooze',async(req,res)=>{
+  if(!validProspectTrackingId(req.params.id)||!validProspectTrackingId(req.params.taskId))return res.status(404).json({error:'Follow-up not found'});
+  const reason=typeof req.body?.reason==='string'?req.body.reason.trim():'';
+  const until=new Date(req.body?.until??'');
+  const now=Date.now(),dubaiDay=time=>new Date(time+4*3600000).toISOString().slice(0,10);
+  if(reason.length<5||reason.length>1000||!Number.isFinite(until.getTime())||until.getTime()<=now||dubaiDay(until.getTime())!==dubaiDay(now)) {
+    return res.status(400).json({error:'Choose a later time today in Dubai and enter a meaningful reason'});
+  }
+  const result=await transaction(async client=>{
+    const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});
+    if(!prospect)return {code:404,error:'Follow-up not found'};
+    if(prospect.ownerId!==req.broker.id)return {code:403,error:'Only the owning Agent can snooze follow-ups'};
+    const task=await one(
+      "UPDATE tasks SET snoozed_until=$3,snooze_reason=$4,updated_at=now() WHERE id=$1 AND prospect_id=$2 "+
+      "AND task_type='prospect_follow_up' AND assignee_id=$5 AND status IN('open','in_progress') RETURNING id,due_at,snoozed_until",
+      [req.params.taskId,prospect.id,until,reason,req.broker.id],client);
+    if(!task)return {code:404,error:'Follow-up not found'};
+    await audit('Task',task.id,'prospect_follow_up_snoozed',req.broker.id,{snoozedUntil:until,reason},client);
+    return {task};
+  });
+  if(result.error)return res.status(result.code).json({error:result.error});
+  return res.json(result);
 });
 
 r.get('/crm/prospect-diary/overrides',async(req,res)=>{
@@ -297,6 +478,28 @@ const interestFields = {
   purpose:'prospect_purpose', budgetBand:'prospect_budget_band', propertyType:'prospect_property_type',
   market:'prospect_market', timeline:'prospect_timeline',
 };
+
+
+r.get('/crm/prospects/:id/interest',async(req,res)=>{
+  if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Prospect not found'});
+  const prospect=await visibleProspect(req.params.id,req.broker);
+  if(!prospect)return res.status(404).json({error:'Prospect not found'});
+  const selections=await many(
+    'SELECT a.id,a.business_label,a.active FROM areas a JOIN prospect_preferred_areas p ON p.area_id=a.id WHERE p.prospect_id=$1 ORDER BY a.business_label,a.id',
+    [prospect.id]);
+  const values=Object.fromEntries(Object.keys(interestFields).map(key=>[key,prospect[key]??null]));
+  if(prospect.ownerId!==req.broker.id)return res.json({values,selections,editable:false});
+  const definitions=await many(
+    "SELECT s.stable_code AS set_code,d.stable_code,d.display_label_en FROM value_sets s JOIN value_definitions d ON d.value_set_id=s.id "+
+    "WHERE s.stable_code=ANY($1::text[]) AND s.status='active' AND d.definition_status='active' "+
+    "AND (d.effective_from IS NULL OR d.effective_from<=now()) AND (d.effective_to IS NULL OR d.effective_to>now()) "+
+    'ORDER BY d.display_order,d.display_label_en,d.id',
+    [[...Object.values(interestFields),'prospect_not_interested_reason']]);
+  const areas=await many('SELECT id,business_label FROM areas WHERE active=1 ORDER BY business_label,id');
+  const choices=Object.fromEntries(Object.entries(interestFields).map(([key,set])=>[key,definitions.filter(value=>value.setCode===set)]));
+  return res.json({values,selections,choices,areas,editable:prospect.status!=='converted',
+    reasons:definitions.filter(value=>value.setCode==='prospect_not_interested_reason')});
+});
 
 r.patch('/crm/prospects/:id/interest',async(req,res)=>{
   if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Prospect not found'});
@@ -398,6 +601,13 @@ r.post('/crm/prospects/:id/activities',async(req,res)=>{
     const warningResult=type==='call'&&b.direction==='outbound'?await callWarnings(prospect,at,client):{warnings:[],stats:{},policy:{}};
     if(type==='call'&&b.direction==='outbound'){const outsideError=applyOutsideCallingHours(warningResult,{at,timezone:prospect.timezone});if(outsideError)return outsideError;}
     const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;
+    if(next?.reason){
+      const governed=await one(
+        "SELECT d.id FROM value_sets s JOIN value_definitions d ON d.value_set_id=s.id WHERE s.stable_code='prospect_not_interested_reason' "+
+        "AND s.status='active' AND d.definition_status='active' AND d.stable_code=$1 "+
+        "AND (d.effective_from IS NULL OR d.effective_from<=now()) AND (d.effective_to IS NULL OR d.effective_to>now())",[next.reason],client);
+      if(!governed)return {code:400,error:'The not-interested reason is unavailable or retired'};
+    }
     const followUp = next?.followUp;
     if (followUp && (prospect.status === 'do_not_contact' || blocksOutbound(suppression))) {
       return {code:409,error:'Follow-up outreach is blocked by the prospect restriction'};
@@ -485,7 +695,7 @@ r.post('/crm/prospects/:id/activities',async(req,res)=>{
   });if(result.error)return res.status(result.code).json(result);res.status(201).json(result);
 });
 
-r.post('/crm/prospects/:id/follow-ups',async(req,res)=>{const b=req.body||{},channel=clean(b.channel)||'call';if(!clean(b.subject)||!clean(b.dueAt)||!['call','whatsapp','email'].includes(channel))return res.status(400).json({error:'Subject, dueAt and a valid channel are required'});const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can create a follow-up'};if(['do_not_contact','converted'].includes(prospect.status))return{code:409,error:'Follow-up outreach is blocked by the Prospect status'};if(!prospect.normalizedPhone&&channel!=='email')return{code:409,error:'This channel requires a phone number'};const suppression=await getContactSuppression(prospect.normalizedPhone,client);if(blocksOutbound(suppression))return{code:409,error:`Follow-up outreach is blocked by ${suppression.strongest}`};const warningResult=await callWarnings(prospect,b.dueAt,client);if(channel==='call'){const outsideError=applyOutsideCallingHours(warningResult,{at:b.dueAt,timezone:prospect.timezone});if(outsideError)return outsideError;}const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;const outsideNote=warningResult.warnings.includes('outside_calling_window')?`Outside calling hours â€” customer request: ${clean(b.warningReason)}`:null,details=[clean(b.details),outsideNote].filter(Boolean).join('\n')||null,row=await one(`INSERT INTO tasks(id,prospect_id,prospect_channel,task_type,subject,details,assignee_id,priority,due_at,created_by,policy_warning_codes,policy_warning_acknowledged,policy_warning_reason,customer_timezone) VALUES($1,$2,$3,'prospect_follow_up',$4,$5,$6,$7,$8,$6,$9,$10,$11,$12) RETURNING *`,[uuid(),prospect.id,channel,clean(b.subject),details,req.broker.id,b.priority||'normal',b.dueAt,warningResult.warnings,warningResult.warnings.length?true:false,warningResult.warnings.length?clean(b.warningReason):null,prospect.timezone],client);await audit('Task',row.id,'created',req.broker.id,{prospectId:prospect.id,channel,warningCodes:warningResult.warnings,warningReason:row.policyWarningReason,prospectTimezone:prospect.timezone,prospectLocalTime:warningResult.prospectLocalTime||localClock(b.dueAt,prospect.timezone),outsideCallingHoursMode:warningResult.outsideCallingHoursMode||null},client);return{followUp:row,warnings:warningResult.warnings};});if(result.error)return res.status(result.code).json(result);res.status(201).json(result);});
+r.post('/crm/prospects/:id/follow-ups',async(req,res)=>{const b=req.body||{},channel=clean(b.channel)||'call';if(!clean(b.subject)||!clean(b.dueAt)||!['call','whatsapp','email'].includes(channel))return res.status(400).json({error:'Subject, dueAt and a valid channel are required'});const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can create a follow-up'};if(['do_not_contact','converted'].includes(prospect.status))return{code:409,error:'Follow-up outreach is blocked by the Prospect status'};if(!prospect.normalizedPhone&&channel!=='email')return{code:409,error:'This channel requires a phone number'};const suppression=await getContactSuppression(prospect.normalizedPhone,client);if(blocksOutbound(suppression))return{code:409,error:`Follow-up outreach is blocked by ${suppression.strongest}`};const warningResult=await callWarnings(prospect,b.dueAt,client);if(channel==='call'){const outsideError=applyOutsideCallingHours(warningResult,{at:b.dueAt,timezone:prospect.timezone});if(outsideError)return outsideError;}const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;const outsideNote=warningResult.warnings.includes('outside_calling_window')?`Outside calling hours — customer request: ${clean(b.warningReason)}`:null,details=[clean(b.details),outsideNote].filter(Boolean).join('\n')||null,row=await one(`INSERT INTO tasks(id,prospect_id,prospect_channel,task_type,subject,details,assignee_id,priority,due_at,created_by,policy_warning_codes,policy_warning_acknowledged,policy_warning_reason,customer_timezone) VALUES($1,$2,$3,'prospect_follow_up',$4,$5,$6,$7,$8,$6,$9,$10,$11,$12) RETURNING *`,[uuid(),prospect.id,channel,clean(b.subject),details,req.broker.id,b.priority||'normal',b.dueAt,warningResult.warnings,warningResult.warnings.length?true:false,warningResult.warnings.length?clean(b.warningReason):null,prospect.timezone],client);await audit('Task',row.id,'created',req.broker.id,{prospectId:prospect.id,channel,warningCodes:warningResult.warnings,warningReason:row.policyWarningReason,prospectTimezone:prospect.timezone,prospectLocalTime:warningResult.prospectLocalTime||localClock(b.dueAt,prospect.timezone),outsideCallingHoursMode:warningResult.outsideCallingHoursMode||null},client);return{followUp:row,warnings:warningResult.warnings};});if(result.error)return res.status(result.code).json(result);res.status(201).json(result);});
 
 r.patch('/crm/prospects/:id/follow-ups/:taskId',async(req,res)=>{const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};const task=await one("SELECT * FROM tasks WHERE id=$1 AND prospect_id=$2 AND task_type='prospect_follow_up' FOR UPDATE",[req.params.taskId,prospect.id],client);if(!task)return{code:404,error:'Follow-up not found'};if(task.assigneeId!==req.broker.id&&!canManage(req.broker))return{code:403,error:'Follow-up is outside your scope'};const status=req.body?.status||task.status;if(!['open','in_progress','completed','cancelled'].includes(status))return{code:400,error:'Invalid follow-up status'};if(['completed','cancelled'].includes(status)&&!clean(req.body?.outcome))return{code:400,error:'Outcome or cancellation reason is required'};const row=await one(`UPDATE tasks SET status=$1,outcome=COALESCE($2,outcome),completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$3 RETURNING *`,[status,clean(req.body?.outcome),task.id],client);await audit('Task',task.id,'status_changed',req.broker.id,{prospectId:prospect.id,from:task.status,to:status,outcome:row.outcome},client);return row;});if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
 
@@ -513,7 +723,11 @@ r.patch('/crm/prospects/:id/status',async(req,res)=>{const status=clean(req.body
 
 async function customerMatches(prospect,broker,client){const found=await duplicateSummary(prospect.normalizedPhone,prospect.normalizedEmail,broker,client);return found.customers;}
 r.get('/crm/prospects/:id/conversion-matches',async(req,res)=>{const prospect=await visibleProspect(req.params.id,req.broker);if(!prospect)return res.status(404).json({error:'Prospect not found or outside your scope'});const duplicates=await duplicateSummary(prospect.normalizedPhone,prospect.normalizedEmail,req.broker);res.json({matches:duplicates.customers,leadMatches:duplicates.leads,outsideScopeMatch:duplicates.outsideScope,customerReady:Boolean(prospect.displayName&&prospect.normalizedEmail),requirements:{newCustomer:['display name','phone','email']}});});
-r.post('/crm/prospects/:id/convert',async(req,res)=>{const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent may convert this Prospect'};const locked=await one('SELECT * FROM prospects WHERE id=$1 FOR UPDATE',[prospect.id],client);if(locked.status==='converted')return{prospect:locked,contactId:locked.convertedContactId,idempotent:true};const suppression=await getContactSuppression(locked.normalizedPhone,client);if(suppression.strongest==='wrong_number')return{code:409,error:'Wrong-number evidence blocks Customer creation'};const duplicates=await duplicateSummary(locked.normalizedPhone,locked.normalizedEmail,req.broker,client),matches=await customerMatches(locked,req.broker,client);if(duplicates.outsideScope)return{code:409,error:'A matching Customer or Lead exists outside your scope; ask your Manager to review it without exposing its details'};let contact;if(req.body?.existingContactId){if(!matches.some(x=>x.id===req.body.existingContactId))return{code:409,error:'Select an in-scope matching Customer'};contact=await one('SELECT * FROM contacts WHERE id=$1',[req.body.existingContactId],client);}else{if(matches.length)return{code:409,error:'Matching Customers exist; select one instead of creating another',matches};if(!locked.displayName||!locked.normalizedEmail)return{code:409,error:'Add the prospect name and email before creating a new Customer'};const provenance=[locked.briefNotes,`Prospect Diary source: ${locked.source}`,locked.sourceSupplier?`Supplier: ${locked.sourceSupplier}`:null,locked.sourceBatchReference?`Batch: ${locked.sourceBatchReference}`:null,locked.sourceAcquiredAt?`Acquired: ${new Date(locked.sourceAcquiredAt).toISOString()}`:null,locked.sourceEvidenceReference?`Evidence: ${locked.sourceEvidenceReference}`:null].filter(Boolean).join('\n');contact=await one(`INSERT INTO contacts(id,full_name,email,phone,contact_type,preferred_channel,notes,owner_id,created_by,email_status,phone_status,source_first_seen,do_not_contact) VALUES($1,$2,$3,$4,$5,'Phone',$6,$7,$7,'format_valid','format_valid','Prospect Diary',$8) RETURNING *`,[uuid(),locked.displayName,locked.normalizedEmail,locked.normalizedPhone,req.body?.contactType||'buyer',provenance,req.broker.id,blocksOutbound(suppression)?1:0],client);await execute('INSERT INTO contact_roles(id,contact_id,role_code,created_by) VALUES($1,$2,$3,$4)',[uuid(),contact.id,req.body?.contactType||'buyer',req.broker.id],client);for(const [kind,value] of [['Email',locked.normalizedEmail],['Phone',locked.normalizedPhone]])await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,restriction_status,created_by) VALUES($1,$2,$3,'Primary',$4,$4,1,'format_valid',$5,$6)`,[uuid(),contact.id,kind,value,blocksOutbound(suppression)?'do_not_contact':'allowed',req.broker.id],client);await audit('Contact',contact.id,'created_from_prospect',req.broker.id,{prospectId:locked.id,source:locked.source,sourceEvidenceReference:locked.sourceEvidenceReference,restriction:suppression.strongest},client);}
+r.post('/crm/prospects/:id/convert',async(req,res)=>{const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent may convert this Prospect'};const locked=await one('SELECT * FROM prospects WHERE id=$1 FOR UPDATE',[prospect.id],client);if(locked.status==='converted')return{prospect:locked,contactId:locked.convertedContactId,idempotent:true};const suppression=await getContactSuppression(locked.normalizedPhone,client);if(suppression.strongest==='wrong_number')return{code:409,error:'Wrong-number evidence blocks Customer creation'};const duplicates=await duplicateSummary(locked.normalizedPhone,locked.normalizedEmail,req.broker,client),matches=await customerMatches(locked,req.broker,client);if(duplicates.outsideScope)return{code:409,error:'A matching Customer or Lead exists outside your scope; ask your Manager to review it without exposing its details'};let contact;if(req.body?.existingContactId){if(!matches.some(x=>x.id===req.body.existingContactId))return{code:409,error:'Select an in-scope matching Customer'};contact=await one('SELECT * FROM contacts WHERE id=$1',[req.body.existingContactId],client);}else{if(matches.length)return{code:409,error:'Matching Customers exist; select one instead of creating another',matches};if(!locked.displayName||!locked.normalizedEmail)return{code:409,error:'Add the prospect name and email before creating a new Customer'};const areas=await many('SELECT a.business_label FROM prospect_preferred_areas p JOIN areas a ON a.id=p.area_id WHERE p.prospect_id=$1 ORDER BY a.business_label,a.id',[locked.id],client);
+const interest=Object.entries({Purpose:locked.purpose,'Budget band':locked.budgetBand,'Property type':locked.propertyType,Market:locked.market,Timeline:locked.timeline})
+  .filter(([,value])=>value).map(([label,value])=>label+': '+value.replaceAll('_',' '));
+if(areas.length)interest.push('Preferred areas: '+areas.map(area=>area.businessLabel).join(', '));
+const provenance=[locked.briefNotes,...interest,`Prospect Diary source: ${locked.source}`,locked.sourceSupplier?`Supplier: ${locked.sourceSupplier}`:null,locked.sourceBatchReference?`Batch: ${locked.sourceBatchReference}`:null,locked.sourceAcquiredAt?`Acquired: ${new Date(locked.sourceAcquiredAt).toISOString()}`:null,locked.sourceEvidenceReference?`Evidence: ${locked.sourceEvidenceReference}`:null].filter(Boolean).join('\n');contact=await one(`INSERT INTO contacts(id,full_name,email,phone,contact_type,preferred_channel,notes,owner_id,created_by,email_status,phone_status,source_first_seen,do_not_contact) VALUES($1,$2,$3,$4,$5,'Phone',$6,$7,$7,'format_valid','format_valid','Prospect Diary',$8) RETURNING *`,[uuid(),locked.displayName,locked.normalizedEmail,locked.normalizedPhone,req.body?.contactType||'buyer',provenance,req.broker.id,blocksOutbound(suppression)?1:0],client);await execute('INSERT INTO contact_roles(id,contact_id,role_code,created_by) VALUES($1,$2,$3,$4)',[uuid(),contact.id,req.body?.contactType||'buyer',req.broker.id],client);for(const [kind,value] of [['Email',locked.normalizedEmail],['Phone',locked.normalizedPhone]])await execute(`INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,restriction_status,created_by) VALUES($1,$2,$3,'Primary',$4,$4,1,'format_valid',$5,$6)`,[uuid(),contact.id,kind,value,blocksOutbound(suppression)?'do_not_contact':'allowed',req.broker.id],client);await audit('Contact',contact.id,'created_from_prospect',req.broker.id,{prospectId:locked.id,source:locked.source,sourceEvidenceReference:locked.sourceEvidenceReference,restriction:suppression.strongest},client);}
     const updated=await one("UPDATE prospects SET status='converted',converted_contact_id=$1,converted_at=NOW(),converted_by=$2,updated_at=NOW() WHERE id=$3 RETURNING *",[contact.id,req.broker.id,locked.id],client);await audit('Prospect',locked.id,'converted',req.broker.id,{contactId:contact.id,restriction:suppression.strongest},client);return{prospect:updated,contactId:contact.id,idempotent:false};});if(result.error)return res.status(result.code).json({error:result.error,matches:result.matches});res.status(result.idempotent?200:201).json(result);});
 
 r.post('/crm/prospects/:id/reassign',async(req,res)=>{if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});const reason=clean(req.body?.reason);if(!reason||reason.length<5)return res.status(400).json({error:'A meaningful reassignment reason is required'});const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client),target=await ownerContext(req.body?.ownerId,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(!target)return{code:400,error:'Select an active Agent in your scope'};const row=await one('UPDATE prospects SET owner_id=$1,team_id=$2,updated_at=NOW() WHERE id=$3 RETURNING *',[target.id,target.teamId,prospect.id],client);await execute("UPDATE tasks SET assignee_id=$1,updated_at=NOW() WHERE prospect_id=$2 AND task_type='prospect_follow_up' AND status IN('open','in_progress')",[target.id,prospect.id],client);await audit('Prospect',prospect.id,'reassigned',req.broker.id,{fromOwnerId:prospect.ownerId,toOwnerId:target.id,reason},client);return row;});if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});

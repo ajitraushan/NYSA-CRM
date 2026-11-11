@@ -119,3 +119,65 @@ SET first_call_due_at =
     CASE WHEN extract(isodow FROM created_at AT TIME ZONE 'Asia/Dubai') = 6
       THEN interval '2 days' ELSE interval '1 day' END)
   AT TIME ZONE 'Asia/Dubai';
+
+
+CREATE INDEX prospect_activities_correction_idx ON prospect_activities(corrects_activity_id)
+  WHERE corrects_activity_id IS NOT NULL;
+
+CREATE FUNCTION nysa_prospect_first_call_deadline() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.first_call_due_at IS NULL THEN
+    SELECT d.at AT TIME ZONE 'Asia/Dubai' INTO NEW.first_call_due_at
+    FROM prospect_cadence_policy_versions p
+    CROSS JOIN LATERAL (
+      SELECT g.at FROM generate_series(
+        (NEW.created_at AT TIME ZONE 'Asia/Dubai') + interval '1 day',
+        (NEW.created_at AT TIME ZONE 'Asia/Dubai') + interval '98 days', interval '1 day'
+      ) g(at)
+      WHERE extract(isodow FROM g.at)::smallint=ANY(p.working_days)
+      ORDER BY g.at OFFSET p.first_call_days-1 LIMIT 1
+    ) d WHERE p.status='active';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER prospect_first_call_deadline BEFORE INSERT ON prospects
+  FOR EACH ROW EXECUTE FUNCTION nysa_prospect_first_call_deadline();
+
+-- Configuration records use an existing accountable Admin on initialized databases.
+WITH actor AS (
+  SELECT id FROM brokers WHERE role='admin' AND status='active' ORDER BY joined_at,id LIMIT 1
+), catalog(code,label) AS (
+  VALUES ('prospect_not_interested_reason','Not-interested reason'),
+    ('prospect_purpose','Prospect purpose'),('prospect_budget_band','Prospect budget band'),
+    ('prospect_property_type','Prospect property type'),('prospect_market','Prospect market'),
+    ('prospect_timeline','Prospect timeline')
+)
+INSERT INTO value_sets(id,stable_code,name,configuration_class,status,created_by)
+SELECT gen_random_uuid(),code,label,'B','active',actor.id FROM catalog CROSS JOIN actor
+ON CONFLICT (stable_code) DO NOTHING;
+
+WITH catalog(set_code,value_code,label,position) AS (
+  VALUES
+    ('prospect_not_interested_reason','budget','Budget does not fit',1),
+    ('prospect_not_interested_reason','timing','Timing — not now',2),
+    ('prospect_not_interested_reason','committed','Already bought or committed elsewhere',3),
+    ('prospect_not_interested_reason','not_investor','Not an investor / end-user only',4),
+    ('prospect_not_interested_reason','location_product','Location or product does not fit',5),
+    ('prospect_not_interested_reason','other_agent','Prefers another agent or developer',6),
+    ('prospect_not_interested_reason','other','Other',7),
+    ('prospect_purpose','investment','Investment',1),('prospect_purpose','end_use','End use',2),('prospect_purpose','both','Both',3),
+    ('prospect_budget_band','under_1m','Under AED 1M',1),('prospect_budget_band','one_to_2m','AED 1–2M',2),
+    ('prospect_budget_band','two_to_5m','AED 2–5M',3),('prospect_budget_band','five_to_10m','AED 5–10M',4),
+    ('prospect_budget_band','over_10m','Over AED 10M',5),
+    ('prospect_property_type','apartment','Apartment',1),('prospect_property_type','villa_townhouse','Villa / townhouse',2),
+    ('prospect_property_type','plot','Plot',3),('prospect_property_type','commercial','Commercial',4),
+    ('prospect_market','off_plan','Off-plan',1),('prospect_market','secondary','Secondary',2),('prospect_market','rental','Rental',3),
+    ('prospect_timeline','within_1_month','Within 1 month',1),('prospect_timeline','one_to_3_months','1–3 months',2),
+    ('prospect_timeline','three_to_6_months','3–6 months',3),('prospect_timeline','six_to_12_months','6–12 months',4),
+    ('prospect_timeline','later','Later',5)
+)
+INSERT INTO value_definitions(id,value_set_id,stable_code,display_label_en,definition_status,display_order,created_by)
+SELECT gen_random_uuid(),s.id,c.value_code,c.label,'active',c.position,s.created_by
+FROM catalog c JOIN value_sets s ON s.stable_code=c.set_code
+ON CONFLICT (value_set_id,stable_code) DO NOTHING;
