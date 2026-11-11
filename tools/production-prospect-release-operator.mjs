@@ -1,3 +1,5 @@
+import {fileHash,parseRuntimeManifest,safeName,verifyRuntime} from './production-runtime-manifest.mjs';
+export {parseRuntimeManifest} from './production-runtime-manifest.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -17,29 +19,10 @@ const RC1='b6e013c51f46be482858e733160fa7e675ff3106';
 const WORK='/home/nysareal/crm-release-preparation';
 const digest=data=>createHash('sha256').update(data).digest('hex');
 const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
-const fileHash=async file=>{
-  const hash=createHash('sha256');
-  for await(const chunk of fs.createReadStream(file))hash.update(chunk);
-  return hash.digest('hex');
-};
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{stdio:['ignore','pipe','pipe'],timeout:120000,
   maxBuffer:32*1024*1024,...options});
 const filePath=(root,name)=>path.join(root,name);
 const isHash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
-const safeName=name=>typeof name==='string'&&/^[A-Za-z0-9_@./+-]+$/.test(name)&&
-  !name.startsWith('/')&&name.split('/').every(part=>part&&!['.','..','.git','node_modules'].includes(part));
-
-export function parseRuntimeManifest(text){
-  const entries=new Map();
-  for(const line of text.trimEnd().split('\n')){
-    const match=/^([a-f0-9]{64})  (.+)$/.exec(line);
-    if(!match||!safeName(match[2])||entries.has(match[2]))throw Error('Unsafe runtime manifest entry');
-    entries.set(match[2],match[1]);
-  }
-  for(const name of ['package.json','package-lock.json','app.cjs'])assert.ok(entries.has(name),'Missing runtime file: '+name);
-  return entries;
-}
-
 export function verifyPhaseReceipt(receipt,{phase,commit,configSha256,maximumAgeMs,now=Date.now()}){
   assert.equal(receipt.result,'PASSED');
   assert.equal(receipt.phase,phase);
@@ -110,15 +93,6 @@ async function catalog(config,canonicalRoot){
     assert.deepEqual(tables,[...new Set(contract.columns.map(row=>row.table))].sort());
     return {migrations:ledger.length,tables:tables.length,triggers:observed.triggers.length};
   }finally{await client.end();}
-}
-async function verifyRuntime(root,entries){
-  for(const [name,sha] of entries){
-    const file=filePath(root,name);
-    const stat=fs.lstatSync(file);
-    if(!stat.isFile()||fs.realpathSync(file)!==file)throw Error('Runtime path is not a regular in-root file: '+name);
-    const actual=await fileHash(file);
-    if(actual!==sha)throw Error(`Runtime hash mismatch for ${name}. Expected ${sha}, observed ${actual}`);
-  }
 }
 async function requireHash(file,expected){
   assert.ok(isHash(expected),'Invalid expected SHA-256');
@@ -208,6 +182,62 @@ async function stage(config,stageDir){
   return entries;
 }
 
+export function prepareSourceSwap(root,stageDir,names,suffix,{
+  copy=(source,target)=>run('cp',['-a','--',source,target])
+}={}){
+  assert.match(suffix,/^[a-z0-9-]+$/);
+  const live=path.join(root,'src'), next=path.join(root,'.src-next-'+suffix),
+    previous=path.join(root,'.src-previous-'+suffix), failed=path.join(root,'.src-failed-'+suffix);
+  assert.equal(fs.realpathSync(live),live);
+  for(const target of [next,previous,failed]){
+    assert.throws(()=>fs.lstatSync(target),{code:'ENOENT'});
+  }
+  copy(live,next);
+  const originalModes=new Map();
+  function openForWrite(target){
+    const stat=fs.lstatSync(target);
+    assert.ok(!stat.isSymbolicLink()&&fs.realpathSync(target)===target,'Unsafe source staging path');
+    const mode=stat.mode&0o7777;
+    if(!(mode&0o200)){
+      originalModes.set(target,mode);
+      fs.chmodSync(target,mode|0o200);
+    }
+  }
+  try{
+    openForWrite(next);
+    for(const name of names){
+      assert.ok(safeName(name)&&name.startsWith('src/'));
+      const relative=name.slice(4).split('/'),file=relative.pop();
+      let parent=next;
+      for(const part of relative){
+        parent=path.join(parent,part);
+        if(!fs.existsSync(parent))fs.mkdirSync(parent,{mode:0o755});
+        openForWrite(parent);
+      }
+      const target=path.join(parent,file);
+      if(fs.existsSync(target))openForWrite(target);
+      else assert.throws(()=>fs.lstatSync(target),{code:'ENOENT'});
+      fs.copyFileSync(path.join(stageDir,name),target);
+    }
+  }finally{
+    for(const [target,mode] of [...originalModes].reverse())fs.chmodSync(target,mode);
+  }
+  let parked=false,activated=false;
+  return {
+    previous,
+    activate(){
+      fs.renameSync(live,previous);
+      parked=true;
+      fs.renameSync(next,live);
+      activated=true;
+    },
+    restore(){
+      if(activated){fs.renameSync(live,failed);activated=false;}
+      if(parked){fs.renameSync(previous,live);parked=false;}
+    }
+  };
+}
+
 async function main(args){
   process.umask(0o077);
   assert.equal(process.platform,'linux');
@@ -235,6 +265,9 @@ async function main(args){
   assert.equal(preflight.candidateCommit,config.commit);
   assert.equal(preflight.configSha256,config.preflightConfigSha256);
   assert.equal(preflightConfig.baselineSchemaSha256,config.baselineSchemaSha256);
+  assert.equal(preflightConfig.baselineRuntimeManifestSha256,config.baselineRuntimeSha256);
+  assert.equal(preflight.runtimeFiles?.manifestSha256,config.baselineRuntimeSha256);
+  assert.equal(preflight.runtimeFiles?.verified,392);
   const freshnessMs=config.freshnessMinutes*60000;
   assert.ok(Number.isFinite(freshnessMs)&&freshnessMs>=600000&&freshnessMs<=14400000);
   if(phase==='backup'){
@@ -309,6 +342,15 @@ async function main(args){
       run('tar',['-xzf',archive,'-C',recovery,'--',...[...prior.keys()].map(name=>'./'+name)],{timeout:120000});
       await verifyRuntime(recovery,prior);
       fs.writeFileSync(evidence('ORIGINAL_RUNTIME.json'),JSON.stringify([...prior])+'\n',{flag:'wx',mode:0o600});
+      const sourceSwap=prepareSourceSwap(ROOT,stageDir,targets.filter(name=>name.startsWith('src/')),path.basename(config.workspace));
+      for(const name of targets.filter(name=>!name.startsWith('src/'))){
+        const file=filePath(ROOT,name);
+        let parent=path.dirname(file);
+        while(!fs.existsSync(parent))parent=path.dirname(parent);
+        fs.accessSync(parent,fs.constants.W_OK);
+        if(fs.existsSync(file))fs.accessSync(file,fs.constants.W_OK);
+      }
+      report.priorSourceDirectory=sourceSwap.previous;
       report.workersBefore=inspectWorkers(ROOT);
       assert.ok(report.workersBefore.length<=1);
       let ready=false,dependencyChanged=false,startAttempted=false;
@@ -316,7 +358,8 @@ async function main(args){
       try{
         await stop();
         await catalog(config);
-        for(const name of targets){
+        sourceSwap.activate();
+        for(const name of targets.filter(name=>!name.startsWith('src/'))){
           const file=filePath(ROOT,name);
           fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o755});
           changed.push(name);
@@ -336,6 +379,7 @@ async function main(args){
       }catch(error){
         if(!ready){
           await stop();
+          sourceSwap.restore();
           const restore=changed.filter(name=>prior.has(name));
           for(const name of restore)fs.copyFileSync(filePath(recovery,name),filePath(ROOT,name));
           for(const name of changed.filter(name=>!prior.has(name)))fs.rmSync(filePath(ROOT,name),{force:true});

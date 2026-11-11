@@ -1,3 +1,4 @@
+import {parseRuntimeManifest,verifyRuntime} from './production-runtime-manifest.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -23,7 +24,7 @@ export function validateProductionConfig(config) {
   assert.equal(config.root,ROOT);
   assert.equal(config.domain,DOMAIN);
   assert.equal(config.baselineCommit,RC1);
-  for (const name of ['candidateCommit','baselineSchemaSha256','scriptSha256','schemaHelperSha256','workerHelperSha256']) {
+  for (const name of ['candidateCommit','baselineSchemaSha256','baselineRuntimeManifestSha256','scriptSha256','schemaHelperSha256','workerHelperSha256','runtimeHelperSha256']) {
     const length = name === 'candidateCommit' ? 40 : 64;
     assert.match(config[name],new RegExp('^[a-f0-9]{'+length+'}$'),name);
   }
@@ -98,10 +99,10 @@ function registration() {
 
 async function main(args) {
   if (process.platform !== 'linux') throw new Error('Production preflight requires the registered Linux host');
-  if (args.length!==8 || args[0]!=='--config' || args[2]!=='--schema' || args[4]!=='--evidence' || args[6]!=='--approved') {
-    throw new Error('Expected --config, --schema, --evidence and --approved');
+  if (args.length!==10 || args[0]!=='--config' || args[2]!=='--schema' || args[4]!=='--runtime' || args[6]!=='--evidence' || args[8]!=='--approved') {
+    throw new Error('Expected --config, --schema, --runtime, --evidence and --approved');
   }
-  const [,configFile,,schemaFile,,evidenceFile,,approval] = args;
+  const [,configFile,,schemaFile,,runtimeFile,,evidenceFile,,approval] = args;
   const configBytes=fs.readFileSync(configFile), config=JSON.parse(configBytes);
   validateProductionConfig(config);
   if (approval !== config.candidateCommit+':production-readonly-preflight:'+hash(configBytes)) {
@@ -120,13 +121,21 @@ async function main(args) {
     assert.equal(hash(schema),config.baselineSchemaSha256,'RC1 expectation hash mismatch');
     for (const [file,key] of [[script,'scriptSha256'],
       [new URL('./database-schema-contract.mjs',import.meta.url),'schemaHelperSha256'],
-      [new URL('./hosted-worker-lifecycle.mjs',import.meta.url),'workerHelperSha256']]) {
+      [new URL('./hosted-worker-lifecycle.mjs',import.meta.url),'workerHelperSha256'],
+      [new URL('./production-runtime-manifest.mjs',import.meta.url),'runtimeHelperSha256']]) {
       assert.equal(hash(fs.readFileSync(file)),config[key],key+' mismatch');
     }
     assert.equal(fs.realpathSync(ROOT),ROOT);
     const installed = JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
     assert.equal(installed.version,'2.1.0-rc.1');
     report.installedVersion=installed.version;
+    const baselineRuntime=fs.readFileSync(runtimeFile);
+    assert.equal(hash(baselineRuntime),config.baselineRuntimeManifestSha256,'RC1 runtime manifest hash mismatch');
+    const runtimeEntries=parseRuntimeManifest(baselineRuntime.toString('utf8'));
+    assert.equal(runtimeEntries.size,392);
+    await verifyRuntime(ROOT,runtimeEntries);
+    report.runtimeFiles={manifestSha256:config.baselineRuntimeManifestSha256,verified:runtimeEntries.size,
+      srcMode:(fs.statSync(path.join(ROOT,'src')).mode&0o777).toString(8)};
     const provenance=path.join(ROOT,'RELEASE_PROVENANCE.json');
     report.baselineProvenance=fs.existsSync(provenance)
       ? {commit:JSON.parse(fs.readFileSync(provenance,'utf8')).commit,sha256:hash(fs.readFileSync(provenance))}
@@ -163,6 +172,7 @@ async function main(args) {
     // Driver errors can carry database details. Retain only the safe classification.
     report.errorCode=error.code||error.name;
     if (error instanceof assert.AssertionError) report.assertionMessage=error.message;
+    if (error.code==='NYSA_RUNTIME_CHECK') report.runtimeError=error.message;
     if (error.comparison) report.schemaMismatch=error.comparison;
     process.exitCode=1;
   } finally {

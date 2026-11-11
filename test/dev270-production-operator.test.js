@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import pg from 'pg';
-import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt} from '../tools/production-prospect-release-operator.mjs';
+import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt,prepareSourceSwap} from '../tools/production-prospect-release-operator.mjs';
+import {verifyRuntime} from '../tools/production-runtime-manifest.mjs';
+import {createHash} from 'node:crypto';
 import {readProductionPrivilegeEvidence,validateProductionRegistration} from '../tools/production-prospect-readonly-preflight.mjs';
 
 test('Production operator rejects invalid runtime entries, escaped paths and stale or unrelated receipts',()=>{
@@ -56,4 +60,31 @@ test('Production preflight reports public owners and effective legacy privileges
       {table_name:'prospects',owner:'nysareal_nysacrmapp',legacy_role_privileges:['SELECT']});
     await client.query('ROLLBACK');
   }finally{await client.end();}
+});
+
+test('accepted runtime verifier reports exact mismatch and the source swap preserves and restores RC1',async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'nysa-prod-swap-test-'));
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const stage=path.join(root,'stage');
+  fs.mkdirSync(path.join(stage,'src'),{recursive:true});
+  fs.mkdirSync(path.join(root,'src'));
+  fs.writeFileSync(path.join(root,'src','app.js'),'RC1');
+  fs.writeFileSync(path.join(root,'src','existing-local.js'),'preserve');
+  fs.writeFileSync(path.join(stage,'src','app.js'),'DEV270');
+  const hash=createHash('sha256').update('RC1').digest('hex');
+  const manifest=new Map([['src/app.js',hash]]);
+  await verifyRuntime(root,manifest);
+  await assert.rejects(verifyRuntime(root,new Map([['src/app.js','0'.repeat(64)]])),/src\/app.js.*Expected.*observed/);
+  if(process.platform!=='win32')fs.chmodSync(path.join(root,'src'),0o555);
+  const mode=fs.statSync(path.join(root,'src')).mode&0o777;
+  const swap=prepareSourceSwap(root,stage,['src/app.js'],'unit-fixture',{
+    copy:(from,to)=>{fs.cpSync(from,to,{recursive:true});if(process.platform!=='win32')fs.chmodSync(to,0o555);}
+  });
+  swap.activate();
+  assert.equal(fs.readFileSync(path.join(root,'src','app.js'),'utf8'),'DEV270');
+  assert.equal(fs.readFileSync(path.join(root,'src','existing-local.js'),'utf8'),'preserve');
+  assert.equal(fs.statSync(path.join(root,'src')).mode&0o777,mode);
+  swap.restore();
+  await verifyRuntime(root,manifest);
+  if(process.platform!=='win32')for(const directory of ['src','.src-failed-unit-fixture'])fs.chmodSync(path.join(root,directory),0o755);
 });
