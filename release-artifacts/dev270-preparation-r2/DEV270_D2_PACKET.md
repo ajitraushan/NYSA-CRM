@@ -1,6 +1,6 @@
 # DEV270 revised D-2 packet
 
-This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Production option B is implemented in `2197f15a21aed31b24c6488013dc86d421edf021`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
+This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Production option B is implemented in `2197f15a21aed31b24c6488013dc86d421edf021`. The CloudLinux wrapper correction is `9428b805c15123b98a79855639a0d0e09da13212`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
 
 ## Identity and hashes
 
@@ -13,7 +13,7 @@ This packet supersedes the draft for `15d1b7e7`. The exact application candidate
 | Production preflight source | `4d368dfe29adc0d0e91f2530b539578a0b847b0bfaf5804e4c00c05935c6984d` |
 | Production preflight config | `919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f` |
 | Production RC1 schema expectation | `166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0` |
-| Production backup, install and smoke source | `8a014ff09e31c5c36f581929bd99d98e2fd9ea14897554c66174af54fee263dc` |
+| Production backup, install and smoke source | `697be930028a7af3430338b4afdbdc165f56a8177f593ed6d54829a07358f9aa` |
 | Accepted RC1 runtime manifest, 392 files | `c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292` |
 | Candidate schema manifest | `ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b` |
 
@@ -40,10 +40,10 @@ The approved Production read-only preflight must hash those 392 installed paths 
 
 Use option B. The live app link must resolve to `/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules`. Backup copies the complete RC1 nodevenv to `rc1-nodevenv` in the approved backup workspace and verifies its content, modes and symlink targets. The approved install swaps the locked dependency directories inside the same selector nodevenv while the worker is stopped. The app symlink stays in place. Rollback restores the parked RC1 modules and verifies them against the backup fingerprint. A local filesystem test passed for both directions. See `NODEVENV_SWAP_RAW.txt`.
 
-The existing 10:00 CRM Test Phase A and Production preflight commands, configs and source hashes are unchanged. The selector read-only evidence file below requires its own approval before it is run. It records the exact Node executable and npm CLI paths and SHA-256 values for the Production backup config.
+The existing 10:00 CRM Test Phase A and Production preflight commands, configs and source hashes are unchanged. The first selector evidence run confirmed the expected node_modules link and stopped on the distinction between CloudLinux's wrapper and the real interpreter. The revised selector script requires separate approval and a new origin download directory. It records `nodeWrapper`, `nodeWrapperSha256`, `nodeExecutable`, `nodeExecutableSha256`, `npmCli`, and `npmCliSha256`. The Production operator compares all six fields with the approved config. The real interpreter is pinned at `/opt/alt/alt-nodejs24/root/usr/bin/node`. The npm CLI must resolve within that ALT installation and is invoked directly with the pinned interpreter. Local tests reproduced the wrapper layout and rejected wrapper execution, the wrong Node major and altered approved hashes.
 
 ```sh
-"$NODE" "$PROD_TOOLS/production-selector-readonly-evidence.mjs" --evidence "$PROD_TOOLS/PRODUCTION_SELECTOR_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-selector-readonly
+/opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-selector-readonly-evidence.mjs" --evidence "$PROD_TOOLS/PRODUCTION_SELECTOR_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-selector-readonly
 ```
 
 ## Dubai schedule on 12 November
@@ -67,9 +67,9 @@ These are file invocations. Before each run, verify that the new output paths ar
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase install --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:install
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase smoke --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:smoke
 "$NODE" "$PROD_TOOLS/production-prospect-readonly-preflight.mjs" --config "$PROD_TOOLS/PRODUCTION_PREFLIGHT_CONFIG.json" --schema "$PROD_TOOLS/PRODUCTION_RC1_SCHEMA_EXPECTATION.json" --runtime "$PROD_TOOLS/PRODUCTION_RC1_RUNTIME_MANIFEST.sha256" --evidence "$PROD_TOOLS/PRODUCTION_PREFLIGHT_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-readonly-preflight:919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f
-"$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase backup --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-backup:$APPROVED_PROD_CONFIG_SHA"
-"$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase install --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-install:$APPROVED_PROD_CONFIG_SHA"
-"$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase smoke --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-smoke:$APPROVED_PROD_CONFIG_SHA"
+/opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase backup --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-backup:$APPROVED_PROD_CONFIG_SHA"
+/opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase install --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-install:$APPROVED_PROD_CONFIG_SHA"
+/opt/alt/alt-nodejs24/root/usr/bin/node "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase smoke --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-smoke:$APPROVED_PROD_CONFIG_SHA"
 ```
 
 `$PROD_CONFIG` and `$APPROVED_PROD_CONFIG_SHA` must come from the written approval for the actual config after preflight. The Production backup command uses PostgreSQL 13.23 `pg_dump -Fc` and preserves owner and ACL records. The operator checks disk below 90%, and app rollback never restores the database automatically.
