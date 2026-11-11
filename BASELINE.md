@@ -2,7 +2,8 @@
 
 ## Accepted DEV270 Production / CRM Test baseline — 12 November 2026
 
-- Ajit confirmed DEV270 acceptance in this chat on 12 November Dubai time.
+- Ajit explicitly accepted DEV270 on Production on 12 November Dubai time.
+  See the [Production acceptance record](release-artifacts/dev270-preparation-r2/DEV270_PRODUCTION_ACCEPTANCE.md).
   The installed candidate on both environments is `2.1.0-dev.270`, origin commit
   `5c1c350151d6ace33377b33526e2bfedf4ae8f6b`. The package SHA-256 is
   `1aecf97244cb3b15b64bb0cc9a5f971ab3a66530cd0cea87a5aa2aa3d2c75c5c`.
