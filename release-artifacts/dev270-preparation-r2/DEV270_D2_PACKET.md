@@ -1,6 +1,6 @@
 # DEV270 revised D-2 packet
 
-This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
+This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Production option B is implemented in `2197f15a21aed31b24c6488013dc86d421edf021`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
 
 ## Identity and hashes
 
@@ -13,7 +13,7 @@ This packet supersedes the draft for `15d1b7e7`. The exact application candidate
 | Production preflight source | `4d368dfe29adc0d0e91f2530b539578a0b847b0bfaf5804e4c00c05935c6984d` |
 | Production preflight config | `919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f` |
 | Production RC1 schema expectation | `166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0` |
-| Production backup, install and smoke source | `af7a2593f378172736ded6512aed992038e7799e5d0ed59065caee672e51011e` |
+| Production backup, install and smoke source | `8a014ff09e31c5c36f581929bd99d98e2fd9ea14897554c66174af54fee263dc` |
 | Accepted RC1 runtime manifest, 392 files | `c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292` |
 | Candidate schema manifest | `ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b` |
 
@@ -35,6 +35,16 @@ The committed config hashes refer to the exact LF bytes. `DEV270_SHA256SUMS.txt`
 The original RC1 origin archive was found in the retained 26 October Production release evidence. Its package SHA-256 is `ebbf85112a340c92ac5e847a6bf5d383eb5a954416d8a96fd573892584a5937b`. The deployment receipt for `b6e013c51f46be482858e733160fa7e675ff3106` records that the runtime manifest passed verification. The manifest was extracted byte-for-byte, and all 392 entries matched the archive contents locally. See `PRODUCTION_RC1_RUNTIME_LOCAL_RECEIPT.json` and `PRODUCTION_RC1_RUNTIME_MANIFEST.sha256`.
 
 The approved Production read-only preflight must hash those 392 installed paths under `/home/nysareal/nysa-crm` and record the matching manifest hash before backup is eligible. A missing file or mismatch stops preflight and reports the exact path and, for changed bytes, both hashes. The backup/install operator checks the same manifest and requires the successful receipt. Its same-parent source-directory swap preserves the original read-only `src` directory for application rollback. Local tests covered mismatch handling, swap and rollback. Actual Linux hosting checks remain pending.
+
+## Production selector dependency path
+
+Use option B. The live app link must resolve to `/home/nysareal/nodevenv/nysa-crm/24/lib/node_modules`. Backup copies the complete RC1 nodevenv to `rc1-nodevenv` in the approved backup workspace and verifies its content, modes and symlink targets. The approved install swaps the locked dependency directories inside the same selector nodevenv while the worker is stopped. The app symlink stays in place. Rollback restores the parked RC1 modules and verifies them against the backup fingerprint. A local filesystem test passed for both directions. See `NODEVENV_SWAP_RAW.txt`.
+
+The existing 10:00 CRM Test Phase A and Production preflight commands, configs and source hashes are unchanged. The selector read-only evidence file below requires its own approval before it is run. It records the exact Node executable and npm CLI paths and SHA-256 values for the Production backup config.
+
+```sh
+"$NODE" "$PROD_TOOLS/production-selector-readonly-evidence.mjs" --evidence "$PROD_TOOLS/PRODUCTION_SELECTOR_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-selector-readonly
+```
 
 ## Dubai schedule on 12 November
 
