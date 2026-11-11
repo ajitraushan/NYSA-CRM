@@ -1,0 +1,15 @@
+{
+  "commit": "b6e013c51f46be482858e733160fa7e675ff3106",
+  "version": "2.1.0-rc.1",
+  "migrations": 140,
+  "sourceArchive": "nysa-core-2.1.0-rc.1-origin.zip",
+  "packageSha256": "ebbf85112a340c92ac5e847a6bf5d383eb5a954416d8a96fd573892584a5937b",
+  "packageManifestSha256": "5d8cc14a66e74bf0e6d00e1de3dfd3c9479c927dbed0eaf794952d7873d2d2a0",
+  "runtimeManifestSha256": "c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292",
+  "runtimeFilesVerified": 392,
+  "deploymentReceipt": "PRODUCTION_RC1_DEPLOYED_VERIFIED.json",
+  "deploymentReceiptSha256": "c7a2e30a7f903011aa50e0eb890c12db9ec0ebdc41b6932f33fbd063916f84c6",
+  "deploymentReceiptRuntimeVerified": true,
+  "recordedProductionSrcMode": "0555",
+  "currentHostedFilesChecked": false
+}

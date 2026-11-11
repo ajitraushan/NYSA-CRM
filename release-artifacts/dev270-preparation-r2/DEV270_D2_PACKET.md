@@ -1,6 +1,6 @@
 # DEV270 revised D-2 packet
 
-This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The separate Production operator and rollback source is commit `b71166b4de02384a927c3f10941629d06ba4b52f`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
+This packet supersedes the draft for `15d1b7e7`. The exact application candidate `5c1c350151d6ace33377b33526e2bfedf4ae8f6b` is advertised by `origin/codex/prod-prospect-upload`. The Production operator and rollback plan are in `b71166b4de02384a927c3f10941629d06ba4b52f`, with the accepted RC1 runtime gate and read-only source layout follow-up in `bbb7ae23c72745846868f61f3b92bd2cf2ef2821`. Neither CRM Test nor Production has been accessed for this revision. The package remains local.
 
 ## Identity and hashes
 
@@ -10,13 +10,14 @@ This packet supersedes the draft for `15d1b7e7`. The exact application candidate
 | Origin package manifest | `7b64a94146f926293884c730dc28d853c545d40b778765ca6fae751a125aa211` |
 | CRM Test config | `7edadb1331615b8081bb8be3ed9ce1296a18c07301da7be0918ba8696f6e3e62` |
 | Canonical CRM Test operator | `5af8bbc8b18cfe8afee8d281913911a105150f3b111dba5c0ec04081da029911` |
-| Production preflight source | `103acbc56bfd4fd44cb6def8a4a773a3bcfda77ad3ae9eab6e692ba74565df1b` |
-| Production preflight config | `f4ddd8d1cd661df6aa049b23bc925ee65c2246686b383ad2917bd4fdf1c4fc37` |
+| Production preflight source | `4d368dfe29adc0d0e91f2530b539578a0b847b0bfaf5804e4c00c05935c6984d` |
+| Production preflight config | `919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f` |
 | Production RC1 schema expectation | `166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0` |
-| Production backup, install and smoke source | `7f393c40ec4cb7e83b6e518a4f88e51d52e982fa23698f227be2f00df4877724` |
+| Production backup, install and smoke source | `af7a2593f378172736ded6512aed992038e7799e5d0ed59065caee672e51011e` |
+| Accepted RC1 runtime manifest, 392 files | `c039640677470acc156801f8542f022c2fdb21167051f201a42d808d234b7292` |
 | Candidate schema manifest | `ecc526b734cb42116ec00cd5d55b4ade0916df2e02c5673f7be7ab37fbc92e8b` |
 
-The committed config hashes refer to the exact LF bytes. `DEV270_SHA256SUMS.txt` binds the scripts, imported helpers, evidence and package files. The Production backup/install/smoke config hash is pending the approved live preflight receipt and accepted RC1 runtime manifest. It cannot be approved from this packet alone.
+The committed config hashes refer to the exact LF bytes. `DEV270_SHA256SUMS.txt` binds the scripts, imported helpers, evidence and package files. The Production backup/install/smoke config hash is pending the approved live preflight receipt, registered Node/npm evidence and the phase workspace inputs. It cannot be approved from this packet alone.
 
 ## Checks
 
@@ -29,6 +30,12 @@ The committed config hashes refer to the exact LF bytes. `DEV270_SHA256SUMS.txt`
 - Production preflight now reports the legacy role's effective database CONNECT, effective public table privileges and table owners. Assertion failures retain the assertion message. The local PostgreSQL 13.23 test exercised role-absent and role-present cases. Operator tests passed for runtime names, paths, phase binding, receipt freshness and environment gates. The hosted Linux workflow has not been rehearsed. See `PRODUCTION_OPERATOR_RAW.txt`.
 - The origin build recorded 1,593 passes, 106 named skips and zero failures. The manifest and package passed provenance verification. The candidate has 171 migrations, 307 public tables and 111 triggers. Migration 171 is additive to existing data. RC1 and DEV269 use the same Lead visibility policy, so that work remains deferred.
 
+## Accepted RC1 runtime manifest
+
+The original RC1 origin archive was found in the retained 26 October Production release evidence. Its package SHA-256 is `ebbf85112a340c92ac5e847a6bf5d383eb5a954416d8a96fd573892584a5937b`. The deployment receipt for `b6e013c51f46be482858e733160fa7e675ff3106` records that the runtime manifest passed verification. The manifest was extracted byte-for-byte, and all 392 entries matched the archive contents locally. See `PRODUCTION_RC1_RUNTIME_LOCAL_RECEIPT.json` and `PRODUCTION_RC1_RUNTIME_MANIFEST.sha256`.
+
+The approved Production read-only preflight must hash those 392 installed paths under `/home/nysareal/nysa-crm` and record the matching manifest hash before backup is eligible. A missing file or mismatch stops preflight and reports the exact path and, for changed bytes, both hashes. The backup/install operator checks the same manifest and requires the successful receipt. Its same-parent source-directory swap preserves the original read-only `src` directory for application rollback. Local tests covered mismatch handling, swap and rollback. Actual Linux hosting checks remain pending.
+
 ## Dubai schedule on 12 November
 
 | Time | Work |
@@ -38,7 +45,7 @@ The committed config hashes refer to the exact LF bytes. `DEV270_SHA256SUMS.txt`
 | 13:30 | Production backup, conditional on accepted UAT and preflight |
 | By 16:00 | Production install, then separately approved settled smoke and authenticated checks |
 
-Each hosted operation requires its own exact approval. An overdue or failed gate stops the sequence. The 18:00 Dubai cutoff for starting a Production phase remains in force. No upload is authorized by this packet.
+After each hosted operation, stop and send its receipt. Start the named next phase only after Ajit writes "go" for it. Any failure stops the sequence and is reported without retry. CRM Test A and Production preflight may run in parallel only with separate approvals for both. The 18:00 Dubai cutoff for starting a Production phase remains in force. No upload is authorized by this packet.
 
 ## Hosted commands for approval review
 
@@ -49,7 +56,7 @@ These are file invocations. Before each run, verify that the new output paths ar
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase backup --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:backup
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase install --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:install
 "$NODE" "$TEST_TOOLS/crm-test-direct-node-release-operator.mjs" --config /home/nysareal/crm-release-preparation/20261112-dev270-r2/DEV270_DEPLOY_CONFIG.json --backup-path /home/nysareal/crm-release-preparation/20261112-dev270-r2/scoped-backup --phase smoke --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:smoke
-"$NODE" "$PROD_TOOLS/production-prospect-readonly-preflight.mjs" --config "$PROD_TOOLS/PRODUCTION_PREFLIGHT_CONFIG.json" --schema "$PROD_TOOLS/PRODUCTION_RC1_SCHEMA_EXPECTATION.json" --evidence "$PROD_TOOLS/PRODUCTION_PREFLIGHT_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-readonly-preflight:f4ddd8d1cd661df6aa049b23bc925ee65c2246686b383ad2917bd4fdf1c4fc37
+"$NODE" "$PROD_TOOLS/production-prospect-readonly-preflight.mjs" --config "$PROD_TOOLS/PRODUCTION_PREFLIGHT_CONFIG.json" --schema "$PROD_TOOLS/PRODUCTION_RC1_SCHEMA_EXPECTATION.json" --runtime "$PROD_TOOLS/PRODUCTION_RC1_RUNTIME_MANIFEST.sha256" --evidence "$PROD_TOOLS/PRODUCTION_PREFLIGHT_RESULT.json" --approved 5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-readonly-preflight:919d4fdd44b30ce359bb0fa4b7c9d577f2a8ffab6789901c1a007623805d765f
 "$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase backup --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-backup:$APPROVED_PROD_CONFIG_SHA"
 "$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase install --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-install:$APPROVED_PROD_CONFIG_SHA"
 "$NODE" "$PROD_TOOLS/production-prospect-release-operator.mjs" --phase smoke --config "$PROD_CONFIG" --approved "5c1c350151d6ace33377b33526e2bfedf4ae8f6b:production-smoke:$APPROVED_PROD_CONFIG_SHA"
