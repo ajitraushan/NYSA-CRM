@@ -5,6 +5,7 @@ import {hasInternalCrmIdentity} from '../crm-policy.js';
 import {normalizePhone,isValidEmail} from '../crm-domain.js';
 import {blocksOutbound,getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
 import {prospectCallingPolicyConfig} from '../prospect-calling-policy.js';
+import { advanceProspectRetry, validateProspectNextStep } from '../prospect-tracking.js';
 import {registerProspectUpload} from './prospect-upload.js';
 import {UPLOAD_SOURCES} from '../prospect-upload.js';
 
@@ -64,7 +65,7 @@ function requireWarningAcknowledgement(body,result){
   const outsideWindow=result.warnings.includes('outside_calling_window');
   return{code:409,error:outsideWindow?result.outsideCallingHoursMessage:'Repeat-call policy warning requires acknowledgement and a reason; it does not block the call',warning:true,...result};
 }
-function applyOutsideCallingHours(result,{at,timezone}){const minute=localMinute(at,timezone),outside=minute<Number(result.policy.prospectCallStartMinute)||minute>=Number(result.policy.prospectCallEndMinute);if(!outside)return null;const mode=prospectCallingPolicyConfig().outsideCallingHoursMode,clock=localClock(at,timezone),message=`This is outside the permitted calling hours (09:00–18:00 in the prospect’s local time — now ${clock} there). UAE rules limit marketing calls to these hours. Confirm the customer requested this time and give the reason.`;result.outsideCallingHoursMode=mode;result.outsideCallingHoursMessage=message;result.prospectLocalTime=clock;if(mode==='refuse')return{code:409,error:message,warning:false,mode,prospectTimezone:timezone,prospectLocalTime:clock};result.warnings.push('outside_calling_window');return null;}
+function applyOutsideCallingHours(result,{at,timezone}){const minute=localMinute(at,timezone),outside=minute<Number(result.policy.prospectCallStartMinute)||minute>=Number(result.policy.prospectCallEndMinute);if(!outside)return null;const mode=prospectCallingPolicyConfig().outsideCallingHoursMode,clock=localClock(at,timezone),message=`This is outside the permitted calling hours (09:00â€“18:00 in the prospectâ€™s local time â€” now ${clock} there). UAE rules limit marketing calls to these hours. Confirm the customer requested this time and give the reason.`;result.outsideCallingHoursMode=mode;result.outsideCallingHoursMessage=message;result.prospectLocalTime=clock;if(mode==='refuse')return{code:409,error:message,warning:false,mode,prospectTimezone:timezone,prospectLocalTime:clock};result.warnings.push('outside_calling_window');return null;}
 
 async function duplicateSummary(phone,mail,broker,client,{excludeProspectId=null}={}){
   const global=await one(`SELECT
@@ -167,7 +168,10 @@ r.patch('/crm/prospects/:id/timezone',async(req,res)=>{const timezone=clean(req.
 
 r.post('/crm/prospects/:id/activities',async(req,res)=>{
   const b=req.body||{},type=clean(b.activityType),at=clean(b.occurredAt)||new Date().toISOString();if(!['call','note'].includes(type)||!clean(b.notes)||clean(b.notes).length<2)return res.status(400).json({error:'Valid activityType and notes are required'});if(type==='call'&&(!['inbound','outbound'].includes(b.direction)||!OUTCOMES.includes(b.outcome)))return res.status(400).json({error:'Call direction and outcome are required'});
-  const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can append call or note evidence'};if(prospect.status==='converted')return{code:409,error:'Converted Prospect history is read-only'};
+  const next = type === 'call' ? validateProspectNextStep(b) : null;
+  if (!Number.isFinite(Date.parse(at))) return res.status(400).json({error:'Activity time is invalid'});
+  if (next?.error) return res.status(400).json({error:next.error});
+  const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can append call or note evidence'};if(prospect.status==='converted')return{code:409,error:'Converted Prospect history is read-only'};
     if(type==='call'&&!prospect.normalizedPhone)return{code:409,error:'A call requires a phone number'};
     const suppression=await getContactSuppression(prospect.normalizedPhone,client);if(type==='call'&&b.direction==='outbound'&&blocksOutbound(suppression))return{code:409,error:`Outbound calling is blocked by ${suppression.strongest}`};
     if(type==='call'&&b.direction==='outbound'&&!clean(b.companyCallingNumberId))return{code:400,error:'Select an active company-registered calling number'};
@@ -177,13 +181,94 @@ r.post('/crm/prospects/:id/activities',async(req,res)=>{
     const warningResult=type==='call'&&b.direction==='outbound'?await callWarnings(prospect,at,client):{warnings:[],stats:{},policy:{}};
     if(type==='call'&&b.direction==='outbound'){const outsideError=applyOutsideCallingHours(warningResult,{at,timezone:prospect.timezone});if(outsideError)return outsideError;}
     const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;
-    const outsideNote=warningResult.warnings.includes('outside_calling_window')?`Outside calling hours — customer request: ${clean(b.warningReason)}`:null,row=await one(`INSERT INTO prospect_activities(id,prospect_id,activity_type,direction,outcome,notes,corrects_activity_id,correction_reason,company_calling_number_id,warning_codes,warning_acknowledged,warning_reason,occurred_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,[uuid(),prospect.id,type,type==='call'?b.direction:null,type==='call'?b.outcome:null,[clean(b.notes),outsideNote].filter(Boolean).join('\n'),clean(b.correctsActivityId),clean(b.correctionReason),type==='call'&&b.direction==='outbound'?b.companyCallingNumberId:null,warningResult.warnings,warningResult.warnings.length?true:false,warningResult.warnings.length?clean(b.warningReason):null,at,req.broker.id],client);
-    if(type==='call'&&b.outcome==='invalid_number'){await recordContactSuppression({phone:prospect.normalizedPhone,type:'wrong_number',evidenceReference:`prospect-activity:${row.id}`,actorId:req.broker.id,reason:'Agent recorded invalid number'},client);await execute("UPDATE prospects SET status='do_not_contact',suppression_snapshot=(SELECT restrictions FROM wa_contact_suppressions WHERE normalized_phone=$1),do_not_contact_reason='Wrong number recorded',do_not_contact_at=NOW(),updated_at=NOW() WHERE id=$2",[prospect.normalizedPhone,prospect.id],client);}else if(type==='call'&&['no_answer','voicemail','consumer_ended','callback_requested','interested','not_interested','declined'].includes(b.outcome))await execute(`UPDATE prospects SET status=$1,updated_at=NOW() WHERE id=$2`,[{no_answer:'no_answer',voicemail:'no_answer',consumer_ended:'no_answer',callback_requested:'call_back',interested:'interested',not_interested:'not_interested',declined:'not_interested'}[b.outcome],prospect.id],client);else await execute('UPDATE prospects SET updated_at=NOW() WHERE id=$1',[prospect.id],client);
+    const followUp = next?.followUp;
+    if (followUp && (prospect.status === 'do_not_contact' || blocksOutbound(suppression))) {
+      return {code:409,error:'Follow-up outreach is blocked by the prospect restriction'};
+    }
+    if (followUp && b.outcome === 'declined' && !(b.warningAcknowledged && clean(b.warningReason)?.length >= 5)) {
+      return {code:409,error:'Follow-up after decline requires acknowledgement and a reason',warning:true,warnings:['repeat_after_decline']};
+    }
+    let followWarnings = null;
+    if (followUp) {
+      followWarnings = await callWarnings(prospect,followUp.dueAt,client);
+      if (b.outcome === 'declined' && !followWarnings.warnings.includes('repeat_after_decline')) {
+        followWarnings.warnings.push('repeat_after_decline');
+      }
+      if (followUp.channel === 'call') {
+        const outsideError = applyOutsideCallingHours(followWarnings,{at:followUp.dueAt,timezone:prospect.timezone});
+        if (outsideError) return outsideError;
+      }
+      const followWarningError = requireWarningAcknowledgement(b,followWarnings);
+      if (followWarningError) return followWarningError;
+    }
+    const outsideNote = warningResult.warnings.includes('outside_calling_window')
+      ? 'Outside calling hours — customer request: ' + clean(b.warningReason) : null;
+    const row = await one(
+      'INSERT INTO prospect_activities(id,prospect_id,activity_type,direction,outcome,notes,corrects_activity_id,correction_reason,company_calling_number_id,warning_codes,warning_acknowledged,warning_reason,occurred_at,created_by,next_step,not_interested_reason,not_interested_note,recontact_month) ' +
+      'VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *',
+      [uuid(),prospect.id,type,next ? b.direction : null,next ? b.outcome : null,[clean(b.notes),outsideNote].filter(Boolean).join('\n'),
+        clean(b.correctsActivityId),clean(b.correctionReason),next && b.direction==='outbound' ? b.companyCallingNumberId : null,
+        warningResult.warnings,Boolean(warningResult.warnings.length),warningResult.warnings.length ? clean(b.warningReason) : null,
+        at,req.broker.id,next?.step ?? null,next?.reason ?? null,next?.note ?? null,next?.recontactDate ?? null],client);
+    if (next) {
+      const completed = await many(
+        "UPDATE tasks SET status='completed',outcome='Prospect call logged',completed_at=NOW(),updated_at=NOW() " +
+        "WHERE prospect_id=$1 AND task_type='prospect_follow_up' AND status IN('open','in_progress') RETURNING id",
+        [prospect.id],client);
+      for (const task of completed) {
+        await audit('Task',task.id,'status_changed',req.broker.id,{prospectId:prospect.id,to:'completed',sourceActivityId:row.id},client);
+      }
+      const closing = ['close_dnc','close_wrong_number','close_not_interested'].includes(next.step);
+      if (next.step === 'close_dnc' || next.step === 'close_wrong_number') {
+        const restriction = next.step === 'close_dnc' ? 'do_not_contact' : 'wrong_number';
+        const reason = restriction === 'wrong_number' ? 'Agent recorded invalid number' : clean(b.doNotContactReason);
+        await recordContactSuppression({phone:prospect.normalizedPhone,type:restriction,
+          evidenceReference:clean(b.evidenceReference) || 'prospect-activity:' + row.id,actorId:req.broker.id,reason},client);
+        await execute(
+          "UPDATE prospects SET status='do_not_contact',suppression_snapshot=(SELECT restrictions FROM wa_contact_suppressions WHERE normalized_phone=$1)," +
+          'do_not_contact_reason=$3,do_not_contact_at=NOW() WHERE id=$2',[prospect.normalizedPhone,prospect.id,reason],client);
+      } else if (prospect.status !== 'do_not_contact') {
+        const statuses = {no_answer:'no_answer',voicemail:'no_answer',consumer_ended:'no_answer',
+          callback_requested:'call_back',interested:'interested',not_interested:'not_interested',declined:'not_interested'};
+        const status = next.step === 'close_not_interested' ? 'not_interested'
+          : followUp && b.outcome === 'declined' ? 'call_back' : statuses[b.outcome];
+        if (status) await execute('UPDATE prospects SET status=$1 WHERE id=$2',[status,prospect.id],client);
+      }
+      if (followUp) {
+        const task = await one(
+          'INSERT INTO tasks(id,prospect_id,source_activity_id,prospect_channel,task_type,subject,assignee_id,priority,due_at,created_by,policy_warning_codes,policy_warning_acknowledged,policy_warning_reason,customer_timezone) ' +
+          "VALUES($1,$2,$3,$4,'prospect_follow_up',$5,$6,'normal',$7,$6,$8,$9,$10,$11) RETURNING id",
+          [uuid(),prospect.id,row.id,followUp.channel,followUp.subject,req.broker.id,followUp.dueAt,followWarnings.warnings,
+            Boolean(followWarnings.warnings.length),followWarnings.warnings.length ? clean(b.warningReason) : null,prospect.timezone],client);
+        await audit('Task',task.id,'created',req.broker.id,{prospectId:prospect.id,sourceActivityId:row.id},client);
+      }
+      const cadence = await one("SELECT working_days,retry_gaps,park_on_exhaustion FROM prospect_cadence_policy_versions WHERE status='active'",[],client);
+      const retry = advanceProspectRetry({previousAttempts:prospect.retryAttempts,outcome:b.outcome,
+        step:closing || prospect.status === 'do_not_contact' ? null : next.step,at,policy:cadence});
+      if (retry.nextAt) {
+        // Existing repeat-call limits use the prospect's local calendar and a rolling seven-day window.
+        const nextRetry = retry.nextAt;
+        const thresholds = ['unanswered_daily_threshold','unanswered_weekly_threshold','repeat_after_decline'];
+        for (let day = 0; day < 15; day++) {
+          const workingDay = (new Date(nextRetry.getTime()+4*3600000).getUTCDay() || 7);
+          if (cadence.workingDays.includes(workingDay)) {
+            const checks = await callWarnings(prospect,nextRetry,client);
+            if (!checks.warnings.some(warning => thresholds.includes(warning))) break;
+          }
+          nextRetry.setUTCDate(nextRetry.getUTCDate()+1);
+          if (day === 14) retry.nextAt = null;
+        }
+      }
+      await execute('UPDATE prospects SET retry_attempts=$2,next_retry_at=$3,parked_at=$4 WHERE id=$1',
+        [prospect.id,retry.attempts,retry.nextAt,retry.parkedAt],client);
+    }
+    await execute('UPDATE prospects SET last_activity_at=GREATEST(last_activity_at,$2::timestamptz),updated_at=NOW() WHERE id=$1',
+      [prospect.id,at],client);
     await audit('ProspectActivity',row.id,'created',req.broker.id,{prospectId:prospect.id,activityType:type,outcome:row.outcome,correctsActivityId:row.correctsActivityId,correctionReason:row.correctionReason,warningCodes:warningResult.warnings,warningReason:row.warningReason,prospectTimezone:prospect.timezone,prospectLocalTime:warningResult.prospectLocalTime||localClock(at,prospect.timezone),outsideCallingHoursMode:warningResult.outsideCallingHoursMode||null},client);return{activity:row,warnings:warningResult.warnings};
   });if(result.error)return res.status(result.code).json(result);res.status(201).json(result);
 });
 
-r.post('/crm/prospects/:id/follow-ups',async(req,res)=>{const b=req.body||{},channel=clean(b.channel)||'call';if(!clean(b.subject)||!clean(b.dueAt)||!['call','whatsapp','email'].includes(channel))return res.status(400).json({error:'Subject, dueAt and a valid channel are required'});const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can create a follow-up'};if(['do_not_contact','converted'].includes(prospect.status))return{code:409,error:'Follow-up outreach is blocked by the Prospect status'};if(!prospect.normalizedPhone&&channel!=='email')return{code:409,error:'This channel requires a phone number'};const suppression=await getContactSuppression(prospect.normalizedPhone,client);if(blocksOutbound(suppression))return{code:409,error:`Follow-up outreach is blocked by ${suppression.strongest}`};const warningResult=await callWarnings(prospect,b.dueAt,client);if(channel==='call'){const outsideError=applyOutsideCallingHours(warningResult,{at:b.dueAt,timezone:prospect.timezone});if(outsideError)return outsideError;}const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;const outsideNote=warningResult.warnings.includes('outside_calling_window')?`Outside calling hours — customer request: ${clean(b.warningReason)}`:null,details=[clean(b.details),outsideNote].filter(Boolean).join('\n')||null,row=await one(`INSERT INTO tasks(id,prospect_id,prospect_channel,task_type,subject,details,assignee_id,priority,due_at,created_by,policy_warning_codes,policy_warning_acknowledged,policy_warning_reason,customer_timezone) VALUES($1,$2,$3,'prospect_follow_up',$4,$5,$6,$7,$8,$6,$9,$10,$11,$12) RETURNING *`,[uuid(),prospect.id,channel,clean(b.subject),details,req.broker.id,b.priority||'normal',b.dueAt,warningResult.warnings,warningResult.warnings.length?true:false,warningResult.warnings.length?clean(b.warningReason):null,prospect.timezone],client);await audit('Task',row.id,'created',req.broker.id,{prospectId:prospect.id,channel,warningCodes:warningResult.warnings,warningReason:row.policyWarningReason,prospectTimezone:prospect.timezone,prospectLocalTime:warningResult.prospectLocalTime||localClock(b.dueAt,prospect.timezone),outsideCallingHoursMode:warningResult.outsideCallingHoursMode||null},client);return{followUp:row,warnings:warningResult.warnings};});if(result.error)return res.status(result.code).json(result);res.status(201).json(result);});
+r.post('/crm/prospects/:id/follow-ups',async(req,res)=>{const b=req.body||{},channel=clean(b.channel)||'call';if(!clean(b.subject)||!clean(b.dueAt)||!['call','whatsapp','email'].includes(channel))return res.status(400).json({error:'Subject, dueAt and a valid channel are required'});const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client,{forUpdate:true});if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};if(prospect.ownerId!==req.broker.id)return{code:403,error:'Only the owning Agent can create a follow-up'};if(['do_not_contact','converted'].includes(prospect.status))return{code:409,error:'Follow-up outreach is blocked by the Prospect status'};if(!prospect.normalizedPhone&&channel!=='email')return{code:409,error:'This channel requires a phone number'};const suppression=await getContactSuppression(prospect.normalizedPhone,client);if(blocksOutbound(suppression))return{code:409,error:`Follow-up outreach is blocked by ${suppression.strongest}`};const warningResult=await callWarnings(prospect,b.dueAt,client);if(channel==='call'){const outsideError=applyOutsideCallingHours(warningResult,{at:b.dueAt,timezone:prospect.timezone});if(outsideError)return outsideError;}const warningError=requireWarningAcknowledgement(b,warningResult);if(warningError)return warningError;const outsideNote=warningResult.warnings.includes('outside_calling_window')?`Outside calling hours â€” customer request: ${clean(b.warningReason)}`:null,details=[clean(b.details),outsideNote].filter(Boolean).join('\n')||null,row=await one(`INSERT INTO tasks(id,prospect_id,prospect_channel,task_type,subject,details,assignee_id,priority,due_at,created_by,policy_warning_codes,policy_warning_acknowledged,policy_warning_reason,customer_timezone) VALUES($1,$2,$3,'prospect_follow_up',$4,$5,$6,$7,$8,$6,$9,$10,$11,$12) RETURNING *`,[uuid(),prospect.id,channel,clean(b.subject),details,req.broker.id,b.priority||'normal',b.dueAt,warningResult.warnings,warningResult.warnings.length?true:false,warningResult.warnings.length?clean(b.warningReason):null,prospect.timezone],client);await audit('Task',row.id,'created',req.broker.id,{prospectId:prospect.id,channel,warningCodes:warningResult.warnings,warningReason:row.policyWarningReason,prospectTimezone:prospect.timezone,prospectLocalTime:warningResult.prospectLocalTime||localClock(b.dueAt,prospect.timezone),outsideCallingHoursMode:warningResult.outsideCallingHoursMode||null},client);return{followUp:row,warnings:warningResult.warnings};});if(result.error)return res.status(result.code).json(result);res.status(201).json(result);});
 
 r.patch('/crm/prospects/:id/follow-ups/:taskId',async(req,res)=>{const result=await transaction(async client=>{const prospect=await visibleProspect(req.params.id,req.broker,client);if(!prospect)return{code:404,error:'Prospect not found or outside your scope'};const task=await one("SELECT * FROM tasks WHERE id=$1 AND prospect_id=$2 AND task_type='prospect_follow_up' FOR UPDATE",[req.params.taskId,prospect.id],client);if(!task)return{code:404,error:'Follow-up not found'};if(task.assigneeId!==req.broker.id&&!canManage(req.broker))return{code:403,error:'Follow-up is outside your scope'};const status=req.body?.status||task.status;if(!['open','in_progress','completed','cancelled'].includes(status))return{code:400,error:'Invalid follow-up status'};if(['completed','cancelled'].includes(status)&&!clean(req.body?.outcome))return{code:400,error:'Outcome or cancellation reason is required'};const row=await one(`UPDATE tasks SET status=$1,outcome=COALESCE($2,outcome),completed_at=CASE WHEN $1='completed' THEN NOW() ELSE NULL END,updated_at=NOW() WHERE id=$3 RETURNING *`,[status,clean(req.body?.outcome),task.id],client);await audit('Task',task.id,'status_changed',req.broker.id,{prospectId:prospect.id,from:task.status,to:status,outcome:row.outcome},client);return row;});if(result.error)return res.status(result.code).json({error:result.error});res.json(result);});
 

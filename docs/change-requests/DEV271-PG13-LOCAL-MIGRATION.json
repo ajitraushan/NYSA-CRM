@@ -1,0 +1,28 @@
+[
+  {
+    "database": "nysa_test_fixture",
+    "role": "nysa_test_user",
+    "postgres": "13.23",
+    "migrations": 172,
+    "owner_held": 0,
+    "elapsedMs": 93,
+    "last_activity_at": "2026-11-14T06:00:00.000Z",
+    "first_call_due_at": "2026-11-16T05:00:00.000Z",
+    "legacy_calls": 2,
+    "tables": 313,
+    "scope": "synthetic data, DEV270 INSERT shape only"
+  },
+  {
+    "database": "nysareal_nysacrm",
+    "role": "nysareal_nysacrmapp",
+    "postgres": "13.23",
+    "migrations": 172,
+    "owner_held": 58,
+    "elapsedMs": 135,
+    "last_activity_at": "2026-11-14T06:00:00.000Z",
+    "first_call_due_at": "2026-11-16T05:00:00.000Z",
+    "legacy_calls": 2,
+    "tables": 313,
+    "scope": "synthetic data, DEV270 INSERT shape only"
+  }
+]
