@@ -4,7 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import pg from 'pg';
-import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt,prepareSourceSwap,prepareSelectorModulesSwap,dependencyTreeHash} from '../tools/production-prospect-release-operator.mjs';
+import {assertProductionPaths,parseRuntimeManifest,verifyPhaseReceipt,prepareSourceSwap,prepareSelectorModulesSwap,dependencyTreeHash,checkAccountQuota} from '../tools/production-prospect-release-operator.mjs';
 import {verifyRuntime} from '../tools/production-runtime-manifest.mjs';
 import {inspectProductionNodeTools,assertApprovedProductionNodeTools} from '../tools/production-node-tools.mjs';
 import {createHash} from 'node:crypto';
@@ -139,4 +139,25 @@ test('CloudLinux selector wraps Node but Production pins the real ALT interprete
   await assert.rejects(inspectProductionNodeTools({...layout,nodeVersion:'22.1.0'}),/requires Node.js 24/);
   resolved.set(base+'/bin/npm',wrapper);
   await assert.rejects(inspectProductionNodeTools(layout),/installation CLI/);
+});
+
+test('Production quota guard records each cPanel checkpoint and stops at or above 90 percent',()=>{
+  const quota=(used,other={})=>JSON.stringify({
+    module:'Quota',func:'get_quota_info',result:{status:1,data:{
+      megabyte_limit:102400,megabytes_used:used,backup_warning_threshold_pct:90,under_backup_threshold:1,...other
+    }}
+  });
+  const report={};
+  assert.equal(checkAccountQuota(report,'before-backup',()=>quota('89205.28')).headroomMb.toFixed(2),'2954.72');
+  assert.equal(checkAccountQuota(report,'after-archive',()=>quota('92159.99')).usedMb,92159.99);
+  assert.throws(()=>checkAccountQuota(report,'after-npm-ci',()=>quota(92160)),/reached 90 percent at after-npm-ci/);
+  assert.throws(()=>checkAccountQuota(report,'before-install',()=>quota(93000)),/reached 90 percent at before-install/);
+  assert.throws(()=>checkAccountQuota(report,'after-dump',()=>quota('92159.99',{under_backup_threshold:0})),/reached 90 percent/);
+  assert.deepEqual(report.accountQuota.map(sample=>sample.checkpoint),
+    ['before-backup','after-archive','after-npm-ci','before-install','after-dump']);
+  assert.throws(()=>checkAccountQuota({},'missing',()=>quota(null)),/Invalid cPanel quota field/);
+  assert.throws(()=>checkAccountQuota({},'unlimited',()=>quota(0,{megabyte_limit:0})),/finite positive/);
+  assert.throws(()=>checkAccountQuota({},'api-failure',()=>JSON.stringify({
+    module:'Quota',func:'get_quota_info',result:{status:0}
+  })),/account quota lookup failed/);
 });

@@ -167,10 +167,33 @@ async function stageDependencies(config,stageDir,{nodeExecutable,npmCli}){
   verify.resolve('pg');
   return deps;
 }
-function diskGuard(directory){
-  const {blocks,bfree,bavail}=fs.statfsSync(directory);
-  const used=blocks-bfree;
-  assert.ok(used/(used+bavail)<0.9,'Disk usage must remain below 90 percent');
+const BACKUP_QUOTA_THRESHOLD=90;
+export function checkAccountQuota(report,checkpoint,readQuota=()=>run('uapi',['--output=json','Quota','get_quota_info'],{encoding:'utf8',timeout:15000})){
+  const envelope=JSON.parse(readQuota());
+  assert.equal(envelope.module,'Quota','Unexpected cPanel quota API module');
+  assert.equal(envelope.func,'get_quota_info','Unexpected cPanel quota API function');
+  assert.ok([1,'1'].includes(envelope.result?.status),'cPanel account quota lookup failed');
+  const data=envelope.result.data;
+  function megabytes(field){
+    const value=data?.[field];
+    assert.ok((typeof value==='number'||typeof value==='string') && /^\d+(?:\.\d+)?$/.test(String(value)),
+      'Invalid cPanel quota field: '+field);
+    const result=Number(value);
+    assert.ok(Number.isFinite(result),'Non-finite cPanel quota field: '+field);
+    return result;
+  }
+  const limitMb=megabytes('megabyte_limit'),usedMb=megabytes('megabytes_used');
+  assert.ok(limitMb>0,'A finite positive cPanel account quota is required');
+  const usedPercent=100*usedMb/limitMb;
+  const headroomMb=limitMb*BACKUP_QUOTA_THRESHOLD/100-usedMb;
+  const atBackupThreshold=Number(data.backup_warning_threshold_pct)===BACKUP_QUOTA_THRESHOLD
+    && [0,'0',false].includes(data.under_backup_threshold);
+  const sample={checkpoint,checkedAt:new Date().toISOString(),usedMb,limitMb,usedPercent,
+    thresholdPercent:BACKUP_QUOTA_THRESHOLD,headroomMb};
+  (report.accountQuota??=[]).push(sample);
+  assert.ok(headroomMb>0&&!atBackupThreshold,
+    `cPanel account quota reached 90 percent at ${checkpoint} (${usedMb} of ${limitMb} MB)`);
+  return sample;
 }
 function storedNames(file){
   return run('unzip',['-Z1',file],{encoding:'utf8'}).trimEnd().split('\n');
@@ -304,33 +327,38 @@ async function main(args){
     assertApprovedProductionNodeTools(report.nodeTools,config);
     const baseline=parseRuntimeManifest(fs.readFileSync(config.baselineRuntime,'utf8'));
     if(phase==='backup'){
+      checkAccountQuota(report,'before-backup');
       assert.equal(read(path.join(ROOT,'package.json')).version,'2.1.0-rc.1');
       await verifyRuntime(ROOT,baseline);
-      diskGuard(config.workspace);
       report.catalog=await catalog(config);
       report.workers=inspectWorkers(ROOT);
       assert.ok(report.workers.length<=1);
       const entries=await stage(config,stageDir);
+      checkAccountQuota(report,'after-candidate-extraction');
       report.previousDependencies=dependencyLink();
       assert.equal(fs.realpathSync(NODEVENV),NODEVENV);
       const rc1Nodevenv=evidence('rc1-nodevenv');
       assert.throws(()=>fs.lstatSync(rc1Nodevenv),{code:'ENOENT'});
       const before=await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true});
       copyTree(NODEVENV,rc1Nodevenv);
+      checkAccountQuota(report,'after-rc1-nodevenv-copy');
       assert.equal(await dependencyTreeHash(rc1Nodevenv,{preserveExternalLinks:true}),before,'RC1 nodevenv backup differs');
       assert.equal(await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true}),before,'RC1 nodevenv changed while copied');
       report.rc1Nodevenv={copy:rc1Nodevenv,sha256:before,
         modulesSha256:await dependencyTreeHash(SELECTOR_MODULES,{preserveExternalLinks:true})};
       report.stagedDependencies=await stageDependencies(config,stageDir,report.nodeTools);
+      checkAccountQuota(report,'after-npm-ci');
       report.stagedDependencySha256=await dependencyTreeHash(report.stagedDependencies);
       await verifyRuntime(stageDir,entries);
       run('tar',['-czf',archive,'--one-file-system','-C',ROOT,'.'],{timeout:600000});
+      checkAccountQuota(report,'after-application-archive');
       const archived=new Set(run('tar',['-tzf',archive],{encoding:'utf8'}).trimEnd().split('\n'));
       for(const file of baseline.keys())assert.ok(archived.has('./'+file),'Missing backup runtime entry: '+file);
       const env=environment();
       for(const executable of ['pg_dump','pg_restore'])assert.match(run(executable,['--version'],{encoding:'utf8'}),/\b13\.23\b/);
       run('pg_dump',['-Fc','--no-password','-f',dump,DATABASE],{timeout:600000,env:{...process.env,
         PGHOST:env.PGHOST||'localhost',PGPORT:String(env.PGPORT||5432),PGUSER:ROLE,PGPASSWORD:env.PGPASSWORD}});
+      checkAccountQuota(report,'after-database-dump');
       const toc=run('pg_restore',['--list',dump],{encoding:'utf8'});
       const dumpTables=parsePgRestoreListContracts(toc).tableNames;
       assert.ok(verifyScopedBackupTableNames(read(config.baselineSchema).tables,dumpTables).matches);
@@ -338,6 +366,7 @@ async function main(args){
         database:{bytes:fs.statSync(dump).size,sha256:await fileHash(dump)},runtimeFiles:entries.size,dumpTables:dumpTables.length};
       assert.ok(report.backups.app.bytes&&report.backups.database.bytes);
     }else if(phase==='install'){
+      checkAccountQuota(report,'before-install');
       const backup=read(receiptPath('backup'));
       verifyPhaseReceipt(backup,{phase:'backup',commit:config.commit,configSha256,maximumAgeMs:freshnessMs});
       await requireHash(archive,backup.backups.app.sha256);
@@ -352,7 +381,6 @@ async function main(args){
       assert.equal(await dependencyTreeHash(NODEVENV,{preserveExternalLinks:true}),backup.rc1Nodevenv.sha256,
         'RC1 nodevenv changed after backup');
       await catalog(config);
-      diskGuard(config.workspace);
       const runtime=path.join(stageDir,'RUNTIME_MANIFEST.sha256');
       await requireHash(config.manifest,config.manifestSha256);
       await requireHash(runtime,read(config.manifest).runtimeManifestSha256);
@@ -374,9 +402,11 @@ async function main(args){
       fs.mkdirSync(recovery,{mode:0o700});
       assert.ok(prior.size>0);
       run('tar',['-xzf',archive,'-C',recovery,'--',...[...prior.keys()].map(name=>'./'+name)],{timeout:120000});
+      checkAccountQuota(report,'after-runtime-recovery-extraction');
       await verifyRuntime(recovery,prior);
       fs.writeFileSync(evidence('ORIGINAL_RUNTIME.json'),JSON.stringify([...prior])+'\n',{flag:'wx',mode:0o600});
       const sourceSwap=prepareSourceSwap(ROOT,stageDir,targets.filter(name=>name.startsWith('src/')),path.basename(config.workspace));
+      checkAccountQuota(report,'after-source-swap-preparation');
       for(const name of targets.filter(name=>!name.startsWith('src/'))){
         const file=filePath(ROOT,name);
         let parent=path.dirname(file);
@@ -384,13 +414,14 @@ async function main(args){
         fs.accessSync(parent,fs.constants.W_OK);
         if(fs.existsSync(file))fs.accessSync(file,fs.constants.W_OK);
       }
-      diskGuard(NODEVENV);
       const modulesSwap=prepareSelectorModulesSwap(SELECTOR_MODULES,backup.stagedDependencies,path.basename(config.workspace));
+      checkAccountQuota(report,'after-selector-modules-copy');
       assert.equal(await dependencyTreeHash(modulesSwap.next),backup.stagedDependencySha256);
       report.priorNodevenvModules=modulesSwap.prior;
       report.priorSourceDirectory=sourceSwap.previous;
       report.workersBefore=inspectWorkers(ROOT);
       assert.ok(report.workersBefore.length<=1);
+      checkAccountQuota(report,'before-quiesce-and-install');
       let ready=false,startAttempted=false;
       const changed=[];
       try{
