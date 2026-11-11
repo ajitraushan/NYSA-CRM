@@ -1,0 +1,92 @@
+{
+  "schema": "nysa.crm-test.deploy-config-verification.v1",
+  "generatedAt": "2026-11-11T05:13:00.615Z",
+  "spec": "release-artifacts/dev267a-preparation/DEV267A_CONFIG_SPEC.json",
+  "config": "release-artifacts/dev267a-preparation/DEV267A_DEPLOY_CONFIG.json",
+  "configSha256": "3a1fa077651a99e036658d99787fe5627e5da391484f65f98b95300fa4baf74d",
+  "allHashFields64Hex": true,
+  "allNamedFilesMatch": true,
+  "fileChecks": {
+    "archiveHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.268-origin.zip",
+      "configured": "6ebacdb5f19e7c65b5a99e31cbf62d88e7a0b737d736a96367f382b463c43b3c",
+      "actual": "6ebacdb5f19e7c65b5a99e31cbf62d88e7a0b737d736a96367f382b463c43b3c",
+      "is64Hex": true,
+      "matches": true
+    },
+    "manifestHash": {
+      "file": "release-artifacts/origin/nysa-core-2.1.0-dev.268-origin.manifest.json",
+      "configured": "447f6a655219c4d108e2cb164d0520bc502cefac2ee55d40b180bece81ca5b5d",
+      "actual": "447f6a655219c4d108e2cb164d0520bc502cefac2ee55d40b180bece81ca5b5d",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineSchemaContractManifestSha256": {
+      "file": "src/database-schema-baseline/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "baselineTriggerContractFileSha256": {
+      "file": "src/database-schema-baseline/database-trigger-contract.json",
+      "configured": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "actual": "70a68947a69b452aed67ff733c73673515dcc37617a2acff11431fb11deabddf",
+      "comparison": "raw file SHA-256 pinned by baseline manifest",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedSchemaContractManifestSha256": {
+      "file": "src/database-schema-contract/manifest.json",
+      "configured": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "actual": "59491afe6bc3613eb665c6cc67f44b1d9122de8c0e73d98fa4eb2dd11a13c944",
+      "is64Hex": true,
+      "matches": true
+    },
+    "schemaContractHelperSha256": {
+      "file": "tools/database-schema-contract.mjs",
+      "configured": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "actual": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "normalization": "Git/hosting LF",
+      "is64Hex": true,
+      "matches": true
+    },
+    "expectedTriggerContractSha256": {
+      "file": "src/database-trigger-contract.json",
+      "configured": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "actual": "7f1c3536d6a3c5cdc67acb8abecd75fe83d0e272abda7ec80cf35defdd20eea8",
+      "comparison": "SHA-256(JSON.stringify(triggers))",
+      "is64Hex": true,
+      "matches": true
+    }
+  },
+  "database": {
+    "migrationNeutral": true,
+    "baselineMigrationCount": 170,
+    "expectedMigrationCount": 170,
+    "expectedTableCount": 306,
+    "expectedPostTableCount": 306,
+    "baselineTriggerCount": 111,
+    "expectedTriggerCount": 111
+  },
+  "tests": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-11T05:12:13.934Z",
+    "completedAt": "2026-11-11T05:12:42.761Z",
+    "tests": 1695,
+    "passed": 1590,
+    "failed": 0,
+    "skipped": 105,
+    "outputSha256": "8391b9077fb234ee862e30c7d602c6bda2cc741156a81aee2d6591a3eaa9a623",
+    "includedFiles": 327,
+    "excludedHistoricalArtifactFiles": 94,
+    "includedFilesSha256": "67c87ed49208a0d085e2876a20d9244272656643ec435ad965decd0151d5745e",
+    "excludedFilesSha256": "4f05664cbad2da2587897079c8570288daabd41ec5da7c246a1a3fe4fe28f093"
+  },
+  "candidate": {
+    "version": "2.1.0-dev.268",
+    "commit": "b6272e9c9f2a17a2c082324ec8810391de7bdf01",
+    "packageSha256": "6ebacdb5f19e7c65b5a99e31cbf62d88e7a0b737d736a96367f382b463c43b3c",
+    "manifestSha256": "447f6a655219c4d108e2cb164d0520bc502cefac2ee55d40b180bece81ca5b5d"
+  }
+}

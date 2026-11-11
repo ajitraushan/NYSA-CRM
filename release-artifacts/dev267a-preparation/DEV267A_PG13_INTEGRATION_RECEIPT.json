@@ -1,0 +1,11 @@
+{
+  "schema": "nysa.dev267a.pg13-test-evidence.v1",
+  "exitCode": 0,
+  "outputSha256": "9d25fd5052b6e89309472ba8160bb53d8412636eef7119bd00613a254d8df4c8",
+  "postgresql13_23": true,
+  "testPasses": 5,
+  "testFailures": 0,
+  "migrations": 170,
+  "tables": 306,
+  "triggers": 111
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "nysa.dev267a.hosted-bootstrap-browser.v1",
+  "synthetic": true,
+  "version": "2.1.0-dev.268",
+  "releaseRoot": "C:\\Users\\ajitr\\.codex\\worktrees\\production-dev248-preparation\\canonical-worktree\\.tmp-dev267a-exact-package-b6272e9",
+  "loadedThroughActualIndexAndBootstrap": true,
+  "requiredOrder": [
+    "/bootstrap.js",
+    "/prospect-diary-ui.js",
+    "/dashboard-ui.js",
+    "/app.js"
+  ],
+  "files": {
+    "bootstrap.js": {
+      "sha256": "cd8124b865a49d19cf5d3c664284c4ff92e5451ce75223e8103651baf77411aa"
+    },
+    "prospect-diary-ui.js": {
+      "sha256": "6898ba7072e7ac3464d891dd371714c2d5a44e0ed6e441a5f2fdb528bada479e"
+    },
+    "dashboard-ui.js": {
+      "sha256": "b06419cb2139095bd7f00da18855436d1e76c3dde87a3869e45a7943048be788"
+    },
+    "app.js": {
+      "sha256": "b6027bd63da0b6fc3b6817e52382cd9707ffcf50cd9b5ed9863fea9d13d13a3e"
+    }
+  },
+  "requestedScripts": [
+    "/bootstrap.js",
+    "/ui-design-system.js",
+    "/shared-review-panel.js",
+    "/money-input.js",
+    "/review-task-ui.js",
+    "/director-commission-summary-ui.js",
+    "/customer-lookup-ui.js",
+    "/finance-workspace-ui.js",
+    "/accountant-workspace-ui.js",
+    "/purchased-data-import-ui.js",
+    "/whatsapp-workspace-ui.js",
+    "/prospect-diary-ui.js",
+    "/offer-ui.js",
+    "/deal-ui.js",
+    "/inventory-workspace-ui.js",
+    "/dashboard-ui.js",
+    "/official-document-ui.js",
+    "/market-intelligence-ui.js",
+    "/commission-payout-ui.js",
+    "/receivables-ui.js",
+    "/opportunity-finance-ui.js",
+    "/agent-leave-ui.js",
+    "/document-compliance-ui.js",
+    "/marketing-material-compliance-ui.js",
+    "/matching-completion-ui.js",
+    "/email-calendly-ui.js",
+    "/lead-integration-ui.js",
+    "/lead-response-dev244-ui.js",
+    "/incoming-leads-ui.js",
+    "/web-intake-phase1-ui.js",
+    "/app.js"
+  ],
+  "roles": [
+    {
+      "role": "sales_agent",
+      "status": "passed",
+      "state": {
+        "heading": "Prospect Diary",
+        "cards": 1,
+        "active": true,
+        "featureType": "function",
+        "wrapperType": "function",
+        "dashboardModuleType": "function",
+        "legacyDashboardGlobalType": "function"
+      },
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshot": "sales_agent-prospect-diary.png"
+    },
+    {
+      "role": "manager",
+      "status": "passed",
+      "state": {
+        "heading": "Prospect Diary",
+        "cards": 1,
+        "active": true,
+        "featureType": "function",
+        "wrapperType": "function",
+        "dashboardModuleType": "function",
+        "legacyDashboardGlobalType": "function"
+      },
+      "pageErrors": [],
+      "consoleErrors": [],
+      "screenshot": "manager-prospect-diary.png"
+    }
+  ],
+  "checkedAt": "2026-11-11T05:13:07.866Z"
+}

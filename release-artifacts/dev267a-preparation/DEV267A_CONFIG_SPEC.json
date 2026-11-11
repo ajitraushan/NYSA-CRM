@@ -1,0 +1,14 @@
+{
+  "sourceConfig": "release-artifacts/dev267-preparation/run2/DEV267_DEPLOY_CONFIG.json",
+  "output": "release-artifacts/dev267a-preparation/DEV267A_DEPLOY_CONFIG.json",
+  "proofOutput": "release-artifacts/dev267a-preparation/DEV267A_CONFIG_HASH_VERIFICATION.json",
+  "packageFile": "release-artifacts/origin/nysa-core-2.1.0-dev.268-origin.zip",
+  "manifestFile": "release-artifacts/origin/nysa-core-2.1.0-dev.268-origin.manifest.json",
+  "version": "2.1.0-dev.268",
+  "baselineVersion": "2.1.0-dev.267",
+  "baselineCommit": "d9133a980390fe375af36ef415b84e2f4f4fda4e",
+  "operatorCommit": "63ad3c5595d7e7d58296641351b47ac623ef8071",
+  "hostPreparationDir": "/home/nysareal/crm-release-preparation/20261111-dev268",
+  "expectedMigrationCount": 170,
+  "migrationNeutral": true
+}
