@@ -1,6 +1,10 @@
 import {readSheet} from 'read-excel-file/node';
-import {strToU8, unzipSync, zipSync} from 'fflate';
+import {createRequire} from 'node:module';
 import {isValidEmail,normalizePhone} from './crm-domain.js';
+
+// Use the Excel reader's locked ZIP dependency, including nested npm installs.
+const requireFromExcelReader = createRequire(import.meta.resolve('read-excel-file/node'));
+const {strToU8, unzipSync, zipSync} = requireFromExcelReader('fflate');
 
 export const UPLOAD_COLUMNS = ['Name', 'Phone', 'Email', 'Notes', 'Source'];
 export const UPLOAD_SOURCES = ['diary', 'notebook', 'whatsapp', 'rem', 'other'];
