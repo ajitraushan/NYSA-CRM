@@ -1,5 +1,48 @@
 # CRM Development Baseline
 
+## Accepted DEV269 CRM Test / Production RC1 source of truth — 11 November 2026
+
+- **CRM Test installed and accepted:** `2.1.0-dev.269`, origin commit
+  `e5db302e12a21d2597ecab0dc340fa2eae534381`, database
+  `nysareal_nysa_dev247_smoke`, migration ledger 170, 306 public tables and
+  111 enabled triggers across 95 tables. This section supersedes the stale
+  pre-deployment DEV269 sections below.
+- Ajit's acceptance record is preserved on
+  `origin/codex/dev267-prospect-diary` at commit
+  `df82d023c612e0c74d81e57f50efbf81441faf0d`:
+  `release-artifacts/dev269-preparation/DEV269_ACCEPTANCE.md`, SHA-256
+  `2054ad20ac1f2d88f23c0c354b802e365375190e72d7274d8a59076f1beb88be`.
+- The unchanged raw deployment receipts are preserved on the same origin branch
+  at commit `db607a6763fe3ba2fc2e8e2ee77853373f6469cd`:
+  - `STAGE_RESULT.json`:
+    `881d9bc50925540e86db6a8e92c235abe11277e412c6bb60074223395a673cd8`;
+  - `BACKUP_RESULT.json`:
+    `441f150401a81ab82fea40fcd9eb475209433ddbfb3e959067f2419fc41d86bc`;
+  - `SCOPED_BACKUP_VERIFIED.json`:
+    `01d49a2c0289f711f6e410b1a6d1a8795ed9f877805d570bbeba3b0171f46403`;
+  - `INSTALL_RESULT.json`:
+    `4a4ad11f98a68773164bd2511b2a6fe1f5b44b3d78f2f3a1f2653c16fc5b9fff`;
+  - `SMOKE_RESULT.json`:
+    `e947e126b9c7cf484407e1fe309119d6eae9b34dd8d91ae0f7aa493319355eca`.
+- A byte-for-byte Git-object verification on 11 November 2026 reproduced all
+  six SHA-256 values above and confirmed that both evidence commits are
+  ancestors of `origin/codex/dev267-prospect-diary`.
+- **Production installed baseline:** `2.1.0-rc.1`, commit
+  `b6e013c51f46be482858e733160fa7e675ff3106`, database
+  `nysareal_nysacrm`, migration ledger 140. The retained 5 November read-only
+  schema check records PostgreSQL 13.23, 258 public tables and 108 enabled user
+  triggers, with the Production schema matching the exact RC1 replay. A fresh
+  approved read-only preflight is still mandatory before any Production step.
+- **Current work:** combined Prospect Diary plus Excel/CSV upload candidate,
+  built in the isolated `codex/prod-prospect-upload` worktree from accepted
+  DEV269. WN-15 remains paused and Approval 1R-3 must not be retried. No CRM
+  Test or Production upload, query, backup or mutation is authorized by this
+  baseline update.
+- **Schedule control:** D-2 is targeted for 10:00 Dubai on 12 November 2026.
+  CRM Test phases/UAT and Production phases are daytime steps on 12 November,
+  each requiring Ajit's separate approval. No Production phase starts after
+  18:00 Dubai.
+
 ## DEV269 D-2 candidate — 11 November 2026
 
 - Installed CRM Test source of truth remains accepted DEV268
