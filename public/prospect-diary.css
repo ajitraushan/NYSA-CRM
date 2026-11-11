@@ -5,3 +5,4 @@
 .prospect-card-name{color:var(--text)!important;font-weight:700}
 .prospect-manager-tools,.prospect-edit-history{display:grid;gap:8px}
 .prospect-edit-history small{display:block;color:var(--muted)}
+.prospect-detail-header{background:transparent!important;color:var(--text)!important}.prospect-detail-header h2{color:var(--text)!important}

@@ -35,6 +35,7 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/crm/dashboard')return json(res,200,dashboard);
   if(url.pathname==='/api/crm/prospects')return json(res,200,{summary:{total:1,today:1,overdue:0,upcoming:1,interested:0,doNotContact:fixtureDncr?1:0},prospects:[prospect()],agents:activeRole==='manager'?[{id:'00000002-0000-4000-8000-000000000268',name:'Synthetic Agent',jobRole:'sales_agent'}]:[],canManage:activeRole==='manager'});
   if(url.pathname===`/api/crm/prospects/${prospectId}`&&req.method==='GET')return json(res,200,prospectDetail());
+  if(url.pathname===`/api/crm/prospects/${prospectId}/conversion-matches`&&req.method==='GET')return json(res,200,{matches:[],outsideScopeMatch:false});
   if(url.pathname===`/api/crm/prospects/${prospectId}/dncr`&&req.method==='POST'){fixtureDncr=true;return json(res,200,{prospect:prospect(),suppression:{strongest:'dncr',activeTypes:['dncr']}});}
   if(url.pathname==='/api/crm/prospect-diary/overrides')return json(res,200,{overrides:[{prospectId,prospectReference:'NYSA-PR-202611-000269',displayName:'Synthetic Prospect 269',ownerName:'Synthetic Agent',evidenceType:'follow_up',warningCodes:['outside_calling_window'],warningReason:'Customer requested this exact time',actorName:'Synthetic Agent',prospectLocalTime:'2026-11-11 20:00'}]});
   if(url.pathname.startsWith('/api/'))return json(res,404,{error:`Unexpected browser fixture API: ${url.pathname}`});
@@ -75,20 +76,28 @@ try{
     assert.deepEqual(pageErrors,[]);
     assert.deepEqual(consoleErrors,[]);
     const desktopScreenshot=path.join(evidenceDir,`${role}-prospect-diary-desktop.png`);await page.screenshot({path:desktopScreenshot,fullPage:true});
-    if(role==='manager'){await page.click('[data-load-overrides]');await page.waitForFunction(()=>document.body.innerText.includes('Customer requested this exact time'));}
+    if(role==='manager'){await page.click('[data-load-overrides]');await page.waitForFunction(()=>document.body.innerText.includes('Customer requested this exact time'));assert.equal(await page.evaluate(()=>document.querySelectorAll('[data-overrides] header').length),0);}
     await page.click('[data-prospect]');await page.waitForSelector('[data-prospect-detail]');
     const warningEvidence=await page.evaluate(()=>document.querySelector('[data-prospect-detail]')?.innerText||'');assert.match(warningEvidence,/Customer requested an evening call/);assert.match(warningEvidence,/Customer requested this exact time/);
+    const recordState=await page.evaluate(()=>{const head=document.querySelector('.prospect-detail-header'),name=head?.querySelector('h2'),style=head?getComputedStyle(head):null;return{headTag:head?.tagName,headBackground:style?.backgroundColor,headBackgroundImage:style?.backgroundImage,nameColor:name?getComputedStyle(name).color:null,headerElements:document.querySelectorAll('.record-workspace header').length,editHeaderElements:document.querySelectorAll('[data-prospect-edit] header').length,conversionHeaderElements:document.querySelectorAll('[data-conversion-panel] header').length};});
+    assert.equal(recordState.headTag,'SECTION');assert.ok(['rgba(0, 0, 0, 0)','transparent'].includes(recordState.headBackground));assert.equal(recordState.headBackgroundImage,'none');assert.equal(recordState.nameColor,'rgb(20, 35, 44)');assert.equal(recordState.headerElements,0);assert.equal(recordState.editHeaderElements,0);assert.equal(recordState.conversionHeaderElements,0);
+    await page.click('details:has([data-prospect-edit]) > summary');
+    if(role==='sales_agent'){await page.click('details:has([data-conversion-panel]) > summary');await page.click('[data-check-conversion]');await page.waitForSelector('[data-convert-form]');assert.equal(await page.evaluate(()=>document.querySelectorAll('[data-conversion-panel] header').length),0);}
+    await page.evaluate(()=>document.querySelector('main')?.scrollTo(0,0));
+    const recordDesktopScreenshot=path.join(evidenceDir,`${role}-prospect-record-desktop.png`);await page.screenshot({path:recordDesktopScreenshot,fullPage:true});
     if(role==='manager'){
       await page.click('details:has([data-dncr-form]) > summary');
       await page.select('[data-dncr-form] select[name="action"]','record');await page.type('[data-dncr-form] input[name="evidenceReference"]','DEV269-BROWSER-DNCR');await page.click('[data-dncr-form] button');
       await page.waitForSelector('.prospect-detail-header .prospect-status-do_not_contact',{timeout:30000});
-      await page.click('.record-workspace .close-x');await page.waitForSelector('[data-prospect]');
-      const refreshed=await page.evaluate(()=>({card:document.querySelector('[data-prospect]')?.innerText||'',dnc:[...document.querySelectorAll('[data-summary]')].find(button=>button.innerText.toLowerCase().includes('do not contact'))?.querySelector('strong')?.textContent}));assert.match(refreshed.card,/do not contact/i);assert.equal(refreshed.dnc,'1');
-    }else{await page.click('.record-workspace .close-x');await page.waitForSelector('[data-prospect]');}
-    await page.setViewport({width:390,height:844,deviceScaleFactor:1});const mobile=await page.evaluate(()=>({bodyWidth:document.body.scrollWidth,viewport:innerWidth,cardWidth:document.querySelector('.prospect-card')?.getBoundingClientRect().width||0}));assert.ok(mobile.bodyWidth<=mobile.viewport+1);assert.ok(mobile.cardWidth<=mobile.viewport);
+    }
+    await page.setViewport({width:390,height:844,deviceScaleFactor:1});const recordMobile=await page.evaluate(()=>{const head=document.querySelector('.prospect-detail-header');return{bodyWidth:document.body.scrollWidth,viewport:innerWidth,recordWidth:document.querySelector('.record-workspace-surface')?.getBoundingClientRect().width||0,headTag:head?.tagName,headBackground:getComputedStyle(head).backgroundColor,nameColor:getComputedStyle(head.querySelector('h2')).color,headerElements:document.querySelectorAll('.record-workspace header').length};});assert.ok(recordMobile.bodyWidth<=recordMobile.viewport+1);assert.ok(recordMobile.recordWidth<=recordMobile.viewport);assert.equal(recordMobile.headTag,'SECTION');assert.ok(['rgba(0, 0, 0, 0)','transparent'].includes(recordMobile.headBackground));assert.equal(recordMobile.nameColor,'rgb(20, 35, 44)');assert.equal(recordMobile.headerElements,0);
+    const recordMobileScreenshot=path.join(evidenceDir,`${role}-prospect-record-mobile.png`);await page.screenshot({path:recordMobileScreenshot,fullPage:true});
+    await page.click('.record-workspace .close-x');await page.waitForSelector('[data-prospect]');
+    if(role==='manager'){const refreshed=await page.evaluate(()=>({card:document.querySelector('[data-prospect]')?.innerText||'',dnc:[...document.querySelectorAll('[data-summary]')].find(button=>button.innerText.toLowerCase().includes('do not contact'))?.querySelector('strong')?.textContent}));assert.match(refreshed.card,/do not contact/i);assert.equal(refreshed.dnc,'1');}
+    const mobile=await page.evaluate(()=>({bodyWidth:document.body.scrollWidth,viewport:innerWidth,cardWidth:document.querySelector('.prospect-card')?.getBoundingClientRect().width||0}));assert.ok(mobile.bodyWidth<=mobile.viewport+1);assert.ok(mobile.cardWidth<=mobile.viewport);
     const mobileScreenshot=path.join(evidenceDir,`${role}-prospect-diary-mobile.png`);await page.screenshot({path:mobileScreenshot,fullPage:true});
     assert.deepEqual(pageErrors,[]);assert.deepEqual(consoleErrors,[]);
-    results.push({role,status:'passed',state,mobile,dncrRefresh:role==='manager'?'passed':'not-applicable',pageErrors,consoleErrors,screenshots:[path.basename(desktopScreenshot),path.basename(mobileScreenshot)]});
+    results.push({role,status:'passed',state,recordState,recordMobile,mobile,dncrRefresh:role==='manager'?'passed':'not-applicable',pageErrors,consoleErrors,screenshots:[path.basename(desktopScreenshot),path.basename(mobileScreenshot),path.basename(recordDesktopScreenshot),path.basename(recordMobileScreenshot)]});
     await page.close();
   }
   const requestedScripts=requests.filter(item=>/\.(?:js|mjs)$/.test(item.path)).map(item=>item.path);
