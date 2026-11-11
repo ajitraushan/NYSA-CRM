@@ -65,6 +65,21 @@ export async function verifyProductionCatalog(client, expected) {
   return {identity,migrations:ledger.length,tables:tables.length,comparison};
 }
 
+export async function readProductionPrivilegeEvidence(client){
+  const legacyRole = (await client.query(`SELECT oid FROM pg_roles WHERE rolname='nysareal_nysar2app'`)).rows[0];
+  const publicTables = (await client.query(`SELECT c.relname AS table_name, pg_get_userbyid(c.relowner) AS owner,
+    CASE WHEN $1::oid IS NOT NULL THEN ARRAY(
+      SELECT privilege FROM unnest(ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) AS privileges(privilege)
+      WHERE has_table_privilege($1::oid,c.oid,privilege)
+    ) ELSE ARRAY[]::text[] END AS legacy_role_privileges
+    FROM pg_class c WHERE c.relnamespace='public'::regnamespace AND c.relkind IN('r','p')
+    ORDER BY c.relname`,[legacyRole?.oid ?? null])).rows;
+  const legacyRoleEvidence={name:'nysareal_nysar2app',exists:Boolean(legacyRole),connect:legacyRole
+    ? (await client.query("SELECT has_database_privilege($1::oid,current_database(),'CONNECT') AS allowed",[legacyRole.oid])).rows[0].allowed
+    : false};
+  return {publicTables,legacyRole:legacyRoleEvidence};
+}
+
 function registration() {
   const raw = execFileSync('cloudlinux-selector',['get','--json','--interpreter','nodejs','--domain',DOMAIN],
     {encoding:'utf8',timeout:15000,windowsHide:true});
@@ -136,6 +151,7 @@ async function main(args) {
     report.catalog=await verifyProductionCatalog(client,JSON.parse(schema));
     report.usersByRoleAndTeam=(await client.query(`SELECT job_role,team_id,COUNT(*)::int AS total
       FROM brokers GROUP BY job_role,team_id ORDER BY job_role,team_id`)).rows;
+    Object.assign(report,await readProductionPrivilegeEvidence(client));
     const databaseBytes=Number((await client.query('SELECT pg_database_size(current_database()) AS bytes')).rows[0].bytes);
     await client.query('ROLLBACK');
     const appBytes=Number(execFileSync('du',['-sb','--',ROOT],{encoding:'utf8',timeout:30000}).split(/\s/)[0]);
@@ -146,6 +162,7 @@ async function main(args) {
   } catch (error) {
     // Driver errors can carry database details. Retain only the safe classification.
     report.errorCode=error.code||error.name;
+    if (error instanceof assert.AssertionError) report.assertionMessage=error.message;
     if (error.comparison) report.schemaMismatch=error.comparison;
     process.exitCode=1;
   } finally {
