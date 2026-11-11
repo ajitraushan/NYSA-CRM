@@ -35,6 +35,14 @@ export function assertScopeMatches(observed,approved){
   if(actual!==expected)throw new Error(`Cleanup count mismatch: expected ${expected}, observed ${actual}`);
 }
 
+export function validateCleanupProof({remainingGeneratedRows,retainedRun,retainedProviderEvents},scope){
+  const nonzero=Object.entries(remainingGeneratedRows).filter(([,value])=>value!==0);
+  if(nonzero.length)throw new Error(`Run-scoped cleanup verification failed: ${JSON.stringify(Object.fromEntries(nonzero))}`);
+  if(retainedRun.length!==1||retainedRun[0].status!=='cleaned'||!retainedRun[0].cleaned_at)throw new Error('Run-scoped cleanup did not retain exactly one cleaned run record');
+  if(retainedProviderEvents!==scope.counts.providerEvents)throw new Error(`Provider-event retention mismatch: expected ${scope.counts.providerEvents}, observed ${retainedProviderEvents}`);
+  return{remainingGeneratedRows,retainedEvidence:{runRecords:1,providerEvents:retainedProviderEvents,status:'cleaned'}};
+}
+
 async function rows(client,text,params=[]){return (await client.query(text,params)).rows;}
 async function count(client,text,params=[]){return numeric((await client.query(text,params)).rows[0]?.count);}
 
@@ -68,11 +76,9 @@ export async function collectCleanupScope(client,rawRunId){
   return{runId,createdBy:runRows[0].created_by,status:runRows[0].status,counts,scopeFingerprint:sha256(JSON.stringify(identity)),identity,evidenceReferences,suppressions};
 }
 
-async function proveZero(client,scope){
+async function proveCleanup(client,scope){
   const conversationIds=scope.identity.conversationIds,leadIds=scope.identity.leadIds,contactIds=scope.identity.contactIds,evidenceReferences=scope.evidenceReferences;
-  const remaining={
-    runs:await count(client,'SELECT COUNT(*)::int AS count FROM wa_simulation_runs WHERE id=$1',[scope.runId]),
-    providerEvents:await count(client,'SELECT COUNT(*)::int AS count FROM wa_simulated_provider_events WHERE simulation_run_id=$1',[scope.runId]),
+  const remainingGeneratedRows={
     conversations:await count(client,'SELECT COUNT(*)::int AS count FROM wa_conversations WHERE simulation_run_id=$1',[scope.runId]),
     messages:conversationIds.length?await count(client,'SELECT COUNT(*)::int AS count FROM wa_conversation_messages WHERE conversation_id=ANY($1::uuid[])',[conversationIds]):0,
     notifications:conversationIds.length?await count(client,'SELECT COUNT(*)::int AS count FROM wa_inbox_notifications WHERE conversation_id=ANY($1::uuid[])',[conversationIds]):0,
@@ -83,9 +89,9 @@ async function proveZero(client,scope){
     suppressionRestrictions:evidenceReferences.length?await count(client,`SELECT COUNT(*)::int AS count FROM wa_contact_suppressions s,
       LATERAL jsonb_each(s.restrictions) item WHERE item.value->>'evidenceReference'=ANY($1::text[])`,[evidenceReferences]):0
   };
-  const nonzero=Object.entries(remaining).filter(([,value])=>value!==0);
-  if(nonzero.length)throw new Error(`Run-scoped cleanup verification failed: ${JSON.stringify(Object.fromEntries(nonzero))}`);
-  return remaining;
+  const retainedRun=await rows(client,'SELECT id,status,cleaned_at FROM wa_simulation_runs WHERE id=$1',[scope.runId]);
+  const retainedProviderEvents=await count(client,'SELECT COUNT(*)::int AS count FROM wa_simulated_provider_events WHERE simulation_run_id=$1',[scope.runId]);
+  return validateCleanupProof({remainingGeneratedRows,retainedRun,retainedProviderEvents},scope);
 }
 
 export async function applyCleanup(client,scope,approvedDryRunSha256){
@@ -93,6 +99,7 @@ export async function applyCleanup(client,scope,approvedDryRunSha256){
   if(locked!==1)throw new Error('Simulation run could not be locked exactly once');
   const observed=await collectCleanupScope(client,scope.runId);
   assertScopeMatches(observed,scope);
+  if(observed.counts.campaignRecipientLinks!==0)throw new Error(`Run-scoped cleanup refuses ${observed.counts.campaignRecipientLinks} campaign recipient link(s); no campaign rows are approved for deletion or modification`);
   let removedSuppressionRestrictions=0;
   for(const row of observed.suppressions){
     const change=removeRunEvidenceFromRestrictions(row.restrictions,observed.evidenceReferences);
@@ -108,21 +115,24 @@ export async function applyCleanup(client,scope,approvedDryRunSha256){
   if(removedSuppressionRestrictions!==scope.counts.suppressionRestrictions)throw new Error(`Suppression cleanup count mismatch: expected ${scope.counts.suppressionRestrictions}, observed ${removedSuppressionRestrictions}`);
   const conversationIds=scope.identity.conversationIds;
   if(conversationIds.length){
-    await client.query(`UPDATE wa_campaign_approval_recipients SET simulated_conversation_id=NULL,simulated_provider_message_id=NULL,
-      simulated_status=NULL,simulated_status_at=NULL,simulated_sent_at=NULL,simulated_last_error=NULL WHERE simulated_conversation_id=ANY($1::uuid[])`,[conversationIds]);
     await client.query('DELETE FROM wa_conversation_assignment_history WHERE conversation_id=ANY($1::uuid[])',[conversationIds]);
     await client.query('DELETE FROM wa_conversations WHERE id=ANY($1::uuid[])',[conversationIds]);
   }
   if(scope.identity.leadIds.length)await client.query('DELETE FROM leads WHERE id=ANY($1::uuid[])',[scope.identity.leadIds]);
   if(scope.identity.contactIds.length)await client.query('DELETE FROM contacts WHERE id=ANY($1::uuid[])',[scope.identity.contactIds]);
-  await client.query('DELETE FROM wa_simulated_provider_events WHERE simulation_run_id=$1',[scope.runId]);
-  await client.query('DELETE FROM wa_simulation_runs WHERE id=$1',[scope.runId]);
-  const remaining=await proveZero(client,scope);
+  const deletedCounts={
+    conversations:scope.counts.conversations,messages:scope.counts.messages,notifications:scope.counts.notifications,
+    assignmentHistory:scope.counts.assignmentHistory,leads:scope.counts.leads,contacts:scope.counts.contacts,
+    suppressionRestrictions:scope.counts.suppressionRestrictions
+  };
+  await client.query(`UPDATE wa_simulation_runs SET status='cleaned',cleaned_at=NOW(),
+    result=COALESCE(result,'{}'::jsonb)||$2::jsonb WHERE id=$1`,[scope.runId,JSON.stringify({runScopedCleanup:true,deletedCounts,providerEventsRetained:scope.counts.providerEvents})]);
+  const proof=await proveCleanup(client,scope);
   await client.query(`INSERT INTO audit_log(id,entity_type,entity_id,action,performed_by,details)
     VALUES($1,'WhatsAppSimulationRun',$2,'run_scoped_cleanup_completed',$3,$4::jsonb)`,[
-    crypto.randomUUID(),scope.runId,scope.createdBy,JSON.stringify({runId:scope.runId,dryRunSha256:approvedDryRunSha256,deletedCounts:scope.counts,scopeFingerprint:scope.scopeFingerprint,zeroProof:remaining,auditEvidenceRetained:true})
+    crypto.randomUUID(),scope.runId,scope.createdBy,JSON.stringify({runId:scope.runId,dryRunSha256:approvedDryRunSha256,deletedCounts,scopeFingerprint:scope.scopeFingerprint,...proof,auditEvidenceRetained:true})
   ]);
-  return{runId:scope.runId,deletedCounts:scope.counts,scopeFingerprint:scope.scopeFingerprint,zeroProof:remaining,auditEvidenceRetained:true};
+  return{runId:scope.runId,deletedCounts,scopeFingerprint:scope.scopeFingerprint,...proof,auditEvidenceRetained:true};
 }
 
 const parseArgs=argv=>Object.fromEntries(argv.reduce((items,item,index,list)=>{
