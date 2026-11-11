@@ -52,6 +52,7 @@ for(const name of ['output','proofOutput'])if(fs.existsSync(files[name]))fail(`$
 const source=JSON.parse(fs.readFileSync(files.sourceConfig,'utf8'));
 const manifest=JSON.parse(fs.readFileSync(files.manifest,'utf8'));
 const baselineManifest=JSON.parse(fs.readFileSync(files.baselineManifest,'utf8'));
+const baselineTriggerContract=JSON.parse(fs.readFileSync(files.baselineTrigger,'utf8'));
 const expectedManifest=JSON.parse(fs.readFileSync(files.expectedManifest,'utf8'));
 const expectedColumns=JSON.parse(fs.readFileSync(files.expectedColumns,'utf8'));
 const triggers=JSON.parse(fs.readFileSync(files.triggerContract,'utf8'));
@@ -67,6 +68,7 @@ if(source.expectedPostTableNames?.length!==source.expectedPostTableCount)fail('S
 if(expectedTableNames.length!==expectedManifest.contracts?.columns?.count&&expectedColumns.count!==expectedManifest.contracts?.columns?.count)fail('Expected columns contract is inconsistent');
 if(triggers.triggers?.length!==triggers.triggerCount)fail('Expected trigger contract is inconsistent');
 if(baselineManifest.triggers?.file!==path.basename(files.baselineTrigger)||baselineManifest.triggers?.fileSha256!==sha256(files.baselineTrigger))fail('Baseline trigger contract does not match its approved manifest');
+if(baselineTriggerContract.triggers?.length!==baselineTriggerContract.triggerCount||baselineTriggerContract.triggerCount!==baselineManifest.triggers?.triggerCount)fail('Baseline trigger contract is inconsistent');
 
 const hosted=spec.hostPreparationDir.replace(/\/$/,'');
 const config={...source,
@@ -77,7 +79,7 @@ const config={...source,
   baselineMigrationCount:source.expectedMigrationCount,expectedMigrationCount:spec.expectedMigrationCount,
   expectedTableCount:source.expectedPostTableCount,expectedTableNames:source.expectedPostTableNames,
   expectedPostTableCount:expectedTableNames.length,expectedPostTableNames:expectedTableNames,
-  baselineTriggers:source.baselineTriggers,
+  baselineTriggers:spec.migrationNeutral===true?baselineTriggerContract.triggers:source.baselineTriggers,
   expectedTriggerCount:triggers.triggerCount,expectedTriggerContractSha256:triggers.canonicalSha256,
   schemaContractHelperPath:'/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs',
   schemaContractHelperSha256:sha256Lf(files.schemaHelper),

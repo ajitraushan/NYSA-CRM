@@ -18,5 +18,8 @@ test('canonical config generator accepts numeric DEV versions and migration-neut
   const generator=fs.readFileSync('tools/generate-crm-test-deploy-config.mjs','utf8');
   assert.match(generator,/\^2\\\.1\\\.0-dev\\\.\\d\+\$/);
   assert.match(generator,/spec\.migrationNeutral===true\?spec\.expectedMigrationCount:spec\.expectedMigrationCount-1/);
+  assert.match(generator,/baselineTriggers:spec\.migrationNeutral===true\?baselineTriggerContract\.triggers:source\.baselineTriggers/);
+  assert.match(generator,/baselineManifest\.triggers\?\.triggerCount/);
+  assert.match(generator,/Baseline trigger contract is inconsistent/);
   assert.match(generator,/Migration-neutral release does not match the accepted baseline migration count/);
 });
