@@ -3,11 +3,14 @@
 Approved D-1 revision 2 covers R1–R8. R8 spec SHA-256
 `9ce7e38dec1629d1f06a7312d03c0d05ee707969fd7f9d046524b415882d9898`.
 Accepted DEV270 source is `5c1c350151d6ace33377b33526e2bfedf4ae8f6b`.
-Candidate package and provenance, hosted sender and delivery evidence are pending.
+Candidate package and provenance, hosted sender verification and delivery evidence are pending.
 
-## CRM Test delivery recipient
+## CRM Test delivery configuration
 
-Ajit designated admin@nysarealty.com as the recipient for the synthetic CRM Test digest. Add it to the CRM Test recipient allow-list for that run. Use the staff Outlook inbox to verify cPanel-to-Outlook routing and recipient-side SPF and DKIM. Keep the lead-reply mailbox out of this test. The digest sender and its credentials are separate. This recipient designation does not change the Admin self-test, which resolves the signed-in Admin address.
+- Sender confirmed by Ajit: `PROSPECT_DIGEST_SMTP_SENDER=crm@nysarealty.com`.
+- CRM Test allow-list for the synthetic digest: `PROSPECT_DIGEST_TEST_RECIPIENTS=admin@nysarealty.com`. Verify inbox delivery and SPF/DKIM in the staff Outlook mailbox. Keep the lead-reply mailbox out of this test.
+- The Admin self-test resolves the signed-in Admin address and remains subject to the CRM Test allow-list.
+- Obtain Ajit's written go separately for hosted configuration, credential setup and the test send. Ajit enters the password himself at the prompt below.
 
 ## Password-entry interface
 
