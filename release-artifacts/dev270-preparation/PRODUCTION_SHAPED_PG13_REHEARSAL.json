@@ -1,0 +1,12 @@
+{
+  "postgres": "13.23",
+  "database": "isolated Production-shaped fixture",
+  "migrationRunner": "src/db.js:migrate",
+  "priorMigrations": 140,
+  "finalMigrations": 171,
+  "crmTestRolePresent": false,
+  "contractMatch": true,
+  "historicalCleanupEvents": 0,
+  "tables": 307,
+  "triggers": 111
+}

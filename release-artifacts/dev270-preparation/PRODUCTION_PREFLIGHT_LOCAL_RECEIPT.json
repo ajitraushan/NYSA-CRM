@@ -1,0 +1,11 @@
+{
+  "fixture": "loopback PostgreSQL 13.23",
+  "productionAccess": false,
+  "wrongIdentityRefused": true,
+  "simulatorEnabledRefused": true,
+  "driftRefused": true,
+  "baselineCatalogMatched": true,
+  "productionDatabaseNameMockedForMatch": true,
+  "schemaSha256": "166c1dc1680ebf39197d69e5a379d8d0306eb75722dfab3fbc7d4243e43a9bf0",
+  "preflightScriptSha256": "36ecbf8fac1cecd92346c172c46b07bd25db12430bc1f0fe0474c1687905a78f"
+}

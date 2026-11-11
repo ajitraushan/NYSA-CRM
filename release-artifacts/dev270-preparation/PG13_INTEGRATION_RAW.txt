@@ -1,0 +1,15 @@
+(node:40564) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ DEV267 Prospect Diary uses Tasks, layered suppression, registered numbers and soft repeat-call warnings (1746.9698ms)
+✔ Prospect upload templates, CSV quoting and 2,000-row boundary (39.3551ms)
+(node:36072) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ Prospect upload commits only reviewed rows and enforces role, suppression and audit (525.6171ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1862.2797
