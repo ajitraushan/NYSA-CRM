@@ -17,10 +17,11 @@ const text = value => String(value ?? '').trim();
 function csvRows(buffer) {
   const input = new TextDecoder('utf-8', {fatal: true}).decode(buffer);
   const rows = [];
-  let row = [], field = '', quoted = false, closed = false;
+  let row = [], field = '', quoted = false, closed = false, rowNumber = 0;
   function finishRow() {
     row.push(field);
-    rows.push(row);
+    rowNumber++;
+    if (rowNumber === 1 || row.some(text)) rows.push({cells:row,rowNumber});
     if (rows.length > MAX_UPLOAD_ROWS + 1) throw new Error('Upload is limited to 2,000 rows');
     row = [];
     field = '';
@@ -63,19 +64,26 @@ async function xlsxRows(buffer) {
 }
 
 export async function parseProspectUpload(buffer, mediaType) {
-  const [headers, ...rows] = mediaType === CSV_TYPE ? csvRows(buffer) : await xlsxRows(buffer);
+  const [{cells:headers} = {}, ...rows] = mediaType === CSV_TYPE ? csvRows(buffer)
+    : (await xlsxRows(buffer)).flatMap((cells,index) =>
+      index === 0 || cells.some(text) ? [{cells,rowNumber:index+1}] : []);
   if (rows.length > MAX_UPLOAD_ROWS) throw new Error('Upload is limited to 2,000 rows');
   if (!headers || headers.length !== UPLOAD_COLUMNS.length ||
       !UPLOAD_COLUMNS.every((name, index) => text(headers[index]).toLowerCase() === name.toLowerCase())) {
     throw new Error('Use the template columns in order: Name, Phone, Email, Notes, Source');
   }
   if (!rows.length) throw new Error('The file contains no prospect rows');
-  return rows.map((cells, index) => {
+  return rows.map(({cells,rowNumber}) => {
     const [name, rawPhone, mail, notes, source] = UPLOAD_COLUMNS.map((_, i) => text(cells[i]));
-    const digits = rawPhone.replace(/[^0-9]/g, '');
-    const phone = /^[+0-9() .-]+$/.test(rawPhone)
-      ? normalizePhone(/^05\d{8}$/.test(digits) && !rawPhone.startsWith('+') ? '+971' + digits.slice(1) : rawPhone)
-      : null;
+    const digits = rawPhone.replace(/\D/g, '');
+    let international = rawPhone;
+    if (!rawPhone.startsWith('+')) {
+      if (/^05\d{8}$/.test(digits)) international = '+971' + digits.slice(1);
+      else if (/^5\d{8}$/.test(digits)) international = '+971' + digits;
+      else if (/^971\d{8,9}$/.test(digits)) international = '+' + digits;
+      else if (/^00971\d{8,9}$/.test(digits)) international = '+' + digits.slice(2);
+    }
+    const phone = /^\+?[0-9() .-]+$/.test(rawPhone) ? normalizePhone(international) : null;
     const email = mail.toLowerCase() || null;
     const normalizedSource = source.toLowerCase() || 'other';
     const error = cells.slice(5).some(value => text(value)) ? 'Unexpected extra column'
@@ -87,7 +95,7 @@ export async function parseProspectUpload(buffer, mediaType) {
       : name.length > 240 || mail.length > 254 || notes.length > 10000 ? 'Name, email or notes exceed the allowed length'
       : [name, mail, notes].some(value => value.includes('\0')) ? 'Invalid control character'
       : null;
-    return {rowNumber: index + 2, name, phone, email, notes, source: normalizedSource, error};
+    return {rowNumber, name, phone, email, notes, source: normalizedSource, error};
   });
 }
 
@@ -97,11 +105,12 @@ export function uploadTemplate(format) {
   const rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
   const packageRel = 'http://schemas.openxmlformats.org/package/2006/relationships';
   const xml = {
-    '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+    '[Content_Types].xml': '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
     '_rels/.rels': `<Relationships xmlns="${packageRel}"><Relationship Id="rId1" Type="${rel}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
     'xl/workbook.xml': `<workbook xmlns="${main}" xmlns:r="${rel}"><sheets><sheet name="Prospects" sheetId="1" r:id="rId1"/></sheets></workbook>`,
-    'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${packageRel}"><Relationship Id="rId1" Type="${rel}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
-    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${main}"><sheetData><row r="1">${UPLOAD_COLUMNS.map((name, i) =>
+    'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${packageRel}"><Relationship Id="rId1" Type="${rel}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${rel}/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml': `<styleSheet xmlns="${main}"><fonts count="1"><font/></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`,
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${main}"><cols><col min="2" max="2" style="1"/></cols><sheetData><row r="1">${UPLOAD_COLUMNS.map((name, i) =>
       `<c r="${'ABCDE'[i]}1" t="inlineStr"><is><t>${name}</t></is></c>`).join('')}</row></sheetData></worksheet>`,
   };
   return Buffer.from(zipSync(Object.fromEntries(Object.entries(xml).map(([name, content]) => [name, strToU8(content)]))));

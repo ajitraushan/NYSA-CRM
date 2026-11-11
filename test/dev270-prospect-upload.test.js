@@ -23,6 +23,16 @@ test('Prospect upload templates, CSV quoting and 2,000-row boundary',async () =>
   const xlsx = await parseProspectUpload(workbook(),XLSX_TYPE);
   assert.equal(xlsx[0].email,'upload-workbook@example.invalid');
   assert.equal(xlsx[0].phone,null);
+  const phones = await parseProspectUpload(csv(['Numeric,501234567,,,diary',',,,,','International,971501234567,,,diary','', 'IDD,00971501234567,,,diary']),'text/csv');
+  assert.deepEqual(phones.map(x=>[x.rowNumber,x.phone]),[[2,'+971501234567'],[4,'+971501234567'],[6,'+971501234567']]);
+  const files = unzipSync(workbook());
+  const sheet = 'xl/worksheets/sheet1.xml';
+  const xml = strFromU8(files[sheet]);
+  assert.match(xml,/<col min="2" max="2" style="1"/);
+  assert.match(strFromU8(files['xl/styles.xml']),/numFmtId="49"/);
+  files[sheet] = strToU8(xml.replace('<c r="C2"', '<c r="B2" t="n"><v>501234567</v></c><c r="C2"').replace('</sheetData>', '<row r="4"><c r="A4" t="inlineStr"><is><t>Next</t></is></c><c r="B4"><v>971501234568</v></c></row></sheetData>'));
+  const excelPhones = await parseProspectUpload(Buffer.from(zipSync(files)),XLSX_TYPE);
+  assert.deepEqual(excelPhones.map(x=>[x.rowNumber,x.phone]),[[2,'+971501234567'],[4,'+971501234568']]);
   const rows = Array(2000).fill('Example,0501234567,,,diary');
   assert.equal((await parseProspectUpload(csv(rows),'text/csv')).length,2000);
   await assert.rejects(parseProspectUpload(csv([...rows,rows[0]]),'text/csv'),/2,000/);
@@ -80,13 +90,16 @@ test('Prospect upload commits only reviewed rows and enforces role, suppression 
     }
     await db.execute(`INSERT INTO contacts(id,full_name,phone,owner_id,created_by) VALUES($1,'Synthetic customer',$2,$3,$3)`,[randomUUID(),phone('54'),agent]);
     const buffer = csv([
-      `Ready,050${digits},,A,diary`, `Repeat,${phone('50')},,,other`, ',,,,',
+      `Ready,050${digits},,A,diary`, `Repeat,${phone('50')},,,other`, ',,,invalid row,',
       `Visible prospect,${phone('52')},,,other`, `Hidden prospect,${phone('53')},,,other`,
       `Existing customer,${phone('54')},,,other`, `Suppressed,${phone('51')},,DNC,whatsapp`
     ]);
     const payload = {fileName:'synthetic.csv',base64:buffer.toString('base64'),ownerId:agent};
     await request(upload+'/preview',{body:{...payload,ownerId:outsider},status:403});
     await request(upload+'/preview',{as:manager,body:{...payload,ownerId:outsider},status:403});
+    const directorDuplicates = await request(upload+'/preview',{as:director,body:payload});
+    assert.deepEqual(directorDuplicates.rows.slice(3,6).map(row=>row.status),
+      ['existing_prospect','existing_prospect','matches_customer_or_lead']);
     const review = await request(upload+'/preview',{body:payload});
     assert.deepEqual(review.rows.map(row=>row.status),
       ['ready','duplicate_in_file','error','existing_prospect','error','matches_customer_or_lead','do_not_contact']);

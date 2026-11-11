@@ -54,11 +54,13 @@ try {
   }
   assert.ok(ready,'Local application did not become ready: '+errors.join('').slice(-600));
   const unavailable=[];
-  for(const route of ['/crm/whatsapp-workspace','/crm/campaigns','/providers/whatsapp-simulated/status']){
+  for(const route of ['/crm/whatsapp-workspace','/providers/whatsapp-simulated/health']){
     const response=await fetch(base+'/api'+route,{headers:{authorization:'Bearer '+tokens.manager}});
     assert.equal(response.status,404,route);
     unavailable.push({route,status:response.status});
   }
+  const campaigns=await fetch(base+'/api/crm/campaigns',{headers:{authorization:'Bearer '+tokens.manager}});
+  assert.equal(campaigns.status,200,'Production Campaign governance remains available');
   const executablePath=process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
   browser=await puppeteer.launch({executablePath,headless:true,args:['--no-first-run','--disable-background-networking']});
   const results=[];

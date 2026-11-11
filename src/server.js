@@ -100,7 +100,7 @@ app.mount('/api', propertyFinderMediaDeliveryRoutes);
 app.mount('/api', propertyFinderSandboxRoutes);
 app.mount('/api', diaryRoutes);
 app.mount('/api', transactionRepresentationRoutes);
-if (!productionCampaignsDisabled()) app.mount('/api', campaignRoutes);
+app.mount('/api', campaignRoutes);
 app.mount('/api', governedMatchingRoutes);
 app.mount('/api', inventoryImportRoutes);
 app.mount('/api', partnerOrganizationRoutes);

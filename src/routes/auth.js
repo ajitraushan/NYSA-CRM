@@ -164,7 +164,7 @@ r.post('/auth/login', async (req, res) => {
   if (broker.status !== 'active') return res.status(403).json({ error: broker.status==='suspended'?'Access is suspended':'Access is not active' });
   const token = await createSession(broker.id,{hours:rememberMe?24*7:12});
   setSessionCookie(res, token,{persistent:rememberMe});
-  res.json({ broker: {...publicBroker(broker),campaignsAvailable:!productionCampaignsDisabled()} });
+  res.json({ broker: {...publicBroker(broker),whatsAppCampaignsAvailable:!productionCampaignsDisabled()} });
 });
 
 r.post('/auth/password-reset-requests', async (req, res) => {
@@ -211,6 +211,6 @@ r.post('/auth/logout', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-r.get('/me', requireAuth, (req, res) => res.json({...publicBroker(req.broker),campaignsAvailable:!productionCampaignsDisabled()}));
+r.get('/me', requireAuth, (req, res) => res.json({...publicBroker(req.broker),whatsAppCampaignsAvailable:!productionCampaignsDisabled()}));
 
 export default r;
