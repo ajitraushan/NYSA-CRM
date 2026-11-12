@@ -1,0 +1,6 @@
+production-disk-inventory-readonly.sh: OK
+Error occurred during execution of this program
+Inventory time (UTC)
+2026-11-12T18:58:55Z
+
+Account quota
