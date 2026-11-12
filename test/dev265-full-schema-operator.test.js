@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../tools/crm-test-direct-node-release-operator.mjs', import.meta.url), 'utf8');
 
@@ -33,4 +34,16 @@ test('DEV265 operator retains the governed rollback boundary', () => {
   assert.doesNotMatch(source, /pg_restore\W+--clean/);
   assert.match(source, /if\(readinessAccepted\)report\.result='POST_READINESS_CHECK_FAILED_APP_PRESERVED'/);
   assert.match(source, /databaseRestorePerformed:false/);
+});
+
+test('migration-neutral phases use the matching canonical schema and pin the installed runtime', () => {
+  const settings=source.slice(source.indexOf('const migrationNeutral='),source.indexOf('if(!Array.isArray(config.expectedTriggerDriftDataChecks))'));
+  const manifest='a'.repeat(64);
+  const config={baselineMigrationCount:172,expectedMigrationCount:172,
+    baselineSchemaContractManifestSha256:manifest,expectedSchemaContractManifestSha256:manifest,baselineRuntimeManifestSha256:manifest};
+  assert.equal(vm.runInNewContext(settings+'migrationNeutral',{config}),true);
+  assert.throws(()=>vm.runInNewContext(settings,{config:{...config,expectedSchemaContractManifestSha256:'b'.repeat(64)}}),/must match/);
+  assert.throws(()=>vm.runInNewContext(settings,{config:{...config,baselineRuntimeManifestSha256:undefined}}),/installed runtime manifest hash/);
+  assert.equal(vm.runInNewContext(settings+'migrationNeutral',{config:{...config,baselineMigrationCount:171}}),false);
+  assert.match(source,/const usePriorSchema=kind==='baseline'&&!migrationNeutral/);
 });

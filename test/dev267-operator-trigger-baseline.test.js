@@ -82,7 +82,7 @@ test('post-install comparison still requires all 113 canonical triggers',()=>{
 
 test('operator selects the baseline trigger copy only for baseline phases',()=>{
   const source=fs.readFileSync(path.join(root,'tools','crm-test-direct-node-release-operator.mjs'),'utf8');
-  assert.match(source,/const triggerFile=kind==='baseline'\?path\.join\(contractDirectory,triggerName\):path\.join\(config\.candidate,'src',triggerName\)/);
+  assert.match(source,/const triggerFile=usePriorSchema\?path\.join\(contractDirectory,triggerName\):path\.join\(config\.candidate,'src',triggerName\)/);
   assert.match(source,/schema-contract trigger hash mismatch: expected/);
   assert.match(source,/schemaContractComparison\(pool,'baseline','stage'\)/);
   assert.match(source,/schemaContractComparison\(pool,'baseline','backup'\)/);
