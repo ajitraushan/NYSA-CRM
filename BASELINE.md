@@ -1,5 +1,36 @@
 # CRM Development Baseline
 
+## Accepted DEV272 Production baseline — 12 November 2026
+
+- Ajit accepted Production `2.1.0-dev.272`, candidate
+  `54421912fc1496a1066814cd8b665c19c7e8fd45`. This supersedes the DEV270
+  Production state below. The DEV273 design must use this installed Production
+  baseline for its next release review.
+- Package SHA-256 `fae91377d224a17ed51993b80bf493966525e9324b685a264e00ad57d0ffd50b`.
+  Manifest SHA-256 `7777846f35a281a86ac68d5c2039e71f14bd0f0e54e7edfe4966db4a4fc0f674`.
+  Approved config SHA-256 `75375fd5f7d5179ed5e18e9ebbfe7461f0ec0c6822f5d4981633f3f7ab2d217c`.
+- Production database `nysareal_nysacrm` recorded 172 migrations, 313 tables,
+  and 113 triggers at install. Smoke reported green readiness and one
+  command/CWD-verified worker at `/home/nysareal/nysa-crm`, PID 1855405.
+  Seven HTTP probes passed, including the WhatsApp workspace and simulator
+  returning 404. The configuration guard passed with digest email off.
+  Smoke did not cover signed-in workflows or email delivery.
+- Evidence is retained under the hosted
+  `/home/nysareal/crm-release-preparation/20261112-dev272-prod-r2` workspace.
+  `BACKUP_RESULT.json` SHA-256
+  `8c5bbec93d20d2515e23f584bb8e21b3cf691f543c6d16356921f069f902faa9`.
+  `INSTALL_RESULT.json` SHA-256
+  `f2428ae8db2931034ab07ff549c22a8880d860bf7ab031eae18198c1791f3006`.
+  `SMOKE_RESULT.json` SHA-256
+  `8dd82c0307e7c37188959ea9e7b4b1403109ee54de0ea04daa620086cc684c62`.
+- The r2 backup is the verified pre-install DEV270 recovery point.
+  A restart of DEV270 on the migrated database or any database restoration
+  requires Ajit's written approval. No rollback occurred. The r1 failure
+  workspace was preserved as evidence.
+- Acceptance is recorded from the receipts under AGENTS.md mandatory
+  hosted-worker verification and CRM_CHANGE_POLICY.md hosted deployment
+  controls. No new hosted check was performed for this documentation update.
+
 ## Accepted DEV270 Production / CRM Test baseline — 12 November 2026
 
 - Ajit explicitly accepted DEV270 on Production on 12 November Dubai time.
