@@ -13,9 +13,9 @@
 .prospect-today-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border);background:var(--panel)}
 .prospect-today-bar h2,.prospect-today-count{margin:0}
 .prospect-today-figures{display:flex;flex:1;gap:8px;flex-wrap:wrap;margin:0}
-.prospect-today-figures>div{min-width:96px;padding:7px 12px;border:1px solid var(--border);background:var(--panel2)}
-.prospect-today-figures dt{font-size:.8rem;color:var(--muted)}
-.prospect-today-figures dd{margin:2px 0 0;font-size:1.2rem;font-weight:700}
+.prospect-today-figures>div{min-width:96px;padding:7px 12px;border:1px solid var(--border);background:#f4f1eb}
+.prospect-today-figures dt{font-size:.8rem;color:#42515b}
+.prospect-today-figures dd{margin:2px 0 0;color:#14232c;font-size:1.2rem;font-weight:700}
 .prospect-calling-notice{padding:10px 14px;background:#fff3d6;color:#6b4300;border:1px solid #dba942;border-left-width:4px;border-radius:4px}
 .prospect-today-group{display:grid;gap:6px}
 .prospect-today-group h3{display:flex;align-items:center;gap:8px;margin:0}

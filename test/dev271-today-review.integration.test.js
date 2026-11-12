@@ -83,7 +83,10 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
     assert.equal(history.length,1);
     assert.equal(history[0].beforeValues.purpose,null);
     assert.equal(history[0].afterValues.purpose,'investment');
-    const timeline=(await request('prospects/'+ids.untouched,'agent',200)).interestHistory;
+    const detail=await request('prospects/'+ids.untouched,'agent',200);
+    assert.equal(detail.interestLabels.purpose.investment,'Investment');
+    assert.equal(detail.interestLabels.budgetBand.one_to_2m,'AED 1–2M');
+    const timeline=detail.interestHistory;
     assert.equal(timeline.length,1);
     assert.equal(timeline[0].afterValues.purpose,'investment');
     await request('prospects/'+ids.untouched,'outsider',404);

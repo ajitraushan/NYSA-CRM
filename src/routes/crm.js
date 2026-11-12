@@ -1,3 +1,4 @@
+import {loadProspectInterestLabels} from '../prospect-interest-labels.js';
 import {customerIdentityFilter} from '../customer-search.js';
 import {canReadAllCrmDocuments} from '../document-read-policy.js';
 import { Router } from '../lib/http-kit.js';
@@ -368,9 +369,10 @@ r.get('/crm/customers/:id',async(req,res)=>{
       FROM prospects p WHERE p.converted_contact_id=$1 AND p.owner_id=$2 AND p.converted_by=$2
       ORDER BY p.converted_at,p.id LIMIT 1`,[customer.id,req.broker.id])
     : null;
+  const prospectInterestLabels=prospectInterest?await loadProspectInterestLabels():{};
   const effectiveConsent=Boolean(consent?.effectiveConsent),restricted=Boolean(customer.doNotContact),profile=buildCustomer360Profile({customer,pursuits:leads,effectiveConsent,restricted});
   const enrichmentConfig=contactEnrichmentConfiguration();
-  res.json({customer,roles,channels,leads,pursuits:leads,profile,prospectInterest,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
+  res.json({customer,roles,channels,leads,pursuits:leads,profile,prospectInterest,prospectInterestLabels,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
     contactCredibilityConfig:{apolloConfigured:enrichmentConfig.apolloConfigured,advisoryOnly:true},effectiveConsent,restricted});
 });
 

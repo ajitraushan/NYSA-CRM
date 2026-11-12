@@ -1,6 +1,7 @@
 import {Router} from '../lib/http-kit.js';
 import {audit,execute,many,one,transaction,uuid} from '../db.js';
 import {requireAuth} from '../auth.js';
+import {interestFields,loadProspectInterestLabels} from '../prospect-interest-labels.js';
 import {hasInternalCrmIdentity} from '../crm-policy.js';
 import {normalizePhone,isValidEmail} from '../crm-domain.js';
 import {blocksOutbound,getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
@@ -540,13 +541,9 @@ const interestHistory=await many(`SELECT h.changed_at,b.name AS changed_by_name,
     ) ORDER BY a.business_label,a.id)) AS after_values
   FROM prospect_interest_history h JOIN brokers b ON b.id=h.changed_by
   WHERE h.prospect_id=$1 ORDER BY h.changed_at DESC,h.id`,[prospect.id]);
-res.json({prospect,activities,followUps,editHistory,overrideReviews,interestHistory,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});
+const interestLabels=interestHistory.length?await loadProspectInterestLabels():{};
+res.json({prospect,activities,followUps,editHistory,overrideReviews,interestHistory,interestLabels,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});
 
-
-const interestFields = {
-  purpose:'prospect_purpose', budgetBand:'prospect_budget_band', propertyType:'prospect_property_type',
-  market:'prospect_market', timeline:'prospect_timeline',
-};
 
 
 r.get('/crm/prospects/:id/interest',async(req,res)=>{
