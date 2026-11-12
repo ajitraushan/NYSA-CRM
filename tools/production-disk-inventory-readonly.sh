@@ -19,7 +19,12 @@ report_size() {
 printf 'Inventory time (UTC)\n'
 date -u +%FT%TZ
 printf '\nAccount quota\n'
-uapi --output=json Quota get_quota_info
+quota_status=0
+quota_output=$(uapi --output=json Quota get_quota_info 2>&1) || quota_status=$?
+if (( quota_status != 0 )); then
+  printf 'Quota unavailable (exit %d)\n' "$quota_status"
+fi
+printf '%s\n' "$quota_output"
 
 printf '\nAllocated bytes\tApparent bytes\tPath (shell-escaped)\n'
 printf '\nImmediate children of %q\n' "$account"
