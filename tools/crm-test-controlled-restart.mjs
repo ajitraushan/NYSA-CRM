@@ -33,6 +33,7 @@ function registration() {
 }
 
 export async function restartCrmTest(expectedPid, {
+  expectEmailEnabled = false,
   inspect = () => inspectWorkers(root),
   getRegistration = registration,
   control = action => selector(action, ['--app-root', basename(root)]),
@@ -45,9 +46,9 @@ export async function restartCrmTest(expectedPid, {
   }
   const app = getRegistration();
   if (app.app_status !== 'started' ||
-      app.env_vars?.PROSPECT_DIGEST_EMAIL_ENABLED !== 'false' ||
+      app.env_vars?.PROSPECT_DIGEST_EMAIL_ENABLED !== String(expectEmailEnabled) ||
       app.env_vars?.PROSPECT_DIGEST_SCHEDULE_ENABLED !== 'false') {
-    throw new Error('CRM Test must be started with digest sending and scheduling off.');
+    throw new Error('CRM Test must be started with the expected digest sending setting and scheduling off.');
   }
 
   control('stop');
@@ -69,12 +70,14 @@ export async function restartCrmTest(expectedPid, {
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   try {
-    const [flag, pid, extra] = process.argv.slice(2);
+    const [flag, pid, emailFlag, emailValue, extra] = process.argv.slice(2);
+    const expectEmailEnabled = emailFlag === '--expect-email-enabled' && emailValue === 'true';
     if (process.platform !== 'linux' || flag !== '--expected-pid' || extra !== undefined ||
+        (emailFlag !== undefined && !expectEmailEnabled) ||
         !/^[1-9][0-9]*$/.test(pid ?? '') || !Number.isSafeInteger(Number(pid)) || Number(pid) <= 1) {
       throw new Error('A reviewed CRM Test worker PID is required.');
     }
-    console.log(JSON.stringify(await restartCrmTest(Number(pid)), null, 2));
+    console.log(JSON.stringify(await restartCrmTest(Number(pid), { expectEmailEnabled }), null, 2));
   } catch {
     // Selector output and subprocess errors can contain credentials.
     console.error('CRM Test controlled restart failed. Check the app state before any further action.');
