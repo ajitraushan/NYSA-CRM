@@ -440,6 +440,8 @@ async function renderShell() {
   refreshAssignmentQueueNavigation({repeat:true});
   const initialTab=ME.accessPolicy?.workspaceTabs?.[0]||'dashboard';
   currentTab=initialTab;
+  const recordRoute=new URL(window.location.href).searchParams;
+  if(recordRoute.get('workspace')==='prospect'&&recordRoute.get('record')){void openRecordRouteFromLocation();return;}
   initialTab==='admin'?renderAdmin():renderDashboard();
   const financeRoute=new URL(window.location.href).searchParams.get('financeGroup');if(financeRoute&&['invoices','collections','payouts','statements','advice'].includes(financeRoute)){const tab=ME.jobRole==='accountant'?{invoices:'clientInvoices',collections:'clientCollections',payouts:'financeReceipts',statements:'agentStatements',advice:'payoutAdvice'}[financeRoute]:'myPayoutAdvice';switchTab(tab);}else
   if(new URL(window.location.href).searchParams.get('workspace'))setTimeout(openRecordRouteFromLocation,0);
@@ -515,7 +517,7 @@ function switchTab(tab) {
   if(tab==='financeReceipts'){currentTab=tab;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));return financeRestore&&ME.jobRole==='accountant'?window.renderFinanceQueue('payouts',financeRestore):window.renderCommissionPayments();}
   currentTab = tab;
   document.querySelectorAll('nav.tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
-  tab === 'prospectDiary' ? renderProspectDiaryWorkspace() : tab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : tab === 'whatsappWorkspace' ? window.renderWhatsAppWorkspace?.() : tab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : tab === 'receivables' ? window.renderCommissionReceivables?.() : tab === 'myLeave' ? window.renderMyLeave?.() : tab === 'leaveAdministration' ? renderLeaveAdministration() : tab === 'payout' ? window.renderDirectorPayout?.() : tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'tasks' ? renderTasks() : tab === 'opportunities' ? renderOpportunities() : tab === 'incomingLeads' ? window.renderIncomingLeads?.({root:document.querySelector('#view'),api,escape:esc,openLeadResponse:()=>switchTab('leadResponse')}) : tab === 'leadResponse' ? window.renderLeadResponse?.({root:document.querySelector('#view'),api,escape:esc}) : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : tab === 'externalListings' ? renderExternalPortalListings() : renderListings();
+  return tab === 'prospectDiary' ? renderProspectDiaryWorkspace() : tab === 'purchasedDataImport' ? window.renderPurchasedDataImport?.() : tab === 'whatsappWorkspace' ? window.renderWhatsAppWorkspace?.() : tab === 'marketingCompliance' ? window.renderMarketingMaterialCompliance?.() : tab === 'receivables' ? window.renderCommissionReceivables?.() : tab === 'myLeave' ? window.renderMyLeave?.() : tab === 'leaveAdministration' ? renderLeaveAdministration() : tab === 'payout' ? window.renderDirectorPayout?.() : tab === 'admin' ? renderAdmin() : tab === 'dashboard' ? renderDashboard() : tab === 'tasks' ? renderTasks() : tab === 'opportunities' ? renderOpportunities() : tab === 'incomingLeads' ? window.renderIncomingLeads?.({root:document.querySelector('#view'),api,escape:esc,openLeadResponse:()=>switchTab('leadResponse')}) : tab === 'leadResponse' ? window.renderLeadResponse?.({root:document.querySelector('#view'),api,escape:esc}) : tab === 'crm' ? renderCrm() : tab === 'customers' ? renderCustomers() : tab === 'diary' ? renderDiary() : tab === 'externalListings' ? renderExternalPortalListings() : renderListings();
 }
 
 async function downloadProspectFile(path, name) {
@@ -2100,7 +2102,7 @@ function restoreFinanceQueueFromLocation(){
   if(!tabs[group]||(ME.jobRole!=='accountant'&&(group!=='advice'||!['sales_agent','listing_agent','manager','director'].includes(ME.jobRole))))return false;
   currentTab=ME.jobRole==='accountant'?tabs[group]:'myPayoutAdvice';document.querySelectorAll('nav.tabs button').forEach(button=>button.classList.toggle('active',button.dataset.tab===currentTab));window.renderFinanceQueue(group);return true;
 }
-function openRecordRouteFromLocation(){const url=new URL(window.location.href),type=url.searchParams.get('workspace'),id=url.searchParams.get('record');if(!ME||!type||!id)return;const tab=RECORD_WORKSPACE_TABS[type];if(ME.jobRole==='accountant'&&(type!=='opportunity'||id.startsWith('new:'))){toast('This record workspace is not available to Accountant');return;}if(tab&&currentTab!==tab)switchTab(tab);setTimeout(()=>type==='inventory'?(id==='new'?openListingForm():openDetail(id)):type==='customer'?(id==='new'?openNewCustomerForm():openCustomer(id)):type==='lead'?(id==='new'?openNewLeadForm():id.startsWith('new:')?openNewLeadForm(id.slice(4)):openLead(id)):type==='opportunity'?(id.startsWith('new:')?openLead(id.slice(4)):openOpportunityDetail(id)):type==='prospect'?openProspectRecord(id):null,0);}
+async function openRecordRouteFromLocation(){const url=new URL(window.location.href),type=url.searchParams.get('workspace'),id=url.searchParams.get('record');if(!ME||!type||!id)return;const tab=RECORD_WORKSPACE_TABS[type];if(ME.jobRole==='accountant'&&(type!=='opportunity'||id.startsWith('new:'))){toast('This record workspace is not available to Accountant');return;}if(type==='prospect'){await switchTab('prospectDiary');return openProspectRecord(id);}if(tab&&currentTab!==tab)switchTab(tab);setTimeout(()=>type==='inventory'?(id==='new'?openListingForm():openDetail(id)):type==='customer'?(id==='new'?openNewCustomerForm():openCustomer(id)):type==='lead'?(id==='new'?openNewLeadForm():id.startsWith('new:')?openNewLeadForm(id.slice(4)):openLead(id)):type==='opportunity'?(id.startsWith('new:')?openLead(id.slice(4)):openOpportunityDetail(id)):type==='prospect'?openProspectRecord(id):null,0);}
 window.addEventListener('popstate',event=>{const state=recordWorkspaceStack.at(-1);if(state?.dirty){history.pushState({workspace:state.type,record:String(state.id),returnTab:state.returnTab},'',recordWorkspaceUrl(state.type,state.id));leaveRecordWorkspace(state);return;}if(state){leaveRecordWorkspace(state,{fromHistory:true,discard:true});if(event.state?.dashboardDialog||event.state?.dashboardHierarchy)return;if(restoreFinanceQueueFromLocation())return;const url=new URL(window.location.href);if(url.searchParams.get('workspace'))openRecordRouteFromLocation();return;}if(event.state?.dashboardDialog||event.state?.dashboardHierarchy)return;if(restoreFinanceQueueFromLocation())return;openRecordRouteFromLocation();});
 function overlay(html) {
   if(pendingRecordWorkspace){
@@ -2487,6 +2489,14 @@ function setupAdminWorkspace(){
   for(const [key,label] of groups){const option=document.createElement('option');option.value=key;option.textContent=label;select.append(option);}
   const show=key=>{adminActiveSection=groups.has(key)?key:groups.keys().next().value;sections.forEach(x=>x.classList.toggle('admin-section-active',x.dataset.adminSection===adminActiveSection));select.value=adminActiveSection;};
   select.addEventListener('change',()=>show(select.value));
+  if(groups.has('prospect_email')){
+    const email=document.createElement('button');
+    email.type='button';
+    email.className='btn';
+    email.textContent='Email settings';
+    email.onclick=()=>show('prospect_email');
+    workspace.querySelector('.admin-maintenance-picker').append(email);
+  }
   view.append(workspace);show(adminActiveSection);
 }
 async function renderAdmin() {
@@ -2776,7 +2786,7 @@ async function loadProspectCadenceSettings(){
     const {versions}=await api(path);
     const active=versions.find(version=>version.status==='active');
     if(!active)return;
-    panel.innerHTML=`<h3>Prospect targets and cadence</h3><form class="form-grid compact-form" data-cadence-form>
+    panel.innerHTML=`<h3>Prospect targets and cadence</h3><p>Active policy: target ${active.dailyTarget}, first call in ${active.firstCallDays} working days, retry gaps ${esc(active.retryGaps.join(', '))}.</p><form class="form-grid compact-form" data-cadence-form>
       <label>Daily target<input name="dailyTarget" type="number" min="0" max="300" required value="${active.dailyTarget}"></label>
       <label>First-call deadline (working days)<input name="firstCallDays" type="number" min="1" max="14" required value="${active.firstCallDays}"></label>
       <label>Retry gaps (working days, comma-separated)<input name="retryGaps" required value="${esc(active.retryGaps.join(','))}"></label>
@@ -2787,7 +2797,7 @@ async function loadProspectCadenceSettings(){
     </form>
     ${versions.filter(version=>version.status==='draft').map(version=>`<p>
       Target ${version.dailyTarget} · deadline ${version.firstCallDays} · gaps ${esc(version.retryGaps.join(', '))}
-      <button class="btn" type="button" data-cadence-approve="${esc(version.id)}">Approve draft</button></p>`).join('')}`;
+      <button class="btn" type="button" data-cadence-approve="${esc(version.id)}">Approve draft</button> <button class="btn" type="button" data-cadence-discard="${esc(version.id)}">Discard draft</button></p>`).join('')}`;
     panel.querySelector('[data-cadence-form]').onsubmit=async event=>{
       event.preventDefault();
       const form=new FormData(event.currentTarget);
@@ -2795,6 +2805,12 @@ async function loadProspectCadenceSettings(){
         retryGaps:form.get('retryGaps').split(',').map(value=>Number(value.trim())),workingDays:form.getAll('workingDays').map(Number),
         parkOnExhaustion:form.has('parkOnExhaustion')};
       try{await api(path,{method:'POST',body});await loadProspectCadenceSettings();}catch(error){toast(error.message);}
+    };
+    for(const button of panel.querySelectorAll('[data-cadence-discard]'))button.onclick=async()=>{
+      button.disabled=true;
+      try{await api(path+'/'+encodeURIComponent(button.dataset.cadenceDiscard)+'/discard',{method:'POST',body:{}});await loadProspectCadenceSettings();}
+      catch(error){toast(error.message);}
+      finally{button.disabled=false;}
     };
     for(const button of panel.querySelectorAll('[data-cadence-approve]'))button.onclick=async()=>{
       button.disabled=true;

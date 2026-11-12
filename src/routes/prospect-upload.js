@@ -10,6 +10,7 @@ const isUuid = value => typeof value === 'string' && /^[a-f\d]{8}(?:-[a-f\d]{4})
 const reviewKey = randomBytes(32);
 const token = payload => createHmac('sha256',reviewKey).update(JSON.stringify(payload)).digest('hex');
 const savedStatuses = ['ready', 'do_not_contact'];
+const canSave = row => savedStatuses.includes(row.status) && !row.skip;
 const statuses = ['ready','error','duplicate_in_file','existing_prospect','matches_customer_or_lead','do_not_contact'];
 
 async function uploadOwner(ownerId, actor, client) {
@@ -38,7 +39,11 @@ async function classify(rows, actor, client, duplicateSummary) {
       continue;
     }
     const matches = await duplicateSummary(phone,email,actor,client);
-    if (matches.prospects.length) outcomes.push(outcome('existing_prospect','An existing Prospect matches'));
+    if (matches.prospects.length) {
+      outcomes.push(matches.prospects.some(match => match.status === 'do_not_contact')
+        ? {...outcome('do_not_contact','An existing Prospect is on the Do-not-contact list'),skip:true}
+        : outcome('existing_prospect','An existing Prospect matches'));
+    }
     else if (matches.customers.length || matches.leads.length) outcomes.push(outcome('matches_customer_or_lead','A Customer or Lead matches'));
     else if (matches.globalMatch) outcomes.push(outcome('error','This row cannot be uploaded'));
     else {
@@ -122,12 +127,12 @@ export function registerProspectUpload(r, {duplicateSummary,inferredTimezone}) {
       if (!timingSafeEqual(Buffer.from(reviewToken,'hex'),Buffer.from(body.reviewToken,'hex'))) {
         return {code:409,error:'The upload or its row statuses changed. Preview the current file again'};
       }
-      const skippedRows = outcomes.filter(row => !savedStatuses.includes(row.status));
+      const skippedRows = outcomes.filter(row => !canSave(row));
       await execute(`INSERT INTO prospect_upload_batches
         (id,created_by,owner_id,file_name,file_sha256,status_counts,skipped_rows) VALUES($1,$2,$3,$4,$5,$6,$7)`,
       [batchId,req.broker.id,ownerId,file.fileName,file.fileHash,counts,JSON.stringify(skippedRows)],client);
       for (const [index,outcome] of outcomes.entries()) {
-        if (!savedStatuses.includes(outcome.status)) continue;
+        if (!canSave(outcome)) continue;
         const row = rows[index], id = uuid(), blocked = outcome.status === 'do_not_contact';
         const suppression = blocked ? await getContactSuppression(row.phone,client) : null;
         await execute(`INSERT INTO prospects
@@ -135,7 +140,7 @@ export function registerProspectUpload(r, {duplicateSummary,inferredTimezone}) {
            status,owner_id,team_id,timezone,timezone_source,suppression_snapshot,do_not_contact_reason,do_not_contact_at,created_by)
           VALUES($1,$2,$3,$3,$4,$4,$5,$6,$7,$8,$9,$10,$11,'phone_inferred',$12,$13,
                  CASE WHEN $13::text IS NOT NULL THEN NOW() END,$14)`,
-        [id,row.name,row.phone,row.email,row.source,batchId,batchId,blocked?'do_not_contact':'not_contacted',
+        [id,row.name || null,row.phone,row.email,row.source,batchId,batchId,blocked?'do_not_contact':'not_contacted',
           ownerId,owner.teamId,inferredTimezone(row.phone),suppression?.restrictions || {},
           blocked?`Shared restriction: ${suppression.strongest}`:null,req.broker.id],client);
         if (row.notes) await execute(`INSERT INTO prospect_activities

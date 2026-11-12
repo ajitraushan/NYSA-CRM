@@ -87,7 +87,6 @@ export async function parseProspectUpload(buffer, mediaType) {
     const email = mail.toLowerCase() || null;
     const normalizedSource = source.toLowerCase() || 'other';
     const error = cells.slice(5).some(value => text(value)) ? 'Unexpected extra column'
-      : !name ? 'Name is required'
       : !rawPhone && !email ? 'Enter a phone number or email'
       : rawPhone && !phone ? 'Enter a UAE mobile or international phone number'
       : email && !isValidEmail(email) ? 'Email format is invalid'

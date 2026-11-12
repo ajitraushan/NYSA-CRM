@@ -5,14 +5,21 @@ const text = value => typeof value === 'string' ? value.trim() : '';
 
 export function validateProspectNextStep(body, now = Date.now()) {
   const step = text(body.nextStep);
-  if (!nextSteps.includes(step)) return { error: 'Choose exactly one next step' };
   const outcome = body.outcome;
-  if ((['interested','callback_requested'].includes(outcome) && !['follow_up','convert'].includes(step)) ||
-      (outcome === 'not_interested' && !closeSteps.includes(step)) ||
-      (outcome === 'declined' && !closeSteps.includes(step) && !(step === 'follow_up' && text(body.warningReason).length >= 5)) ||
-      (outcome === 'invalid_number' && step !== 'close_wrong_number') ||
-      (step === 'retry_cadence' && !noContact.has(outcome))) {
-    return { error: 'The next step is incompatible with the call outcome' };
+  const labels = {
+    follow_up:'Schedule follow-up', retry_cadence:'Retry by cadence', close_not_interested:'Close as not interested',
+    close_dnc:'Close as do not contact', close_wrong_number:'Close as wrong number', convert:'Continue to conversion',
+  };
+  let allowed = nextSteps.filter(candidate => candidate !== 'retry_cadence' || noContact.has(outcome));
+  if (['interested','callback_requested'].includes(outcome)) allowed = ['follow_up','convert'];
+  if (outcome === 'not_interested') allowed = closeSteps;
+  if (outcome === 'declined') allowed = [...closeSteps,'follow_up'];
+  if (outcome === 'invalid_number') allowed = ['close_wrong_number'];
+  if (!allowed.includes(step)) {
+    return { error: 'Choose exactly one allowed next step: ' + allowed.map(candidate => labels[candidate]).join(', ') + '.' };
+  }
+  if (outcome === 'declined' && step === 'follow_up' && text(body.warningReason).length < 5) {
+    return { error: 'To schedule a follow-up after a decline, enter a reason of at least five characters.' };
   }
   const reason = text(body.notInterestedReason);
   const note = text(body.notInterestedNote);
@@ -39,6 +46,15 @@ export function validateProspectNextStep(body, now = Date.now()) {
     followUp = { dueAt: new Date(due).toISOString(), channel, subject };
   }
   return { step, reason: reason || null, note: note || null, recontactDate: month ? month + '-01' : null, followUp };
+}
+
+export function answeredCallStatus(currentStatus, step) {
+  if (step === 'close_dnc' || step === 'close_wrong_number') return 'do_not_contact';
+  if (currentStatus === 'do_not_contact' || currentStatus === 'converted') return currentStatus;
+  if (step === 'close_not_interested') return 'not_interested';
+  if (step === 'follow_up' && currentStatus !== 'interested') return 'call_back';
+  if (step === 'convert' && ['not_contacted', 'no_answer'].includes(currentStatus)) return 'call_back';
+  return currentStatus;
 }
 
 export function addDubaiWorkingDays(at, days, workingDays) {

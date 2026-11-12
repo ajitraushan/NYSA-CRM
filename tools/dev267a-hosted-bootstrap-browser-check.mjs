@@ -33,7 +33,12 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/crm/business-lines')return json(res,200,{businessLines:[]});
   if(url.pathname==='/api/crm/dashboard/views')return json(res,200,{views:[]});
   if(url.pathname==='/api/crm/dashboard')return json(res,200,dashboard);
-  if(url.pathname==='/api/crm/prospect-diary/today')return json(res,200,{items:[],queueTotal:0,readOnly:false});
+  if(url.pathname==='/api/crm/organization')return json(res,200,{organization:{prospectCallStartMinute:570,prospectCallEndMinute:1020}});
+  if(url.pathname==='/api/crm/prospect-diary/today')return json(res,200,{queueTotal:2,readOnly:false,outsideCallingHours:true,
+    callsMade:3,target:12,connected:2,items:[
+      {...prospect(),priority:1,dueAt:'2026-11-11T10:00:00Z',followUpId:'synthetic-follow-up'},
+      {...prospect(),id:'synthetic-new',source:'cold_call',priority:5,createdAt:'2026-11-11T10:00:00Z',lastNote:'Long note '.repeat(60)},
+    ]});
   if(url.pathname==='/api/crm/prospects/'+prospectId+'/interest')return json(res,200,{values:{},selections:[],editable:false});
   if(url.pathname==='/api/crm/prospects')return json(res,200,{summary:{total:1,today:1,overdue:0,upcoming:1,interested:0,doNotContact:fixtureDncr?1:0},prospects:[prospect()],agents:activeRole==='manager'?[{id:'00000002-0000-4000-8000-000000000268',name:'Synthetic Agent',jobRole:'sales_agent'}]:[],canManage:activeRole==='manager'});
   if(url.pathname===`/api/crm/prospects/${prospectId}`&&req.method==='GET')return json(res,200,prospectDetail());
@@ -66,8 +71,21 @@ try{
     await page.waitForSelector('button[data-tab="prospectDiary"]',{timeout:30000});
     await page.click('button[data-tab="prospectDiary"]');
     if(role==='sales_agent'){
-      await page.waitForSelector('[data-today-diary]');
-      await page.click('[data-today-diary]');
+      await page.waitForSelector('.prospect-today-row');
+      assert.equal(await page.$eval('.prospect-today-count',node=>node.textContent),'2 prospects left to call today');
+      assert.match(await page.$eval('.prospect-calling-notice',node=>node.textContent),/09:30.*17:00 Dubai time/);
+      const rows=await page.$$eval('.prospect-today-row',items=>items.map(row=>({
+        height:row.getBoundingClientRect().height,
+        callRight:row.querySelector('[data-today-call]').getBoundingClientRect().right
+      })));
+      assert.equal(rows[0].height,rows[1].height);
+      assert.equal(rows[0].callRight,rows[1].callRight);
+      await page.click('[data-snooze-open]');
+      await page.waitForSelector('[data-snooze-dialog][open]');
+      await page.click('[data-snooze-cancel]');
+      assert.equal(await page.$('[data-snooze-dialog][open]'),null);
+      await page.waitForSelector('[data-diary-view="diary"]');
+      await page.click('[data-diary-view="diary"]');
     }
     await page.waitForSelector('[data-prospect]',{timeout:30000});
     const state=await page.evaluate(()=>{const head=document.querySelector('#view .prospect-diary>.dashboard-head'),name=document.querySelector('.prospect-card-name'),tiles=[...document.querySelectorAll('[data-summary]')].map(button=>[button.querySelector('span')?.textContent,button.querySelector('strong')?.textContent]);return{heading:document.querySelector('#view h2')?.textContent||'',cards:document.querySelectorAll('[data-prospect]').length,active:document.querySelector('button[data-tab="prospectDiary"]')?.classList.contains('active'),featureType:typeof window.renderProspectDiary,wrapperType:typeof window.renderProspectDiaryWorkspace,dashboardModuleType:typeof window.renderDashboardFeatureModule,legacyDashboardGlobalType:typeof window.renderCrmDashboard,headTag:head?.tagName,headBackground:getComputedStyle(head).backgroundColor,headColor:getComputedStyle(head).color,nameColor:getComputedStyle(name).color,tiles};});

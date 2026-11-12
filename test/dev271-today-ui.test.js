@@ -9,7 +9,7 @@ test('Sales Agent opens Today by default and queue text is escaped', async () =>
   const callButton = { dataset: { todayCall: 'fixture-prospect' } };
   const root = {
     innerHTML: '',
-    querySelector: () => navigation,
+    querySelector: selector => selector==='[data-today-add]' ? navigation : null,
     querySelectorAll: selector => selector === '[data-today-call]' ? [callButton] : [],
   };
   vm.runInNewContext(fs.readFileSync(new URL('../public/prospect-diary-ui.js', import.meta.url), 'utf8'), { window });
@@ -19,15 +19,22 @@ test('Sales Agent opens Today by default and queue text is escaped', async () =>
     escape: value => String(value).replaceAll('<','&lt;').replaceAll('>','&gt;'),
     async api(path) {
       requested.push(path);
-      return { queueTotal: 1, items: [{
+      if(path==='/crm/organization')return {organization:{prospectCallStartMinute:570,prospectCallEndMinute:1020}};
+      return { queueTotal: 1, outsideCallingHours:true, callsMade:3, target:12, connected:2, items: [{
         id: 'fixture-prospect', displayName: '<script>', source: 'diary',
         phone: '+971501234567', priority: 5, createdAt: '2026-11-11T09:00:00Z',
       }] };
     },
   });
-  assert.deepEqual(requested, ['/crm/prospect-diary/today']);
+  assert.deepEqual(requested, ['/crm/prospect-diary/today','/crm/organization']);
   assert.match(root.innerHTML, /<h2>Today<\/h2>/);
-  assert.match(root.innerHTML, /1 remaining/);
+  assert.match(root.innerHTML, /1 prospect left to call today/);
+  assert.match(root.innerHTML, /09:30.*17:00 Dubai time/);
+  assert.match(root.innerHTML, /Calls<\/dt><dd>3 \/ 12/);
+  assert.match(root.innerHTML, /New <span>1<\/span>/);
+  assert.match(root.innerHTML, /Diary<\/span>/);
+  assert.match(root.innerHTML, /Add prospect/);
+  for(const view of ['today','diary','upload','dashboard'])assert.match(root.innerHTML,new RegExp('data-diary-view="'+view+'"'));
   assert.match(root.innerHTML, /&lt;script&gt;/);
   assert.doesNotMatch(root.innerHTML, /<script>/);
   assert.equal(typeof callButton.onclick, 'function');

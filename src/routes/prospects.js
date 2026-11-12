@@ -5,7 +5,7 @@ import {hasInternalCrmIdentity} from '../crm-policy.js';
 import {normalizePhone,isValidEmail} from '../crm-domain.js';
 import {blocksOutbound,getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
 import {prospectCallingPolicyConfig} from '../prospect-calling-policy.js';
-import { advanceProspectRetry, validateProspectAgentTarget, validateProspectCadence, validateProspectNextStep } from '../prospect-tracking.js';
+import { advanceProspectRetry, answeredCallStatus, validateProspectAgentTarget, validateProspectCadence, validateProspectNextStep } from '../prospect-tracking.js';
 import {registerProspectUpload} from './prospect-upload.js';
 import {UPLOAD_SOURCES} from '../prospect-upload.js';
 
@@ -38,7 +38,7 @@ function scope(alias,broker,params=[]){
 
 async function visibleProspect(id,broker,client,{forUpdate=false}={}){const scoped=scope('p',broker,[id]);return one(`SELECT p.*,o.name AS owner_name,t.name AS team_name FROM prospects p JOIN brokers o ON o.id=p.owner_id LEFT JOIN teams t ON t.id=p.team_id WHERE p.id=$1 AND ${scoped.clause}${forUpdate?' FOR UPDATE OF p':''}`,scoped.params,client);}
 async function ownerContext(id,actor,client){
-  const broker=await one("SELECT id,team_id,job_role FROM brokers WHERE id=$1 AND role='internal_broker' AND status='active' AND job_role IN('sales_agent','manager')",[id],client);if(!broker)return null;
+  const broker=await one("SELECT id,name,team_id,job_role FROM brokers WHERE id=$1 AND role='internal_broker' AND status='active' AND job_role IN('sales_agent','manager')",[id],client);if(!broker)return null;
   if(actor.jobRole==='director')return broker;if(actor.jobRole==='sales_agent')return actor.id===broker.id?broker:null;
   const allowed=actor.id===broker.id||await one(`SELECT 1 AS ok FROM team_memberships manager JOIN team_memberships member ON member.team_id=manager.team_id AND member.ends_at IS NULL WHERE manager.broker_id=$1 AND manager.membership_role='manager' AND manager.ends_at IS NULL AND member.broker_id=$2 LIMIT 1`,[actor.id,broker.id],client);
   return allowed?broker:null;
@@ -155,9 +155,9 @@ r.get('/crm/prospect-diary/dashboard',async(req,res)=>{
   const [teams,agents,batches]=await Promise.all([
     many('SELECT DISTINCT t.id,t.name FROM prospects p JOIN teams t ON t.id=p.team_id WHERE '+visible.clause+' ORDER BY t.name,t.id',visible.params),
     canManage(req.broker)?many('SELECT DISTINCT b.id,b.name FROM prospects p JOIN brokers b ON b.id=p.owner_id WHERE '+visible.clause+' ORDER BY b.name,b.id',visible.params):[],
-    many('SELECT DISTINCT p.upload_batch_id AS id FROM prospects p WHERE p.upload_batch_id IS NOT NULL AND '+visible.clause+' ORDER BY id LIMIT 500',visible.params),
+    many('SELECT DISTINCT b.id,b.file_name AS name FROM prospects p JOIN prospect_upload_batches b ON b.id=p.upload_batch_id WHERE '+visible.clause+' ORDER BY id LIMIT 500',visible.params),
   ]);
-  return res.json({...data,agents:canManage(req.broker)?data.agents:[],tiles:{...data.tiles,connectRate:rate},filters:input.filters,options:{teams,agents,batches}});
+  return res.json({...data,canReviewOverrides:canManage(req.broker),agents:canManage(req.broker)?data.agents:[],tiles:{...data.tiles,connectRate:rate},filters:input.filters,options:{teams,agents,batches}});
 });
 
 r.get('/crm/prospect-diary/dashboard/drilldown',async(req,res)=>{
@@ -180,7 +180,8 @@ r.get('/crm/prospect-diary/dashboard/export.csv',async(req,res)=>{
   if(!sql)return res.status(400).json({error:'Unknown export metric'});
   const rows=agentExport?(await one(sql,input.scoped.params)).agents:await many(sql,input.scoped.params);
   if(rows.length>50000)return res.status(413).json({error:'Narrow the export filters to 50,000 rows or fewer'});
-  const fields=agentExport?['id','name','team','target','calls_made','calls_connected','new_interested','conversions','overdue','overrides']
+  const fields=agentExport?['name','team','target','calls_made','calls_connected','new_interested','conversions','follow_ups_due','follow_ups_on_time',
+    'overdue','untouched_two_days','untouched_seven_days','untouched_fourteen_days','overrides','last_call']
     : ['id','displayName','ownerId','status','source','createdAt','activityId','occurredAt','outcome'];
   const csv=[fields.join(','),...rows.map(row=>fields.map(key=>prospectCsvCell(row[key])).join(','))].join('\r\n');
   await audit('Broker',req.broker.id,'prospect_dashboard_export',req.broker.id,{metric:req.query.metric,filters:input.filters,rows:rows.length});
@@ -238,7 +239,11 @@ r.get('/crm/prospect-diary/digest/preview',async(req,res)=>{
   const date=req.query?.date??today;
   const filter=prospectDashboardFilters({period:'custom',from:date,to:date});
   if(filter.error)return res.status(400).json({error:filter.error});
-  return res.json(await prospectDigestPreview(req.broker,date));
+  const [preview,preference]=await Promise.all([
+    prospectDigestPreview(req.broker,date),
+    one('SELECT prospect_digest_opt_out FROM brokers WHERE id=$1',[req.broker.id]),
+  ]);
+  return res.json({...preview,optOut:Boolean(preference?.prospectDigestOptOut)});
 });
 
 const cadencePath = '/crm/prospect-diary/admin/cadence-policy';
@@ -261,6 +266,18 @@ r.post(cadencePath,async(req,res)=>{
     return row;
   });
   return res.status(201).json({version});
+});
+
+r.post(cadencePath+'/:id/discard',async(req,res)=>{
+  if(req.broker.role!=='admin')return res.status(403).json({error:'Admin access is required'});
+  if(!validProspectTrackingId(req.params.id))return res.status(404).json({error:'Cadence draft not found'});
+  const discarded=await transaction(async client=>{
+    const row=await one("UPDATE prospect_cadence_policy_versions SET status='retired' WHERE id=$1 AND status='draft' RETURNING id",[req.params.id],client);
+    if(row)await audit('OrganizationSettings',row.id,'prospect_cadence_draft_discarded',req.broker.id,{},client);
+    return row;
+  });
+  if(!discarded)return res.status(404).json({error:'Cadence draft not found'});
+  return res.json({discarded:true});
 });
 
 r.post(cadencePath+'/:id/approve',async(req,res)=>{
@@ -304,8 +321,10 @@ r.post('/crm/prospect-diary/targets/:agentId',async(req,res)=>{
 
 r.get('/crm/prospect-diary/today',async(req,res)=>{
   const agent=req.query?.agent||req.broker.id;
-  if(typeof agent!=='string'||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(agent)||
-     (agent!==req.broker.id&&(!canManage(req.broker)||!await ownerContext(agent,req.broker)))) {
+  const viewingAnother=agent!==req.broker.id;
+  const viewedAgent=viewingAnother&&validProspectTrackingId(agent)&&canManage(req.broker)
+    ? await ownerContext(agent,req.broker) : null;
+  if(!validProspectTrackingId(agent)||(viewingAnother&&!viewedAgent)) {
     return res.status(404).json({error:'Agent not found'});
   }
   const scoped=scope('p',req.broker,[agent]);
@@ -376,7 +395,7 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
   const personal=performance.agents.find(row=>row.id===agent);
   const calling=await policy();
   const local=localMinute(new Date(),'Asia/Dubai');
-  return res.json({items:rows,queueTotal:rows[0]?.queueTotal??0,readOnly:agent!==req.broker.id,
+  return res.json({items:rows,queueTotal:rows[0]?.queueTotal??0,readOnly:viewingAnother,agentName:viewedAgent?.name??null,
     callsMade:personal?.calls_made??0,connected:personal?.calls_connected??0,target:personal?.target??0,
     outsideCallingHours:local<calling.prospectCallStartMinute||local>=calling.prospectCallEndMinute});
 });
@@ -434,11 +453,15 @@ r.get('/crm/prospect-diary/overrides',async(req,res)=>{
   if(!canManage(req.broker))return res.status(403).json({error:'Manager or Director access is required'});
   const status=req.query?.status??'all';
   const actor=req.query?.agent??null;
+  const warning=req.query?.warning??'all';
+  if(!['all','outside_calling_window','repeat_after_decline','unanswered_daily_threshold','unanswered_weekly_threshold'].includes(warning)){
+    return res.status(400).json({error:'Choose all warnings, outside calling hours, repeat after decline, or a daily or weekly unanswered-call warning'});
+  }
   if(!['all','unreviewed','reviewed'].includes(status)|| (actor&&!validProspectTrackingId(actor))) {
     return res.status(400).json({error:'Invalid override filter'});
   }
   if(actor&&!await ownerContext(actor,req.broker))return res.status(404).json({error:'Agent not found'});
-  const params=[status,actor],activityScope=scope('p',req.broker,params),taskScope=scope('p',req.broker,params);
+  const params=[status,actor,warning],activityScope=scope('p',req.broker,params),taskScope=scope('p',req.broker,params);
   const rows=await many(`WITH evidence AS (
     SELECT p.id AS prospect_id,p.id::text AS prospect_reference,p.display_name,o.name AS owner_name,'activity'::text AS evidence_type,a.id AS evidence_id,a.warning_codes,a.warning_reason,a.occurred_at AS recorded_at,b.name AS actor_name,to_char(a.occurred_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI') AS prospect_local_time, right(p.normalized_phone,4) AS phone_last_four,a.created_by AS actor_id,p.team_id
       FROM prospects p JOIN brokers o ON o.id=p.owner_id JOIN prospect_activities a ON a.prospect_id=p.id JOIN brokers b ON b.id=a.created_by
@@ -447,19 +470,22 @@ r.get('/crm/prospect-diary/overrides',async(req,res)=>{
     SELECT p.id,p.id::text,p.display_name,o.name,'follow_up',f.id,f.policy_warning_codes,f.policy_warning_reason,f.created_at,b.name,to_char(f.due_at AT TIME ZONE p.timezone,'YYYY-MM-DD HH24:MI'),right(p.normalized_phone,4),f.created_by,p.team_id
       FROM prospects p JOIN brokers o ON o.id=p.owner_id JOIN tasks f ON f.prospect_id=p.id JOIN brokers b ON b.id=f.created_by
      WHERE ${taskScope.clause} AND f.task_type='prospect_follow_up' AND cardinality(f.policy_warning_codes)>0
-  )
-    SELECT e.*,t.name AS team_name,v.reviewed_by,v.reviewed_at,v.comment,b.name AS reviewed_by_name,
-      (count(*) FILTER (WHERE v.id IS NULL) OVER())::int AS unreviewed_count
+  ), reviewed AS (
+    SELECT e.*,t.name AS team_name,v.reviewed_by,v.reviewed_at,v.comment,b.name AS reviewed_by_name
     FROM evidence e LEFT JOIN prospect_override_reviews v ON
       (e.evidence_type='activity' AND v.activity_id=e.evidence_id)
       OR (e.evidence_type='follow_up' AND v.task_id=e.evidence_id)
     LEFT JOIN brokers b ON b.id=v.reviewed_by
     LEFT JOIN teams t ON t.id=e.team_id
-    WHERE ($1='all' OR ($1='unreviewed' AND v.id IS NULL) OR ($1='reviewed' AND v.id IS NOT NULL))
-      AND ($2::uuid IS NULL OR e.actor_id=$2)
-    ORDER BY (v.id IS NULL AND 'repeat_after_decline'=ANY(e.warning_codes)) DESC,
-      e.recorded_at DESC,e.evidence_id LIMIT 500`,params);
-  res.json({overrides:rows,unreviewedCount:rows[0]?.unreviewedCount ?? 0});
+    WHERE ($2::uuid IS NULL OR e.actor_id=$2) AND ($3='all' OR $3=ANY(e.warning_codes))
+  ), summary AS (
+    SELECT count(*) FILTER (WHERE reviewed_at IS NULL)::int AS unreviewed_count FROM reviewed
+  )
+  SELECT r.*,s.unreviewed_count FROM summary s LEFT JOIN reviewed r ON
+    ($1='all' OR ($1='unreviewed' AND r.reviewed_at IS NULL) OR ($1='reviewed' AND r.reviewed_at IS NOT NULL))
+  ORDER BY (r.reviewed_at IS NULL AND 'repeat_after_decline'=ANY(r.warning_codes)) DESC,
+    r.recorded_at DESC,r.evidence_id LIMIT 500`,params);
+  res.json({overrides:rows.filter(row=>row.evidenceId),unreviewedCount:rows[0]?.unreviewedCount ?? 0});
 });
 
 
@@ -499,7 +525,18 @@ r.get('/crm/prospects/:id',async(req,res)=>{const prospect=await visibleProspect
   "SELECT r.id,r.activity_id,r.task_id,r.reviewed_at,r.comment,b.name AS reviewed_by_name FROM prospect_override_reviews r "+
   "JOIN brokers b ON b.id=r.reviewed_by LEFT JOIN prospect_activities a ON a.id=r.activity_id LEFT JOIN tasks t ON t.id=r.task_id "+
   "WHERE a.prospect_id=$1 OR t.prospect_id=$1 ORDER BY r.reviewed_at DESC,r.id",[prospect.id])]);
-res.json({prospect,activities,followUps,editHistory,overrideReviews,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});
+const interestHistory=await many(`SELECT h.changed_at,b.name AS changed_by_name,
+  (h.before_values - 'areaIds') || jsonb_build_object('areas',ARRAY(
+    SELECT a.business_label FROM areas a WHERE a.id::text IN (
+      SELECT jsonb_array_elements_text(h.before_values->'areaIds')
+    ) ORDER BY a.business_label,a.id)) AS before_values,
+  (h.after_values - 'areaIds') || jsonb_build_object('areas',ARRAY(
+    SELECT a.business_label FROM areas a WHERE a.id::text IN (
+      SELECT jsonb_array_elements_text(h.after_values->'areaIds')
+    ) ORDER BY a.business_label,a.id)) AS after_values
+  FROM prospect_interest_history h JOIN brokers b ON b.id=h.changed_by
+  WHERE h.prospect_id=$1 ORDER BY h.changed_at DESC,h.id`,[prospect.id]);
+res.json({prospect,activities,followUps,editHistory,overrideReviews,interestHistory,suppression:{strongest:suppression.strongest,activeTypes:Object.keys(suppression.restrictions)},callingNumbers,canManage:canManage(req.broker),canOperate:prospect.ownerId===req.broker.id||canManage(req.broker)});});
 
 
 const interestFields = {
@@ -682,6 +719,9 @@ r.post('/crm/prospects/:id/activities',async(req,res)=>{
         await execute(
           "UPDATE prospects SET status='do_not_contact',suppression_snapshot=(SELECT restrictions FROM wa_contact_suppressions WHERE normalized_phone=$1)," +
           'do_not_contact_reason=$3,do_not_contact_at=NOW() WHERE id=$2',[prospect.normalizedPhone,prospect.id,reason],client);
+      } else if (b.outcome === 'answered') {
+        const status = answeredCallStatus(prospect.status, next.step);
+        if (status !== prospect.status) await execute('UPDATE prospects SET status=$1 WHERE id=$2',[status,prospect.id],client);
       } else if (prospect.status !== 'do_not_contact') {
         const statuses = {no_answer:'no_answer',voicemail:'no_answer',consumer_ended:'no_answer',
           callback_requested:'call_back',interested:'interested',not_interested:'not_interested',declined:'not_interested'};

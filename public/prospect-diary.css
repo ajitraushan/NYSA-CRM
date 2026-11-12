@@ -6,3 +6,27 @@
 .prospect-manager-tools,.prospect-edit-history{display:grid;gap:8px}
 .prospect-edit-history small{display:block;color:var(--muted)}
 .prospect-detail-header{background:transparent!important;color:var(--text)!important}.prospect-detail-header h2{color:var(--text)!important}
+
+
+.prospect-view-nav{display:flex;gap:8px;flex-wrap:wrap}
+.prospect-view-nav [aria-current=page]{border-color:var(--gold);background:var(--panel2);font-weight:700}
+.prospect-today-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border);background:var(--panel)}
+.prospect-today-bar h2,.prospect-today-count{margin:0}
+.prospect-today-figures{display:flex;flex:1;gap:8px;flex-wrap:wrap;margin:0}
+.prospect-today-figures>div{min-width:96px;padding:7px 12px;border:1px solid var(--border);background:var(--panel2)}
+.prospect-today-figures dt{font-size:.8rem;color:var(--muted)}
+.prospect-today-figures dd{margin:2px 0 0;font-size:1.2rem;font-weight:700}
+.prospect-calling-notice{padding:10px 14px;background:#fff3d6;color:#6b4300;border:1px solid #dba942;border-left-width:4px;border-radius:4px}
+.prospect-today-group{display:grid;gap:6px}
+.prospect-today-group h3{display:flex;align-items:center;gap:8px;margin:0}
+.prospect-today-group h3 span{font-size:.85rem;font-weight:600;padding:2px 8px;border-radius:12px;background:var(--panel2)}
+.prospect-today-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);background:var(--panel)}
+.prospect-today-info{display:grid;grid-template-rows:repeat(4,1.25em);gap:2px;min-width:0}
+.prospect-today-info>*{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prospect-today-info small{color:var(--muted)}
+.prospect-today-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;justify-self:end}
+.prospect-snooze-dialog{width:min(420px,calc(100% - 32px));border:1px solid var(--border);border-radius:8px;padding:18px;background:var(--panel);color:var(--text)}
+.prospect-snooze-dialog::backdrop{background:#15232c66}
+.prospect-snooze-dialog form{display:grid;gap:12px}
+.prospect-snooze-dialog [data-snooze-status]:empty{display:none}
+@media(max-width:600px){.prospect-today-row{grid-template-columns:1fr}.prospect-today-figures{flex-basis:100%}.prospect-today-figures>div{flex:1;min-width:76px}.prospect-today-row .prospect-today-actions{flex-wrap:nowrap}.prospect-today-row .prospect-today-actions .btn{padding-inline:7px}}

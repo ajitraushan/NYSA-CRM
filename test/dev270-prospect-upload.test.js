@@ -38,6 +38,12 @@ test('Prospect upload templates, CSV quoting and 2,000-row boundary',async () =>
   await assert.rejects(parseProspectUpload(csv([...rows,rows[0]]),'text/csv'),/2,000/);
 });
 
+test('a contactable upload row may omit the prospect name', async () => {
+  const rows=await parseProspectUpload(Buffer.from('Name,Phone,Email,Notes,Source\n,501234567,,,'),'text/csv');
+  assert.equal(rows[0].error,null);
+  assert.equal(rows[0].phone,'+971501234567');
+});
+
 test('Prospect upload commits only reviewed rows and enforces role, suppression and audit', {
   skip:process.env.NYSA_PROSPECT_UPLOAD_TEST!=='local-synthetic',
 }, async () => {
