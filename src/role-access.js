@@ -45,7 +45,7 @@ export const GOVERNED_API_POLICY=frozen([
   frozen({methods:frozen(['GET','POST']),pattern:/^\/marketing-material-compliance\/(?:configuration|material-types|material-type-versions\/[a-f0-9-]{36}\/activate|channel-rules(?:\/[a-f0-9-]{36}\/(?:activate|retire))?)$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['GET','POST','PATCH']),pattern:/^\/admin\/(?:leave-|agent-employment)/,capability:CAPABILITY.LEAVE_ADMINISTER}),
   frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/prospect-diary\/calling-numbers(?:\/[a-f0-9-]{36}\/retire)?$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
-  frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/prospect-diary\/admin\/cadence-policy(?:\/[a-f0-9-]{36}\/approve)?$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
+  frozen({methods:frozen(['GET','POST']),pattern:/^\/crm\/prospect-diary\/admin\/cadence-policy(?:\/[a-f0-9-]{36}\/(?:approve|discard))?$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['GET']),pattern:/^\/crm\/prospect-diary\/admin\/email$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['POST']),pattern:/^\/crm\/prospect-diary\/admin\/email\/test$/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
   frozen({methods:frozen(['GET','POST','PUT','PATCH','DELETE']),pattern:/^\/admin(?:\/|$)/,capability:CAPABILITY.SYSTEM_CONFIGURATION}),
