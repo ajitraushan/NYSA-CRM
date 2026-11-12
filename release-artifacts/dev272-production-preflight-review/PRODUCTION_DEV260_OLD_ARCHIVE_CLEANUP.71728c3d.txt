@@ -1,0 +1,8 @@
+production-dev260-old-archive-cleanup.sh: OK
+Filesystem before cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3860555313152 3374998810624      54% /home/nysareal
+Removed /home/nysareal/backup-11.1.2026_18-42-45_nysareal.DEV260-OLD-20261102T0101GST.tar.gz (24943955451 bytes)
+Filesystem after cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3835611353088 3399942770688      54% /home/nysareal
