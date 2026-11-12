@@ -1,0 +1,3 @@
+production-nov01-archive-hash-readonly.sh: OK
+Archive bytes: 25479313722
+a8ffbebdcc52fd6fbfb27eb4b01d2a2cb0eadcde87668bb6cc66ef048eefb417  /home/nysareal/backup-11.1.2026_18-42-45_nysareal.tar.gz
