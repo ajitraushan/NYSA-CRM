@@ -154,7 +154,11 @@ r.get('/crm/prospect-diary/dashboard',async(req,res)=>{
   const visible=scope('p',req.broker);
   const [teams,agents,batches]=await Promise.all([
     many('SELECT DISTINCT t.id,t.name FROM prospects p JOIN teams t ON t.id=p.team_id WHERE '+visible.clause+' ORDER BY t.name,t.id',visible.params),
-    canManage(req.broker)?many('SELECT DISTINCT b.id,b.name FROM prospects p JOIN brokers b ON b.id=p.owner_id WHERE '+visible.clause+' ORDER BY b.name,b.id',visible.params):[],
+    canManage(req.broker)?many(`SELECT b.id,b.name FROM brokers b WHERE b.role='internal_broker' AND b.job_role='sales_agent' AND b.status='active' AND
+      ($1::uuid IS NULL OR EXISTS(SELECT 1 FROM team_memberships m JOIN team_memberships member
+        ON member.team_id=m.team_id AND member.ends_at IS NULL
+        WHERE m.broker_id=$1 AND m.membership_role='manager' AND m.ends_at IS NULL AND member.broker_id=b.id))
+      ORDER BY b.name,b.id`,[req.broker.jobRole==='director'?null:req.broker.id]):[],
     many('SELECT DISTINCT b.id,b.file_name AS name FROM prospects p JOIN prospect_upload_batches b ON b.id=p.upload_batch_id WHERE '+visible.clause+' ORDER BY id LIMIT 500',visible.params),
   ]);
   return res.json({...data,canReviewOverrides:canManage(req.broker),agents:canManage(req.broker)?data.agents:[],tiles:{...data.tiles,connectRate:rate},filters:input.filters,options:{teams,agents,batches}});

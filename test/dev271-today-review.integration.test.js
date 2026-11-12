@@ -58,6 +58,10 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
     await request('admin/cadence-policy','agent',403,cadence);
     await request('admin/cadence-policy','admin',400,{...cadence,workingDays:[1,1]});
     const draft=(await request('admin/cadence-policy','admin',201,cadence)).version;
+    const toDiscard=(await request('admin/cadence-policy','admin',201,cadence)).version;
+    await request('admin/cadence-policy/'+toDiscard.id+'/discard','agent',403,{});
+    await request('admin/cadence-policy/'+toDiscard.id+'/discard','admin',200,{});
+    await request('admin/cadence-policy/'+toDiscard.id+'/approve','admin',404,{});
     const active=(await request('admin/cadence-policy/'+draft.id+'/approve','admin',200,{})).version;
     assert.equal(active.status,'active');
     assert.equal((await db.one("SELECT count(*)::int AS count FROM prospect_cadence_policy_versions WHERE status='active'")).count,1);
@@ -79,6 +83,10 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
     assert.equal(history.length,1);
     assert.equal(history[0].beforeValues.purpose,null);
     assert.equal(history[0].afterValues.purpose,'investment');
+    const timeline=(await request('prospects/'+ids.untouched,'agent',200)).interestHistory;
+    assert.equal(timeline.length,1);
+    assert.equal(timeline[0].afterValues.purpose,'investment');
+    await request('prospects/'+ids.untouched,'outsider',404);
     const own = await request('today', 'agent', 200);
     assert.deepEqual(own.items.map(item => item.id), [ids.due, ids.untouched]);
     assert.deepEqual(own.items.map(item => item.priority), [1, 5]);
@@ -88,6 +96,9 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
 
     const before = await request('overrides', 'manager', 200);
     assert.equal(before.unreviewedCount, 1);
+    assert.deepEqual((await request('overrides?status=reviewed&warning=repeat_after_decline','manager',200)).overrides,[]);
+    assert.equal((await request('overrides?status=reviewed&warning=repeat_after_decline','manager',200)).unreviewedCount,1);
+    assert.equal((await request('overrides?warning=outside_calling_window','manager',200)).unreviewedCount,0);
     assert.equal(before.overrides[0].phoneLastFour, '4561');
     const review = 'overrides/' + ids.warning + '/review';
     await request(review, 'agent', 403, { evidenceType: 'follow_up' });

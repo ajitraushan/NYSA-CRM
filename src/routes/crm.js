@@ -361,9 +361,16 @@ r.get('/crm/customers/:id',async(req,res)=>{
       WHERE i.contact_id=$1 ORDER BY CASE i.document_type WHEN 'passport' THEN 1 ELSE 2 END`,[customer.id]),
     activeCustomerIdentityRequirement()
   ]);
+  const prospectInterest=customer.sourceFirstSeen==='Prospect Diary'&&customer.ownerId===req.broker.id
+    ? await one(`SELECT p.purpose,p.budget_band,p.property_type,p.market,p.timeline,
+        ARRAY(SELECT a.business_label FROM prospect_preferred_areas pa JOIN areas a ON a.id=pa.area_id
+          WHERE pa.prospect_id=p.id ORDER BY a.business_label,a.id) AS areas
+      FROM prospects p WHERE p.converted_contact_id=$1 AND p.owner_id=$2 AND p.converted_by=$2
+      ORDER BY p.converted_at,p.id LIMIT 1`,[customer.id,req.broker.id])
+    : null;
   const effectiveConsent=Boolean(consent?.effectiveConsent),restricted=Boolean(customer.doNotContact),profile=buildCustomer360Profile({customer,pursuits:leads,effectiveConsent,restricted});
   const enrichmentConfig=contactEnrichmentConfiguration();
-  res.json({customer,roles,channels,leads,pursuits:leads,profile,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
+  res.json({customer,roles,channels,leads,pursuits:leads,profile,prospectInterest,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
     contactCredibilityConfig:{apolloConfigured:enrichmentConfig.apolloConfigured,advisoryOnly:true},effectiveConsent,restricted});
 });
 
