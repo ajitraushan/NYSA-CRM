@@ -22,6 +22,11 @@ printf '\nAccount quota\n'
 uapi --output=json Quota get_quota_info
 
 printf '\nAllocated bytes\tApparent bytes\tPath (shell-escaped)\n'
+printf '\nImmediate children of %q\n' "$account"
+for child in "$account"/*; do
+  report_size "$child"
+done
+
 roots=("$account/crm-release-preparation")
 for candidate in "$account"/*backup*; do
   [[ -d $candidate && ! -L $candidate ]] && roots+=("$candidate")
