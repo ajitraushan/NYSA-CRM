@@ -29,8 +29,9 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
     await db.query("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$3),($4,$2,$5,'member',$3),($6,$2,$7,'member',$3)",
       [randomUUID(),team,users.manager.id,randomUUID(),users.owner.id,randomUUID(),users.offered.id]);
     await db.query('UPDATE brokers SET team_id=$1 WHERE id=ANY($2::uuid[])',[team,[users.owner.id,users.offered.id]]);
-    const contact=randomUUID(),lead=randomUUID(),title='DEV273 '+contact;
-    const email='scope-'+contact+'@example.invalid',phone='+971501234567';
+    const scopeMarker='DEV273-SCOPE-'+randomUUID();
+    const contact=randomUUID(),lead=randomUUID(),title=scopeMarker+' owner';
+    const email='scope-'+contact+'@example.invalid',phone='+9715'+String(randomInt(10000000,100000000));
     await db.query("INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES($1,$2,$3,$4,'buyer',$5,$5)",[contact,title,email,phone,users.owner.id]);
     await db.query("INSERT INTO leads(id,contact_id,title,source,business_type,stage,temperature,assigned_to,assigned_team_id,created_by) VALUES($1,$2,$3,'Website','Sale','Qualified','Warm',$4,$5,$4)",[lead,contact,title,users.owner.id,team]);
     await db.query("INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by) VALUES($1,$2,'Email','Primary',$3,$3,1,'format_valid',$4),($5,$2,'Phone','Primary',$6,$6,1,'format_valid',$4)",
@@ -72,7 +73,7 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
     });
     await t.test('Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope',async()=>{
       const outsiderContact=randomUUID(),outsiderLead=randomUUID(),webContact=randomUUID(),webLead=randomUUID(),metaContact=randomUUID(),metaLead=randomUUID(),offerContact=randomUUID(),offerLead=randomUUID();
-      const isolated='visibility-'+randomUUID();
+      const isolated=scopeMarker;
       await db.query(`INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES
         ($1,$2,'outside@example.invalid','+971501230001','buyer',$3,$3),
         ($4,$5,'web@example.invalid','+971501230002','buyer',$3,$3),
@@ -88,15 +89,16 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
       await db.query("INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,'offered',now()+interval '1 hour',$5)",
         [randomUUID(),offerLead,team,users.offered.id,users.manager.id]);
       const ids=async(user,path,key)=>new Set((await (await request(user,path)).json())[key].map(row=>row.id));
-      assert.deepEqual(await ids('owner','/contacts','contacts'),new Set([contact]));
-      assert.deepEqual(await ids('manager','/contacts','contacts'),new Set([contact,offerContact]));
-      assert.deepEqual(await ids('director','/contacts','contacts'),new Set([contact,outsiderContact,webContact,metaContact,offerContact]));
-      assert.deepEqual(await ids('manager','/contacts?ownerId='+users.owner.id,'contacts'),new Set([contact]));
-      assert.deepEqual(await ids('owner','/leads','leads'),new Set([lead]));
-      assert.deepEqual(await ids('manager','/leads?assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
-      assert.deepEqual(await ids('director','/leads?assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
+      const q=encodeURIComponent(scopeMarker);
+      assert.deepEqual(await ids('owner','/contacts?q='+q,'contacts'),new Set([contact]));
+      assert.deepEqual(await ids('manager','/contacts?q='+q,'contacts'),new Set([contact,offerContact]));
+      assert.deepEqual(await ids('director','/contacts?q='+q,'contacts'),new Set([contact,outsiderContact,webContact,metaContact,offerContact]));
+      assert.deepEqual(await ids('manager','/contacts?q='+q+'&ownerId='+users.owner.id,'contacts'),new Set([contact]));
+      assert.deepEqual(await ids('owner','/leads?q='+q,'leads'),new Set([lead]));
+      assert.deepEqual(await ids('manager','/leads?q='+q+'&assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
+      assert.deepEqual(await ids('director','/leads?q='+q+'&assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
       const queue=await (await request('manager','/assignment-queue')).json();
-      assert.deepEqual(new Set(queue.leads.map(row=>row.id)),new Set([webLead,metaLead]));
+      assert.deepEqual(new Set(queue.leads.filter(row=>row.title.includes(scopeMarker)).map(row=>row.id)),new Set([webLead,metaLead]));
       const offered=await (await request('offered','/leads/'+offerLead)).json();
       assert.equal(offered.lead.openAssignmentOffer,true);
       assert.equal(offered.lead.contactEmail,'o***@example.invalid');
@@ -146,7 +148,7 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
         for(const row of [opportunities[0],(await detail.json()).opportunity]){
           assert.equal(row.id,opportunity);
           assert.equal(row.contactEmail,user==='owner'?email:'s***@example.invalid');
-          assert.equal(row.contactPhone,user==='owner'?phone:'••••4567');
+          assert.equal(row.contactPhone,user==='owner'?phone:'••••'+phone.slice(-4));
         }
       }
       const blocked=await request('outsider','/opportunities/'+opportunity);
