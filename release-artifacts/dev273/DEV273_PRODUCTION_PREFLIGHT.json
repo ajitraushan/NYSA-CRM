@@ -1,7 +1,7 @@
 {
   "root": "/home/nysareal/nysa-crm",
   "domain": "crm.nysarealty.com",
-  "candidateCommit": "7039ed921841dd01d396f557041ca20217b8e845",
+  "candidateCommit": "12d2ffd3acd257dda955e6a16e78bdcc56441235",
   "baselineCommit": "54421912fc1496a1066814cd8b665c19c7e8fd45",
   "expectedBaselineMigrations": 172,
   "expectedCandidateMigrations": 172,

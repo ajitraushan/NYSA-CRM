@@ -7,7 +7,7 @@
   "manifest": "/home/nysareal/crm-release-preparation/20261113-dev273-reverse/nysa-core-2.1.0-dev.272-origin.manifest.json",
   "version": "2.1.0-dev.272",
   "baselineVersion": "2.1.0-dev.273",
-  "baselineCommit": "7039ed921841dd01d396f557041ca20217b8e845",
+  "baselineCommit": "12d2ffd3acd257dda955e6a16e78bdcc56441235",
   "commit": "54421912fc1496a1066814cd8b665c19c7e8fd45",
   "archiveHash": "fae91377d224a17ed51993b80bf493966525e9324b685a264e00ad57d0ffd50b",
   "manifestHash": "7777846f35a281a86ac68d5c2039e71f14bd0f0e54e7edfe4966db4a4fc0f674",
@@ -2175,5 +2175,5 @@
   "schemaContractHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
   "baselineSchemaContractManifestSha256": "8a67123576f03423c5d176386156bb8ab80071df2345ef5cf1ffd5eb15aa8638",
   "expectedSchemaContractManifestSha256": "8a67123576f03423c5d176386156bb8ab80071df2345ef5cf1ffd5eb15aa8638",
-  "baselineRuntimeManifestSha256": "c151bdbbba32aa4b16575e75fa82935e5aa4f0ca779406b13044b7816a8f04c7"
+  "baselineRuntimeManifestSha256": "7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297"
 }
