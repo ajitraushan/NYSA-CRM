@@ -55,7 +55,9 @@ test('DEF-136 explicit outcome and party survive submit; evidence and final butt
 
 test('DEF-135 reset clears all filters before reloading and restarts page one',()=>{
   const source=read('public/app.js'),handler=source.match(/reset.addEventListener\('click',\(\)=>\{(.*?)\}\);\$\('#customer-q'\)/s)[1],fields=Object.fromEntries(['q','mobile','passportLast4','emiratesIdLast4','kyc','duplicate','sort'].map(k=>['#customer-'+k,{value:'old'}]));let reloads=0;
-  vm.runInNewContext(handler,{$:id=>fields[id],restart(){reloads++;assert.equal(fields['#customer-mobile'].value,'');}});
+  const owner={selectedIndex:2};
+  vm.runInNewContext(handler,{$:id=>id==='#customer-owner'?owner:fields[id],restart(){reloads++;assert.equal(fields['#customer-mobile'].value,'');}});
+  assert.equal(owner.selectedIndex,0);
   for(const [key,field] of Object.entries(fields))assert.equal(field.value,key.endsWith('sort')?'newest':'');assert.equal(reloads,1);assert.match(source,/const restart=\(\)=>\{page=1;load\(\);\}/);
 });
 

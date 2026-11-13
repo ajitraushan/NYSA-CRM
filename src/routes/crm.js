@@ -20,6 +20,67 @@ import {deriveCustomerKycStatus,effectiveIdentityState,validateIdentitySubmissio
 import {blocksOutbound,getContactSuppression,recordContactSuppression} from '../contact-suppression.js';
 
 const r = Router();
+const mayRevealContact = broker => isManager(broker) || isCompanyReader(broker);
+const crmRecordId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const maskPhone = value => {
+  const digits=String(value??'').replace(/\D/g,'');
+  return digits ? '\u2022\u2022\u2022\u2022'+(digits.length>=4?digits.slice(-4):'') : null;
+};
+const maskEmail = value => {
+  const match=/^([^\s@])[^\s@]*@([^\s@]+)$/.exec(String(value??'').trim());
+  return match ? `${match[1]}***@${match[2]}` : null;
+};
+
+function maskCrmContact(row, broker, {email='email',phone='phone'}={}) {
+  const openOffer = broker.jobRole==='sales_agent' && row.openAssignmentOffer===true;
+  if (!mayRevealContact(broker) && !openOffer) return row;
+  if (openOffer) row={...row,contactAddress:null,idDocumentType:null,idDocumentLast4:null,idDocumentExpiry:null};
+  return {...row,[email]:maskEmail(row[email]),[phone]:maskPhone(row[phone])};
+}
+
+async function revealCrmContact(req, res, entity) {
+  if (!mayRevealContact(req.broker)) return res.status(404).json({error:'Record not found'});
+  if (!crmRecordId.test(req.params.id)) {
+    return res.status(404).json({error:'Record not found'});
+  }
+  const result=await transaction(async client=>{
+    const params=[req.params.id];
+    const scope=entity==='Contact'?contactScopeSql('c',req.broker,params):leadScopeSql('l',req.broker,params);
+    const contact=await one(entity==='Contact'
+      ? `SELECT c.phone,c.email FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause} FOR SHARE OF c`
+      : `SELECT c.phone,c.email FROM leads l JOIN contacts c ON c.id=l.contact_id
+          WHERE l.id=$1 AND ${scope.clause} FOR SHARE OF l,c`,scope.params,client);
+    if (!contact) return null;
+    const fields=['phone','email'].filter(field=>Boolean(contact[field]));
+    await audit(entity,req.params.id,'contact_details_revealed',req.broker.id,{fields},client);
+    return contact;
+  });
+  if (!result) return res.status(404).json({error:'Record not found'});
+  res.setHeader('Cache-Control','no-store');
+  res.json(result);
+}
+
+async function readContactRevealLog(req, res, entity) {
+  if (!mayRevealContact(req.broker) || !crmRecordId.test(req.params.id)) {
+    return res.status(404).json({error:'Record not found'});
+  }
+  const params=[req.params.id,entity];
+  const isCustomer=entity==='Contact';
+  const scope=isCustomer?contactScopeSql('subject',req.broker,params):leadScopeSql('subject',req.broker,params);
+  const result=await one(`SELECT COALESCE((
+    SELECT json_agg(entry ORDER BY entry.timestamp DESC,entry.id DESC)
+    FROM (SELECT a.id,a.performed_by AS "performedBy",b.name AS "actorName",a.timestamp,
+      a.details::jsonb->'fields' AS fields
+      FROM audit_log a JOIN brokers b ON b.id=a.performed_by
+      WHERE a.entity_id=subject.id AND a.entity_type=$2 AND a.action='contact_details_revealed'
+      ORDER BY a.timestamp DESC,a.id DESC LIMIT 50) entry
+    ),'[]'::json) AS entries
+    FROM ${isCustomer?'contacts':'leads'} subject
+    WHERE subject.id=$1 AND ${isCustomer?'subject.archived_at IS NULL AND ':''}${scope.clause}`,scope.params);
+  if (!result) return res.status(404).json({error:'Record not found'});
+  res.setHeader('Cache-Control','no-store');
+  res.json(result);
+}
 const EXTERNAL_COMPANY_ROLES=['developer','agency','referral_partner','service_provider','employer','supplier','corporate_client','landlord','vendor','other'];
 r.use(requireAuth, requireCrmAccess);
 
@@ -283,6 +344,12 @@ r.post('/crm/companies/:id/identity-documents/:documentType/review',async(req,re
 r.get('/crm/contacts', async (req, res) => {
   const where = ['c.archived_at IS NULL'], params = [];
   where.push(contactScopeSql('c',req.broker,params).clause);
+  if (req.query.ownerId) {
+    const ownerId=req.query.ownerId==='me'?req.broker.id:req.query.ownerId;
+    if (!crmRecordId.test(ownerId)) return res.status(400).json({error:'Invalid Owning Agent'});
+    params.push(ownerId);
+    where.push(`c.owner_id=$${params.length}`);
+  }
   where.push(customerIdentityFilter(req.query,'c',params));
   if (req.query.q) {
     params.push(`%${String(req.query.q).replaceAll('*','%')}%`);
@@ -309,8 +376,11 @@ r.get('/crm/contacts', async (req, res) => {
     LEFT JOIN LATERAL (SELECT COUNT(*)::int AS lead_count FROM leads l WHERE l.contact_id=c.id) lc ON TRUE
     WHERE c.id=ANY($1::uuid[])
     ORDER BY array_position($1::uuid[],c.id)`,[visible.map(x=>x.id)]);
-  res.json({ count: total, page, pageSize, contacts });
+  res.json({ count: total, page, pageSize, contacts:contacts.map(row=>maskCrmContact(row,req.broker)) });
 });
+
+r.post('/crm/customers/:id/reveal-contact',(req,res)=>revealCrmContact(req,res,'Contact'));
+r.get('/crm/customers/:id/contact-reveal-log',(req,res)=>readContactRevealLog(req,res,'Contact'));
 
 r.get('/crm/customers/:id',async(req,res)=>{
   const params=[req.params.id],scope=contactScopeSql('c',req.broker,params);
@@ -321,6 +391,8 @@ r.get('/crm/customers/:id',async(req,res)=>{
     LEFT JOIN brokers creator ON creator.id=c.created_by
     WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if(!customer)return res.status(404).json({error:'Customer not found or outside your permitted scope'});
+  const leadScope=leadScopeSql('l',req.broker,[customer.id]);
+  const opportunityScope=opportunityScopeSql('o',req.broker,leadScope.params);
   const allLeads=await many(`SELECT l.id,l.lead_reference,l.current_status,l.title,l.source,l.campaign_code,l.source_page,l.source_form,
     l.business_type,l.stage,l.stage AS lead_stage,l.temperature,l.assigned_to,l.assigned_team_id,l.created_by,l.received_at,l.created_at,
     l.next_follow_up_at,l.first_contact_at,owner.name AS owner_name,team.name AS team_name,
@@ -339,20 +411,23 @@ r.get('/crm/customers/:id',async(req,res)=>{
     FROM leads l LEFT JOIN brokers owner ON owner.id=l.assigned_to LEFT JOIN teams team ON team.id=l.assigned_team_id
     LEFT JOIN LATERAL (SELECT lr.* FROM lead_requirements lr WHERE lr.lead_id=l.id AND lr.superseded_at IS NULL ORDER BY lr.version_no DESC LIMIT 1) requirement ON TRUE
     LEFT JOIN LATERAL (SELECT qa.* FROM qualification_assessments qa WHERE qa.lead_id=l.id ORDER BY qa.assessed_at DESC LIMIT 1) qualification ON TRUE
-    LEFT JOIN LATERAL (SELECT o.* FROM opportunities o WHERE o.lead_id=l.id ORDER BY CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.updated_at DESC LIMIT 1) opportunity ON TRUE
+    LEFT JOIN LATERAL (SELECT o.* FROM opportunities o WHERE o.lead_id=l.id AND ${opportunityScope.clause}
+      ORDER BY CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.updated_at DESC LIMIT 1) opportunity ON TRUE
     LEFT JOIN LATERAL (SELECT a.created_at,a.activity_type,a.subject FROM activities a WHERE a.lead_id=l.id ORDER BY a.created_at DESC LIMIT 1) activity ON TRUE
-    WHERE l.contact_id=$1 ORDER BY l.created_at DESC`,[customer.id]);
+    WHERE l.contact_id=$1 AND ${leadScope.clause} ORDER BY l.created_at DESC`,opportunityScope.params);
   const leads=allLeads.filter(lead=>canReadLead(req.broker,lead)).map(lead=>({...lead,canOperate:canOperateLead(req.broker,lead)})),leadIds=leads.map(x=>x.id),canMaintain=canWriteCrm(req.broker),canReviewKyc=isManager(req.broker),canRefreshContactCredibility=canWriteCrm(req.broker)&&(canReviewKyc||customer.ownerId===req.broker.id||customer.createdBy===req.broker.id||leads.some(lead=>canWriteLead(req.broker,lead)));
   const [roles,channels,consent,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement]=await Promise.all([
     many("SELECT role_code,status,created_at FROM contact_roles WHERE contact_id=$1 AND status='active' ORDER BY role_code",[customer.id]),
     many('SELECT id,channel_kind,usage_label,raw_value,verification_status,is_primary,whatsapp_enabled FROM contact_channels WHERE contact_id=$1 ORDER BY is_primary DESC,created_at',[customer.id]),
     one(`SELECT EXISTS(SELECT 1 FROM marketing_agreements WHERE contact_id=$1 AND status='executed' AND effective_at<=NOW() AND (expires_at IS NULL OR expires_at>NOW()) AND withdrawn_at IS NULL) AS effective_consent`,[customer.id]),
-    canReadAllCrmDocuments(req.broker)?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents WHERE contact_id=$1 OR lead_id=ANY($2::uuid[]) ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([]),
+    canReadAllCrmDocuments(req.broker)?many(`SELECT id,document_type,title,status,access_classification,created_at FROM documents
+      WHERE (contact_id=$1 AND lead_id IS NULL) OR (lead_id=ANY($2::uuid[]) AND (contact_id IS NULL OR contact_id=$1))
+      ORDER BY created_at DESC LIMIT 100`,[customer.id,leadIds]):Promise.resolve([]),
     many(`SELECT f.id,f.lead_id,f.fact_group,f.fact_code,f.value_json,f.evidence_kind,f.review_status,f.source_code,f.source_version,f.captured_at,
       e.event_id,e.source_page,e.source_form,e.campaign_code,e.campaign_mapping_status
       FROM customer_evidence_facts f JOIN website_intake_events e ON e.id=f.intake_event_id
-      WHERE f.contact_id=$1 AND f.review_status='active'
-      ORDER BY f.captured_at DESC,f.fact_group,f.fact_code`,[customer.id]),
+      WHERE f.contact_id=$1 AND (f.lead_id IS NULL OR f.lead_id=ANY($2::uuid[])) AND f.review_status='active'
+      ORDER BY f.captured_at DESC,f.fact_group,f.fact_code`,[customer.id,leadIds]),
     many(`SELECT r.*,requester.name AS requested_by_name,decider.name AS decided_by_name FROM customer_change_requests r
       JOIN brokers requester ON requester.id=r.requested_by LEFT JOIN brokers decider ON decider.id=r.decided_by
       WHERE r.contact_id=$1 ORDER BY r.requested_at DESC LIMIT 25`,[customer.id]),
@@ -372,7 +447,9 @@ r.get('/crm/customers/:id',async(req,res)=>{
   const prospectInterestLabels=prospectInterest?await loadProspectInterestLabels():{};
   const effectiveConsent=Boolean(consent?.effectiveConsent),restricted=Boolean(customer.doNotContact),profile=buildCustomer360Profile({customer,pursuits:leads,effectiveConsent,restricted});
   const enrichmentConfig=contactEnrichmentConfiguration();
-  res.json({customer,roles,channels,leads,pursuits:leads,profile,prospectInterest,prospectInterestLabels,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
+  const visibleChannels=mayRevealContact(req.broker)?channels.map(channel=>({...channel,
+    rawValue:String(channel.channelKind).toLowerCase()==='email'?maskEmail(channel.rawValue):maskPhone(channel.rawValue)})):channels;
+  res.json({customer:maskCrmContact(customer,req.broker),roles,channels:visibleChannels,leads,pursuits:leads,profile,prospectInterest,prospectInterestLabels,documents,intakeEvidence,changeRequests,identityDocuments,identityRequirement,canMaintain,canReviewKyc,canRefreshContactCredibility,
     contactCredibilityConfig:{apolloConfigured:enrichmentConfig.apolloConfigured,advisoryOnly:true},effectiveConsent,restricted});
 });
 
@@ -534,7 +611,8 @@ r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
 });
 
 r.patch('/crm/contacts/:id', async (req, res) => {
-  const contact = await one('SELECT * FROM contacts WHERE id=$1 AND archived_at IS NULL', [req.params.id]);
+  const scope=contactScopeSql('c',req.broker,[req.params.id]);
+  const contact = await one(`SELECT c.* FROM contacts c WHERE c.id=$1 AND c.archived_at IS NULL AND ${scope.clause}`,scope.params);
   if (!contact) return res.status(404).json({ error: 'Contact not found' });
   if (!canWriteCrm(req.broker)) return res.status(403).json({ error: 'This role has read-only Customer access' });
   const map = { fullName:'full_name',email:'email',phone:'phone',contactType:'contact_type',companyName:'company_name',companyId:'company_id',
@@ -671,14 +749,20 @@ r.get('/crm/leads', async (req, res) => {
   if (req.query.stage && STAGES.includes(req.query.stage)) add('l.stage=?',req.query.stage);
   if (req.query.temperature && TEMPERATURES.includes(req.query.temperature)) add('l.temperature=?',req.query.temperature);
   if (req.query.assignedTo === 'me') add('l.assigned_to=?',req.broker.id);
-  else if (req.query.assignedTo) add('l.assigned_to=?',req.query.assignedTo);
+  else if (req.query.assignedTo === 'unassigned') where.push('l.assigned_to IS NULL');
+  else if (req.query.assignedTo) {
+    if (!crmRecordId.test(req.query.assignedTo)) return res.status(400).json({error:'Invalid Owning Agent'});
+    add('l.assigned_to=?',req.query.assignedTo);
+  }
   if (req.query.assignmentStatus && ['unassigned','assigned','reassignment_due','closed'].includes(req.query.assignmentStatus)) add('l.assignment_status=?',req.query.assignmentStatus);
   where.push(customerIdentityFilter(req.query,'c',params));
   if (req.query.q) { params.push(`%${String(req.query.q).replaceAll('*','%')}%`); where.push(`(l.lead_reference ILIKE $${params.length} OR l.title ILIKE $${params.length} OR c.full_name ILIKE $${params.length})`); }
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||25)),offset=(page-1)*pageSize;
   const total=Number((await one(`SELECT COUNT(*)::int AS count FROM leads l JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);
   const opportunityScope=opportunityScopeSql('o',req.broker,params);
-  const leads = await many(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
+  const leads = await many(`SELECT l.*,EXISTS(SELECT 1 FROM lead_assignments offer WHERE offer.lead_id=l.id AND offer.agent_id=l.assigned_to
+    AND offer.superseded_at IS NULL AND offer.status='offered') AS open_assignment_offer,
+    c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,
     b.name AS assigned_to_name,t.name AS assigned_team_name,x.project AS listing_project,x.area AS listing_area,x.price AS listing_price,x.currency AS listing_currency,
     active_opportunity.id AS active_opportunity_id,active_opportunity.opportunity_reference AS active_opportunity_reference,
     active_opportunity.title AS active_opportunity_title,active_opportunity.stage AS active_opportunity_stage,
@@ -699,18 +783,29 @@ r.get('/crm/leads', async (req, res) => {
     ) active_opportunity ON TRUE
     WHERE ${where.join(' AND ')}
     ORDER BY l.created_at DESC,l.id DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`,[...params,pageSize,offset]);
-  res.json({ count: total, page, pageSize, leads });
+  res.json({ count: total, page, pageSize, leads:leads.map(row=>maskCrmContact(row,req.broker,{email:'contactEmail',phone:'contactPhone'})) });
 });
+
+r.post('/crm/leads/:id/reveal-contact',(req,res)=>revealCrmContact(req,res,'Lead'));
+r.get('/crm/leads/:id/contact-reveal-log',(req,res)=>readContactRevealLog(req,res,'Lead'));
 
 r.get('/crm/leads/:id', async (req, res) => {
   await refreshAssignmentStatuses();
-  const lead = await one(`SELECT l.*,c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,c.kyc_verified_at,c.kyc_notes,
+  const lead = await one(`SELECT l.*,EXISTS(SELECT 1 FROM lead_assignments offer WHERE offer.lead_id=l.id AND offer.agent_id=l.assigned_to
+    AND offer.superseded_at IS NULL AND offer.status='offered') AS open_assignment_offer,
+    c.full_name AS contact_name,c.email AS contact_email,c.phone AS contact_phone,c.postal_address AS contact_address,c.id_document_type,c.id_document_last4,c.id_document_expiry,c.kyc_status,c.kyc_verified_at,c.kyc_notes,
     c.preferred_channel,c.email_status,c.phone_status,c.public_profile_url,c.screening_notes,
     b.name AS assigned_to_name,creator.name AS created_by_name,t.name AS assigned_team_name,x.project AS listing_project,x.area AS listing_area,x.price AS listing_price
     FROM leads l JOIN contacts c ON c.id=l.contact_id LEFT JOIN brokers b ON b.id=l.assigned_to
     LEFT JOIN brokers creator ON creator.id=l.created_by LEFT JOIN teams t ON t.id=l.assigned_team_id LEFT JOIN listings x ON x.id=l.listing_id WHERE l.id=$1`,[req.params.id]);
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
-  if (!canReadLead(req.broker,lead)) return res.status(403).json({ error:'Lead is outside your permitted scope' });
+  if (!canReadLead(req.broker,lead)) return res.status(404).json({ error:'Lead not found' });
+  if (req.broker.jobRole==='sales_agent' && lead.openAssignmentOffer) {
+    const {id,title,leadReference,contactName,assignmentStatus}=lead;
+    return res.json({lead:maskCrmContact({id,title,leadReference,contactName,assignmentStatus,openAssignmentOffer:true,
+      contactEmail:lead.contactEmail,contactPhone:lead.contactPhone},req.broker,{email:'contactEmail',phone:'contactPhone'}),
+      activities:[],stageHistory:[],intakeEvidence:[],latestAssignment:null,canWrite:false});
+  }
   const [activities,stageHistory,intakeEvidence,latestAssignment,qualificationPolicy] = await Promise.all([
     many(`SELECT a.*,b.name AS owner_name,x.name AS created_by_name,cal.event_url AS google_event_url,cal.meeting_url AS google_meeting_url,cal.sync_status AS google_sync_status FROM activities a
       JOIN brokers b ON b.id=a.owner_id JOIN brokers x ON x.id=a.created_by
@@ -733,7 +828,7 @@ r.get('/crm/leads/:id', async (req, res) => {
     lead.temperature==='Warm'?{...QUALIFICATION_GUIDANCE.Warm,targetText:`${qualificationPolicy?.qualificationWarmBusinessMinutes||240} business minutes`}:
     lead.temperature==='Cold'?{...QUALIFICATION_GUIDANCE.Cold,targetText:`${qualificationPolicy?.qualificationColdBusinessDays||1} business day; then every ${qualificationPolicy?.qualificationColdNurtureBusinessDays||5} business days while still Cold`}:
     {...QUALIFICATION_GUIDANCE.Unassessed,targetText:'normal first-contact SLA until qualification is assessed'};
-  res.json({ lead, activities, stageHistory, intakeEvidence, latestAssignment, canWrite:canOperateLead(req.broker,lead), qualificationGuidance });
+  res.json({ lead:maskCrmContact(lead,req.broker,{email:'contactEmail',phone:'contactPhone'}), activities, stageHistory, intakeEvidence, latestAssignment, canWrite:canOperateLead(req.broker,lead), qualificationGuidance });
 });
 
 async function insertCapturedLead(b, actorId, budget, client) {
@@ -961,7 +1056,7 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
     LEFT JOIN brokers b ON b.id=l.assigned_to LEFT JOIN teams t ON t.id=l.assigned_team_id
     WHERE l.id=$1`,[req.params.id]);
   if(!lead)return res.status(404).json({error:'Lead not found'});
-  if(!canReadLead(req.broker,lead))return res.status(403).json({error:'Lead is outside your permitted scope'});
+  if(!canReadLead(req.broker,lead))return res.status(404).json({error:'Lead not found'});
   const opportunityParams=[lead.id],opportunityScope=opportunityScopeSql('o',req.broker,opportunityParams);
   const [requirement,qualification,opportunities,inventorySelections]=await Promise.all([
     one(`SELECT lr.*,confirmation.id AS confirmation_id,confirmation.confirmed_at,
@@ -1015,7 +1110,7 @@ r.get('/crm/leads/:id/operating-context',async(req,res)=>{
     {code:'lead',label:'Lead',status:'completed',action:'Enquiry, source and responsible ownership are retained'},
     {code:'qualification',label:'Qualification',status:qualification?'completed':'current',action:qualification?`${qualification.finalTemperature} qualification recorded`:'Complete the approved qualification; structured requirements may be recorded in parallel'},
     {code:'requirements',label:'Requirements',status:requirementConfirmed&&opportunityRequirementAligned?'completed':'current',action:!requirement?'Collect structured requirements now; assessment is not a prerequisite for recording them':!requirementConfirmed?`Requirement version ${requirement.versionNo} requires broker confirmation before matching`:!opportunityRequirementAligned?`Current Requirement version ${requirement.versionNo} is not the version linked to ${flowOpportunity.opportunityReference}`:`Broker-confirmed Requirement version ${requirement.versionNo} is linked to the current journey`},
-    {code:'opportunity',label:'Opportunity',status:flowOpportunity?'completed':opportunityReady?'ready':'blocked',action:flowOpportunity?`${flowOpportunity.opportunityReference} · ${flowOpportunity.stage}`:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and a broker-confirmed Requirement are required'},
+    {code:'opportunity',label:'Opportunity',status:flowOpportunity?'completed':opportunityReady?'ready':'blocked',action:flowOpportunity?`${flowOpportunity.opportunityReference} Â· ${flowOpportunity.stage}`:opportunityReady?'Agent decides whether NYSA has a genuine chance to serve':'Assignment, qualification and a broker-confirmed Requirement are required'},
     {code:'matching',label:'Match',status:(flowOpportunity&&!requirementConfirmed)||(flowOpportunity&&!opportunityRequirementAligned)?'blocked':flowOpportunity?sequenceStatus(1,0):'blocked',action:!requirementConfirmed?'Broker-confirm the current Requirement before ranking Inventory':flowOpportunity&&!opportunityRequirementAligned?'Align the Opportunity to the current confirmed Requirement before ranking Inventory':flowOpportunity?.stage==='Requirements'?'Rank, review and assign Inventory':flowOpportunity?.stage==='Matching'?flowOpportunity.nextAction:'Create an Opportunity first'},
     {code:'viewing',label:'Viewing',status:flowOpportunity?sequenceStatus(2,1):'blocked',action:stageIndex<2?'Shortlist inventory before scheduling':'Record attendance and customer feedback'},
     {code:'offer',label:'Offer',status:flowOpportunity?.acceptedOfferCount?'completed':flowOpportunity&&[3,4].includes(stageIndex)?'current':stageIndex===2?'ready':'blocked',action:flowOpportunity?.acceptedOfferCount?'Accepted exact revision is ready for reservation':'Create and negotiate immutable offer revisions'},
@@ -1232,7 +1327,7 @@ r.get('/crm/reports/summary', async (req,res)=>{
 r.get('/crm/leads/:id/value-briefs', async (req,res)=>{
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);
   if(!lead) return res.status(404).json({error:'Lead not found'});
-  if(!canReadLead(req.broker,lead)) return res.status(403).json({error:'Lead is outside your permitted scope'});
+  if(!canReadLead(req.broker,lead)) return res.status(404).json({error:'Lead not found'});
   const briefs=await many(`SELECT v.*,l.project,l.developer,l.area,l.property_type,l.bedrooms,l.size_sqft,l.price,l.currency,
     c.full_name AS contact_name FROM value_briefs v JOIN listings l ON l.id=v.listing_id JOIN leads x ON x.id=v.lead_id
     JOIN contacts c ON c.id=x.contact_id WHERE v.lead_id=$1 ORDER BY v.created_at DESC`,[req.params.id]);

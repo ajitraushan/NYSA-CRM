@@ -2,7 +2,7 @@
 
 Approved D-1 incorporating Ajit’s additions. Requirements follow the [consolidated DEV273 artifact](https://claude.ai/artifact/2GSKWQKtBNcvAQc8Y4nywE).
 
-Build target is `2.1.0-dev.273` on DEV272 commit `54421912fc1496a1066814cd8b665c19c7e8fd45`. CRM Test starts from DEV272. Production goes directly from accepted DEV270 (`5c1c350151d6ace33377b33526e2bfedf4ae8f6b`, 171 migrations) to DEV273 and receives migration 172 with the DEV272 changes. DEV274 auto-assignment has its own D-1.
+Build target is `2.1.0-dev.273` on DEV272 commit `54421912fc1496a1066814cd8b665c19c7e8fd45`. CRM Test and Production both start from DEV272. Production acceptance is recorded in [BASELINE.md](../../BASELINE.md), with install receipt `f2428ae8…` and smoke receipt `8dd82c03…`. The Production database has 172 migrations, 313 tables and 113 triggers. The expected migration transition is 172 → 172. DEV274 auto-assignment has its own D-1.
 
 ## Access and affected surfaces
 
@@ -25,14 +25,14 @@ Enforce a single owning Agent through the existing scalar `contacts.owner_id` an
 
 ## Production ownership baseline and proposal
 
-The saved DEV270 acceptance and preflight evidence establish the version and schema. They do not report the four requested record counts. Production counts are **unverified**, including whether any count is zero.
+The approved Production count receipt `8b7d24d31dcaf7a5a22fb95cd19021653715f1e6613f9170f1aa75bb31e15428` measured one Customer and one Lead. All four counts were zero at measurement time. Recheck all four in the DEV273 Production preflight and stop if any is nonzero.
 
 | Measure | Proposed count definition | Production result |
 | --- | --- | --- |
-| Customers without owner | `contacts.owner_id IS NULL` | Pending |
-| Customers without team | No owner, or the owner's `brokers.team_id` is null | Pending |
-| Leads without owner | `leads.assigned_to IS NULL` | Pending |
-| Leads without team | `leads.assigned_team_id IS NULL` | Pending |
+| Customers without owner | `contacts.owner_id IS NULL` | 0 |
+| Customers without team | No owner, or the owner's `brokers.team_id` is null | 0 |
+| Leads without owner | `leads.assigned_to IS NULL` | 0 |
+| Leads without team | `leads.assigned_team_id IS NULL` | 0 |
 
 Use the committed aggregate query in tools/production-dev273-ownership-counts.sql with the approved read-only launcher. Run an aggregate-only snapshot in a read-only transaction against the approved Production database, after Ajit's written go. Report totals and the overlap between missing owner and missing team for each entity, with an active-only Customer row alongside the all-Customer total. Report missing Agent team and assignee-team mismatches separately for Leads. Return no record IDs, names, phones or emails.
 
@@ -43,6 +43,14 @@ Propose that the Director reviews legacy exceptions before go-live. Keep valid o
 - API and data tests with two Agents, a Manager with an in-scope and out-of-scope team, a Director and an Admin. Cover direct and linked IDs, search, counts, filters, queues, exports, documents, tasks, opportunities and AI retrieval, including absent or changed ownership. Check the WEB audit exception and outside-scope duplicate warning.
 - Verify identical masking across surfaces and exports, successful Reveal with one metadata-only audit entry, failure on an audit-write error, a scoped Reveal log and remasking after reload. Test ownership transfer, conversion, manual assignment and offer visibility with audit and authorization checks.
 - CRM Test UAT uses synthetic data with the same roles. Verify sticky Prospect Diary tabs on desktop and mobile, the running version in the digest test email subject, and DEV272 regression coverage for Prospect Diary, lead intake, conversion and WhatsApp guards.
-- After D-1 review, deliver the D-2 hashes, tests, upgrade rehearsal and rollback evidence. Rehearse DEV270 plus migration 172 into DEV273, including app rollback compatibility. Production rollback to DEV270 requires Ajit’s written go. Ajit will re-issue the interim access rule if rollback is needed. Use CRM Test A–D and UAT before Production preflight, backup, install and smoke. Each hosted step needs Ajit's written go. Use the controlled restart tool for hosted settings changes.
+- After D-1 review, deliver the D-2 hashes, tests, upgrade rehearsal and rollback evidence. Rehearse DEV272 → DEV273 on the existing migration 172 contract, including application rollback to DEV272. Production rollback requires Ajit’s written go. Ajit will re-issue the interim access rule if rollback is needed. Use CRM Test A–D and UAT before Production preflight, backup, install and smoke. Each hosted step needs Ajit's written go. Use the controlled restart tool for hosted settings changes.
 
 - Benchmark scoped Customer and Lead lists and search in D-2 against the two-second target. Record fixture size, role and team scope, search cases, measurement method and timings. Include initial lists and representative searches for all three viewing roles, with repeated measurements and p95 reported per case.
+
+- Verify the Director’s dashboard and digest per-Agent counts for calls, connected, interested, conversions and overdue follow-ups. Verify Cancel and Discard in the cadence draft confirmation.
+
+## 13 November Today additions
+
+- Show the Dubai first-call due date and time for overdue untouched prospects, and list them ahead of untouched prospects whose deadline has not passed.
+- Record the planned retry, rescheduled date and weekly unanswered-call limit in the existing audit log. Show the note on the record and on Today. Future moved retries are shown separately from today's callable queue. Historical moves without recorded original dates are not reconstructed.
+- Keep preferred call days in DEV274. Migration 172 remains the schema baseline. Add the overdue-ordering, retry-limit and Today rendering tests to D-2. Ajit reports DEV271/272 UAT complete, with NXT-01–03, EML-04, REG-01 and REG-03 in the UAT sheet.

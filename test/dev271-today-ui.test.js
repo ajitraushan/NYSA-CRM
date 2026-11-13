@@ -22,7 +22,10 @@ test('Sales Agent opens Today by default and queue text is escaped', async () =>
       if(path==='/crm/organization')return {organization:{prospectCallStartMinute:570,prospectCallEndMinute:1020}};
       return { queueTotal: 1, outsideCallingHours:true, callsMade:3, target:12, connected:2, items: [{
         id: 'fixture-prospect', displayName: '<script>', source: 'diary',
-        phone: '+971501234567', priority: 5, createdAt: '2026-11-11T09:00:00Z',
+        phone: '+971501234567', priority: 5, firstCallOverdue: true, firstCallDueAt: '2026-11-11T09:00:00Z', createdAt: '2026-11-11T09:00:00Z',
+      },{
+        id: 'moved-retry', priority: 6, nextRetryAt: '2026-11-19T08:00:00Z',
+        retryMoved: {plannedAt:'2026-11-16T08:00:00Z',movedAt:'2026-11-19T08:00:00Z',reason:'unanswered_weekly_threshold'},
       }] };
     },
   });
@@ -32,6 +35,9 @@ test('Sales Agent opens Today by default and queue text is escaped', async () =>
   assert.match(root.innerHTML, /09:30.*17:00 Dubai time/);
   assert.match(root.innerHTML, /Calls<\/dt><dd>3 \/ 12/);
   assert.match(root.innerHTML, /New <span>1<\/span>/);
+  assert.match(root.innerHTML, /First call overdue.*11 Nov 2026.*13:00/);
+  assert.match(root.innerHTML, /Retry moved from 16 Nov 2026.*to 19 Nov 2026.*weekly unanswered-call limit/);
+  assert.doesNotMatch(root.innerHTML, /data-today-call="moved-retry"/);
   assert.match(root.innerHTML, /Diary<\/span>/);
   assert.match(root.innerHTML, /Add prospect/);
   for(const view of ['today','diary','upload','dashboard'])assert.match(root.innerHTML,new RegExp('data-diary-view="'+view+'"'));

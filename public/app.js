@@ -810,13 +810,27 @@ async function renderDiary(){
 }
 
 /* ============ CUSTOMERS ============ */
+function owningAgentOptions(includeUnassigned){
+  const defaultLabel=ME.jobRole==='sales_agent'?'Own':ME.jobRole==='manager'?'My team':'All';
+  return `<option value="${ME.jobRole==='sales_agent'?'me':''}">${defaultLabel}</option>${includeUnassigned&&['manager','director'].includes(ME.jobRole)?'<option value="unassigned">Unassigned</option>':''}`;
+}
+
+async function populateOwningAgents(select){
+  if (!select || !['manager','director'].includes(ME.jobRole)) return;
+  try{
+    const {staff}=await api('/crm/staff');
+    for(const agent of staff.filter(row=>row.jobRole==='sales_agent')) select.add(new Option(agent.name,agent.id));
+  }catch(error){toast(error.message);}
+}
+
 async function renderCustomers(){
   $('#view').innerHTML=`<section class="dashboard-head"><div><div class="eyebrow">CRM / CUSTOMER MASTER</div><h2>Customers</h2><p>Search uses partial matching across the full permitted Customer register. Use Previous and Next to review every matching page.</p></div><div class="dashboard-actions">${canWriteCrm()?'<button class="btn btn-primary" id="customer-add">+ Create customer</button><button class="btn" id="customer-companies">Companies and Developers</button>':''}</div></section><div class="filterbar"><div class="filter-grid"><div class="span2"><label>Search customers</label><input id="customer-q" placeholder="Any part of name, email or phone"></div><div><label>KYC status</label><select id="customer-kyc"><option value="">All statuses</option><option value="unverified">Unverified</option><option value="pending_review">Pending review</option><option value="verified">Verified</option><option value="expired">Expired</option><option value="rejected">Rejected</option></select></div><div><label>Duplicate review</label><select id="customer-duplicate"><option value="">All records</option><option value="pending">Pending duplicate review</option><option value="approved">Approved separate customers</option><option value="rejected">Rejected drafts</option><option value="not_required">No duplicate warning</option></select></div><div><label>Sort by</label><select id="customer-sort"><option value="name">Name A–Z</option><option value="newest" selected>Most recently created</option><option value="kyc">KYC status, then name</option></select></div></div><div class="filter-actions"><button class="btn btn-primary btn-sm" id="customer-apply">Search</button><span id="customer-count" class="result-count"></span></div></div><div id="customer-results"><div class="loading-state">Loading customers...</div></div>`;
-  $('#customer-q').closest('.filter-grid').insertAdjacentHTML('beforeend',window.customerIdentityFields('customer'));
+  $('#customer-q').closest('.filter-grid').insertAdjacentHTML('beforeend',`<div><label for="customer-owner">Owning Agent</label><select id="customer-owner">${owningAgentOptions(false)}</select></div>`+window.customerIdentityFields('customer'));
+  void populateOwningAgents($('#customer-owner'));
   let page=1;const pageSize=25;
-  const load=async()=>{try{const p=new URLSearchParams({pageSize:String(pageSize),page:String(page),sort:$('#customer-sort').value}),q=$('#customer-q').value.trim(),status=$('#customer-kyc').value,duplicate=$('#customer-duplicate').value;if(q)p.set('q',q);if(status)p.set('kycStatus',status);if(duplicate)p.set('duplicateReviewStatus',duplicate);window.customerIdentityParams('customer',p);const{contacts,count}=await api('/crm/contacts?'+p),rows=contacts,start=count?(page-1)*pageSize+1:0,end=Math.min(page*pageSize,count),pages=Math.max(1,Math.ceil(count/pageSize));if(page>pages){page=pages;return load();}$('#customer-count').textContent=`${count} matching customer${count===1?'':'s'} · showing ${start}–${end}`;$('#customer-results').innerHTML=`<div class="pipeline-table-wrap"><table><tr><th>Customer</th><th>Contact</th><th>Roles / company</th><th>KYC</th><th>Duplicate status</th><th>Related leads</th><th>Action</th></tr>${rows.map(c=>`<tr><td><b>${esc(c.fullName)}</b><small>${esc(c.postalAddress||'Address not recorded')}</small></td><td>${esc(window.NysaUI.contactHint(c.email,'email'))}<small>${esc(window.NysaUI.contactHint(c.phone,'phone'))} · ${esc(c.preferredChannel||'No preferred channel recorded')}</small></td><td>${esc(c.contactType||'customer')}<small>${esc(c.companyNameResolved||'Individual')}</small></td><td>${esc((c.kycStatus||'unverified').replaceAll('_',' '))}<small>${c.idDocumentExpiry?'Expiry '+fmtDateOnly(c.idDocumentExpiry):'No expiry recorded'}</small></td><td>${esc((c.duplicateReviewStatus||'not_required').replaceAll('_',' '))}<small>${c.duplicateReviewStatus==='pending'?'Draft · cannot start a Lead':'Customer master status'}</small></td><td>${Number(c.leadCount||0)}</td><td><button class="btn btn-primary btn-sm" data-customer-id="${c.id}">Open customer record</button></td></tr>`).join('')||'<tr><td colspan="7">No customers found.</td></tr>'}</table></div><div class="filter-actions register-pagination"><button class="btn btn-sm" data-customer-page="previous" ${page<=1?'disabled':''}>Previous</button><span>Page ${page} of ${pages}</span><button class="btn btn-sm" data-customer-page="next" ${page>=pages?'disabled':''}>Next</button></div>`;document.querySelectorAll('[data-customer-id]').forEach(b=>b.addEventListener('click',()=>openCustomer(b.dataset.customerId)));document.querySelectorAll('[data-customer-page]').forEach(button=>button.addEventListener('click',()=>{page+=button.dataset.customerPage==='next'?1:-1;load();}));}catch(err){$('#customer-results').textContent=err.message;}};
+  const load=async()=>{try{const p=new URLSearchParams({pageSize:String(pageSize),page:String(page),sort:$('#customer-sort').value}),q=$('#customer-q').value.trim(),status=$('#customer-kyc').value,duplicate=$('#customer-duplicate').value;if(q)p.set('q',q);if(status)p.set('kycStatus',status);if(duplicate)p.set('duplicateReviewStatus',duplicate);if($('#customer-owner')?.value)p.set('ownerId',$('#customer-owner').value);window.customerIdentityParams('customer',p);const{contacts,count}=await api('/crm/contacts?'+p),rows=contacts,start=count?(page-1)*pageSize+1:0,end=Math.min(page*pageSize,count),pages=Math.max(1,Math.ceil(count/pageSize));if(page>pages){page=pages;return load();}$('#customer-count').textContent=`${count} matching customer${count===1?'':'s'} · showing ${start}–${end}`;$('#customer-results').innerHTML=`<div class="pipeline-table-wrap"><table><tr><th>Customer</th><th>Contact</th><th>Roles / company</th><th>KYC</th><th>Duplicate status</th><th>Related leads</th><th>Action</th></tr>${rows.map(c=>`<tr><td><b>${esc(c.fullName)}</b><small>${esc(c.postalAddress||'Address not recorded')}</small></td><td>${esc(window.NysaUI.contactHint(c.email,'email'))}<small>${esc(window.NysaUI.contactHint(c.phone,'phone'))} · ${esc(c.preferredChannel||'No preferred channel recorded')}</small></td><td>${esc(c.contactType||'customer')}<small>${esc(c.companyNameResolved||'Individual')}</small></td><td>${esc((c.kycStatus||'unverified').replaceAll('_',' '))}<small>${c.idDocumentExpiry?'Expiry '+fmtDateOnly(c.idDocumentExpiry):'No expiry recorded'}</small></td><td>${esc((c.duplicateReviewStatus||'not_required').replaceAll('_',' '))}<small>${c.duplicateReviewStatus==='pending'?'Draft · cannot start a Lead':'Customer master status'}</small></td><td>${Number(c.leadCount||0)}</td><td><button class="btn btn-primary btn-sm" data-customer-id="${c.id}">Open customer record</button></td></tr>`).join('')||'<tr><td colspan="7">No customers found.</td></tr>'}</table></div><div class="filter-actions register-pagination"><button class="btn btn-sm" data-customer-page="previous" ${page<=1?'disabled':''}>Previous</button><span>Page ${page} of ${pages}</span><button class="btn btn-sm" data-customer-page="next" ${page>=pages?'disabled':''}>Next</button></div>`;document.querySelectorAll('[data-customer-id]').forEach(b=>b.addEventListener('click',()=>openCustomer(b.dataset.customerId)));document.querySelectorAll('[data-customer-page]').forEach(button=>button.addEventListener('click',()=>{page+=button.dataset.customerPage==='next'?1:-1;load();}));}catch(err){$('#customer-results').textContent=err.message;}};
   const reset=document.createElement('button');reset.type='button';reset.className='btn btn-sm';reset.id='customer-reset';reset.textContent='Reset filters';$('#customer-apply').after(reset);
-  const restart=()=>{page=1;load();};$('#customer-add')?.addEventListener('click',openNewCustomerForm);$('#customer-companies')?.addEventListener('click',openCompanies);$('#customer-apply').addEventListener('click',restart);reset.addEventListener('click',()=>{$('#customer-q').value='';for(const field of ['mobile','passportLast4','emiratesIdLast4'])$('#customer-'+field).value='';$('#customer-kyc').value='';$('#customer-duplicate').value='';$('#customer-sort').value='newest';restart();});$('#customer-q').addEventListener('keydown',e=>{if(e.key==='Enter')restart();});$('#customer-kyc').addEventListener('change',restart);$('#customer-duplicate').addEventListener('change',restart);$('#customer-sort').addEventListener('change',restart);load();
+  const restart=()=>{page=1;load();};$('#customer-add')?.addEventListener('click',openNewCustomerForm);$('#customer-companies')?.addEventListener('click',openCompanies);$('#customer-apply').addEventListener('click',restart);reset.addEventListener('click',()=>{$('#customer-q').value='';$('#customer-owner').selectedIndex=0;for(const field of ['mobile','passportLast4','emiratesIdLast4'])$('#customer-'+field).value='';$('#customer-kyc').value='';$('#customer-duplicate').value='';$('#customer-sort').value='newest';restart();});$('#customer-q').addEventListener('keydown',e=>{if(e.key==='Enter')restart();});$('#customer-kyc').addEventListener('change',restart);$('#customer-duplicate').addEventListener('change',restart);$('#customer-sort').addEventListener('change',restart);load();
 }
 
 function openNewCustomerForm(){
@@ -832,6 +846,46 @@ function showCustomerConfirmation(customer,title='Customer record saved'){
   $('#customer-confirm-close',o).addEventListener('click',()=>o.remove());
 }
 
+function addContactReveal(workspace, path) {
+  if (!['manager','director'].includes(ME?.jobRole)) return;
+  const header=workspace.querySelector('.detail-head');
+  if (!header) return;
+  const section=document.createElement('section');
+  section.className='contact-actions';
+  section.innerHTML=`<button class="btn btn-sm" type="button" data-reveal>Reveal contact details</button>
+    <button class="btn btn-sm" type="button" data-reveal-log>View reveal log</button>
+    <p aria-live="polite" data-revealed-values></p><ul data-reveal-entries hidden></ul>`;
+  header.after(section);
+  const reveal=section.querySelector('[data-reveal]');
+  const log=section.querySelector('[data-reveal-log]');
+  const entries=section.querySelector('[data-reveal-entries]');
+  reveal.onclick=async()=>{
+    reveal.disabled=true;
+    try {
+      const details=await api(path+'/reveal-contact',{method:'POST',body:{}});
+      section.querySelector('[data-revealed-values]').textContent=
+        [details.phone,details.email].filter(Boolean).join(' · ') || 'No contact details recorded';
+      entries.hidden=true;
+    } catch(error) { toast(error.message); }
+    finally { reveal.disabled=false; }
+  };
+  log.onclick=async()=>{
+    log.disabled=true;
+    try {
+      const result=await api(path+'/contact-reveal-log');
+      entries.replaceChildren(...(result.entries.length?result.entries.map(entry=>
+        [entry.actorName,fmtDate(entry.timestamp),(entry.fields??[]).join(', ')].join(' · ')
+      ):['No reveals recorded']).map(text=>{
+        const item=document.createElement('li');
+        item.textContent=text;
+        return item;
+      }));
+      entries.hidden=false;
+    } catch(error) { toast(error.message); }
+    finally { log.disabled=false; }
+  };
+}
+
 async function openCustomer(id){let data;try{data=await api(`/crm/customers/${id}`);}catch(err){return toast(err.message);}const {customer,roles,channels,leads,documents,identityDocuments=[],identityRequirement={},canMaintain}=data;
   const professional=customer.emailProfessionalEvidence||{},emailEvidence=customer.emailCredibilityEvidence||{},emailChecks=emailEvidence.checks||[],professionalProfile=professional.profile||{},
     professionalAvailability=professional.status==='not_configured'?'Not configured':professional.status==='check_unavailable'?'Unavailable when checked':'Available when checked',
@@ -839,6 +893,7 @@ async function openCustomer(id){let data;try{data=await api(`/crm/customers/${id
   const identitySummary=['passport','emirates_id','power_of_attorney'].map(type=>{const item=identityDocuments.find(document=>document.documentType===type),label={passport:'Passport',emirates_id:'Emirates ID',power_of_attorney:'Power of Attorney'}[type];return item?`${label}${item.maskedFinalFour?` ***${esc(item.maskedFinalFour)}`:''} · ${esc((item.status||'unverified').replaceAll('_',' '))}${item.expiryDate?` · expires ${fmtDateOnly(item.expiryDate)}`:''}`:`${label} not maintained${type==='power_of_attorney'?' (optional)':''}`;}).join('<br>'),kycCard=`<article><span>KYC and contact verification</span><b>${esc((customer.kycStatus||'unverified').replaceAll('_',' '))}</b><small>${identitySummary}</small><small><b>Pre-KYC email evidence:</b> ${esc(customer.emailCredibilityStatus?customer.emailCredibilityStatus.replaceAll('_',' '):'not checked')} · ${esc(professional.label||'Professional match not checked')}${professional.profile?.company?` · ${esc(professional.profile.company)}`:''}. Advisory only; this does not verify identity.</small>${customer.email&&data.canRefreshContactCredibility?'<button class="btn btn-sm" type="button" data-refresh-contact-credibility>Run pre-KYC email check</button>':''}${customer.email&&data.canRefreshContactCredibility&&data.contactCredibilityConfig?.apolloConfigured?'<button class="btn btn-sm" type="button" data-run-apollo-professional>Run paid Apollo professional check</button><small>Uses a paid Apollo request only when selected.</small>':''}${evidenceDetails}</article>`;
   const o=recordWorkspace(`<div class="modal lead-modal"><button class="close-x">×</button><div class="detail-head"><div><div class="eyebrow">CUSTOMER MASTER</div><h2>${esc(customer.fullName)}</h2><p>Customer ID ${esc(customer.id)}</p></div></div><div class="customer-summary-grid"><article><span>Primary contact</span><b>${esc(customer.email||'Email missing')}</b><small>${esc(customer.phone||'Phone missing')} · ${esc(customer.preferredChannel||'Preferred channel missing')}</small></article>
 ${kycCard}<article><span>Consent</span><b>${data.effectiveConsent?'Granted':'Not granted'}</b><small>${data.restricted?'Communication restricted':'No active restriction'}</small></article></div>${canMaintain?`<details open><summary>Customer profile</summary><form id="customer-profile-form" class="form-grid compact-form"><div class="span2"><label>Customer full name *</label><input name="fullName" required value="${esc(customer.fullName)}"></div><div><label>Customer postal address</label><input name="postalAddress" value="${esc(customer.postalAddress||'')}"></div><div><label>Email *</label><input name="email" type="email" required value="${esc(customer.email||'')}"></div><div><label>Phone *</label><input name="phone" required value="${esc(customer.phone||'')}"></div><div><label>Preferred channel</label><select name="preferredChannel"><option value="">Not confirmed</option>${['WhatsApp','Phone','Email','SMS'].map(x=>`<option ${customer.preferredChannel===x?'selected':''}>${x}</option>`).join('')}</select></div><button class="btn btn-primary btn-sm">Save customer profile</button></form></details><details><summary>KYC and verification</summary><form id="customer-kyc-form" class="form-grid compact-form"><div><label>ID type</label><select name="idDocumentType"><option value="">Not recorded</option><option value="passport" ${customer.idDocumentType==='passport'?'selected':''}>Passport</option><option value="emirates_id" ${customer.idDocumentType==='emirates_id'?'selected':''}>Emirates ID</option></select></div><div><label>Final four characters only</label><input name="idDocumentLast4" maxlength="4" pattern="[A-Za-z0-9]{4}" value="${esc(customer.idDocumentLast4||'')}"></div><div><label>Expiry date *</label><input name="idDocumentExpiry" type="date" value="${esc(String(customer.idDocumentExpiry||'').slice(0,10))}"></div><div><label>KYC status</label><select name="kycStatus">${['unverified','pending_review','verified','expired','rejected'].map(x=>`<option value="${x}" ${customer.kycStatus===x?'selected':''}>${x.replaceAll('_',' ')}</option>`).join('')}</select></div><div class="span2"><label>Internal KYC notes</label><input name="kycNotes" value="${esc(customer.kycNotes||'')}"></div><button class="btn btn-primary btn-sm">Save KYC review</button></form></details><details><summary>Channels and customer roles</summary><div class="customer-related-list">${channels.map(x=>`<div><b>${esc(x.channelKind)} · ${esc(x.usageLabel)}</b><span>${esc(x.rawValue)} · ${esc(x.verificationStatus)}</span></div>`).join('')||'No channels recorded.'}</div><form id="customer-channel-form" class="admin-toolbar"><div><label>Channel</label><select name="channelKind"><option>Phone</option><option>Email</option></select></div><div><label>Label</label><input name="usageLabel" value="Additional"></div><div><label>Value</label><input name="rawValue" required></div><button class="btn btn-sm">Add channel</button></form><p><b>Roles:</b> ${roles.map(r=>esc(r.roleCode)).join(', ')||'None'}</p><form id="customer-role-form" class="admin-toolbar"><div><label>Add customer role</label><select name="roleCode"><option>buyer</option><option>seller</option><option>landlord</option><option>tenant</option><option>investor</option><option>other</option></select></div><button class="btn btn-sm">Add role</button></form></details>`:''}<details open><summary>Related leads (${leads.length})</summary><div class="customer-related-list">${leads.map(l=>`<button data-related-lead="${l.id}"><b>${esc(l.title)}</b><span>${esc(l.businessType)} · ${esc(l.stage)} · ${esc(l.temperature)}</span></button>`).join('')||'No related leads.'}</div></details><details><summary>Private linked documents (${documents.length})</summary><div class="customer-related-list">${documents.map(d=>`<div><b>${esc(d.title)}</b><span>${esc(d.documentType)} · ${esc(d.status)} · ${fmtDate(d.createdAt)}</span></div>`).join('')||'No accessible linked documents.'}</div></details></div>`,{type:'customer',id,returnTab:'customers'});
+  addContactReveal(o,'/crm/customers/'+encodeURIComponent(id));
   const profileForm=$('#customer-profile-form',o);if(profileForm){for(const name of ['email','phone']){profileForm.elements[name].required=false;const label=profileForm.elements[name].closest('div')?.querySelector('label');if(label)label.textContent=name==='email'?'Email':'Phone';}profileForm.closest('details')?.querySelector('summary')?.insertAdjacentHTML('afterend','<p class="tool-note">Any authorized Customer user may propose a correction. The current record remains effective until a Manager approves it. Keep at least one email address or phone number.</p>');profileForm.querySelector('button')?.insertAdjacentHTML('beforebegin','<div class="span3"><label>Reason for change *</label><input name="changeReason" minlength="5" required placeholder="Why should this Customer record change?"></div>');profileForm.querySelector('button').textContent='Submit change for Manager approval';}
   const changeRequests=data.changeRequests||[],pendingCustomerChange=changeRequests.find(x=>x.status==='pending');if(changeRequests.length){$('.customer-summary-grid',o)?.insertAdjacentHTML('afterend',`<details open class="customer-change-history"><summary>Customer change audit (${changeRequests.length})</summary>${changeRequests.map(request=>`<article class="customer-source-summary"><h4>${esc(request.status.replaceAll('_',' '))} · requested by ${esc(request.requestedByName)}</h4><div class="customer-related-list">${Object.entries(request.proposedValues||{}).map(([field,value])=>`<div><b>${esc(field.replaceAll(/([A-Z])/g,' $1'))}</b><span>Current: ${esc((request.currentValues||{})[field]??'—')} · Proposed: ${esc(value??'—')}</span></div>`).join('')}</div><p><b>Reason:</b> ${esc(request.changeReason)}</p>${request.decisionReason?`<small>Decision by ${esc(request.decidedByName)} · ${esc(request.decisionReason)}</small>`:''}${data.canReviewKyc&&request.status==='pending'?`<form class="form-grid compact-form" data-customer-change-decision="${request.id}"><div class="span2"><label>Manager decision reason *</label><input name="reason" minlength="5" required></div><button type="button" class="btn btn-primary btn-sm" data-decision="approved">Approve and apply</button><button type="button" class="btn btn-sm" data-decision="rejected">Reject</button></form>`:''}</article>`).join('')}</details>`);}if(pendingCustomerChange&&profileForm)profileForm.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
   $('#customer-role-form option[value="developer"]',o)?.remove();
@@ -939,7 +994,7 @@ function renderCrm() {
       <div><label>Search existing leads</label><input id="crm-q" placeholder="Lead reference, Opportunity or linked customer name"><small>Search by Lead reference, title or customer. Customers appear here after a Lead is created.</small></div>
       <div><label>Stage</label><select id="crm-stage"><option value="">All stages</option>${opts(LEAD_STAGES)}</select></div>
       <div><label>Qualification</label><select id="crm-temp"><option value="">All</option>${opts(TEMPERATURES)}</select></div>
-      <div><label>Working view</label><select id="crm-owner">${ME.jobRole==='sales_agent'?'<option value="me" selected>My assigned Leads</option><option value="">Company-visible Leads</option>':'<option value="">Everyone in scope</option><option value="me">Assigned to me</option>'}</select></div>
+      <div><label for="crm-owner">Owning Agent</label><select id="crm-owner">${owningAgentOptions(true)}</select></div>
       <div><label>Assignment status</label><select id="crm-assignment"><option value="">All</option><option value="unassigned">Unassigned</option><option value="assigned">Assigned</option><option value="reassignment_due">Reassignment due</option><option value="closed">Closed</option></select></div>
     </div>
     <div class="filter-actions"><button class="btn btn-primary btn-sm" id="crm-apply">Apply</button><button class="btn btn-sm" id="crm-reset">Reset</button><span class="result-count" id="crm-count"></span></div>
@@ -956,6 +1011,7 @@ function renderCrm() {
   $('#crm-apply').addEventListener('click',()=>{loadCRMLeads.page=1;loadCRMLeads();});
   $('#crm-reset').addEventListener('click', renderCrm);
   $('#crm-q').addEventListener('keydown', e => { if (e.key === 'Enter'){loadCRMLeads.page=1;loadCRMLeads();} });
+  void populateOwningAgents($('#crm-owner'));
   loadCRMLeads();
 }
 
@@ -1184,6 +1240,7 @@ async function openLead(id,{afterStageChange=null}={}) {
         </form>
       </div><aside class="activity-impact" aria-live="polite"><h4>This save will append</h4><div data-activity-impact></div><div class="activity-preview"><small>Timeline preview</small><b data-activity-preview-title>Completed interaction</b><span data-activity-preview-detail>Lifecycle snapshots and next work</span></div></aside></div>
     </section>`:''}<section class="activity-history"><h4>Conversation and activity history</h4><div id="activity-list">${activityHTML(activities)}</div></section></div></div>`,{type:'lead',id,returnTab:'crm'});
+  addContactReveal(o,'/crm/leads/'+encodeURIComponent(id));
   if(!writable)$('#lead-open-active-opportunity',o)?.remove();
   const emailFact=[...o.querySelectorAll('.kv-grid > div')].find(item=>item.querySelector('b')?.textContent==='Email');if(emailFact&&lead.emailStatus==='format_valid')emailFact.insertAdjacentHTML('beforeend','<br><small>Format only; mailbox ownership and recent use are not verified.</small>');
   if(lead.source==='Website'&&(intakeEvidence||[]).length)$('.lead-controls',o)?.insertAdjacentHTML('beforebegin','<div class="opportunity-safety-note"><b>Website assessment and CRM qualification are different controls</b><span>The website result is advisory, customer-declared intake evidence. CRM Qualification remains a staff assessment and is not completed automatically.</span></div>');
@@ -2810,12 +2867,24 @@ async function loadProspectCadenceSettings(){
         parkOnExhaustion:form.has('parkOnExhaustion')};
       try{await api(path,{method:'POST',body});await loadProspectCadenceSettings();}catch(error){toast(error.message);}
     };
-    for(const button of panel.querySelectorAll('[data-cadence-discard]'))button.onclick=async()=>{
-      if(!window.confirm('Discard this cadence draft? The active policy will stay in effect.'))return;
-      button.disabled=true;
-      try{await api(path+'/'+encodeURIComponent(button.dataset.cadenceDiscard)+'/discard',{method:'POST',body:{}});await loadProspectCadenceSettings();}
-      catch(error){toast(error.message);}
-      finally{button.disabled=false;}
+    for(const button of panel.querySelectorAll('[data-cadence-discard]'))button.onclick=()=>{
+      const confirmation=document.createElement('dialog');
+      confirmation.setAttribute('aria-labelledby','cadence-discard-title');
+      confirmation.innerHTML=`<h3 id="cadence-discard-title">Discard cadence draft?</h3>
+        <p>The active policy will stay in effect.</p>
+        <form method="dialog"><button class="btn" value="cancel" autofocus>Cancel</button>
+        <button class="btn" value="discard">Discard draft</button></form>`;
+      confirmation.addEventListener('close',async()=>{
+        const confirmed=confirmation.returnValue==='discard';
+        confirmation.remove();
+        if(!confirmed)return;
+        button.disabled=true;
+        try{await api(path+'/'+encodeURIComponent(button.dataset.cadenceDiscard)+'/discard',{method:'POST',body:{}});await loadProspectCadenceSettings();}
+        catch(error){toast(error.message);}
+        finally{button.disabled=false;}
+      },{once:true});
+      document.body.append(confirmation);
+      confirmation.showModal();
     };
     for(const button of panel.querySelectorAll('[data-cadence-approve]'))button.onclick=async()=>{
       button.disabled=true;

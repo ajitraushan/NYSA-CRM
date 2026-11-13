@@ -166,7 +166,7 @@ test('customers are a primary workspace and lead KYC links to the customer maste
   assert.match(ui,/Open customer record/);assert.match(ui,/switchTab\('customers'\)/);
   assert.doesNotMatch(ui,/id="lead-verify"/);assert.doesNotMatch(ui,/id="lead-governance"/);
   assert.match(crm,/r\.get\('\/crm\/customers\/:id'/);assert.match(crm,/canReadLead/);
-  assert.match(ui,/Private linked documents/);assert.match(crm,/FROM documents WHERE contact_id=\$1 OR lead_id=ANY/);
+  assert.match(ui,/Private linked documents/);assert.match(crm,/FROM documents\s+WHERE \(contact_id=\$1 AND lead_id IS NULL\) OR \(lead_id=ANY/);
   assert.match(crm,/status='executed' AND effective_at<=NOW\(\)/);assert.doesNotMatch(crm,/status='granted' AND effective_from/);
   assert.match(ui,/Create lead for this customer/);assert.match(ui,/openNewLeadForm\(id\)/);assert.match(ui,/Open customer documents/);
   assert.match(files,/r\.get\('\/crm\/customers\/:id\/documents'/);assert.match(files,/d\.lead_id IN \(SELECT id FROM leads WHERE contact_id=\$1\)/);
@@ -182,7 +182,7 @@ test('Sales Agent customer loading is scope-first and opened leads show a distin
   assert.match(crm,/SELECT c\.id FROM contacts c WHERE \$\{where\.join\(' AND '\)\}/);
   assert.match(crm,/WHERE c\.id=ANY\(\$1::uuid\[\]\)/);
   assert.match(crm,/pageSize=Math\.min\(100,Math\.max\(1,Number\.parseInt\(req\.query\.pageSize,10\)\|\|25\)\)/);
-  assert.match(crm,/res\.json\(\{ count: total, page, pageSize, contacts \}\)/);
+  assert.match(crm,/res\.json\(\{ count: total, page, pageSize, contacts:contacts\.map\(row=>maskCrmContact\(row,req\.broker\)\) \}\)/);
   assert.match(crm,/stageHistory/);
   assert.match(ui,/Customer.*Lead.*Contacted.*Qualified.*Viewing.*Negotiation.*Won/s);
   assert.match(ui,/One customer may have several leads, and each lead can be at a different stage\./);

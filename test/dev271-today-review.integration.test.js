@@ -93,6 +93,15 @@ test('DEV271 Today and override review enforce scope and retain evidence', { ski
     const own = await request('today', 'agent', 200);
     assert.deepEqual(own.items.map(item => item.id), [ids.due, ids.untouched]);
     assert.deepEqual(own.items.map(item => item.priority), [1, 5]);
+    const firstCallOverdue = uuid();
+    await db.execute(`INSERT INTO prospects(id,phone,normalized_phone,owner_id,team_id,timezone,timezone_source,created_by,status,first_call_due_at,created_at)
+      VALUES($1,'+971501234568','+971501234568',$2,$3,'Asia/Dubai','phone_inferred',$2,'not_contacted',now()-interval '1 hour',now())`,
+      [firstCallOverdue,ids.agent,ids.team]);
+    await db.execute("UPDATE prospects SET first_call_due_at=now()+interval '1 hour',created_at=now()-interval '1 day' WHERE id=$1",[ids.untouched]);
+    const ordered = await request('today', 'agent', 200);
+    assert.deepEqual(ordered.items.map(item => item.id), [ids.due,firstCallOverdue,ids.untouched]);
+    assert.deepEqual(ordered.items.slice(1).map(item => item.firstCallOverdue),[true,false]);
+    await db.execute('DELETE FROM prospects WHERE id=$1',[firstCallOverdue]);
     assert.equal((await request('today?agent=' + ids.agent, 'manager', 200)).readOnly, true);
     await request('today?agent=' + ids.agent, 'outsider', 404);
     await request('today', 'admin', 403);

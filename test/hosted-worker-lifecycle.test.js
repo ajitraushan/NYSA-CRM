@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {verifiedWorker,inspectWorkers,verifyReadinessWorker,stopVerifiedWorkers} from '../tools/hosted-worker-lifecycle.mjs';
+import {inspectInstallWorkers,verifiedWorker,inspectWorkers,verifyReadinessWorker,stopVerifiedWorkers} from '../tools/hosted-worker-lifecycle.mjs';
 const root='/home/nysareal/nysa-crm',marker=`lsnode:${root}/`,worker={pid:23,command:marker,cwd:root};
 test('hosted worker verification requires both exact process marker and exact working directory',()=>{
  assert.deepEqual(verifiedWorker(root,23,{readFile:()=>marker+'\0',realpath:()=>root}),worker);
@@ -14,4 +14,20 @@ test('worker reconciliation never signals a mismatched or reused PID and require
  const signals=[];let calls=0;await assert.rejects(()=>stopVerifiedWorkers(root,{assertStopped:async()=>false}),/must be stopped/);
  const result=await stopVerifiedWorkers(root,{assertStopped:async()=>true,inspect:()=>calls++===0?[worker]:[],verify:()=>null,signal:(...args)=>signals.push(args)});assert.equal(result.stopped,1);assert.deepEqual(signals,[]);
  calls=0;await stopVerifiedWorkers(root,{assertStopped:async()=>true,inspect:()=>calls++===0?[worker]:[],verify:()=>worker,signal:(...args)=>signals.push(args)});assert.deepEqual(signals,[[23,'SIGTERM']]);
+});
+
+test('pre-install inventory accepts one, two or three verified workers with start times',()=>{
+ for(const count of [1,2,3]){
+  const workers=Array.from({length:count},(_,i)=>({...worker,pid:23+i}));
+  const inventory=inspectInstallWorkers(root,{inspect:()=>workers,verify:pid=>workers.find(row=>row.pid===pid),
+   readStart:pid=>'start '+pid});
+  assert.deepEqual(inventory,workers.map(row=>({...row,startedAt:'start '+row.pid})));
+ }
+ assert.throws(()=>inspectInstallWorkers(root,{inspect:()=>[]}),/At least one/);
+});
+test('post-start readiness rejects a pre-install PID',async()=>{
+ const options={root,expectedVersion:'2.1.0-dev.273',previousWorkers:[worker],inspect:()=>[worker],
+  request:async()=>({status:200,json:async()=>({ok:true,database:'ready',version:'2.1.0-dev.273'})})};
+ await assert.rejects(verifyReadinessWorker(options),/pre-install worker PID: 23/);
+ assert.equal((await verifyReadinessWorker({...options,inspect:()=>[{...worker,pid:24}]})).workerCount,1);
 });

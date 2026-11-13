@@ -7,7 +7,7 @@ import test from 'node:test';
 
 test('DEV271 technical version and deployment baseline equal accepted DEV270',()=>{
   const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
-  assert.equal(packageJson.version,'2.1.0-dev.272');
+  assert.equal(packageJson.version,'2.1.0-dev.273');
   const files=['columns.json','constraints.json','functions.json','indexes.json','sequences-views.json','manifest.json'];
   for(const file of files){
     const actual=fs.readFileSync('src/database-schema-baseline/'+file,'utf8').replaceAll('\r','');

@@ -40,7 +40,7 @@ async function refreshLeadNextAction(leadId,client){
 async function scopedLead(req,client){
   const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id],client);
   if(!lead) return {error:[404,'Lead not found']};
-  if(!canReadLead(req.broker,lead)) return {error:[403,'Lead is outside your permitted scope']};
+  if(!canReadLead(req.broker,lead)) return {error:[404,'Lead not found']};
   return {lead};
 }
 
@@ -467,7 +467,7 @@ r.get('/crm/tasks',async(req,res)=>{
     LEFT JOIN marketing_materials mm ON mm.id=mmv.material_id
     LEFT JOIN qualification_follow_up_task_links ql ON ql.task_id=t.id
     WHERE ((t.task_type='leave_approval' AND t.assignee_id=${governedAssignee})
-      OR t.assignee_id=${governedAssignee} OR (${scope.clause})) AND (${bucket}) ORDER BY t.due_at`,params);
+      OR t.assignee_id=${governedAssignee} OR (${scope.clause})) AND (t.lead_id IS NULL OR (${scope.clause})) AND (${bucket}) ORDER BY t.due_at`,params);
   let assignmentTasks=[];
   if(req.query.mine==='1'&&['manager','director'].includes(req.broker.jobRole)&&req.query.bucket!=='completed'){
     const assignmentParams=[],assignmentWhere=["l.stage NOT IN ('Won','Lost')","l.assigned_to IS NULL","l.assignment_status IN ('unassigned','reassignment_due')","a.superseded_at IS NULL","a.operating_sla_ended_at IS NULL","a.status='queued'","NOT EXISTS(SELECT 1 FROM opportunities active_o WHERE active_o.lead_id=l.id AND active_o.stage NOT IN ('Closed Won','Closed Lost'))"];
@@ -483,7 +483,7 @@ r.get('/crm/tasks',async(req,res)=>{
     const now=Date.now(),today=new Date();today.setHours(0,0,0,0);const tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
     assignmentTasks=rows.filter(row=>{const due=new Date(row.dueAt).getTime();if(req.query.bucket==='overdue')return due<now;if(req.query.bucket==='today')return due>=today&&due<tomorrow;if(req.query.bucket==='upcoming')return due>=tomorrow;return true;}).map(row=>({
       id:`assignment-${row.id}`,taskType:'lead_assignment',leadId:row.leadId,contactId:row.contactId,leadTitle:row.leadTitle,contactName:row.contactName,
-      subject:'Assign routed Lead',details:`${row.leadReference} · ${row.teamName||'Company queue'} · queue cycle ${row.sequenceNo}. Open the assignment workspace and select an eligible Sales Agent.`,
+      subject:'Assign routed Lead',details:`${row.leadReference} Â· ${row.teamName||'Company queue'} Â· queue cycle ${row.sequenceNo}. Open the assignment workspace and select an eligible Sales Agent.`,
       priority:new Date(row.dueAt)<new Date()?'urgent':'high',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager',assignmentStatus:row.assignmentStatus
     }));
   }
@@ -534,7 +534,7 @@ r.get('/crm/tasks',async(req,res)=>{
       FROM customer_change_requests r JOIN contacts c ON c.id=r.contact_id JOIN brokers requester ON requester.id=r.requested_by
       WHERE r.status='pending' ORDER BY r.requested_at,r.id`);
     customerChangeTasks=(req.broker.jobRole==='manager'?changes:[]).map(row=>({id:`customer-change-${row.id}`,taskType:'customer_change_approval',customerChangeRequestId:row.id,
-      contactId:row.contactId,contactName:row.fullName,subject:'Review Customer change',details:`${row.customerReference} · requested by ${row.requestedByName} · ${row.changeReason}`,
+      contactId:row.contactId,contactName:row.fullName,subject:'Review Customer change',details:`${row.customerReference} Â· requested by ${row.requestedByName} Â· ${row.changeReason}`,
       priority:'high',status:'open',dueAt:row.dueAt,assigneeId:req.broker.id,assigneeName:req.broker.name||'Responsible Manager'}));
     const cancellationParams=[],cancellationScope=opportunityScopeSql('o',req.broker,cancellationParams);
     const cancellations=await many(`SELECT r.id AS cancellation_request_id,r.requested_at AS due_at,r.reason,d.id AS deal_id,d.deal_reference,
@@ -550,7 +550,7 @@ r.get('/crm/tasks',async(req,res)=>{
   let inventoryTasks=[];
   if(req.query.mine==='1'&&req.broker.jobRole==='manager'&&['open','completed',undefined].includes(req.query.bucket)){
     const rows=await many(`SELECT vr.*,l.inventory_reference,l.project,t.name AS team_name FROM inventory_verification_requests vr JOIN listings l ON l.id=vr.listing_id JOIN brokers maintainer ON maintainer.id=l.posted_by JOIN teams t ON t.id=maintainer.team_id WHERE l.deleted_at IS NULL AND vr.status${req.query.bucket==='completed'?"<>'pending'":"='pending'"} AND (t.manager_id=$1 OR EXISTS(SELECT 1 FROM team_memberships tm WHERE tm.team_id=t.id AND tm.broker_id=$1 AND tm.membership_role='manager' AND tm.ends_at IS NULL) OR EXISTS(SELECT 1 FROM user_role_assignments ur WHERE ur.team_id=t.id AND ur.broker_id=$1 AND ur.job_role='manager' AND ur.status='active' AND ur.ends_at IS NULL)) ORDER BY vr.submitted_at,vr.id`,[req.broker.id]);
-    inventoryTasks=rows.map(row=>({id:'inventory-review-'+row.id,taskType:row.requestType==='exemption'?'inventory_exemption':'inventory_verification',listingId:row.listingId,inventoryReference:row.inventoryReference,subject:row.requestType==='exemption'?'Review Inventory exemption':'Review Inventory verification',details:row.inventoryReference+' · '+row.project+' · '+row.teamName+' · submitted '+new Date(row.submittedAt).toISOString(),status:row.status==='pending'?'open':'completed',submittedAt:row.submittedAt,dueAt:null,priority:'normal',assigneeId:req.broker.id}));
+    inventoryTasks=rows.map(row=>({id:'inventory-review-'+row.id,taskType:row.requestType==='exemption'?'inventory_exemption':'inventory_verification',listingId:row.listingId,inventoryReference:row.inventoryReference,subject:row.requestType==='exemption'?'Review Inventory exemption':'Review Inventory verification',details:row.inventoryReference+' Â· '+row.project+' Â· '+row.teamName+' Â· submitted '+new Date(row.submittedAt).toISOString(),status:row.status==='pending'?'open':'completed',submittedAt:row.submittedAt,dueAt:null,priority:'normal',assigneeId:req.broker.id}));
   }
   const queueTasks=req.query.mine==='1'?await reviewQueueTasks(req.broker,req.query):[];
   const allTasks=[...queueTasks,...tasks,...assignmentTasks,...opportunityTasks,...dealApprovalTasks,...customerChangeTasks,...dealCancellationTasks,...inventoryTasks];

@@ -44,8 +44,13 @@ export function isCrmReadOnly(broker) {
 }
 
 export function canReadLead(broker, lead) {
-  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return false;
-  return true;
+  if (!lead || !hasBusinessIdentity(broker)) return false;
+  if (isCompanyReader(broker)) return true;
+  if (broker.jobRole === 'manager') {
+    return lead.assignedTo === null || lead.assignedTo === broker.id ||
+      (broker.managedTeamIds ?? []).includes(lead.assignedTeamId);
+  }
+  return broker.jobRole === 'sales_agent' && lead.assignedTo === broker.id;
 }
 
 export function canWriteLead(broker, lead) {
@@ -112,8 +117,15 @@ function bind(params, value) {
 }
 
 export function leadScopeSql(alias, broker, params = []) {
-  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return { clause:'1=0', params };
-  return { clause:'1=1', params };
+  if (!hasBusinessIdentity(broker)) return {clause:'1=0', params};
+  if (isCompanyReader(broker)) return {clause:'1=1', params};
+  if (broker.jobRole === 'sales_agent') return {clause:`${alias}.assigned_to=${bind(params,broker.id)}`, params};
+  if (broker.jobRole === 'manager') {
+    const id=bind(params,broker.id);
+    const teams=bind(params,broker.managedTeamIds ?? []);
+    return {clause:`(${alias}.assigned_to IS NULL OR ${alias}.assigned_to=${id} OR ${alias}.assigned_team_id=ANY(${teams}::uuid[]))`, params};
+  }
+  return {clause:'1=0', params};
 }
 
 export function agentWorkLeadScopeSql(alias,broker,params=[]){
@@ -161,8 +173,18 @@ export function teamScopeSql(alias,broker,params=[]){
 }
 
 export function contactScopeSql(alias, broker, params = []) {
-  if (!hasBusinessIdentity(broker) || broker.jobRole===JOB_ROLE.ACCOUNTANT) return { clause:'1=0', params };
-  return { clause:'1=1', params };
+  if (!hasBusinessIdentity(broker)) return {clause:'1=0', params};
+  if (isCompanyReader(broker)) return {clause:'1=1', params};
+  if (broker.jobRole === 'sales_agent') return {clause:`${alias}.owner_id=${bind(params,broker.id)}`, params};
+  if (broker.jobRole === 'manager') {
+    const id=bind(params,broker.id);
+    const teams=bind(params,broker.managedTeamIds ?? []);
+    return {clause:`(${alias}.owner_id=${id} OR EXISTS (
+      SELECT 1 FROM brokers customer_owner WHERE customer_owner.id=${alias}.owner_id
+        AND customer_owner.job_role='sales_agent' AND customer_owner.team_id=ANY(${teams}::uuid[])
+    ))`, params};
+  }
+  return {clause:'1=0', params};
 }
 
 export function companyScopeSql(alias, broker, params = []) {

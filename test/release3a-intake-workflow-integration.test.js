@@ -34,7 +34,7 @@ test('R3A-INTAKE-EMAIL-42 promotes format-valid email and retains its credibilit
 test('R3A-PROFILE-46 integrates accepted intake into Customer 360 and connected Lead screens',()=>{
   const crm=read('src/routes/crm.js'),ui=read('public/app.js');
   assert.match(crm,/intakeEvidence/);
-  assert.match(crm,/f\.contact_id=\$1 AND f\.review_status='active'/);
+  assert.match(crm,/f\.contact_id=\$1 AND \(f\.lead_id IS NULL OR f\.lead_id=ANY\(\$2::uuid\[\]\)\) AND f\.review_status='active'/);
   assert.match(crm,/f\.lead_id=\$1 AND f\.review_status='active'/);
   assert.match(ui,/Website declarations and source evidence/);
   assert.match(ui,/Original website declarations and attribution/);

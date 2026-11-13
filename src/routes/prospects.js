@@ -6,7 +6,7 @@ import {hasInternalCrmIdentity} from '../crm-policy.js';
 import {normalizePhone,isValidEmail} from '../crm-domain.js';
 import {blocksOutbound,getContactSuppression,recordContactSuppression,releaseContactSuppression} from '../contact-suppression.js';
 import {prospectCallingPolicyConfig} from '../prospect-calling-policy.js';
-import { advanceProspectRetry, answeredCallStatus, validateProspectAgentTarget, validateProspectCadence, validateProspectNextStep } from '../prospect-tracking.js';
+import { advanceProspectRetry, applyProspectRetryLimits, answeredCallStatus, validateProspectAgentTarget, validateProspectCadence, validateProspectNextStep } from '../prospect-tracking.js';
 import {registerProspectUpload} from './prospect-upload.js';
 import {UPLOAD_SOURCES} from '../prospect-upload.js';
 
@@ -339,6 +339,8 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
     ), candidates AS (
       SELECT p.id,p.display_name,p.phone,p.source,p.purpose,p.budget_band,p.property_type,p.market,p.timeline,
         p.first_call_due_at,p.next_retry_at,p.retry_attempts,p.created_at,
+        p.first_call_due_at < clock.at AS first_call_overdue,
+        moved.retry_moved,
         f.id AS follow_up_id,coalesce(f.due_at,recontact.due_at) AS due_at,f.prospect_channel,
         recontact.due_at IS NOT NULL AS timing_recontact,
         latest.outcome AS last_outcome,latest.occurred_at AS last_occurred_at,
@@ -354,6 +356,7 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
           ) AND NOT EXISTS (
             SELECT 1 FROM prospect_activities a WHERE a.prospect_id=p.id AND a.activity_type='call' AND a.direction='outbound'
           ) THEN 5
+          WHEN moved.retry_moved IS NOT NULL THEN 6
         END AS priority
       FROM prospects p CROSS JOIN clock
       LEFT JOIN LATERAL (
@@ -378,6 +381,12 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
         ORDER BY g.day LIMIT 1
       ) recontact ON true
       LEFT JOIN LATERAL (
+        SELECT log.details::jsonb AS retry_moved FROM audit_log log
+        WHERE log.entity_type='Prospect' AND log.entity_id=p.id AND log.action='weekly_retry_moved'
+          AND (log.details::jsonb->>'movedAt')::timestamptz=p.next_retry_at
+        ORDER BY log.timestamp DESC,log.id DESC LIMIT 1
+      ) moved ON p.next_retry_at IS NOT NULL
+      LEFT JOIN LATERAL (
         SELECT a.notes FROM prospect_activities a WHERE a.prospect_id=p.id
         ORDER BY a.occurred_at DESC,a.id DESC LIMIT 1
       ) latest_note ON true
@@ -390,9 +399,11 @@ r.get('/crm/prospect-diary/today',async(req,res)=>{
            OR s.restrictions @> '{"dncr":{"active":true}}' OR s.restrictions @> '{"wrong_number":{"active":true}}')
         )
     )
-    SELECT *,count(*) OVER()::int AS queue_total
+    SELECT *,count(*) FILTER (WHERE priority<6) OVER()::int AS queue_total
     FROM candidates WHERE priority IS NOT NULL
-    ORDER BY priority,CASE WHEN priority<=3 THEN due_at WHEN priority=4 THEN last_occurred_at ELSE created_at END,id
+    ORDER BY priority,(priority=5 AND first_call_overdue IS TRUE) DESC,
+      CASE WHEN priority<=3 THEN due_at WHEN priority=4 THEN last_occurred_at
+        WHEN priority=6 THEN next_retry_at ELSE created_at END,id
     LIMIT 500`,scoped.params);
   const filters=prospectDashboardFilters({});
   const metrics=scope('p',req.broker,[filters.from,filters.to,'day',null,agent,null,null,connectedOutcomes,0]);
@@ -526,7 +537,13 @@ r.post('/crm/prospect-diary/overrides/:id/review',async(req,res)=>{
   return res.status(201).json(result);
 });
 
-r.get('/crm/prospects/:id',async(req,res)=>{const prospect=await visibleProspect(req.params.id,req.broker);if(!prospect)return res.status(404).json({error:'Prospect not found or outside your scope'});const [activities,followUps,suppression,callingNumbers,editHistory,overrideReviews]=await Promise.all([many(`SELECT a.*,b.name AS created_by_name,n.label AS company_calling_number_label FROM prospect_activities a JOIN brokers b ON b.id=a.created_by LEFT JOIN company_calling_numbers n ON n.id=a.company_calling_number_id WHERE a.prospect_id=$1 ORDER BY a.occurred_at DESC,a.id DESC`,[prospect.id]),many(`SELECT f.*,b.name AS assignee_name,c.name AS created_by_name FROM tasks f JOIN brokers b ON b.id=f.assignee_id JOIN brokers c ON c.id=f.created_by WHERE f.prospect_id=$1 AND f.task_type='prospect_follow_up' ORDER BY CASE WHEN f.status IN('open','in_progress') THEN 0 ELSE 1 END,f.due_at,f.id`,[prospect.id]),getContactSuppression(prospect.normalizedPhone),many("SELECT id,label,phone,normalized_phone FROM company_calling_numbers WHERE status='active' ORDER BY label"),many("SELECT a.timestamp,a.details,b.name AS actor_name FROM audit_log a LEFT JOIN brokers b ON b.id=a.performed_by WHERE a.entity_type='Prospect' AND a.entity_id=$1 AND a.action='profile_updated' ORDER BY a.timestamp DESC",[prospect.id]),many(
+r.get('/crm/prospects/:id',async(req,res)=>{const prospect=await visibleProspect(req.params.id,req.broker);if(!prospect)return res.status(404).json({error:'Prospect not found or outside your scope'});const [activities,followUps,suppression,callingNumbers,editHistory,overrideReviews]=await Promise.all([many(`SELECT a.*,b.name AS created_by_name,n.label AS company_calling_number_label,moved.retry_moved FROM prospect_activities a JOIN brokers b ON b.id=a.created_by LEFT JOIN company_calling_numbers n ON n.id=a.company_calling_number_id
+LEFT JOIN LATERAL (
+  SELECT log.details::jsonb - 'activityId' AS retry_moved FROM audit_log log
+  WHERE log.entity_type='Prospect' AND log.entity_id=a.prospect_id AND log.action='weekly_retry_moved'
+    AND log.details::jsonb->>'activityId'=a.id::text
+  ORDER BY log.timestamp DESC,log.id DESC LIMIT 1
+) moved ON true WHERE a.prospect_id=$1 ORDER BY a.occurred_at DESC,a.id DESC`,[prospect.id]),many(`SELECT f.*,b.name AS assignee_name,c.name AS created_by_name FROM tasks f JOIN brokers b ON b.id=f.assignee_id JOIN brokers c ON c.id=f.created_by WHERE f.prospect_id=$1 AND f.task_type='prospect_follow_up' ORDER BY CASE WHEN f.status IN('open','in_progress') THEN 0 ELSE 1 END,f.due_at,f.id`,[prospect.id]),getContactSuppression(prospect.normalizedPhone),many("SELECT id,label,phone,normalized_phone FROM company_calling_numbers WHERE status='active' ORDER BY label"),many("SELECT a.timestamp,a.details,b.name AS actor_name FROM audit_log a LEFT JOIN brokers b ON b.id=a.performed_by WHERE a.entity_type='Prospect' AND a.entity_id=$1 AND a.action='profile_updated' ORDER BY a.timestamp DESC",[prospect.id]),many(
   "SELECT r.id,r.activity_id,r.task_id,r.reviewed_at,r.comment,b.name AS reviewed_by_name FROM prospect_override_reviews r "+
   "JOIN brokers b ON b.id=r.reviewed_by LEFT JOIN prospect_activities a ON a.id=r.activity_id LEFT JOIN tasks t ON t.id=r.task_id "+
   "WHERE a.prospect_id=$1 OR t.prospect_id=$1 ORDER BY r.reviewed_at DESC,r.id",[prospect.id])]);
@@ -743,16 +760,13 @@ r.post('/crm/prospects/:id/activities',async(req,res)=>{
         step:closing || prospect.status === 'do_not_contact' ? null : next.step,at,policy:cadence});
       if (retry.nextAt) {
         // Existing repeat-call limits use the prospect's local calendar and a rolling seven-day window.
-        const nextRetry = retry.nextAt;
-        const thresholds = ['unanswered_daily_threshold','unanswered_weekly_threshold','repeat_after_decline'];
-        for (let day = 0; day < 15; day++) {
-          const workingDay = (new Date(nextRetry.getTime()+4*3600000).getUTCDay() || 7);
-          if (cadence.workingDays.includes(workingDay)) {
-            const checks = await callWarnings(prospect,nextRetry,client);
-            if (!checks.warnings.some(warning => thresholds.includes(warning))) break;
-          }
-          nextRetry.setUTCDate(nextRetry.getUTCDate()+1);
-          if (day === 14) retry.nextAt = null;
+        const checked = await applyProspectRetryLimits(retry.nextAt,cadence.workingDays,
+          async nextAt => (await callWarnings(prospect,nextAt,client)).warnings);
+        retry.nextAt = checked.nextAt;
+        if (checked.moved) {
+          await audit('Prospect',prospect.id,'weekly_retry_moved',req.broker.id,{
+            activityId:row.id,...checked.moved,
+          },client);
         }
       }
       await execute('UPDATE prospects SET retry_attempts=$2,next_retry_at=$3,parked_at=$4 WHERE id=$1',

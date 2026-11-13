@@ -84,6 +84,31 @@ export function advanceProspectRetry({ previousAttempts, outcome, step, at, poli
   };
 }
 
+export async function applyProspectRetryLimits(planned, workingDays, getWarnings) {
+  const nextAt = new Date(planned);
+  let weeklyLimitMovedRetry = false;
+  const thresholds = ['unanswered_daily_threshold','unanswered_weekly_threshold','repeat_after_decline'];
+  for (let day = 0; day < 15; day++) {
+    const workingDay = new Date(nextAt.getTime()+4*3600000).getUTCDay() || 7;
+    if (workingDays.includes(workingDay)) {
+      const warnings = await getWarnings(nextAt);
+      if (!warnings.some(warning => thresholds.includes(warning))) {
+        return {
+          nextAt,
+          moved: weeklyLimitMovedRetry ? {
+            plannedAt: planned.toISOString(),
+            movedAt: nextAt.toISOString(),
+            reason: 'unanswered_weekly_threshold',
+          } : null,
+        };
+      }
+      weeklyLimitMovedRetry ||= warnings.includes('unanswered_weekly_threshold');
+    }
+    nextAt.setUTCDate(nextAt.getUTCDate()+1);
+  }
+  return {nextAt:null,moved:null};
+}
+
 const boundedInteger = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 
 export function validateProspectCadence(body = {}) {

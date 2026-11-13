@@ -10,7 +10,7 @@ const r=Router();r.use(requireAuth,(req,res,next)=>hasNysaStaffIdentity(req.brok
 const clean=v=>typeof v==='string'&&v.trim()?v.trim():null;
 const admin=(req,res)=>req.broker.role==='admin'||(res.status(403).json({error:'Admin access required'}),false);
 const maintainer=admin;
-async function leadFor(req,res,scope='read'){const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);if(!lead){res.status(404).json({error:'Lead not found'});return null;}const allowed=scope==='manage'?canWriteLead(req.broker,lead):scope==='operate'?canOperateLead(req.broker,lead):canReadLead(req.broker,lead);if(!allowed){res.status(403).json({error:'Lead is outside your permitted scope'});return null;}return lead;}
+async function leadFor(req,res,scope='read'){const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);if(!lead){res.status(404).json({error:'Lead not found'});return null;}const allowed=scope==='manage'?canWriteLead(req.broker,lead):scope==='operate'?canOperateLead(req.broker,lead):canReadLead(req.broker,lead);if(!allowed){res.status(404).json({error:'Lead not found'});return null;}return lead;}
 async function createQualificationFollowUp({lead,assessment,temperature,actorId,client}){
   const policy=await one("SELECT * FROM sla_policies WHERE status='active' ORDER BY effective_from DESC LIMIT 1",[],client),plan=qualificationFollowUpPlan({temperature,assessedAt:new Date(),policy});
   if(!policy||!plan?.dueAt)throw Object.assign(new Error('An active SLA policy with valid Qualification follow-up timings is required'),{statusCode:409});

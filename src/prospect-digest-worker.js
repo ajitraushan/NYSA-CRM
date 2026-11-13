@@ -1,7 +1,9 @@
+import { createRequire } from 'node:module';
 import { audit, execute, many, one, transaction, uuid } from './db.js';
 import { connectedOutcomes, prospectDashboardFilters, prospectDashboardSummary } from './prospect-dashboard.js';
 import { digestDeliveryTransition, digestEmailSettings, previousProspectWorkingDay, sendProspectDigest } from './prospect-digest-smtp.js';
 
+const { version: applicationVersion } = createRequire(import.meta.url)('../package.json');
 const dubaiOffset = 4 * 3600000;
 const audienceByRole = { sales_agent: 'agent', manager: 'manager', director: 'director' };
 
@@ -78,7 +80,7 @@ function renderDigest(report) {
       report.previous.callsConnected+' connected, '+report.previous.newInterested+' interested, '+report.previous.conversions+' converted',
   ];
   for(const agent of report.agents)lines.push(redactContactDetails(agent.name)+': '+agent.calls_made+' / '+agent.target+
-    ' calls, '+agent.calls_connected+' connected, '+agent.new_interested+' interested, '+agent.overdue+' overdue, '+agent.dueToday+' due today');
+    ' calls, '+agent.calls_connected+' connected, '+agent.new_interested+' interested, '+agent.conversions+' converted, '+agent.overdue+' overdue, '+agent.dueToday+' due today');
   if(report.audience!=='agent')lines.push('Overrides needing review: '+report.overrideCount);
   for(const warning of report.overrides)lines.push([warning.agent,warning.prospect,warning.codes?.join(', '),warning.reason]
     .map(redactContactDetails).filter(Boolean).join(' · '));
@@ -130,7 +132,7 @@ async function deliver(run, send) {
       return {state:'skipped',code:'ADMIN_TEST_RECIPIENT_NO_LONGER_ELIGIBLE'};
     }
     return send({
-      to:run.recipientEmail,subject:'DEV271 CRM Test digest delivery',
+      to:run.recipientEmail,subject:applicationVersion+' CRM Test digest delivery',
       text:'Synthetic Prospect Diary email delivery check.',html:'<p>Synthetic Prospect Diary email delivery check.</p>',
       messageId:'<prospect-digest-'+run.id+'@nysarealty.com>',
     });

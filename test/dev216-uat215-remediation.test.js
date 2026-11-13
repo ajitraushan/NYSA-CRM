@@ -29,8 +29,8 @@ test('expired assignment cannot return to the same Agent self-claim queue',()=>{
   const route=read('src/routes/lead-operations.js'),ui=read('public/app.js');
   assert.match(route,/prior\.agent_id[\s\S]+IS DISTINCT FROM/);
   assert.match(route,/expired from your assignment and must be reassigned by a Manager or Director/);
-  assert.match(ui,/My assigned Leads/);
-  assert.match(ui,/Company-visible Leads/);
+  assert.match(ui,/Owning Agent/);
+  assert.match(ui,/jobRole==='sales_agent'\?'me'/);
 });
 
 test('operational KPI cards no longer render Prior or null comparisons',()=>{

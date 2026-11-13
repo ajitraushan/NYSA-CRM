@@ -37,8 +37,8 @@ r.get('/public/property-shares/:token',async(req,res)=>{
   if(!share)return res.status(404).send('This property share is unavailable or has expired.');
   const items=await many('SELECT * FROM opportunity_property_share_items WHERE share_id=$1 ORDER BY id',[share.id]);
   const cards=items.map(item=>{const p=item.propertySnapshot||{},media=Array.isArray(p.media)?p.media:[],photos=media.filter(x=>x.kind==='image'),documents=media.filter(x=>x.kind!=='image');
-    return `<details class="property" open><summary><span><b>${publicEsc(p.project)}</b><small>${publicEsc(p.area)} · ${publicEsc(p.propertyType)} · ${publicEsc(p.bedrooms||'Bedrooms not recorded')}</small></span><strong>${publicEsc(p.currency)} ${Number(p.price||0).toLocaleString('en-US')}</strong></summary><div class="body">${photos.length?`<div class="photos">${photos.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank"><img src="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" alt="${publicEsc(x.title)}"></a>`).join('')}</div>`:''}<dl><div><dt>Property type</dt><dd>${publicEsc(p.propertyType)}</dd></div><div><dt>Bedrooms</dt><dd>${publicEsc(p.bedrooms||'Not recorded')}</dd></div><div><dt>Size</dt><dd>${p.sizeSqft?`${Number(p.sizeSqft).toLocaleString('en-US')} sq ft`:'Not recorded'}</dd></div><div><dt>Payment plan</dt><dd>${publicEsc(p.paymentPlan||'Not recorded')}</dd></div></dl>${documents.length?`<div class="documents">${documents.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank">${x.kind==='floor_plan'?'View floor plan / layout':'Open brochure'} · ${publicEsc(x.title)}</a>`).join('')}</div>`:''}<label>Response<select data-share-item="${item.id}"><option value="">Select response</option><option value="accepted">Interested / accepted</option><option value="rejected">Not suitable</option><option value="alternatives_requested">Send alternatives</option></select></label></div></details>`;}).join('');
-  res.setHeader('Content-Type','text/html; charset=utf-8');res.send(`<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>NYSA property selection</title><style>body{font:16px system-ui;margin:auto;max-width:900px;padding:20px;color:#27271f;background:#f5f4ef}header,.property{background:#fff;border:1px solid #ddd9cc;border-radius:12px;margin:12px 0;padding:16px}summary{display:flex;justify-content:space-between;gap:16px;cursor:pointer}summary span{display:grid}small{color:#727267;margin-top:4px}.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:16px 0}.photos img{width:100%;height:140px;object-fit:cover;border-radius:8px}dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}dl div{background:#f5f4ef;padding:10px}dt{font-size:12px;text-transform:uppercase;color:#727267}dd{margin:4px 0}.documents{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.documents a{border:1px solid #b28b42;padding:8px;border-radius:7px;color:#76581d}footer{margin-top:20px;border-top:1px solid #ccc;padding-top:14px}.disclaimer{font-size:13px;color:#666}</style></head><body><header><h1>Selected property options</h1><p>${publicEsc(share.customerMessage)}</p></header>${cards}<footer><b>Your NYSA representative: ${publicEsc(share.agentName)}</b><p>${publicEsc(share.agentPhone||'')} · ${publicEsc(share.agentEmail||'')}</p><p class="disclaimer">${publicEsc(items[0]?.propertySnapshot?.disclaimer||'Property information, pricing and availability are subject to verification and may change without notice.')}</p></footer></body></html>`);
+    return `<details class="property" open><summary><span><b>${publicEsc(p.project)}</b><small>${publicEsc(p.area)} Â· ${publicEsc(p.propertyType)} Â· ${publicEsc(p.bedrooms||'Bedrooms not recorded')}</small></span><strong>${publicEsc(p.currency)} ${Number(p.price||0).toLocaleString('en-US')}</strong></summary><div class="body">${photos.length?`<div class="photos">${photos.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank"><img src="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" alt="${publicEsc(x.title)}"></a>`).join('')}</div>`:''}<dl><div><dt>Property type</dt><dd>${publicEsc(p.propertyType)}</dd></div><div><dt>Bedrooms</dt><dd>${publicEsc(p.bedrooms||'Not recorded')}</dd></div><div><dt>Size</dt><dd>${p.sizeSqft?`${Number(p.sizeSqft).toLocaleString('en-US')} sq ft`:'Not recorded'}</dd></div><div><dt>Payment plan</dt><dd>${publicEsc(p.paymentPlan||'Not recorded')}</dd></div></dl>${documents.length?`<div class="documents">${documents.map(x=>`<a href="/api/public/property-shares/${encodeURIComponent(req.params.token)}/media/${x.id}" target="_blank">${x.kind==='floor_plan'?'View floor plan / layout':'Open brochure'} Â· ${publicEsc(x.title)}</a>`).join('')}</div>`:''}<label>Response<select data-share-item="${item.id}"><option value="">Select response</option><option value="accepted">Interested / accepted</option><option value="rejected">Not suitable</option><option value="alternatives_requested">Send alternatives</option></select></label></div></details>`;}).join('');
+  res.setHeader('Content-Type','text/html; charset=utf-8');res.send(`<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>NYSA property selection</title><style>body{font:16px system-ui;margin:auto;max-width:900px;padding:20px;color:#27271f;background:#f5f4ef}header,.property{background:#fff;border:1px solid #ddd9cc;border-radius:12px;margin:12px 0;padding:16px}summary{display:flex;justify-content:space-between;gap:16px;cursor:pointer}summary span{display:grid}small{color:#727267;margin-top:4px}.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:16px 0}.photos img{width:100%;height:140px;object-fit:cover;border-radius:8px}dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}dl div{background:#f5f4ef;padding:10px}dt{font-size:12px;text-transform:uppercase;color:#727267}dd{margin:4px 0}.documents{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.documents a{border:1px solid #b28b42;padding:8px;border-radius:7px;color:#76581d}footer{margin-top:20px;border-top:1px solid #ccc;padding-top:14px}.disclaimer{font-size:13px;color:#666}</style></head><body><header><h1>Selected property options</h1><p>${publicEsc(share.customerMessage)}</p></header>${cards}<footer><b>Your NYSA representative: ${publicEsc(share.agentName)}</b><p>${publicEsc(share.agentPhone||'')} Â· ${publicEsc(share.agentEmail||'')}</p><p class="disclaimer">${publicEsc(items[0]?.propertySnapshot?.disclaimer||'Property information, pricing and availability are subject to verification and may change without notice.')}</p></footer></body></html>`);
 });
 
 r.get('/public/property-shares/:token/media/:mediaId',async(req,res)=>{
@@ -207,6 +207,14 @@ async function inheritInventoryOwner(listingId,transactionType,actorId,client){
       inventoryParty.source,inventoryParty.authorityEvidence,actorId,inventoryParty.id],client);
   return {inventoryParty,counterparty};
 }
+function maskOpportunityContact(record,broker){
+  if(!record||!['manager','director'].includes(broker.jobRole))return record;
+  const phone=String(record.contactPhone??'').replace(/\D/g,'');
+  const email=/^([^\s@])[^\s@]*@([^\s@]+)$/.exec(String(record.contactEmail??'').trim());
+  return {...record,contactPhone:phone?'\u2022\u2022\u2022\u2022'+(phone.length>=4?phone.slice(-4):''):null,
+    contactEmail:email?email[1]+'***@'+email[2]:null};
+}
+
 const SELECT_OPPORTUNITY=`SELECT o.*,COALESCE(c.full_name,buyer_cp.display_name,'External buyer') AS contact_name,c.email AS contact_email,c.phone AS contact_phone,
   seller_cp.display_name AS seller_counterparty_name,seller_cp.role AS seller_counterparty_role,seller_cp.evidence_reference AS seller_counterparty_evidence,
   c.postal_address AS contact_address,l.title AS lead_title,l.stage AS lead_stage,COALESCE(req.customer_objective,l.customer_objective) AS customer_objective,
@@ -241,7 +249,7 @@ async function opportunityWithParticipants(id,client){
 async function scopedOpportunity(req,id,client){
   const opportunity=await opportunityWithParticipants(id,client);
   if(!opportunity)return {error:[404,'Opportunity not found']};
-  if(!canReadOpportunity(req.broker,opportunity))return {error:[403,'Opportunity is outside your permitted scope']};
+  if(!canReadOpportunity(req.broker,opportunity))return {error:[404,'Opportunity not found']};
   return {opportunity};
 }
 
@@ -261,7 +269,7 @@ r.get('/crm/opportunities',async(req,res)=>{
   const total=Number((await one(`SELECT COUNT(*)::int AS count FROM opportunities o JOIN leads l ON l.id=o.lead_id JOIN contacts c ON c.id=l.contact_id WHERE ${where.join(' AND ')}`,params)).count||0);
   const sorts={due:"CASE WHEN o.stage IN ('Closed Won','Closed Lost') THEN 1 ELSE 0 END,o.next_action_due_at NULLS LAST,o.created_at DESC",newest:'o.created_at DESC',updated:'o.updated_at DESC,o.created_at DESC',customer:'LOWER(COALESCE(c.full_name,buyer_cp.display_name,\'\')),o.created_at DESC'};
   const opportunities=await many(`${SELECT_OPPORTUNITY} WHERE ${where.join(' AND ')} ORDER BY ${sorts[req.query.sort]||sorts.due} LIMIT $${params.length+1} OFFSET $${params.length+2}`,[...params,pageSize,offset]);
-  res.json({count:total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize)),opportunities});
+  res.json({count:total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize)),opportunities:opportunities.map(row=>maskOpportunityContact(row,req.broker))});
 });
 
 r.get('/crm/opportunities/:id',async(req,res)=>{
@@ -420,7 +428,7 @@ r.get('/crm/opportunities/:id',async(req,res)=>{
     FROM provisional_external_properties WHERE usage_kind='developer_stock'
       AND status IN ('captured','verification_pending','approved_for_opportunity','under_offer') AND promoted_listing_id IS NULL
     ORDER BY updated_at DESC,created_at DESC`):[];
-  res.json({opportunity,stageHistory,assignmentHistory,matches,inventoryAssignments,viewings,offers,bookings,deals,propertyShares,developerStock});
+  res.json({opportunity:maskOpportunityContact(opportunity,req.broker),stageHistory,assignmentHistory,matches,inventoryAssignments,viewings,offers,bookings,deals,propertyShares,developerStock});
 });
 
 r.post('/crm/opportunities/:id/developer-stock',async(req,res)=>{
@@ -519,7 +527,7 @@ r.post('/crm/opportunities/:id/requirement-alignment',async(req,res)=>{
     if(!opportunity)return{code:404,error:'Opportunity not found'};
     const participants=await many('SELECT broker_id FROM opportunity_participants WHERE opportunity_id=$1 AND active',[opportunity.id],client);
     opportunity.participantIds=participants.map(item=>item.brokerId);
-    if(!canReadOpportunity(req.broker,opportunity))return{code:403,error:'Opportunity is outside your permitted scope'};
+    if(!canReadOpportunity(req.broker,opportunity))return{code:404,error:'Opportunity not found'};
     if(!canWriteOpportunity(req.broker,opportunity))return{code:403,error:'Opportunity is outside your writable scope'};
     if(!['Requirements','Matching'].includes(opportunity.stage))return{code:409,error:'Requirement alignment is available only before Viewing work begins'};
     if(Number(opportunity.version)!==expectedVersion)return{code:409,error:'This Opportunity changed after the alignment action was opened; reload before saving'};
@@ -587,7 +595,7 @@ r.post('/crm/opportunities/:id/property-shares',async(req,res)=>{
       COALESCE(li.inventory_reference,ep.external_reference) AS property_reference,
       COALESCE(li.project,ep.project_or_building) AS project,
       COALESCE(li.area,ep.property_address) AS area,COALESCE(li.property_type,ep.property_type) AS property_type,
-      li.bedrooms,li.size_sqft,CASE WHEN li.payment_plan_type IS NULL THEN NULL ELSE concat_ws(' · ',li.payment_plan_type,
+      li.bedrooms,li.size_sqft,CASE WHEN li.payment_plan_type IS NULL THEN NULL ELSE concat_ws(' Â· ',li.payment_plan_type,
         CASE WHEN li.down_payment_percent IS NOT NULL THEN li.down_payment_percent||'% down' END,
         CASE WHEN li.on_handover_percent IS NOT NULL THEN li.on_handover_percent||'% on handover' END,
         li.payment_plan_notes) END AS payment_plan,
@@ -2200,7 +2208,7 @@ async function refreshRecoveryCases(broker){
     websiteIntakeEventId:record.websiteIntakeEventId||null,taskId:record.taskId||null,assignedTeamId:record.assignedTeamId||null,category,severity,title,requiredAction,dueAt:dueAt||null,evidence});
   const now=Date.now();
   for(const lead of leads){
-    const label=`${lead.customerName} · ${lead.leadReference||lead.title}`;
+    const label=`${lead.customerName} Â· ${lead.leadReference||lead.title}`;
     if(!lead.assignedTo&&now-new Date(lead.receivedAt).valueOf()>=30*60*1000)add(lead,'unassigned_ageing','high',label,'Assign a responsible broker or confirm the team queue',lead.acceptanceDueAt,{assignmentStatus:lead.assignmentStatus,teamName:lead.teamName});
     if(!lead.acceptedAt&&lead.acceptanceDueAt&&new Date(lead.acceptanceDueAt)<refreshAt)add(lead,'acceptance_breach','critical',label,'Recover or reassign the unanswered Lead',lead.acceptanceDueAt,{assignmentStatus:lead.assignmentStatus});
     if(lead.acceptedAt&&!lead.firstContactAt&&lead.firstContactDueAt&&new Date(lead.firstContactDueAt)<refreshAt)add(lead,'first_contact_breach','critical',label,'Contact the customer or reassign with evidence',lead.firstContactDueAt,{assignedTo:lead.assignedTo});
@@ -2209,7 +2217,7 @@ async function refreshRecoveryCases(broker){
     if(nextDue&&new Date(nextDue)<refreshAt)add(lead,'overdue_next_action','high',label,'Complete or reschedule the overdue action with a reason',nextDue,{nextAction:lead.opportunityNextAction||'Lead follow-up'});
     if(Number(lead.queueCycleNo||0)>1)add(lead,'repeated_reassignment','medium',label,'Review why this Lead has returned to the queue repeatedly',lead.acceptanceDueAt,{queueCycleNo:Number(lead.queueCycleNo)});
   }
-  for(const task of tasks)add(task,'overdue_task','high',`${task.customerName} · ${task.leadReference}`,'Complete or reschedule the overdue task',task.dueAt,{subject:task.subject});
+  for(const task of tasks)add(task,'overdue_task','high',`${task.customerName} Â· ${task.leadReference}`,'Complete or reschedule the overdue task',task.dueAt,{subject:task.subject});
   for(const event of intake){const category=event.status==='email_review'?'intake_email_review':event.status==='identity_review'?'intake_identity_review':event.status==='duplicate_review'?'intake_duplicate_review':'intake_failed',severity=event.status==='failed'?'critical':'high';
     add({...event,id:null},category,severity,`Website event ${event.eventId}`,event.status==='failed'?'Correct the processing failure and replay the retained event':event.status==='email_review'?'Approve a genuine email-only exception or reject dummy/bot evidence':'Record the governed intake decision',event.reviewDueAt||event.receivedAt,{eventId:event.eventId,errorCode:event.errorCode,status:event.status});}
   await transaction(async client=>{

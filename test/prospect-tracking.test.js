@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { advanceProspectRetry, answeredCallStatus, validateProspectNextStep } from '../src/prospect-tracking.js';
+import { advanceProspectRetry, applyProspectRetryLimits, answeredCallStatus, validateProspectNextStep } from '../src/prospect-tracking.js';
 
 test('next step is required and must agree with the outcome', () => {
   assert.match(validateProspectNextStep({ outcome: 'answered' }).error, /exactly one/);
@@ -46,4 +46,23 @@ test('initial call plus three retries skips Sunday, parks after retry three and 
   assert.deepEqual(last.parkedAt, at);
   assert.deepEqual(advanceProspectRetry({ previousAttempts: 4, outcome: 'answered', step: 'follow_up', at, policy }),
     { attempts: 0, nextAt: null, parkedAt: null });
+});
+
+test('weekly call limit records the original and moved retry dates', async () => {
+  const planned = new Date('2026-11-16T08:00:00Z');
+  const cutoff = new Date('2026-11-19T08:00:00Z');
+  const workingDays = [1,2,3,4,5,6];
+  const checked = await applyProspectRetryLimits(planned,workingDays,
+    async date => date < cutoff ? ['unanswered_weekly_threshold'] : []);
+  assert.deepEqual(checked,{
+    nextAt:cutoff,
+    moved:{plannedAt:planned.toISOString(),movedAt:cutoff.toISOString(),reason:'unanswered_weekly_threshold'},
+  });
+  assert.equal(planned.toISOString(),'2026-11-16T08:00:00.000Z');
+  const daily = await applyProspectRetryLimits(planned,workingDays,
+    async date => date < cutoff ? ['unanswered_daily_threshold'] : []);
+  assert.deepEqual(daily,{nextAt:cutoff,moved:null});
+  const exhausted = await applyProspectRetryLimits(planned,workingDays,
+    async () => ['unanswered_weekly_threshold']);
+  assert.deepEqual(exhausted,{nextAt:null,moved:null});
 });

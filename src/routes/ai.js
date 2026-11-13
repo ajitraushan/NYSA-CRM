@@ -12,7 +12,7 @@ import { loadActiveClassificationCatalogue } from '../classification-catalogue.j
 const r=Router();
 r.use(requireAuth,(req,res,next)=>hasInternalCrmIdentity(req.broker)?next():res.status(403).json({error:'CRM AI assistance is restricted to NYSA staff'}));
 
-async function scopedLead(req,res){const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);if(!lead){res.status(404).json({error:'Lead not found'});return null;}if(!canReadLead(req.broker,lead)){res.status(403).json({error:'Lead is outside your permitted scope'});return null;}return lead;}
+async function scopedLead(req,res){const lead=await one('SELECT * FROM leads WHERE id=$1',[req.params.id]);if(!lead){res.status(404).json({error:'Lead not found'});return null;}if(!canReadLead(req.broker,lead)){res.status(404).json({error:'Lead not found'});return null;}return lead;}
 const safeErrorCode=error=>error instanceof AiServiceError?error.code:'ai_internal_error';
 const RULESET_VERSION='release3a-v1';
 const clean=(value,max=500)=>String(value||'').trim().slice(0,max);
