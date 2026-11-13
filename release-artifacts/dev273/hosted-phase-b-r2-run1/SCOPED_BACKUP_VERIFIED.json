@@ -1,0 +1,266 @@
+{
+  "scope": "CRM Test application root and database only",
+  "directory": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/scoped-backup",
+  "createdAt": "2026-11-13T19:51:32.751Z",
+  "app": {
+    "path": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/scoped-backup/crm-test-app.tar.gz",
+    "bytes": 421082970,
+    "sha256": "e41428309b3af17a581cd377ed1b739e5685fd03e5e49e08d21deed923e9321f",
+    "contentsVerified": true,
+    "runtimeManifestSha256": "5691c5329e695dad05f435493c089f0967869ff2cb7fb6ef3b561af8b8798fd3"
+  },
+  "database": {
+    "path": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/scoped-backup/nysareal_nysa_dev247_smoke.dump",
+    "name": "nysareal_nysa_dev247_smoke",
+    "format": "PostgreSQL custom",
+    "bytes": 1946358,
+    "sha256": "86c1c4413bd94ff35188e23d0420e4e20ff6ab755e11c91421b3c7ea2f4d8efa",
+    "consistentSnapshot": "PostgreSQL pg_dump MVCC snapshot",
+    "pgDumpVersion": "pg_dump (PostgreSQL) 13.23",
+    "pgRestoreVersion": "pg_restore (PostgreSQL) 13.23",
+    "serverVersionNumber": 130023,
+    "clientCompatible": true,
+    "tableComparison": {
+      "sql": "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",
+      "label": "pre-deployment",
+      "expectedCount": 313,
+      "observedCount": 313,
+      "expectedNamesSha256": "583e38a909c0cda5d2b49518e769d42c16a26f8cc1c47c9fbd8ff78cbce6f685",
+      "observedNamesSha256": "583e38a909c0cda5d2b49518e769d42c16a26f8cc1c47c9fbd8ff78cbce6f685",
+      "extra": [],
+      "missing": [],
+      "matches": true
+    },
+    "triggerComparison": {
+      "sql": "SELECT c.relname AS table_name,t.tgname AS trigger_name,\n      pn.nspname||'.'||p.proname AS function_name,t.tgenabled AS enabled\n    FROM pg_trigger t\n    JOIN pg_class c ON c.oid=t.tgrelid\n    JOIN pg_namespace n ON n.oid=c.relnamespace\n    JOIN pg_proc p ON p.oid=t.tgfoid\n    JOIN pg_namespace pn ON pn.oid=p.pronamespace\n   WHERE NOT t.tgisinternal AND n.nspname='public'\n   ORDER BY c.relname,t.tgname",
+      "label": "pre-deployment",
+      "expectedCount": 113,
+      "observedCount": 113,
+      "expectedTableCount": 96,
+      "observedTableCount": 96,
+      "expectedSha256": "ccd62fac7432b9de304d7505bf30cd78db62feec432065c02f1bf35333a3a3a8",
+      "observedSha256": "ccd62fac7432b9de304d7505bf30cd78db62feec432065c02f1bf35333a3a3a8",
+      "missing": [],
+      "extra": [],
+      "wrongFunction": [],
+      "wrongEnabled": [],
+      "matches": true
+    },
+    "schemaContractComparison": {
+      "label": "pre-deployment",
+      "kind": "baseline",
+      "helperPath": "/home/nysareal/crm-deployment-tools/tools/database-schema-contract.mjs",
+      "helperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
+      "manifestPath": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/candidate/src/database-schema-contract/manifest.json",
+      "manifestSha256": "8a67123576f03423c5d176386156bb8ab80071df2345ef5cf1ffd5eb15aa8638",
+      "triggerContractPath": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/candidate/src/database-trigger-contract.json",
+      "triggerContractSha256": "bbf9640691bbd7c96f415e8e52e5fdbf99adcb4c3edc1045fa6eb07e44b74262",
+      "matches": true,
+      "objects": {
+        "constraints": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        },
+        "indexes": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        },
+        "columns": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        },
+        "functions": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        },
+        "sequencesViews": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        },
+        "triggers": {
+          "missing": [],
+          "extra": [],
+          "changed": [],
+          "matches": true
+        }
+      }
+    },
+    "triggerDriftDataComparison": {
+      "label": "pre-deployment",
+      "expected": [
+        {
+          "name": "active_agent_adjustment_invalid_slab_sets",
+          "count": 0
+        },
+        {
+          "name": "active_agent_adjustment_overlap_pairs",
+          "count": 0
+        },
+        {
+          "name": "active_commission_policy_invalid_slab_sets",
+          "count": 0
+        },
+        {
+          "name": "active_commission_policy_overlap_pairs",
+          "count": 0
+        },
+        {
+          "name": "booking_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "booking_extension_without_exact_evidence",
+          "count": 0
+        },
+        {
+          "name": "booking_initial_term_over_seven_days",
+          "count": 0
+        },
+        {
+          "name": "booking_term_over_fourteen_days",
+          "count": 0
+        },
+        {
+          "name": "deal_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "invalid_lead_stage_history",
+          "count": 0
+        },
+        {
+          "name": "leave_approval_task_assignment_mismatch",
+          "count": 0
+        },
+        {
+          "name": "leave_self_approval_decisions",
+          "count": 0
+        },
+        {
+          "name": "offer_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "terminal_leads_with_open_followups",
+          "count": 0
+        },
+        {
+          "name": "terminal_leads_with_stale_next_followup",
+          "count": 0
+        }
+      ],
+      "observed": [
+        {
+          "name": "active_agent_adjustment_invalid_slab_sets",
+          "count": 0
+        },
+        {
+          "name": "active_agent_adjustment_overlap_pairs",
+          "count": 0
+        },
+        {
+          "name": "active_commission_policy_invalid_slab_sets",
+          "count": 0
+        },
+        {
+          "name": "active_commission_policy_overlap_pairs",
+          "count": 0
+        },
+        {
+          "name": "booking_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "booking_extension_without_exact_evidence",
+          "count": 0
+        },
+        {
+          "name": "booking_initial_term_over_seven_days",
+          "count": 0
+        },
+        {
+          "name": "booking_term_over_fourteen_days",
+          "count": 0
+        },
+        {
+          "name": "deal_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "invalid_lead_stage_history",
+          "count": 0
+        },
+        {
+          "name": "leave_approval_task_assignment_mismatch",
+          "count": 0
+        },
+        {
+          "name": "leave_self_approval_decisions",
+          "count": 0
+        },
+        {
+          "name": "offer_bilateral_acceptance_incomplete",
+          "count": 0
+        },
+        {
+          "name": "terminal_leads_with_open_followups",
+          "count": 0
+        },
+        {
+          "name": "terminal_leads_with_stale_next_followup",
+          "count": 0
+        }
+      ],
+      "differences": [],
+      "matches": true
+    },
+    "leadCounterComparison": {
+      "sql": "WITH refs AS (\n      SELECT substring(lead_reference FROM '^NYSA-LD-([0-9]{6})-[0-9]{6}$') AS period_code,\n             MAX(right(lead_reference,6)::int)::int AS max_reference_number\n        FROM leads\n       WHERE lead_reference ~ '^NYSA-LD-[0-9]{6}-[0-9]{6}$'\n       GROUP BY 1\n    )\n    SELECT refs.period_code,refs.max_reference_number,COALESCE(c.last_value,0)::int AS counter_value,\n           (COALESCE(c.last_value,0)>=refs.max_reference_number) AS safe\n      FROM refs LEFT JOIN lead_month_number_counters c USING(period_code)\n     ORDER BY refs.period_code",
+      "rows": [
+        {
+          "period_code": "202610",
+          "max_reference_number": 209,
+          "counter_value": 209,
+          "safe": true
+        },
+        {
+          "period_code": "202611",
+          "max_reference_number": 18,
+          "counter_value": 18,
+          "safe": true
+        }
+      ],
+      "mismatches": [],
+      "safe": true
+    },
+    "liveTableCount": 313,
+    "dumpTableCount": 313,
+    "dumpTableNamesSha256": "583e38a909c0cda5d2b49518e769d42c16a26f8cc1c47c9fbd8ff78cbce6f685",
+    "backupTableSetVerification": {
+      "matches": true,
+      "liveCount": 313,
+      "dumpCount": 313,
+      "liveNamesSha256": "583e38a909c0cda5d2b49518e769d42c16a26f8cc1c47c9fbd8ff78cbce6f685",
+      "dumpNamesSha256": "583e38a909c0cda5d2b49518e769d42c16a26f8cc1c47c9fbd8ff78cbce6f685",
+      "extra": [],
+      "missing": []
+    },
+    "liveTriggerCount": 113,
+    "dumpTriggerCount": 113,
+    "dumpTriggerContractVerified": true,
+    "missingDumpTriggers": [],
+    "extraDumpTriggers": [],
+    "contentsVerified": true
+  },
+  "verifiedAt": "2026-11-13T19:51:33.044Z"
+}
