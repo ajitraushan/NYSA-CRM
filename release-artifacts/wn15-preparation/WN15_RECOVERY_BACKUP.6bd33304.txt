@@ -1,0 +1,26 @@
+Verified tools directory: /home/nysareal/crm-release-preparation/wn15-step-a.scnqbSG7
+SHA256SUMS: OK
+wn15-dev272-recovery-backup.mjs: OK
+wn15-dev272-activate-teams.mjs: OK
+wn15-dev272-run-a.mjs: OK
+wn15-dev272-common.mjs: OK
+hosted-worker-lifecycle.mjs: OK
+database-schema-contract.mjs: OK
+wn15-unused-range-readonly.sql: OK
+whatsapp-simulation-load.mjs: OK
+whatsapp-simulation-cleanup.mjs: OK
+wn15-dev272-telemetry-readonly.sh: OK
+wn15-resource-usage.mjs: OK
+file:///home/nysareal/crm-release-preparation/wn15-step-a.scnqbSG7/hosted-worker-lifecycle.mjs:21
+ const workers=inspect();if(workers.length!==1)throw Error('Exactly one verified worker is required after readiness');
+                                                     ^
+
+Error: Exactly one verified worker is required after readiness
+    at verifyReadinessWorker (file:///home/nysareal/crm-release-preparation/wn15-step-a.scnqbSG7/hosted-worker-lifecycle.mjs:21:54)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async context (file:///home/nysareal/crm-release-preparation/wn15-step-a.scnqbSG7/wn15-dev272-common.mjs:82:62)
+    at async file:///home/nysareal/crm-release-preparation/wn15-step-a.scnqbSG7/wn15-dev272-recovery-backup.mjs:6:18
+
+Node.js v24.22.3
+
+SSH exit code: 1
