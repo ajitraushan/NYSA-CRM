@@ -18,7 +18,11 @@ export async function verifyReadinessWorker({root,expectedVersion,request=url=>f
  assertHostedRoot(root);if(!/^2\.1\.0-(?:dev|rc)\.\d+$/.test(expectedVersion))throw Error('An exact version is required');
  const response=await request(hostedApps[root]+'/api/readiness'),readiness=await response.json();
  if(response.status!==200||readiness.ok!==true||readiness.database!=='ready'||readiness.version!==expectedVersion)throw Error('Expected application/database readiness was not established');
- const workers=inspect();if(workers.length!==1)throw Error('Exactly one verified worker is required after readiness');
+ const workers=inspect();
+ if(workers.length!==1){
+  const pids=workers.map(worker=>worker.pid);
+  throw Error(`Exactly one verified worker is required after readiness. Found ${workers.length} (PIDs: ${pids.join(', ')||'none'})`);
+ }
  return {root,version:readiness.version,database:readiness.database,workerCount:1,workers};
 }
 // For the separately approved deployment operator, after CloudLinux reports this exact app stopped.

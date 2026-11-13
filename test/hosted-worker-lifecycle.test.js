@@ -8,7 +8,7 @@ test('hosted worker verification requires both exact process marker and exact wo
  assert.deepEqual(inspectWorkers(root,{ps:()=>`23 ${marker}\n24 lsnode:/home/nysareal/other/\n25 node task.js`,verify:()=>worker}),[worker]);
 });
 test('readiness precedes worker acceptance; zero or duplicate workers fail after the request',async()=>{
- for(const count of[0,1,2]){const order=[],args={root,expectedVersion:'2.1.0-dev.251',request:async()=>{order.push('readiness');return{status:200,json:async()=>({ok:true,database:'ready',version:'2.1.0-dev.251'})};},inspect:()=>{order.push('workers');return Array.from({length:count},()=>worker);}};if(count===1)assert.equal((await verifyReadinessWorker(args)).workerCount,1);else await assert.rejects(()=>verifyReadinessWorker(args),/Exactly one/);assert.deepEqual(order,['readiness','workers']);}
+ for(const count of[0,1,2]){const order=[],args={root,expectedVersion:'2.1.0-dev.251',request:async()=>{order.push('readiness');return{status:200,json:async()=>({ok:true,database:'ready',version:'2.1.0-dev.251'})};},inspect:()=>{order.push('workers');return Array.from({length:count},(_,i)=>({...worker,pid:23+i}));}};if(count===1)assert.equal((await verifyReadinessWorker(args)).workerCount,1);else await assert.rejects(()=>verifyReadinessWorker(args),error=>error.message.endsWith(count===0?'Found 0 (PIDs: none)':'Found 2 (PIDs: 23, 24)'));assert.deepEqual(order,['readiness','workers']);}
 });
 test('worker reconciliation never signals a mismatched or reused PID and requires a stopped registration',async()=>{
  const signals=[];let calls=0;await assert.rejects(()=>stopVerifiedWorkers(root,{assertStopped:async()=>false}),/must be stopped/);
