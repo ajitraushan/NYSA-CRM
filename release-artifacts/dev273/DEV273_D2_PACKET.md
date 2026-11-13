@@ -44,6 +44,8 @@ The final governed run used a detached checkout of the exact pushed candidate wi
 - committed LF log SHA-256 `45413acf5bcf55e5eaad252e423c52dc6fd51236447571975744358f0363cd1b`;
 - Windows CRLF working-file SHA-256 `855e90ff30c4a6db0803ab6776a21d0c0462dd54734de8bc4057439bdace29fd`; the committed LF form is authoritative.
 
+The origin package manifest's internal receipt is 1,628 passed and 110 skipped because the canonical builder deliberately does not inject the PostgreSQL scope-fixture environment. In that run, the one parent scope integration test skips and its five nested subtests do not exist in the count. The separate exact-candidate governed command enables the fixture, producing five additional passes, removing that one skip and increasing the total test-node count by four. This accounts exactly for 1,628/110 versus 1,633/109; it is not a source or package mismatch.
+
 Fresh exact-candidate PostgreSQL 13.23 reruns also passed:
 
 | Check | Result | Receipt SHA-256 |
