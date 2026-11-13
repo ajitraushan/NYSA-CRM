@@ -2175,5 +2175,5 @@
   "schemaContractHelperSha256": "8a31f43ddfbaa4832804a4aa428892fb03eb40368622131a06d35b488ffb219c",
   "baselineSchemaContractManifestSha256": "8a67123576f03423c5d176386156bb8ab80071df2345ef5cf1ffd5eb15aa8638",
   "expectedSchemaContractManifestSha256": "8a67123576f03423c5d176386156bb8ab80071df2345ef5cf1ffd5eb15aa8638",
-  "baselineRuntimeManifestSha256": "7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297"
+  "baselineRuntimeManifestSha256": "3701f0e4880d826e7c722946f904914858e96a86e97023ae4c026f18c01b4680"
 }
