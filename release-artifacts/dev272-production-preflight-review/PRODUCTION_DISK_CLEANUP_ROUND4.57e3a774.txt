@@ -1,0 +1,12 @@
+production-disk-cleanup-round4.sh: OK
+Filesystem before cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3813888573440 3421665550336      53% /home/nysareal
+Removed /home/nysareal/nysa-core-dashboard-dd6262a-stage.failed-1793734674548
+Removed /home/nysareal/nysa-core-dashboard-dd6262a-stage.pre-recovery-20261103T2340DUBAI
+Removed /home/nysareal/nysa-core-dashboard-dd6262a-stage.dev244-mixed-20261028T055500Z
+Live CRM Test root present: /home/nysareal/nysa-core-dashboard-dd6262a-stage
+Total apparent bytes removed: 1961201270
+Filesystem after cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3811886985216 3423667138560      53% /home/nysareal
