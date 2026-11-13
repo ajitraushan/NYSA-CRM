@@ -1,0 +1,14 @@
+production-disk-cleanup-round2-leftovers-readonly.sh: OK
+
+/home/nysareal/nysa-core-dashboard-dd6262a-stage.dev244-mixed-20261028T055500Z
+Apparent bytes: 108312194
+Directories without write or search access: 132
+nysareal
+
+/home/nysareal/nysa-core-dashboard-dd6262a-stage.failed-1793734674548
+Apparent bytes: 926469452
+Directories without write or search access: 0
+
+/home/nysareal/nysa-core-dashboard-dd6262a-stage.pre-recovery-20261103T2340DUBAI
+Apparent bytes: 926419624
+Directories without write or search access: 0
