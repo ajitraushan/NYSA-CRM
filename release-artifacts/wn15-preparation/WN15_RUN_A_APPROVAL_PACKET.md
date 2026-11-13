@@ -10,6 +10,12 @@ For each written go, use agent-only SSH (disable identity files, no -i), capture
 
 Ajit supplies a fresh CRM Test Admin session privately using the existing login procedure with hidden password entry. The token is passed only in NYSA_SIMULATION_SESSION_TOKEN. Use the standard authenticated logout afterward, verify that the token receives 401 from /api/me, and clear private session material. The backup does not need an Admin session. Database credentials come privately from the exact selector registration and are passed only to PostgreSQL child processes.
 
+## Read-only telemetry before Step A
+
+Run the separately approved `./wn15-dev272-telemetry-readonly.sh` by file path from the fresh, hash-verified download directory. This check can run before 20:00 Dubai. Use agent-only SSH and capture the full stdout and stderr. The script runs each of Quota get_quota_info, DomainInfo list_domains and ResourceUsage get_usages once, retains their raw output, and prints each exit code. Inspect the JSON status and field availability as well as the process exit codes before clearing Step A.
+
+Quota UAPI returned exit 1 in the saved inventory runs. If telemetry is unavailable, review the raw evidence before changing the runner. A possible fallback is an independently confirmed finite account quota with a conservative du-based usage estimate whose coverage and units are verified, plus the existing HTTP health, readiness, latency and limit-response stops. A filesystem df reading alone cannot establish account quota. If resource usage is unavailable, the fallback loses the 80% resource stop and needs explicit review. Production health and latency thresholds stay in force.
+
 ## A. Recovery backup
 
 ```sh
