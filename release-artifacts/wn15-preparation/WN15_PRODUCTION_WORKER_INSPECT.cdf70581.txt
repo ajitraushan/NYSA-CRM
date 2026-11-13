@@ -1,0 +1,5 @@
+SHA256SUMS: OK
+hosted-worker-lifecycle.mjs: OK
+{"root":"/home/nysareal/nysa-crm","workers":[{"pid":130964,"command":"lsnode:/home/nysareal/nysa-crm/","cwd":"/home/nysareal/nysa-crm"},{"pid":4016501,"command":"lsnode:/home/nysareal/nysa-crm/","cwd":"/home/nysareal/nysa-crm"},{"pid":4182955,"command":"lsnode:/home/nysareal/nysa-crm/","cwd":"/home/nysareal/nysa-crm"}]}
+
+SSH exit code: 0
