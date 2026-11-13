@@ -1,0 +1,20 @@
+{
+  "operator": {
+    "commit": "12d924f8564bf38b91b90fcd186336b213f742a2",
+    "sha256": "0d66f2617c5ff5fc8fb01cd808dc3df46999d19d6432979685f1bc772515d34e"
+  },
+  "configs": {
+    "DEV273_CRM_TEST_INSTALL.json": {
+      "sha256": "da8866ab29c2398cbe24ac97ba544cad14d3740658526e2e3587f33d7fc6f7ff",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-install/scoped-backup"
+    },
+    "DEV273_CRM_TEST_REVERSE.json": {
+      "sha256": "beafaf9aec0488257305115ed6e9521db37550a35b4204c2f52aac2e22b15fff",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reverse/scoped-backup"
+    },
+    "DEV273_CRM_TEST_REINSTALL.json": {
+      "sha256": "13cbb810f30f54649fe94e10b42c2a8f8c21c9db925bda97ab26d73d01d2c83c",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reinstall/scoped-backup"
+    }
+  }
+}
