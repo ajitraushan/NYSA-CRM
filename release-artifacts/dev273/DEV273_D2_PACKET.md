@@ -35,6 +35,8 @@ Website intake boundary correction after initial D-2 review: the normal intake t
 | Production read-only preflight tool | application candidate | `8b1900098902724c846624848d22cb836dc2bdb77d673dd835a4720c7e5559a0` |
 | Production release operator | application candidate | `68b3049d5f5629e931dba59642c3312357e279e0d92e142d4f780497838dc430` |
 
+The revised package, manifest and checksum files are in `release-artifacts/dev273/package-r2/`; the older `package/` folder is superseded and must not be staged.
+
 The canonical builder was invoked only as `npm run release:package -- --commit <full-origin-SHA>`. The mandatory provenance verifier passed against GitHub origin. Package entry count is 510 (509 runtime-manifest entries plus the manifest checksum file). Config/tool hashes above were calculated from committed Git blobs. Config LF and Windows working-file hashes are identical and are the hashes checked by the operators.
 
 ## 3. Test evidence
