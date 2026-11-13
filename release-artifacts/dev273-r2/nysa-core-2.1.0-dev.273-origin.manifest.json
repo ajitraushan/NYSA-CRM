@@ -1,0 +1,33 @@
+{
+  "schema": "nysa.release-provenance.v1",
+  "repositoryUrl": "https://github.com/ajitraushan/NYSA-CRM.git",
+  "remote": "origin",
+  "commit": "12d2ffd3acd257dda955e6a16e78bdcc56441235",
+  "tree": "1f651750ab892526d04fdbdae39389b1ee147834",
+  "advertisedRefs": [
+    "refs/heads/codex/dev273-release-candidate"
+  ],
+  "sourceRef": "refs/heads/codex/dev273-release-candidate",
+  "version": "2.1.0-dev.273",
+  "migrationCount": 172,
+  "latestMigration": "172_prospect_tracking.sql",
+  "testReceipt": {
+    "command": "node tools/run-release-tests.mjs",
+    "startedAt": "2026-11-13T19:01:22.348Z",
+    "completedAt": "2026-11-13T19:01:54.759Z",
+    "tests": 1738,
+    "passed": 1628,
+    "failed": 0,
+    "skipped": 110,
+    "outputSha256": "3df9741263bf8c73692f2cba9d3a11da90b19f765c36683f83e67f2eb0ab7608",
+    "includedFiles": 340,
+    "excludedHistoricalArtifactFiles": 95,
+    "includedFilesSha256": "85c08c548fa5fdefde5071d44bfef4dd1caeca5331af431900c411a72f243755",
+    "excludedFilesSha256": "e58e995aaac8762c52717ecd872926a2e6e7b35574b72df64e933c349062fe71"
+  },
+  "package": "nysa-core-2.1.0-dev.273-origin.zip",
+  "packageSha256": "b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e",
+  "bytes": 11988678,
+  "runtimeManifestSha256": "7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297",
+  "entryCount": 510
+}

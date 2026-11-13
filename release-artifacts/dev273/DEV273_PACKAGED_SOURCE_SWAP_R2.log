@@ -1,0 +1,10 @@
+Candidate 12d2ffd3acd257dda955e6a16e78bdcc56441235
+Package SHA-256 b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e
+CRM Test operator 12d924f8564bf38b91b90fcd186336b213f742a2 SHA-256 0d66f2617c5ff5fc8fb01cd808dc3df46999d19d6432979685f1bc772515d34e
+Baseline archive source files: 406
+Candidate runtime files verified after swap: 509
+Candidate runtime files independently verified: 509
+Candidate source files verified: 406
+Restored runtime files verified: 509
+Restored source files verified: 406
+Exact archives passed source swap and restore. Windows copy adapter; hosted CLI, readiness, dependencies and workers excluded.

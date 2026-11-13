@@ -1,0 +1,1 @@
+a5dd49ece1d13c71a4ad17d155b2c9519be7b4f5220ac74043e6b7899aa778ee  nysa-core-2.1.0-dev.273-origin.manifest.json

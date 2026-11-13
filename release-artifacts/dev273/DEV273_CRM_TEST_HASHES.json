@@ -1,19 +1,25 @@
 {
+  "application": {
+    "commit": "12d2ffd3acd257dda955e6a16e78bdcc56441235",
+    "packageSha256": "b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e",
+    "manifestSha256": "a5dd49ece1d13c71a4ad17d155b2c9519be7b4f5220ac74043e6b7899aa778ee",
+    "runtimeManifestSha256": "7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297"
+  },
   "operator": {
     "commit": "12d924f8564bf38b91b90fcd186336b213f742a2",
     "sha256": "0d66f2617c5ff5fc8fb01cd808dc3df46999d19d6432979685f1bc772515d34e"
   },
   "configs": {
     "DEV273_CRM_TEST_INSTALL.json": {
-      "sha256": "da8866ab29c2398cbe24ac97ba544cad14d3740658526e2e3587f33d7fc6f7ff",
+      "sha256": "84de5156f14c35c8983c7dc3d2570a51cfe567fb52b956a2e1eef33fea745816",
       "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-install/scoped-backup"
     },
     "DEV273_CRM_TEST_REVERSE.json": {
-      "sha256": "beafaf9aec0488257305115ed6e9521db37550a35b4204c2f52aac2e22b15fff",
+      "sha256": "0562d6c81c3ffc9f3a93fb4dc18f5f08841e17787e7bf0395d14a57237e9970e",
       "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reverse/scoped-backup"
     },
     "DEV273_CRM_TEST_REINSTALL.json": {
-      "sha256": "13cbb810f30f54649fe94e10b42c2a8f8c21c9db925bda97ab26d73d01d2c83c",
+      "sha256": "6de52f7c71827b41336f441dd15c943f7e4104ff8e2d2751959afcb0eec3cc69",
       "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reinstall/scoped-backup"
     }
   }
