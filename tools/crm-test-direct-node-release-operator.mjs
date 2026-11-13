@@ -37,6 +37,9 @@ if(config.schemaContractHelperPath!=='/home/nysareal/crm-deployment-tools/tools/
 if(!/^[a-f0-9]{64}$/.test(config.schemaContractHelperSha256))throw Error('Schema-contract helper SHA-256 is invalid');
 if(Number(config.smokeWindowSeconds)<30||Number(config.smokeWindowSeconds)>60)throw Error('Smoke retry window must be between 30 and 60 seconds');
 normalizeExpectedTriggerContract(config.baselineTriggers,{label:'baseline trigger'});
+const migrationNeutral=config.baselineMigrationCount===config.expectedMigrationCount;
+if(migrationNeutral&&config.baselineSchemaContractManifestSha256!==config.expectedSchemaContractManifestSha256)throw Error('Migration-neutral schema contracts must match');
+if(migrationNeutral&&!/^[a-f0-9]{64}$/.test(config.baselineRuntimeManifestSha256))throw Error('Migration-neutral release requires the approved installed runtime manifest hash');
 if(!Array.isArray(config.expectedTriggerDriftDataChecks))throw Error('Expected trigger-drift data-check baseline must be an array');
 
 const startedAt=Date.now();
@@ -75,7 +78,10 @@ async function stop(){
 function runtimeNames(directory){
   return fs.readFileSync(path.join(directory,'RUNTIME_MANIFEST.sha256'),'utf8').trim().split(/\r?\n/).map(line=>{
     const match=line.match(/^([a-f0-9]{64})  (.+)$/),name=match?.[2];
-    if(!match||name.includes('\\')||name.startsWith('/')||name.split('/').includes('..')||hash(path.join(directory,name))!==match[1])throw Error('Runtime manifest mismatch');
+    if(!match||name.includes('\\')||name.startsWith('/')||name.split('/').includes('..') )throw Error('Invalid runtime manifest entry');
+    const file=path.join(directory,name);
+    const observed=fs.existsSync(file)?hash(file):'missing';
+    if(observed!==match[1])throw Error(`Runtime manifest mismatch: ${name}; expected ${match[1]}, observed ${observed}`);
     return name;
   });
 }
@@ -105,7 +111,8 @@ function candidateTriggerContract(){
 }
 async function schemaContractComparison(pool,kind,label){
   if(!['baseline','canonical'].includes(kind))throw Error('Unknown schema-contract kind');
-  const directory=kind==='baseline'?'database-schema-baseline':'database-schema-contract';
+  const usePriorSchema=kind==='baseline'&&!migrationNeutral;
+  const directory=usePriorSchema?'database-schema-baseline':'database-schema-contract';
   const expectedManifestHash=kind==='baseline'?config.baselineSchemaContractManifestSha256:config.expectedSchemaContractManifestSha256;
   const contractDirectory=path.join(config.candidate,'src',directory),manifestFile=path.join(contractDirectory,'manifest.json'),helper=config.schemaContractHelperPath;
   if(!fs.existsSync(manifestFile))throw Error(`${label} schema-contract manifest file missing: ${manifestFile}`);
@@ -113,7 +120,7 @@ async function schemaContractComparison(pool,kind,label){
   if(observedManifestHash!==expectedManifestHash)throw Error(`${label} schema-contract manifest hash mismatch: expected ${expectedManifestHash}, observed ${observedManifestHash}`);
   const manifestIdentity=JSON.parse(fs.readFileSync(manifestFile,'utf8')),triggerName=manifestIdentity?.triggers?.file;
   if(typeof triggerName!=='string'||path.basename(triggerName)!==triggerName||!manifestIdentity?.triggers?.fileSha256?.match(/^[a-f0-9]{64}$/))throw Error(`${label} schema-contract trigger identity is invalid`);
-  const triggerFile=kind==='baseline'?path.join(contractDirectory,triggerName):path.join(config.candidate,'src',triggerName);
+  const triggerFile=usePriorSchema?path.join(contractDirectory,triggerName):path.join(config.candidate,'src',triggerName);
   if(!fs.existsSync(triggerFile))throw Error(`${label} schema-contract trigger file missing: ${triggerFile}`);
   const observedTriggerHash=hash(triggerFile);
   if(observedTriggerHash!==manifestIdentity.triggers.fileSha256)throw Error(`${label} schema-contract trigger hash mismatch: expected ${manifestIdentity.triggers.fileSha256}, observed ${observedTriggerHash}`);
@@ -186,6 +193,11 @@ function validateRegistration(environment){
 function validateBaseline(){
   if(JSON.parse(fs.readFileSync(path.join(config.root,'package.json'))).version!==config.baselineVersion)throw Error('Installed baseline version drift');
   if(JSON.parse(fs.readFileSync(path.join(config.root,'RELEASE_PROVENANCE.json'))).commit!==config.baselineCommit)throw Error('Installed baseline provenance drift');
+  if(migrationNeutral){
+    const observed=hash(path.join(config.root,'RUNTIME_MANIFEST.sha256'));
+    if(observed!==config.baselineRuntimeManifestSha256)throw Error(`Installed RUNTIME_MANIFEST.sha256 drift: expected ${config.baselineRuntimeManifestSha256}, observed ${observed}`);
+    runtimeNames(config.root);
+  }
 }
 function validateCandidatePackage(){
   if(hash(config.zip)!==config.archiveHash||hash(config.manifest)!==config.manifestHash)throw Error('Candidate archive or manifest hash mismatch');

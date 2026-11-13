@@ -80,9 +80,14 @@ test('post-install comparison still requires all 113 canonical triggers',()=>{
   assert.equal(compareSchemaContracts(canonical,clone(canonical)).matches,true);
 });
 
-test('operator selects the baseline trigger copy only for baseline phases',()=>{
+test('operator uses the canonical contract before and after a migration-neutral install',()=>{
   const source=fs.readFileSync(path.join(root,'tools','crm-test-direct-node-release-operator.mjs'),'utf8');
-  assert.match(source,/const triggerFile=kind==='baseline'\?path\.join\(contractDirectory,triggerName\):path\.join\(config\.candidate,'src',triggerName\)/);
+  assert.match(source,/const migrationNeutral=config\.baselineMigrationCount===config\.expectedMigrationCount/);
+  assert.match(source,/const usePriorSchema=kind==='baseline'&&!migrationNeutral/);
+  assert.match(source,/const directory=usePriorSchema\?'database-schema-baseline':'database-schema-contract'/);
+  assert.match(source,/const triggerFile=usePriorSchema\?path\.join\(contractDirectory,triggerName\):path\.join\(config\.candidate,'src',triggerName\)/);
+  assert.match(source,/Migration-neutral schema contracts must match/);
+  assert.match(source,/Installed RUNTIME_MANIFEST\.sha256 drift/);
   assert.match(source,/schema-contract trigger hash mismatch: expected/);
   assert.match(source,/schemaContractComparison\(pool,'baseline','stage'\)/);
   assert.match(source,/schemaContractComparison\(pool,'baseline','backup'\)/);
