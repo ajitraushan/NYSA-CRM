@@ -9,6 +9,7 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
   assert.equal(process.env.PGDATABASE,'nysa_test_fixture');
   assert.equal(process.env.PGUSER,'nysa_test_user');
   const {db}=await import('../src/db.js');
+  const {savePrivate,removePrivate}=await import('../src/private-files.js');
   const {createApp}=await import('../src/lib/http-kit.js');
   const app=createApp();
   for(const name of ['crm','ai','files-proposals','opportunities','lead-operations','dashboards']){
@@ -17,7 +18,7 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
   const users={};
   let server;
   try {
-    for(const [name,role] of [['owner','sales_agent'],['outsider','sales_agent'],['director','director']]){
+    for(const [name,role] of [['owner','sales_agent'],['outsider','sales_agent'],['manager','manager'],['director','director']]){
       const id=randomUUID(), token=createHash('sha256').update(randomUUID()).digest('hex');
       await db.query("INSERT INTO brokers(id,name,email,role,job_role,status,password_hash) VALUES($1,$2,$3,'internal_broker',$4,'active','fixture')",[id,name,id+'@example.invalid',role]);
       await db.query("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",[createHash('sha256').update(token).digest('hex'),id]);
@@ -34,6 +35,38 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
     server=await new Promise(resolve=>{const listener=app.listen({host:'127.0.0.1',port:0},()=>resolve(listener));});
     const request=(user,path,method='GET')=>fetch('http://127.0.0.1:'+server.address().port+'/api/crm'+path,{method,
       headers:{authorization:'Bearer '+users[user].token}});
+    await t.test('Scoped generated PDF preview and download preserve original bytes and audit access',async()=>{
+      const team=randomUUID(),version=randomUUID();
+      await db.query('INSERT INTO teams(id,name,manager_id) VALUES($1,$2,$3)',[team,title,users.manager.id]);
+      await db.query("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$3)",[randomUUID(),team,users.manager.id]);
+      await db.query('UPDATE brokers SET team_id=$1 WHERE id=$2',[team,users.owner.id]);
+      await db.query('UPDATE leads SET assigned_team_id=$1 WHERE id=$2',[team,lead]);
+      const pdf=Buffer.from('%PDF-1.4\n% Synthetic original contact '+phone+'\n%%EOF\n');
+      const key=await savePrivate(pdf,'.pdf');
+      try {
+        await db.query(`INSERT INTO document_versions(id,document_id,version_number,file_name,media_type,file_size_bytes,storage_key,file_hash,immutable,source,classification,status,owner_id,created_by)
+          VALUES($1,$2,1,'fixture.pdf','application/pdf',$3,$4,$5,1,'generated','private','generated',$6,$6)`,
+        [version,document,pdf.length,key,createHash('sha256').update(pdf).digest('hex'),users.owner.id]);
+        for(const [suffix,action] of [['view','previewed'],['download?download=1','downloaded']]){
+          for(const user of ['owner','manager','director','outsider']){
+            const response=await request(user,'/document-versions/'+version+'/'+suffix);
+            assert.equal(response.status,user==='outsider'?404:200,user+' '+suffix);
+            const body=Buffer.from(await response.arrayBuffer());
+            if(user!=='outsider'){
+              assert.equal(response.headers.get('content-type'),'application/pdf');
+              assert.deepEqual(body,pdf);
+            }
+          }
+          const {rows}=await db.query(`SELECT performed_by,timestamp,details::jsonb AS details FROM audit_log
+            WHERE entity_type='DocumentVersion' AND entity_id=$1 AND action=$2`,[version,action]);
+          assert.deepEqual(rows.map(row=>row.performed_by).sort(),[users.owner.id,users.manager.id,users.director.id].sort());
+          for(const row of rows){
+            assert.ok(row.timestamp instanceof Date);
+            assert.deepEqual(row.details,{documentId:document});
+          }
+        }
+      } finally {await removePrivate(key);}
+    });
     await t.test('Opportunity list and detail mask Director contact details and enforce Agent scope',async()=>{
       const opportunity=randomUUID();
       await db.query(`INSERT INTO opportunities(id,opportunity_reference,lead_id,contact_id,owner_id,title,transaction_type,stage,next_action,next_action_due_at,next_action_code,created_by)
