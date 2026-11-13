@@ -1,0 +1,38 @@
+wrapper-test-line-1
+wrapper-test-line-2
+=== local receipt wrapper test passed
+=== DEV273 Phase D preparation started 2026-11-13T23:58:46.5461113+04:00
+=== No rollback authorized; no retry; smoke only
+=== Agent identity
+256 SHA256:UBtBkoTNvRj/VOxx08+YI5ADyBSDQOhDeUYIAYOSAMw nysa-dev270-release (ED25519)
+=== Recheck exact hosted tools, config, install receipt and Phase D output absence
+crm-test-direct-node-release-operator.mjs: OK
+hosted-worker-lifecycle.mjs: OK
+crm-test-backup-verification.mjs: OK
+database-trigger-contract.mjs: OK
+DEV273_CRM_TEST_INSTALL.json: OK
+evidence/INSTALL_RESULT.json: OK
+phase_d_output_path_absent=yes
+=== Phase D exact single invocation
+{"phase":"smoke","root":"/home/nysareal/nysa-core-dashboard-dd6262a-stage","domain":"crm-test.nysarealty.com","commit":"aab0ea5d0a8496940e05179f9f3bb753b92d0521","version":"2.1.0-dev.273","configSha256":"6b1be76a05647fb82189d4921cef8cc6e5f72d0b3b9e0c08050835fc8cacb353","backupPath":"/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/scoped-backup","startedAt":"2026-11-13T19:58:47.615Z","productionMutation":false,"websiteMutation":false,"remMutation":false,"result":"SETTLED_SMOKE_PASSED","attempts":[{"url":"/","startedAt":"2026-11-13T19:58:52.942Z","completedAt":"2026-11-13T19:58:53.013Z","durationMs":71,"expectedStatus":200,"actualStatus":200,"server":"LiteSpeed","contentType":"text/html","bodySnippet":"<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <meta name=\"robots\" content=\"noindex, nofollow\"> <title>NYSA CORE</title> <link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" ","bodySha256":"a7e089170d0d4a19802012ec85a8338f3370633cd038c8da3a530242e791089f","passed":true,"round":1},{"url":"/api/health","startedAt":"2026-11-13T19:58:53.014Z","completedAt":"2026-11-13T19:58:53.058Z","durationMs":44,"expectedStatus":200,"actualStatus":200,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"ok\":true,\"process\":\"ready\",\"version\":\"2.1.0-dev.273\",\"whatsappProvider\":\"simulated\"}","bodySha256":"67e1b6457f4d6cdba180f611954584292437d0f7439e022244f8a717aab0c228","passed":true,"round":1},{"url":"/api/readiness","startedAt":"2026-11-13T19:58:53.058Z","completedAt":"2026-11-13T19:58:53.081Z","durationMs":23,"expectedStatus":200,"actualStatus":200,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"ok\":true,\"database\":\"ready\",\"version\":\"2.1.0-dev.273\"}","bodySha256":"20109ce22225deb016ec3c410cbb303bbecba5a7066f289ea62924f9f13d0253","passed":true,"round":1},{"url":"/api/me","startedAt":"2026-11-13T19:58:53.082Z","completedAt":"2026-11-13T19:58:53.090Z","durationMs":8,"expectedStatus":401,"actualStatus":401,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"error\":\"Authentication required\"}","bodySha256":"ca730ec7fc2b7edb7277e5b8e58d6a474971ca59dafb499141a4856c06132638","passed":true,"round":1},{"url":"/api/crm/whatsapp-workspace","startedAt":"2026-11-13T19:58:53.090Z","completedAt":"2026-11-13T19:58:53.098Z","durationMs":8,"expectedStatus":401,"actualStatus":401,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"error\":\"Authentication required\"}","bodySha256":"ca730ec7fc2b7edb7277e5b8e58d6a474971ca59dafb499141a4856c06132638","passed":true,"round":1},{"url":"/api/crm/dashboard","startedAt":"2026-11-13T19:58:53.098Z","completedAt":"2026-11-13T19:58:53.101Z","durationMs":3,"expectedStatus":401,"actualStatus":401,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"error\":\"Authentication required\"}","bodySha256":"ca730ec7fc2b7edb7277e5b8e58d6a474971ca59dafb499141a4856c06132638","passed":true,"round":1},{"url":"/api/crm/tasks","startedAt":"2026-11-13T19:58:53.101Z","completedAt":"2026-11-13T19:58:53.102Z","durationMs":1,"expectedStatus":401,"actualStatus":401,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"error\":\"Authentication required\"}","bodySha256":"ca730ec7fc2b7edb7277e5b8e58d6a474971ca59dafb499141a4856c06132638","passed":true,"round":1},{"url":"/api/providers/whatsapp-simulated/health","startedAt":"2026-11-13T19:58:53.102Z","completedAt":"2026-11-13T19:58:53.104Z","durationMs":2,"expectedStatus":401,"actualStatus":401,"server":"LiteSpeed","contentType":"application/json","bodySnippet":"{\"error\":\"Invalid simulator callback credential\"}","bodySha256":"df4369bb011a10ead3f72bcd421405324707961d6d778e7f367a4367ed59288e","passed":true,"round":1}],"smokeWindowSeconds":60,"pending":[],"workers":[{"pid":3345927,"command":"lsnode:/home/nysareal/nysa-core-dashboard-dd6262a-stage/","cwd":"/home/nysareal/nysa-core-dashboard-dd6262a-stage"}],"completedAt":"2026-11-13T19:58:53.108Z","elapsedSeconds":5}
+=== Phase D exit 0 at 2026-11-13T23:58:55.8002956+04:00
+=== SMOKE_RESULT host SHA-256
+a048e75e62f2dfb51c923932864f0bbece7572eed2d0354f37972a8a6ab8e21a  /home/nysareal/crm-release-preparation/20261114-dev273-r2-install/evidence/SMOKE_RESULT.json
+=== Phase D evidence verified locally
+smoke_result_sha256=
+a048e75e62f2dfb51c923932864f0bbece7572eed2d0354f37972a8a6ab8e21a
+host_local_match=yes
+phase_exit=
+0
+smoke_result=
+SETTLED_SMOKE_PASSED
+attempts=
+8
+pending=
+0
+workers=
+1
+candidate=aab0ea5d0a8496940e05179f9f3bb753b92d0521
+config_sha256=6b1be76a05647fb82189d4921cef8cc6e5f72d0b3b9e0c08050835fc8cacb353
+=== Phase D evidence retrieval complete 
+2026-11-13T23:59:00.7078635+04:00
