@@ -4,9 +4,9 @@ Scope and approval follow AGENTS.md mandatory hosted-worker verification and CRM
 
 | Surface | Passing test | Result |
 |---|---|---|
-| Customer and Lead lists and search | `Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope`; parent `DEV273 Customer and Lead HTTP scope across linked surfaces` | **Pass.** Agent-own, Manager-team, Director-all defaults; owning-Agent and Unassigned filters; and out-of-scope search exclusion are asserted through HTTP. |
+| Customer and Lead lists and search | `Role defaults, Owning Agent filters, approved-only WEB and Meta queues and open offers enforce scope`; parent `DEV273 Customer and Lead HTTP scope across linked surfaces` | **Pass.** Agent-own, Manager-team, Director-all defaults; owning-Agent and Unassigned filters; and out-of-scope search exclusion are asserted through HTTP. |
 | Customer 360 | `DEV273 Customer and Lead HTTP scope across linked surfaces` | **Pass.** Director masking and outsider 404 are asserted. |
-| Lead queues and detail | `Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope` | **Pass.** Manager/Director unassigned Website and Social-media/Meta visibility, Manager assignment queue coverage, offered-Agent masking and non-writable detail are asserted. |
+| Lead queues and detail | `Role defaults, Owning Agent filters, approved-only WEB and Meta queues and open offers enforce scope` | **Pass.** The Manager queue includes accepted `approve_email_only` Website intake and unassigned Social-media rows, excludes pending/rejected Website intake, and retains offered-Agent masking and non-writable detail. |
 | Documents and proposals, including PDF | `DEV273 Customer and Lead HTTP scope across linked surfaces`; `Scoped generated PDF preview and download preserve original bytes and audit access` | **Pass.** Linked routes enforce scope. Owner, Manager and Director receive the original PDF; outsider preview/download return 404; Manager/Director access is audited without contents. |
 | Opportunities | `Opportunity list and detail mask Director contact details and enforce Agent scope` | **Pass.** Owner values, Director masking and outsider 404 are asserted for list and detail. |
 | Linked tasks | `DEV273 Customer and Lead HTTP scope across linked surfaces` | **Pass.** A task linked to an out-of-scope Lead stays hidden even when assigned to the requesting Agent. |
@@ -18,17 +18,17 @@ Scope and approval follow AGENTS.md mandatory hosted-worker verification and CRM
 
 Every requested row is directly covered and passing. Item 2 is closed.
 
-The exact-candidate governed log is committed at `6d1b8431` and covers application candidate `12d2ffd3acd257dda955e6a16e78bdcc56441235`: 1,633 passed, zero failed, 109 skipped. Its committed LF SHA-256 is `45413acf5bcf55e5eaad252e423c52dc6fd51236447571975744358f0363cd1b`; the Windows working-file CRLF SHA-256 is `855e90ff30c4a6db0803ab6776a21d0c0462dd54734de8bc4057439bdace29fd`. The committed LF form is authoritative.
+The exact-candidate governed log is committed at `c87c6844` and covers application candidate `aab0ea5d0a8496940e05179f9f3bb753b92d0521`: 1,633 passed, zero failed, 109 skipped. Its committed LF SHA-256 is `b8be29739e20132f89b4654f0113b6667ed93c160a8c54ad27f2cdae3221fcaf`; the Windows working-file CRLF SHA-256 is `4ffa35e64ec5098439767722d69397b7885d6325193399bcac32d805ac8ba179`. The committed LF form is authoritative.
 
 | Artifact | Pin | SHA-256 |
 |---|---|---|
-| Application package | `12d2ffd3acd257dda955e6a16e78bdcc56441235` | `b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e` |
-| Package manifest | Same application pin | `a5dd49ece1d13c71a4ad17d155b2c9519be7b4f5220ac74043e6b7899aa778ee` |
+| Application package | `aab0ea5d0a8496940e05179f9f3bb753b92d0521` | `359245bfec120d3c0e1c3743851fd6daa7ac439168f1989f4792f9388d3b51ba` |
+| Package manifest | Same application pin | `35f1a8eee5a7490ec055da26be8490065d9603012ecb023237b955b7edc8125f` |
 | CRM Test operator | `12d924f8564bf38b91b90fcd186336b213f742a2` | `0d66f2617c5ff5fc8fb01cd808dc3df46999d19d6432979685f1bc772515d34e` |
-| CRM Test install config | `8144ae8b` | `84de5156f14c35c8983c7dc3d2570a51cfe567fb52b956a2e1eef33fea745816` |
-| CRM Test reverse config | `8144ae8b` | `0562d6c81c3ffc9f3a93fb4dc18f5f08841e17787e7bf0395d14a57237e9970e` |
-| CRM Test reinstall config | `8144ae8b` | `6de52f7c71827b41336f441dd15c943f7e4104ff8e2d2751959afcb0eec3cc69` |
-| Production preflight config | `8144ae8b` | `f05bf7ed926b66a3b8178665f22ebc68adfcd626a612a9465de196e77ccf0d0d` |
+| CRM Test install config | `fde21724` | `6b1be76a05647fb82189d4921cef8cc6e5f72d0b3b9e0c08050835fc8cacb353` |
+| CRM Test reverse config | `fde21724` | `0d58cc34116e2a6179e1a13c18291d063a9880d0cf9130c65194371fc18a31ba` |
+| CRM Test reinstall config | `fde21724` | `50a57b7caf890b08a123080713f4eb6564729f3f70091a12c3e7b6e9fa1ea664` |
+| Production preflight config | `fde21724` | `c915e8ebe4c1d06c902fef9bb366312b419eb7ea9bd4bf4842601280454dc759` |
 | Production preflight tool | Application pin | `8b1900098902724c846624848d22cb836dc2bdb77d673dd835a4720c7e5559a0` |
 | Production deployment operator | Application pin | `68b3049d5f5629e931dba59642c3312357e279e0d92e142d4f780497838dc430` |
 

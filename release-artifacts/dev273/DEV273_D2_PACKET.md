@@ -4,9 +4,9 @@ Date: 13 November 2026 (Dubai)
 
 Release: `2.1.0-dev.273`
 
-Application candidate: `12d2ffd3acd257dda955e6a16e78bdcc56441235`
+Application candidate: `aab0ea5d0a8496940e05179f9f3bb753b92d0521`
 
-Operator/config evidence commit: `8144ae8b` (CRM Test operator itself is pinned separately at `12d924f8564bf38b91b90fcd186336b213f742a2`)
+Operator/config evidence commit: `fde217244474721d10ed5e9ac1fa5b4205535afb` (CRM Test operator itself is pinned separately at `12d924f8564bf38b91b90fcd186336b213f742a2`)
 
 This packet requests review only. No CRM Test or Production command was run. Every hosted phase remains separately subject to Ajit's written go under AGENTS.md mandatory hosted-worker verification and CRM_CHANGE_POLICY.md hosted-deployment controls.
 
@@ -18,18 +18,20 @@ DEV273 is application-only. Migration 172 is unchanged and there is no migration
 
 Security/privacy impact: Customer and Lead authorization is now applied consistently to linked surfaces. Manager and Director contact details are masked until Reveal; Reveal logs actor, time, entity and field names only. Cross-scope duplicate warnings contain no identifying values. In-scope generated PDFs remain original and unmasked; out-of-scope preview/download returns 404, and Manager/Director PDF access is audited without document contents.
 
+Website intake boundary correction after initial D-2 review: the normal intake transaction does not create a Lead for a pending or rejected event, but the Manager assignment-queue query no longer enforced that invariant. Candidate `aab0ea5d` restores the accepted `approve_email_only` event requirement for unassigned Website Leads while retaining unassigned Social-media visibility. The exact PostgreSQL scope test now proves accepted Website and Social-media rows are included and pending/rejected Website rows are excluded.
+
 ## 2. Exact artifacts and hashes
 
 | Artifact | Commit/pin | SHA-256 |
 |---|---|---|
-| Candidate ZIP | `12d2ffd3acd257dda955e6a16e78bdcc56441235` | `b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e` |
-| Origin manifest | same | `a5dd49ece1d13c71a4ad17d155b2c9519be7b4f5220ac74043e6b7899aa778ee` |
-| Candidate runtime manifest | same | `7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297` |
+| Candidate ZIP | `aab0ea5d0a8496940e05179f9f3bb753b92d0521` | `359245bfec120d3c0e1c3743851fd6daa7ac439168f1989f4792f9388d3b51ba` |
+| Origin manifest | same | `35f1a8eee5a7490ec055da26be8490065d9603012ecb023237b955b7edc8125f` |
+| Candidate runtime manifest | same | `3701f0e4880d826e7c722946f904914858e96a86e97023ae4c026f18c01b4680` |
 | CRM Test operator | `12d924f8564bf38b91b90fcd186336b213f742a2` | `0d66f2617c5ff5fc8fb01cd808dc3df46999d19d6432979685f1bc772515d34e` |
-| CRM Test DEV273 install config | `8144ae8b` | `84de5156f14c35c8983c7dc3d2570a51cfe567fb52b956a2e1eef33fea745816` |
-| CRM Test DEV272 reverse config | `8144ae8b` | `0562d6c81c3ffc9f3a93fb4dc18f5f08841e17787e7bf0395d14a57237e9970e` |
-| CRM Test DEV273 reinstall config | `8144ae8b` | `6de52f7c71827b41336f441dd15c943f7e4104ff8e2d2751959afcb0eec3cc69` |
-| Production read-only preflight config | `8144ae8b` | `f05bf7ed926b66a3b8178665f22ebc68adfcd626a612a9465de196e77ccf0d0d` |
+| CRM Test DEV273 install config | `fde21724` | `6b1be76a05647fb82189d4921cef8cc6e5f72d0b3b9e0c08050835fc8cacb353` |
+| CRM Test DEV272 reverse config | `fde21724` | `0d58cc34116e2a6179e1a13c18291d063a9880d0cf9130c65194371fc18a31ba` |
+| CRM Test DEV273 reinstall config | `fde21724` | `50a57b7caf890b08a123080713f4eb6564729f3f70091a12c3e7b6e9fa1ea664` |
+| Production read-only preflight config | `fde21724` | `c915e8ebe4c1d06c902fef9bb366312b419eb7ea9bd4bf4842601280454dc759` |
 | Production read-only preflight tool | application candidate | `8b1900098902724c846624848d22cb836dc2bdb77d673dd835a4720c7e5559a0` |
 | Production release operator | application candidate | `68b3049d5f5629e931dba59642c3312357e279e0d92e142d4f780497838dc430` |
 
@@ -40,9 +42,9 @@ The canonical builder was invoked only as `npm run release:package -- --commit <
 The final governed run used a detached checkout of the exact pushed candidate with `NYSA_DEV273_SCOPE_FIXTURE=local-synthetic` and PostgreSQL 13.23:
 
 - **1,633 passed, 0 failed, 109 skipped**;
-- full log committed at `6d1b8431`;
-- committed LF log SHA-256 `45413acf5bcf55e5eaad252e423c52dc6fd51236447571975744358f0363cd1b`;
-- Windows CRLF working-file SHA-256 `855e90ff30c4a6db0803ab6776a21d0c0462dd54734de8bc4057439bdace29fd`; the committed LF form is authoritative.
+- full revised log committed at `c87c6844`;
+- committed LF log SHA-256 `b8be29739e20132f89b4654f0113b6667ed93c160a8c54ad27f2cdae3221fcaf`;
+- Windows CRLF working-file SHA-256 `4ffa35e64ec5098439767722d69397b7885d6325193399bcac32d805ac8ba179`; the committed LF form is authoritative.
 
 The origin package manifest's internal receipt is 1,628 passed and 110 skipped because the canonical builder deliberately does not inject the PostgreSQL scope-fixture environment. In that run, the one parent scope integration test skips and its five nested subtests do not exist in the count. The separate exact-candidate governed command enables the fixture, producing five additional passes, removing that one skip and increasing the total test-node count by four. This accounts exactly for 1,628/110 versus 1,633/109; it is not a source or package mismatch.
 
@@ -62,9 +64,9 @@ Local list/search benchmarks used 2,000 Customers and 2,000 Leads, two warmups a
 
 | Surface | Exact passing test | Result |
 |---|---|---|
-| Customer and Lead lists/search | `Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope` | Pass |
+| Customer and Lead lists/search | `Role defaults, Owning Agent filters, approved-only WEB and Meta queues and open offers enforce scope` | Pass |
 | Customer 360 | `DEV273 Customer and Lead HTTP scope across linked surfaces` | Pass |
-| Lead queues/detail | `Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope` | Pass |
+| Lead queues/detail | `Role defaults, Owning Agent filters, approved-only WEB and Meta queues and open offers enforce scope` | Pass |
 | Documents/proposals/PDF | `Scoped generated PDF preview and download preserve original bytes and audit access`; parent scope test | Pass |
 | Opportunities | `Opportunity list and detail mask Director contact details and enforce Agent scope` | Pass |
 | Linked tasks | `DEV273 Customer and Lead HTTP scope across linked surfaces` | Pass |
