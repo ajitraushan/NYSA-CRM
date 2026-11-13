@@ -1,9 +1,9 @@
 {
   "application": {
-    "commit": "12d2ffd3acd257dda955e6a16e78bdcc56441235",
-    "packageSha256": "b8e53f48d953cc29163b43bca570ca6e2bd279983a8ee2b6fe53f99b7aad025e",
-    "manifestSha256": "a5dd49ece1d13c71a4ad17d155b2c9519be7b4f5220ac74043e6b7899aa778ee",
-    "runtimeManifestSha256": "7594105b4a47864ffe9d9a9323a3b3b000b26904d49c13ab324f9c2bdb4b1297"
+    "commit": "aab0ea5d0a8496940e05179f9f3bb753b92d0521",
+    "packageSha256": "359245bfec120d3c0e1c3743851fd6daa7ac439168f1989f4792f9388d3b51ba",
+    "manifestSha256": "35f1a8eee5a7490ec055da26be8490065d9603012ecb023237b955b7edc8125f",
+    "runtimeManifestSha256": "3701f0e4880d826e7c722946f904914858e96a86e97023ae4c026f18c01b4680"
   },
   "operator": {
     "commit": "12d924f8564bf38b91b90fcd186336b213f742a2",
@@ -11,16 +11,16 @@
   },
   "configs": {
     "DEV273_CRM_TEST_INSTALL.json": {
-      "sha256": "84de5156f14c35c8983c7dc3d2570a51cfe567fb52b956a2e1eef33fea745816",
-      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-install/scoped-backup"
+      "sha256": "6b1be76a05647fb82189d4921cef8cc6e5f72d0b3b9e0c08050835fc8cacb353",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-install/scoped-backup"
     },
     "DEV273_CRM_TEST_REVERSE.json": {
-      "sha256": "0562d6c81c3ffc9f3a93fb4dc18f5f08841e17787e7bf0395d14a57237e9970e",
-      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reverse/scoped-backup"
+      "sha256": "81953f6ae1945444472ae2b5f2c9f8f35801153556646f347e5a54ef6a7d7ddc",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-reverse/scoped-backup"
     },
     "DEV273_CRM_TEST_REINSTALL.json": {
-      "sha256": "6de52f7c71827b41336f441dd15c943f7e4104ff8e2d2751959afcb0eec3cc69",
-      "backupPath": "/home/nysareal/crm-release-preparation/20261113-dev273-reinstall/scoped-backup"
+      "sha256": "50a57b7caf890b08a123080713f4eb6564729f3f70091a12c3e7b6e9fa1ea664",
+      "backupPath": "/home/nysareal/crm-release-preparation/20261114-dev273-r2-reinstall/scoped-backup"
     }
   }
 }
