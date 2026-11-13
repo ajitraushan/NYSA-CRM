@@ -1,0 +1,56 @@
+production-disk-cleanup-round3.sh: OK
+Filesystem before cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3830785380352 3404768743424      53% /home/nysareal
+Removed /home/nysareal/crm-release-preparation/20261031-dev248
+Removed /home/nysareal/crm-release-preparation/20261031-ui001
+Removed /home/nysareal/crm-release-preparation/20261031-ui252
+Removed /home/nysareal/crm-release-preparation/20261031-ui253
+Removed /home/nysareal/crm-release-preparation/20261101-wa255
+Removed /home/nysareal/crm-release-preparation/20261101-wa256
+Removed /home/nysareal/crm-release-preparation/20261101-wa257
+Removed /home/nysareal/crm-release-preparation/20261103-dev262
+Removed /home/nysareal/crm-release-preparation/20261104-dev263
+Removed /home/nysareal/crm-release-preparation/20261104-dev264
+Removed /home/nysareal/crm-release-preparation/20261106-dev265-run2
+Removed /home/nysareal/crm-release-preparation/20261110-dev266
+Removed /home/nysareal/crm-release-preparation/20261110-dev267-run2
+Removed /home/nysareal/crm-release-preparation/20261111-dev268
+Removed /home/nysareal/crm-release-preparation/20261112-dev270-r2
+Removed /home/nysareal/crm-release-preparation/20261112-dev271-r1
+Removed /home/nysareal/crm-release-preparation/20261112-dev271-r2
+Removed /home/nysareal/crm-backups/crm-test-dev241-20261027T071210Z
+Removed /home/nysareal/crm-backups/crm-test-dev241-20261027T072707Z
+Removed /home/nysareal/crm-backups/crm-test-dev242-pre-20261027T085524Z
+Removed /home/nysareal/crm-backups/crm-test-dev242-pre-20261027T085524Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev242-pre-20261027T085524Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T193434Z
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T193434Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T193434Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T210340Z
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T210340Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261027T210340Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053234Z
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053234Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053234Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053940Z
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053940Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T053940Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T054325Z
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T054325Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev243-pre-20261028T054325Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev244-pre-20261027T204429Z-app.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev244-pre-20261027T204429Z-runtime.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev245-pre-20261028T062501Z
+Removed /home/nysareal/crm-backups/crm-test-dev245-pre-20261028T062501Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev245-pre-20261028T062501Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev246-pre-20261029T171009Z
+Removed /home/nysareal/crm-backups/crm-test-dev246-pre-20261029T171009Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev246-pre-20261029T171009Z.tar.gz.sha256
+Removed /home/nysareal/crm-backups/crm-test-dev248-pre-20261031T074530Z
+Removed /home/nysareal/crm-backups/crm-test-dev248-pre-20261031T074530Z.tar.gz
+Removed /home/nysareal/crm-backups/crm-test-dev248-pre-20261031T074530Z.tar.gz.sha256
+Total apparent bytes removed: 16706266125
+Filesystem after cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3813852258304 3421701865472      53% /home/nysareal
