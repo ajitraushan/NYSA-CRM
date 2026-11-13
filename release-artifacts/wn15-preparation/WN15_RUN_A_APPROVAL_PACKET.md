@@ -12,9 +12,7 @@ Ajit supplies a fresh CRM Test Admin session privately using the existing login 
 
 ## Read-only telemetry before Step A
 
-Run the separately approved `./wn15-dev272-telemetry-readonly.sh` by file path from the fresh, hash-verified download directory. This check can run before 20:00 Dubai. Use agent-only SSH and capture the full stdout and stderr. The script runs each of Quota get_quota_info, DomainInfo list_domains and ResourceUsage get_usages once, retains their raw output, and prints each exit code. Inspect the JSON status and field availability as well as the process exit codes before clearing Step A.
-
-Quota UAPI returned exit 1 in the saved inventory runs. If telemetry is unavailable, review the raw evidence before changing the runner. A possible fallback is an independently confirmed finite account quota with a conservative du-based usage estimate whose coverage and units are verified, plus the existing HTTP health, readiness, latency and limit-response stops. A filesystem df reading alone cannot establish account quota. If resource usage is unavailable, the fallback loses the 80% resource stop and needs explicit review. Production health and latency thresholds stay in force.
+Telemetry receipt a501718f records successful Quota, DomainInfo and ResourceUsage calls. Account quota was 44,411.73 of 102,400 MB. DomainInfo identified nysarealty.com as the main domain and listed both CRM domains.
 
 ## A. Recovery backup
 
@@ -40,8 +38,8 @@ Rechecks the backup hash and four-hour freshness, unused numbers, synthetic iden
 
 Creates one run, seed wn15-run-a-dev272-20261113, with 500 conversations, zero extra messages and opt-outs, two teams, two Agents assigned only to Sales, offset 100000, at most five new conversations per second and five workers. The wrapper supplies the exact child arguments and logs its PID. Inbound and mark-read writes go to CRM Test simulator routes. The fresh run-a-dev272 folder receives WN15_RUN_A_LOAD_RECEIPT.json.
 
-Three pre-run samples establish per-endpoint medians. The runner checks CRM Test and Production health, readiness and root, plus the website root, before, every five seconds during load and after it. It stops on any load or probe error, timeout, a response taking three seconds, or two consecutive samples both above twice the median and more than 500 ms above it. It also stops on CRM Test worker change, quota at 90%, any sampled resource at 80%, an increasing available fault counter, or a five-minute load deadline. It signals only the child it spawned. An abort can leave run-scoped rows for later cleanup.
+Three pre-run samples establish per-endpoint medians. The runner checks CRM Test and Production health, readiness and root, plus the website root, before, every five seconds during load and after it. It stops on any load or probe error, timeout, a response taking three seconds, or two consecutive samples both above twice the median and more than 500 ms above it. It also stops on CRM Test worker change, quota at 90%, any sampled resource at 80%, or a five-minute load deadline. It signals only the child it spawned. An abort can leave run-scoped rows for later cleanup.
 
-The runner expects DomainInfo list_domains to identify nysarealty.com as the account main domain, and ResourceUsage get_usages to return rows with id, usage, limit and optional faults for cpu, pmem, ep, nproc, iops and io. These interfaces are unverified on this hosting account. Missing or incompatible telemetry blocks the load before it creates a run. An HTTP 503 or 508 also aborts. Resource and quota probes time out after one second while sampling. Confirm the telemetry format through a separately approved read-only check before clearing the load.
+The runner uses the six lve metrics returned by ResourceUsage and stops at 80% of each reported maximum. The receipt exposes no fault counters, so the runner uses the resource thresholds and HTTP stop conditions, including 503 and 508. Missing or invalid metrics block the load. Resource and quota probes time out after one second while sampling.
 
 Local verification: 15 focused simulator and WN-15 tests passed. Hosted PostgreSQL backup, team/API behavior and monitoring have not been rehearsed in this turn. See the separate WN15_RUN_A_CLEANUP_PLAN.md for later review.

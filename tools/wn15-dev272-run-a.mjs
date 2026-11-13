@@ -1,3 +1,4 @@
+import {parseResourceUsage} from './wn15-resource-usage.mjs';
 import fs from 'node:fs';
 import {inspectWorkers} from './hosted-worker-lifecycle.mjs';
 import {spawn} from 'node:child_process';
@@ -21,16 +22,7 @@ const domains=JSON.parse(command('uapi',['--output=json','DomainInfo','list_doma
 requireCondition(Number(domains?.status)===1&&domains.data?.main_domain==='nysarealty.com','Cannot establish website account mapping');
 
 function resourceSample(){
-  const result=JSON.parse(command('uapi',['--output=json','ResourceUsage','get_usages'],process.env,1000)).result;
-  requireCondition(Number(result?.status)===1&&Array.isArray(result.data),'Account resource data unavailable');
-  return ['cpu','pmem','ep','nproc','iops','io'].map(name=>{
-    const row=result.data.find(item=>item.id===name);
-    const usage=Number(row?.usage),limit=Number(row?.limit);
-    requireCondition(row?.usage!==null&&usage>=0&&limit>0&&usage/limit<0.8,'Account resource unavailable or at least 80%: '+name);
-    const faults=row.faults===undefined?null:Number(row.faults);
-    requireCondition(faults===null||Number.isSafeInteger(faults)&&faults>=0,'Invalid resource fault counter');
-    return {name,usage,limit,faults};
-  });
+  return parseResourceUsage(JSON.parse(command('uapi',['--output=json','ResourceUsage','get_usages'],process.env,1000)));
 }
 
 async function sample(){
@@ -50,7 +42,7 @@ async function sample(){
   requireCondition(workers.length===1,'Expected one exact-root CRM Test worker');
   const resources=resourceSample(),accountQuota=quota(1000);
   console.log(JSON.stringify({at:new Date().toISOString(),probes:Object.fromEntries(probes.map((url,i)=>[url,timed[i]])),workers,resources,accountQuota}));
-  return {timed,resources,pid:workers[0].pid};
+  return {timed,pid:workers[0].pid};
 }
 
 const baseline=[];
@@ -64,10 +56,6 @@ const consecutive=probes.map(()=>0);
 let previous=baseline[0];
 function assess(observed,compareLatency=true){
   requireCondition(observed.pid===previous.pid,'CRM Test worker changed');
-  for(const [i,resource] of observed.resources.entries()){
-    const prior=previous.resources[i].faults;
-    requireCondition((prior===null&&resource.faults===null)||(prior!==null&&resource.faults!==null&&resource.faults<=prior),'Resource fault counter increased or became unavailable: '+resource.name);
-  }
   for(const [i,ms] of observed.timed.entries()){
     consecutive[i]=compareLatency&&ms>2*median[i]&&ms>median[i]+500?consecutive[i]+1:0;
     requireCondition(ms<3000&&consecutive[i]<2,'Response time stop threshold: '+probes[i]);
