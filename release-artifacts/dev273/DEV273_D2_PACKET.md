@@ -1,8 +1,11 @@
 # DEV273 D-2 review packet
 
-Date: 13 November 2026 (Dubai)  
-Release: `2.1.0-dev.273`  
-Application candidate: `12d2ffd3acd257dda955e6a16e78bdcc56441235`  
+Date: 13 November 2026 (Dubai)
+
+Release: `2.1.0-dev.273`
+
+Application candidate: `12d2ffd3acd257dda955e6a16e78bdcc56441235`
+
 Operator/config evidence commit: `8144ae8b` (CRM Test operator itself is pinned separately at `12d924f8564bf38b91b90fcd186336b213f742a2`)
 
 This packet requests review only. No CRM Test or Production command was run. Every hosted phase remains separately subject to Ajit's written go under AGENTS.md mandatory hosted-worker verification and CRM_CHANGE_POLICY.md hosted-deployment controls.
