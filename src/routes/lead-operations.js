@@ -163,8 +163,8 @@ r.get('/crm/assignment-queue',async(req,res)=>{
   if(req.broker.jobRole!=='director'){
     if(req.broker.jobRole==='manager'){
       const teams=req.broker.managedTeamIds||[];
-      params.push(teams);conditions.push(`(l.assigned_team_id=ANY($${params.length}::uuid[]) OR (l.assigned_team_id IS NULL AND l.source='Website' AND EXISTS(
-        SELECT 1 FROM website_intake_events approved_event WHERE approved_event.lead_id=l.id AND approved_event.status='accepted' AND approved_event.resolution='approve_email_only')))`);
+      params.push(teams);conditions.push(`(l.assigned_team_id=ANY($${params.length}::uuid[]) OR
+        (l.assigned_team_id IS NULL AND l.source IN ('Website','Social media')))`);
     }else{
       if(req.broker.jobRole!=='sales_agent')return res.json({leads:[]});
       params.push(req.broker.id);

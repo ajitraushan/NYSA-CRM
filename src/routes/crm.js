@@ -162,6 +162,17 @@ function canWriteCrm(broker) {
   return !isCrmReadOnly(broker);
 }
 
+async function duplicateContactWarnings(req,{email,phone,excludeId=null}){
+  const params=[email,phone],scope=contactScopeSql('c',req.broker,params),exclude=excludeId?`c.id<>$${params.push(excludeId)} AND `:'';
+  const matches=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value,(${scope.clause}) AS visible
+    FROM contact_channels cc JOIN contacts c ON c.id=cc.contact_id
+    WHERE ${exclude}c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
+      ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,params);
+  return {matches,warnings:matches.map(row=>row.visible
+    ? {id:row.id,fullName:row.fullName,channelKind:row.channelKind,normalizedValue:row.normalizedValue}
+    : {restricted:true})};
+}
+
 async function refreshAssignmentStatuses() {
   await transaction(async client=>{
     const breached=await many(`SELECT l.* FROM leads l WHERE l.stage NOT IN ('Won','Lost') AND l.assigned_to IS NOT NULL
@@ -555,12 +566,10 @@ r.post('/crm/contacts', async (req, res) => {
   const ownerId = b.ownerId || req.broker.id;
   if (!(await staffMember(ownerId))) return res.status(400).json({ error: 'Invalid ownerId' });
   if (b.companyId && !(await one('SELECT id FROM companies WHERE id=$1 AND archived_at IS NULL',[b.companyId]))) return res.status(400).json({error:'Invalid companyId'});
-  const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
-    JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
-    ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
+  const {matches:duplicates,warnings:duplicateWarnings}=await duplicateContactWarnings(req,identity);
   if(duplicates.length&&!b.duplicateReviewRequested)return res.status(409).json({
     error:'Matching customer records already use this email or phone. Review the matches, then create a draft only if this is genuinely a different person.',
-    duplicates,reviewLocation:'Customers > Duplicate review'
+    duplicates:duplicateWarnings,reviewLocation:'Customers > Duplicate review'
   });
   const roles=Array.isArray(b.contactRoles)&&b.contactRoles.length?[...new Set(b.contactRoles)]:[b.contactType||'buyer'];
   if(roles.some(role=>!CUSTOMER_ROLE_INPUT_TYPES.includes(role)))return res.status(400).json({error:'Invalid Customer role; Developers must be maintained as governed Companies'});
@@ -585,7 +594,7 @@ r.post('/crm/contacts', async (req, res) => {
     await audit('Contact',id,duplicatePending?'duplicate_draft_created':'created',req.broker.id,
       {fullName:row.fullName,duplicateReviewStatus:row.duplicateReviewStatus,duplicateMatchIds:duplicates.map(x=>x.id)},client);return row;
   });
-  res.status(201).json({...contact,duplicateWarnings:duplicates});
+  res.status(201).json({...contact,duplicateWarnings});
 });
 
 r.patch('/crm/contacts/:id/duplicate-review',async(req,res)=>{
@@ -629,11 +638,8 @@ r.patch('/crm/contacts/:id', async (req, res) => {
     if(identity.error) return res.status(400).json({error:identity.error});
     req.body.email=identity.email;req.body.phone=identity.phone;
     patchedIdentity=identity;
-    const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
-      JOIN contacts c ON c.id=cc.contact_id WHERE c.id<>$1 AND c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
-      ((cc.channel_kind='Email' AND cc.normalized_value=$2) OR (cc.channel_kind='Phone' AND cc.normalized_value=$3))`,
-      [contact.id,identity.email,identity.phone]);
-    if(duplicates.length&&!req.body.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates});
+    const {matches,warnings}=await duplicateContactWarnings(req,identity,contact.id);
+    if(matches.length&&!req.body.duplicateReviewed)return res.status(409).json({error:'Possible duplicate contact requires review',duplicates:warnings});
   }
   const proposed={},current={},changes={};
   for (const [field,column] of Object.entries(map)) if (req.body[field] !== undefined) {
@@ -881,10 +887,8 @@ r.post('/crm/leads/capture', async (req,res)=>{
   if(!isInventorySideObjective(b.customerObjective)&&(budget.min===null||budget.max===null))return res.status(400).json({error:'Budget from and Budget to are required for Buyer/Tenant objectives'});
   if(!isInventorySideObjective(b.customerObjective)&&!normalizeDelimitedValues(b.preferredAreas).length)return res.status(400).json({error:'At least one preferred area is required for Buyer/Tenant objectives'});
   if(!isInventorySideObjective(b.customerObjective)){const primaryArea=await resolvePrimaryRoutingArea(b.primaryRoutingAreaId,b.preferredAreas);if(primaryArea.error)return res.status(400).json({error:primaryArea.error});}
-  const duplicates=await many(`SELECT DISTINCT c.id,c.full_name,cc.channel_kind,cc.normalized_value FROM contact_channels cc
-    JOIN contacts c ON c.id=cc.contact_id WHERE c.archived_at IS NULL AND c.lifecycle_status<>'merged' AND
-    ((cc.channel_kind='Email' AND cc.normalized_value=$1) OR (cc.channel_kind='Phone' AND cc.normalized_value=$2))`,[identity.email,identity.phone]);
-  if(duplicates.length)return res.status(409).json({error:'Matching customers already exist. Select the correct existing Customer, or create a duplicate-review draft from the Customer Master before capturing a Lead.',duplicates});
+  const {matches:duplicates,warnings:duplicateWarnings}=await duplicateContactWarnings(req,identity);
+  if(duplicates.length)return res.status(409).json({error:'Matching customers already exist. Select the correct existing Customer, or create a duplicate-review draft from the Customer Master before capturing a Lead.',duplicates:duplicateWarnings});
   const result=await transaction(async client=>{
     const contactId=uuid(),ownerId=req.broker.id;
     const contact=await one(`INSERT INTO contacts

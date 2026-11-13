@@ -18,29 +18,32 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
   const users={};
   let server;
   try {
-    for(const [name,role] of [['owner','sales_agent'],['outsider','sales_agent'],['manager','manager'],['director','director']]){
+    for(const [name,role] of [['owner','sales_agent'],['outsider','sales_agent'],['offered','sales_agent'],['manager','manager'],['director','director']]){
       const id=randomUUID(), token=createHash('sha256').update(randomUUID()).digest('hex');
       await db.query("INSERT INTO brokers(id,name,email,role,job_role,status,password_hash) VALUES($1,$2,$3,'internal_broker',$4,'active','fixture')",[id,name,id+'@example.invalid',role]);
       await db.query("INSERT INTO sessions(token,broker_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",[createHash('sha256').update(token).digest('hex'),id]);
       users[name]={id,token};
     }
+    const team=randomUUID();
+    await db.query('INSERT INTO teams(id,name,manager_id) VALUES($1,$2,$3)',[team,'DEV273 '+team,users.manager.id]);
+    await db.query("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$3),($4,$2,$5,'member',$3),($6,$2,$7,'member',$3)",
+      [randomUUID(),team,users.manager.id,randomUUID(),users.owner.id,randomUUID(),users.offered.id]);
+    await db.query('UPDATE brokers SET team_id=$1 WHERE id=ANY($2::uuid[])',[team,[users.owner.id,users.offered.id]]);
     const contact=randomUUID(),lead=randomUUID(),title='DEV273 '+contact;
     const email='scope-'+contact+'@example.invalid',phone='+971501234567';
     await db.query("INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES($1,$2,$3,$4,'buyer',$5,$5)",[contact,title,email,phone,users.owner.id]);
-    await db.query("INSERT INTO leads(id,contact_id,title,source,business_type,stage,temperature,assigned_to,created_by) VALUES($1,$2,$3,'Website','Sale','Qualified','Warm',$4,$4)",[lead,contact,title,users.owner.id]);
+    await db.query("INSERT INTO leads(id,contact_id,title,source,business_type,stage,temperature,assigned_to,assigned_team_id,created_by) VALUES($1,$2,$3,'Website','Sale','Qualified','Warm',$4,$5,$4)",[lead,contact,title,users.owner.id,team]);
+    await db.query("INSERT INTO contact_channels(id,contact_id,channel_kind,usage_label,raw_value,normalized_value,is_primary,verification_status,created_by) VALUES($1,$2,'Email','Primary',$3,$3,1,'format_valid',$4),($5,$2,'Phone','Primary',$6,$6,1,'format_valid',$4)",
+      [randomUUID(),contact,email,users.owner.id,randomUUID(),phone]);
     const document=randomUUID(), task=randomUUID();
     await db.query("INSERT INTO documents(id,document_reference,document_type,title,owner_id,created_by,contact_id,lead_id) VALUES($1,$2,'correspondence',$2,$3,$3,$4,$5)",[document,title,users.owner.id,contact,lead]);
     await db.query("INSERT INTO proposals(id,lead_id,contact_id,template_type,title,created_by,proposal_number) VALUES($1,$2,$3,'customer_requirement',$4,$5,$6)",[randomUUID(),lead,contact,title,users.owner.id,'NYSA-PR-209912-'+String(randomInt(100000,1000000))]);
     await db.query("INSERT INTO tasks(id,lead_id,contact_id,subject,assignee_id,due_at,created_by) VALUES($1,$2,$3,$4,$5,now(),$6)",[task,lead,contact,title,users.outsider.id,users.owner.id]);
     server=await new Promise(resolve=>{const listener=app.listen({host:'127.0.0.1',port:0},()=>resolve(listener));});
-    const request=(user,path,method='GET')=>fetch('http://127.0.0.1:'+server.address().port+'/api/crm'+path,{method,
-      headers:{authorization:'Bearer '+users[user].token}});
+    const request=(user,path,method='GET',body)=>fetch('http://127.0.0.1:'+server.address().port+'/api/crm'+path,{method,
+      headers:{authorization:'Bearer '+users[user].token,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
     await t.test('Scoped generated PDF preview and download preserve original bytes and audit access',async()=>{
-      const team=randomUUID(),version=randomUUID();
-      await db.query('INSERT INTO teams(id,name,manager_id) VALUES($1,$2,$3)',[team,title,users.manager.id]);
-      await db.query("INSERT INTO team_memberships(id,team_id,broker_id,membership_role,created_by) VALUES($1,$2,$3,'manager',$3)",[randomUUID(),team,users.manager.id]);
-      await db.query('UPDATE brokers SET team_id=$1 WHERE id=$2',[team,users.owner.id]);
-      await db.query('UPDATE leads SET assigned_team_id=$1 WHERE id=$2',[team,lead]);
+      const version=randomUUID();
       const pdf=Buffer.from('%PDF-1.4\n% Synthetic original contact '+phone+'\n%%EOF\n');
       const key=await savePrivate(pdf,'.pdf');
       try {
@@ -66,6 +69,66 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
           }
         }
       } finally {await removePrivate(key);}
+    });
+    await t.test('Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope',async()=>{
+      const outsiderContact=randomUUID(),outsiderLead=randomUUID(),webContact=randomUUID(),webLead=randomUUID(),metaContact=randomUUID(),metaLead=randomUUID(),offerContact=randomUUID(),offerLead=randomUUID();
+      const isolated='visibility-'+randomUUID();
+      await db.query(`INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES
+        ($1,$2,'outside@example.invalid','+971501230001','buyer',$3,$3),
+        ($4,$5,'web@example.invalid','+971501230002','buyer',$3,$3),
+        ($6,$7,'meta@example.invalid','+971501230003','buyer',$3,$3),
+        ($8,$9,'offer@example.invalid','+971501230004','buyer',$10,$10)`,
+      [outsiderContact,'Outsider '+isolated,users.outsider.id,webContact,'Web '+isolated,metaContact,'Meta '+isolated,offerContact,'Offer '+isolated,users.offered.id]);
+      await db.query(`INSERT INTO leads(id,contact_id,title,source,business_type,stage,temperature,assigned_to,assigned_team_id,assignment_status,created_by) VALUES
+        ($1,$2,$3,'Other','Sale','New','Unassessed',$4,NULL,'assigned',$4),
+        ($5,$6,$7,'Website','Sale','New','Unassessed',NULL,NULL,'unassigned',$4),
+        ($8,$9,$10,'Social media','Sale','New','Unassessed',NULL,NULL,'unassigned',$4),
+        ($11,$12,$13,'Website','Sale','New','Unassessed',$14,$15,'assigned',$4)`,
+      [outsiderLead,outsiderContact,'Outside '+isolated,users.outsider.id,webLead,webContact,'WEB '+isolated,metaLead,metaContact,'META '+isolated,offerLead,offerContact,'OFFER '+isolated,users.offered.id,team]);
+      await db.query("INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,'offered',now()+interval '1 hour',$5)",
+        [randomUUID(),offerLead,team,users.offered.id,users.manager.id]);
+      const ids=async(user,path,key)=>new Set((await (await request(user,path)).json())[key].map(row=>row.id));
+      assert.deepEqual(await ids('owner','/contacts','contacts'),new Set([contact]));
+      assert.deepEqual(await ids('manager','/contacts','contacts'),new Set([contact,offerContact]));
+      assert.deepEqual(await ids('director','/contacts','contacts'),new Set([contact,outsiderContact,webContact,metaContact,offerContact]));
+      assert.deepEqual(await ids('manager','/contacts?ownerId='+users.owner.id,'contacts'),new Set([contact]));
+      assert.deepEqual(await ids('owner','/leads','leads'),new Set([lead]));
+      assert.deepEqual(await ids('manager','/leads?assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
+      assert.deepEqual(await ids('director','/leads?assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
+      const queue=await (await request('manager','/assignment-queue')).json();
+      assert.deepEqual(new Set(queue.leads.map(row=>row.id)),new Set([webLead,metaLead]));
+      const offered=await (await request('offered','/leads/'+offerLead)).json();
+      assert.equal(offered.lead.openAssignmentOffer,true);
+      assert.equal(offered.lead.contactEmail,'o***@example.invalid');
+      assert.equal(offered.lead.contactPhone,'••••0004');
+      assert.equal(offered.canWrite,false);
+      assert.deepEqual(offered.activities,[]);
+    });
+    await t.test('AI retrieval, duplicate warnings and Lead Reveal preserve the same authorization boundary',async()=>{
+      const ownerSuggestion=await request('owner','/leads/'+lead+'/ai/next-action','POST',{});
+      assert.equal(ownerSuggestion.status,200);
+      assert.equal((await ownerSuggestion.json()).advisoryOnly,true);
+      const blockedSuggestion=await request('outsider','/leads/'+lead+'/ai/next-action','POST',{});
+      assert.equal(blockedSuggestion.status,404);
+      const blockedHistory=await request('outsider','/leads/'+lead+'/action-suggestions');
+      assert.equal(blockedHistory.status,404);
+      const duplicate=await request('outsider','/contacts','POST',{fullName:'Restricted duplicate',email,phone});
+      assert.equal(duplicate.status,409);
+      const duplicateBody=await duplicate.json();
+      assert.deepEqual(duplicateBody.duplicates,[{restricted:true},{restricted:true}]);
+      assert.ok(!JSON.stringify(duplicateBody).includes(contact));
+      assert.ok(!JSON.stringify(duplicateBody).includes(title));
+      assert.ok(!JSON.stringify(duplicateBody).includes(email));
+      assert.ok(!JSON.stringify(duplicateBody).includes(phone));
+      for(const user of ['manager','director']){
+        const reveal=await request(user,'/leads/'+lead+'/reveal-contact','POST',{});
+        assert.equal(reveal.status,200,user);
+        assert.deepEqual(await reveal.json(),{email,phone});
+        const log=await request(user,'/leads/'+lead+'/contact-reveal-log');
+        assert.equal(log.status,200,user);
+        assert.ok((await log.json()).entries.every(entry=>entry.fields.join(',')==='phone,email'));
+      }
+      assert.equal((await request('outsider','/leads/'+lead+'/reveal-contact','POST',{})).status,404);
     });
     await t.test('Opportunity list and detail mask Director contact details and enforce Agent scope',async()=>{
       const opportunity=randomUUID();
