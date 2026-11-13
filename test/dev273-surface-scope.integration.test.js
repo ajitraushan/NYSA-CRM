@@ -71,7 +71,7 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
         }
       } finally {await removePrivate(key);}
     });
-    await t.test('Role defaults, Owning Agent filters, unassigned WEB and Meta queues and open offers enforce scope',async()=>{
+    await t.test('Role defaults, Owning Agent filters, approved-only WEB and Meta queues and open offers enforce scope',async()=>{
       const outsiderContact=randomUUID(),outsiderLead=randomUUID(),webContact=randomUUID(),webLead=randomUUID(),metaContact=randomUUID(),metaLead=randomUUID(),offerContact=randomUUID(),offerLead=randomUUID();
       const isolated=scopeMarker;
       await db.query(`INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES
@@ -86,6 +86,9 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
         ($8,$9,$10,'Social media','Sale','New','Unassessed',NULL,NULL,'unassigned',$4),
         ($11,$12,$13,'Website','Sale','New','Unassessed',$14,$15,'assigned',$4)`,
       [outsiderLead,outsiderContact,'Outside '+isolated,users.outsider.id,webLead,webContact,'WEB '+isolated,metaLead,metaContact,'META '+isolated,offerLead,offerContact,'OFFER '+isolated,users.offered.id,team]);
+      await db.query(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload,contact_id,lead_id,processed_at,resolution,resolution_reason,resolved_by,resolved_at)
+        VALUES($1,$2,$3,'accepted','{}'::jsonb,$4,$5,now(),'approve_email_only','Synthetic approved email-only intake',$6,now())`,
+      [randomUUID(),'dev273-accepted-'+randomUUID(),'a'.repeat(64),webContact,webLead,users.manager.id]);
       await db.query("INSERT INTO lead_assignments(id,lead_id,sequence_no,team_id,agent_id,status,acceptance_due_at,assigned_by) VALUES($1,$2,1,$3,$4,'offered',now()+interval '1 hour',$5)",
         [randomUUID(),offerLead,team,users.offered.id,users.manager.id]);
       const ids=async(user,path,key)=>new Set((await (await request(user,path)).json())[key].map(row=>row.id));
@@ -99,6 +102,25 @@ test('DEV273 Customer and Lead HTTP scope across linked surfaces', {
       assert.deepEqual(await ids('director','/leads?q='+q+'&assignedTo=unassigned','leads'),new Set([webLead,metaLead]));
       const queue=await (await request('manager','/assignment-queue')).json();
       assert.deepEqual(new Set(queue.leads.filter(row=>row.title.includes(scopeMarker)).map(row=>row.id)),new Set([webLead,metaLead]));
+      const pendingContact=randomUUID(),pendingLead=randomUUID(),rejectedContact=randomUUID(),rejectedLead=randomUUID(),intakeBoundary='DEV273-INTAKE-'+randomUUID();
+      await db.query(`INSERT INTO contacts(id,full_name,email,phone,contact_type,owner_id,created_by) VALUES
+        ($1,$2,'pending-intake@example.invalid','+971501230005','buyer',$3,$3),
+        ($4,$5,'rejected-intake@example.invalid','+971501230006','buyer',$3,$3)`,
+      [pendingContact,'Pending '+intakeBoundary,users.outsider.id,rejectedContact,'Rejected '+intakeBoundary]);
+      await db.query(`INSERT INTO leads(id,contact_id,title,source,business_type,stage,temperature,assigned_to,assigned_team_id,assignment_status,created_by) VALUES
+        ($1,$2,$3,'Website','Sale','New','Unassessed',NULL,NULL,'unassigned',$4),
+        ($5,$6,$7,'Website','Sale','New','Unassessed',NULL,NULL,'unassigned',$4)`,
+      [pendingLead,pendingContact,'Pending '+intakeBoundary,users.outsider.id,rejectedLead,rejectedContact,'Rejected '+intakeBoundary]);
+      await db.query(`INSERT INTO website_intake_events(id,event_id,payload_hash,status,received_payload,contact_id,lead_id,resolution,resolution_reason,resolved_by,resolved_at)
+        VALUES($1,$2,$3,'processing','{}'::jsonb,$4,$5,NULL,NULL,NULL,NULL),
+          ($6,$7,$8,'rejected','{}'::jsonb,$9,$10,'reject_invalid','Synthetic rejected intake',$11,now())`,
+      [randomUUID(),'dev273-processing-'+randomUUID(),'b'.repeat(64),pendingContact,pendingLead,
+        randomUUID(),'dev273-rejected-'+randomUUID(),'c'.repeat(64),rejectedContact,rejectedLead,users.manager.id]);
+      const guardedQueue=await (await request('manager','/assignment-queue')).json();
+      assert.ok(guardedQueue.leads.some(row=>row.id===webLead));
+      assert.ok(guardedQueue.leads.some(row=>row.id===metaLead));
+      assert.ok(!guardedQueue.leads.some(row=>row.id===pendingLead));
+      assert.ok(!guardedQueue.leads.some(row=>row.id===rejectedLead));
       const offered=await (await request('offered','/leads/'+offerLead)).json();
       assert.equal(offered.lead.openAssignmentOffer,true);
       assert.equal(offered.lead.contactEmail,'o***@example.invalid');
