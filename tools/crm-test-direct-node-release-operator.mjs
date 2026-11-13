@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
-import {inspectWorkers,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
+import {inspectInstallWorkers,inspectWorkers,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
 import {parsePgRestoreListContracts,resolveScopedBackupPath,verifyScopedBackupTableNames} from './crm-test-backup-verification.mjs';
 import {compareDatabaseTriggerContract,normalizeExpectedTriggerContract} from './database-trigger-contract.mjs';
 
@@ -167,11 +167,11 @@ async function fingerprint(pool,tables){
   }
   return result;
 }
-async function readiness(expectedVersion){
+async function readiness(expectedVersion,previousWorkers=[]){
   let last;
   for(let attempt=0;attempt<25;attempt++){
     remaining();
-    try{return await verifyReadinessWorker({root:config.root,expectedVersion});}
+    try{return await verifyReadinessWorker({root:config.root,expectedVersion,previousWorkers});}
     catch(error){last=error;await sleep(500);}
   }
   throw last;
@@ -314,7 +314,7 @@ async function stagePhase(){
     process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');process.chdir(config.candidate);const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.candidate,'src/approved-document-runtime-smoke.js')));report.candidatePdfFormats=await verifyApprovedDocumentRuntime();
     const expectedCandidateTriggers=candidateTriggerContract();report.candidateTriggerCount=expectedCandidateTriggers.length;
     const pool=poolFor(environment);try{report.stageLedger=await ledger(pool,config.baselineMigrationCount);const comparison=await compareTableNames(pool,{expectedNames:config.expectedTableNames,expectedCount:config.expectedTableCount,label:'stage'});const{observedNames,...receipt}=comparison;report.tableComparison=receipt;if(!comparison.matches)throw Error('Stage table-name baseline mismatch');report.triggerComparison=await triggerComparison(pool,config.baselineTriggers,'stage');report.schemaContractComparison=await schemaContractComparison(pool,'baseline','stage');report.triggerDriftDataComparison=await triggerDriftDataComparison(pool,'stage');report.leadCounterComparison=await leadCounterComparison(pool);}finally{await pool.end();}
-    report.workers=inspectWorkers(config.root);report.result='STAGED_AND_VERIFIED';
+    report.workers=inspectInstallWorkers(config.root);report.result='STAGED_AND_VERIFIED';
   }catch(error){report.safeError=safeError(error);if(error.triggerComparison)report.triggerComparison=error.triggerComparison;if(error.schemaContractComparison)report.schemaContractComparison=error.schemaContractComparison;if(error.triggerDriftDataComparison)report.triggerDriftDataComparison=error.triggerDriftDataComparison;if(error.leadCounterComparison)report.leadCounterComparison=error.leadCounterComparison;process.exitCode=1;}
   report.completedAt=new Date().toISOString();report.elapsedSeconds=Math.round((Date.now()-startedAt)/1000);write('STAGE_RESULT.json',report);console.log(JSON.stringify(report));
 }
@@ -329,11 +329,11 @@ async function backupPhase(){
 async function installPhase(){
   assertReceipt('STAGE_RESULT.json','STAGED_AND_VERIFIED');assertReceipt('BACKUP_RESULT.json','SCOPED_BACKUP_VERIFIED');requireAbsent('INSTALL_RESULT.json');const report={...baseReport,result:'FAILED'};let mutated=false,readinessAccepted=false,environment,backup;
   try{
-    backup=loadVerifiedBackup();const original=registration();environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();const candidateNames=validateCandidateDirectory();writeOriginalRegistration(original);report.workersBefore=inspectWorkers(config.root);report.workerStop=await stop();if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
+    backup=loadVerifiedBackup();const original=registration();environment=original.env_vars||{};validateRegistration(environment);validateBaseline();validateCandidatePackage();const candidateNames=validateCandidateDirectory();writeOriginalRegistration(original);report.workersBefore=inspectInstallWorkers(config.root);report.workerStop=await stop();if(!await assertStopped()||inspectWorkers(config.root).length!==0)throw Error('Exact-root quiescence failed');
     const expectedCandidateTriggers=candidateTriggerContract();
     const pool=poolFor(environment);try{await ledger(pool,config.baselineMigrationCount);report.preInstallTriggerComparison=await triggerComparison(pool,config.baselineTriggers,'pre-install');report.preInstallSchemaContractComparison=await schemaContractComparison(pool,'baseline','pre-install');report.preInstallTriggerDriftDataComparison=await triggerDriftDataComparison(pool,'pre-install');report.preInstallLeadCounterComparison=await leadCounterComparison(pool);const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY tablename")).rows.map(row=>row.tablename),before=await fingerprint(pool,tables);write('ORIGINAL_TABLE_FINGERPRINTS.json',before);const changed=[];for(const name of [...candidateNames,'RUNTIME_MANIFEST.sha256']){remaining();const source=path.join(config.candidate,name),target=path.join(config.root,name);if(fs.existsSync(target)&&hash(source)===hash(target))continue;changed.push({name,existed:fs.existsSync(target)});fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});fs.copyFileSync(source,target);mutated=true;}write('CHANGED_RUNTIME.json',changed);runtimeNames(config.root);report.changedFiles=changed.length;await ledger(pool,config.baselineMigrationCount);const after=await fingerprint(pool,tables);if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Original CRM Test table data changed before application start');report.originalTablesPreserved=tables.length;}finally{await pool.end();}
     const nextEnvironment=simulatorEnvironment(environment);mutated=true;selector('set',['--env-vars',JSON.stringify(nextEnvironment)]);report.simulatorEnvironment={LEAD_RESPONSE_ENVIRONMENT:'crm-test',WHATSAPP_SIMULATED_PROVIDER_ENABLED:'true',WHATSAPP_SIMULATED_PROVIDER_URL:'loopback',WHATSAPP_SIMULATED_PROVIDER_TOKEN:'server-generated and withheld',WHATSAPP_SIMULATED_PHONE_PREFIX:'+971509',WHATSAPP_SIMULATED_PHONE_SUFFIX_DIGITS:'6'};
-    process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version);readinessAccepted=true;report.readinessAcceptedAt=new Date().toISOString();report.runtimeFiles=runtimeNames(config.root).length;
+    process.chdir(config.root);process.env.PDF_RENDER_RUNTIME_DIR=path.join(config.root,'tmp/pdf-renderer');const {verifyApprovedDocumentRuntime}=await import(pathToFileURL(path.join(config.root,'src/approved-document-runtime-smoke.js')));report.installedPdfFormats=await verifyApprovedDocumentRuntime();selector('start');report.readiness=await readiness(config.version,report.workersBefore);readinessAccepted=true;report.readinessAcceptedAt=new Date().toISOString();report.runtimeFiles=runtimeNames(config.root).length;
     const verificationPool=poolFor(nextEnvironment);try{report.ledger=await ledger(verificationPool,config.expectedMigrationCount);const comparison=await compareTableNames(verificationPool,{expectedNames:config.expectedPostTableNames,expectedCount:config.expectedPostTableCount,label:'post-deployment'});const{observedNames,...receipt}=comparison;report.postDeploymentTableComparison=receipt;if(!comparison.matches)throw Error('Post-deployment table-name mismatch');report.postDeploymentTriggerComparison=await triggerComparison(verificationPool,expectedCandidateTriggers,'post-deployment');report.postDeploymentSchemaContractComparison=await schemaContractComparison(verificationPool,'canonical','post-deployment');report.postDeploymentTriggerDriftDataComparison=await triggerDriftDataComparison(verificationPool,'post-deployment');report.postDeploymentLeadCounterComparison=await leadCounterComparison(verificationPool);}finally{await verificationPool.end();}
     report.workersAfter=inspectWorkers(config.root);if(report.workersAfter.length!==1)throw Error('Post-readiness exact-root worker count is not one');report.result='INSTALLED_STARTED_AND_READY';
   }catch(error){

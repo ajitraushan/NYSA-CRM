@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {inspectWorkers,verifiedWorker,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
+import {requireInstallWorkers,inspectWorkers,verifiedWorker,stopVerifiedWorkers,verifyReadinessWorker} from './hosted-worker-lifecycle.mjs';
 import {setTimeout as sleep} from 'node:timers/promises';
 
 const productionRoot='/home/nysareal/nysa-crm';
@@ -43,7 +43,7 @@ export async function quiesceProductionWorkers(report,{selectorStop,isStopped,
   },
   signal=(pid,name)=>process.kill(pid,name)
 }){
-  report.workersBefore=inspect();
+  report.workersBefore=requireInstallWorkers(inspect());
   report.staleWorkersFound=report.workersBefore.filter(worker=>worker.stale);
   report.workerSignals=[];
   await selectorStop();
@@ -74,7 +74,7 @@ export async function acceptProductionReadiness(report,version,{
 }={}){
   for(let attempt=0;attempt<attempts;attempt++){
     try{
-      report.readiness=await verify({root:productionRoot,expectedVersion:version,inspect:()=>{
+      report.readiness=await verify({root:productionRoot,expectedVersion:version,previousWorkers:report.workersBefore??[],inspect:()=>{
         report.workersAfterReadiness=inspect();
         return report.workersAfterReadiness;
       },request:async url=>{

@@ -14,7 +14,20 @@ export function inspectWorkers(root,{ps=()=>execFileSync('ps',['-u','nysareal','
  for(const line of ps().split('\n')){const match=line.match(/^\s*(\d+)\s+(.+?)\s*$/);if(!match||match[2]!==marker)continue;const worker=verify(Number(match[1]));if(!worker)throw Error('Worker marker and working directory disagree');workers.push(worker);}
  return workers;
 }
-export async function verifyReadinessWorker({root,expectedVersion,request=url=>fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)}),inspect=()=>inspectWorkers(root)}){
+export function requireInstallWorkers(workers){
+ if(workers.length===0)throw Error('At least one verified worker is required before install');
+ return workers;
+}
+export function inspectInstallWorkers(root,{inspect=()=>inspectWorkers(root),verify=pid=>verifiedWorker(root,pid),
+ readStart=pid=>execFileSync('ps',['-p',String(pid),'-o','lstart='],{encoding:'utf8',timeout:10000}).trim()}={}){
+ return requireInstallWorkers(inspect()).map(worker=>{
+  const startedAt=readStart(worker.pid);
+  const current=verify(worker.pid);
+  if(!startedAt||current?.command!==worker.command||current?.cwd!==worker.cwd)throw Error('Worker changed while recording start time: '+worker.pid);
+  return {...worker,startedAt};
+ });
+}
+export async function verifyReadinessWorker({root,expectedVersion,previousWorkers=[],request=url=>fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)}),inspect=()=>inspectWorkers(root)}){
  assertHostedRoot(root);if(!/^2\.1\.0-(?:dev|rc)\.\d+$/.test(expectedVersion))throw Error('An exact version is required');
  const response=await request(hostedApps[root]+'/api/readiness'),readiness=await response.json();
  if(response.status!==200||readiness.ok!==true||readiness.database!=='ready'||readiness.version!==expectedVersion)throw Error('Expected application/database readiness was not established');
@@ -23,6 +36,7 @@ export async function verifyReadinessWorker({root,expectedVersion,request=url=>f
   const pids=workers.map(worker=>worker.pid);
   throw Error(`Exactly one verified worker is required after readiness. Found ${workers.length} (PIDs: ${pids.join(', ')||'none'})`);
  }
+ if(previousWorkers.some(worker=>worker.pid===workers[0].pid))throw Error('Post-start readiness returned a pre-install worker PID: '+workers[0].pid);
  return {root,version:readiness.version,database:readiness.database,workerCount:1,workers};
 }
 // For the separately approved deployment operator, after CloudLinux reports this exact app stopped.

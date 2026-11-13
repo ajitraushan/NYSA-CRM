@@ -1,3 +1,4 @@
+import {requireInstallWorkers} from './hosted-worker-lifecycle.mjs';
 import {parseRuntimeManifest,verifyRuntime} from './production-runtime-manifest.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
@@ -15,9 +16,11 @@ const DATABASE = 'nysareal_nysacrm';
 const ROLE = 'nysareal_nysacrmapp';
 const RC1 = 'b6e013c51f46be482858e733160fa7e675ff3106';
 const DEV270 = '5c1c350151d6ace33377b33526e2bfedf4ae8f6b';
+const DEV272 = '54421912fc1496a1066814cd8b665c19c7e8fd45';
 const baselines = Object.freeze({
   [RC1]: Object.freeze({version:'2.1.0-rc.1',migrations:140,tables:258,triggers:108,runtimeFiles:392}),
   [DEV270]: Object.freeze({version:'2.1.0-dev.270',migrations:171,tables:307,triggers:111,runtimeFiles:503}),
+  [DEV272]: Object.freeze({version:'2.1.0-dev.272',migrations:172,tables:313,triggers:113,runtimeFiles:509}),
 });
 
 export function productionBaseline(commit) {
@@ -36,6 +39,10 @@ export function validateProductionConfig(config) {
   assert.equal(config.root,ROOT);
   assert.equal(config.domain,DOMAIN);
   productionBaseline(config.baselineCommit);
+  if (config.baselineCommit === DEV272) {
+    assert.equal(config.expectedBaselineMigrations,172);
+    assert.equal(config.expectedCandidateMigrations,172);
+  }
   for (const name of ['candidateCommit','baselineSchemaSha256','baselineRuntimeManifestSha256','scriptSha256','schemaHelperSha256','workerHelperSha256','runtimeHelperSha256','productionWorkerEvidenceSha256']) {
     const length = name === 'candidateCommit' ? 40 : 64;
     assert.match(config[name],new RegExp('^[a-f0-9]{'+length+'}$'),name);
@@ -162,7 +169,7 @@ async function main(args) {
     validateProductionRegistration(environment);
     report.registeredSettingNames=['PGDATABASE','PGUSER','LEAD_RESPONSE_ENVIRONMENT','NYSA_ENVIRONMENT',
       'PROSPECT_OUTSIDE_CALLING_HOURS_MODE',...flags].filter(key=>Object.hasOwn(environment,key));
-    report.workers=inspectProductionWorkers();
+    report.workers=requireInstallWorkers(inspectProductionWorkers());
     report.staleWorkersFound=report.workers.filter(worker=>worker.stale);
     const {blocks,bfree,bavail,bsize}=fs.statfsSync(ROOT);
     const occupied=blocks-bfree;
@@ -173,6 +180,16 @@ async function main(args) {
     await client.connect();
     await client.query('BEGIN READ ONLY');
     report.catalog=await verifyProductionCatalog(client,JSON.parse(schema),config.baselineCommit);
+    if (config.baselineCommit === DEV272) {
+      report.ownershipCounts=(await client.query(`SELECT
+        (SELECT count(*)::int FROM public.contacts WHERE owner_id IS NULL) AS customers_without_owner,
+        (SELECT count(*)::int FROM public.contacts c LEFT JOIN public.brokers b ON b.id=c.owner_id
+          WHERE b.team_id IS NULL) AS customers_without_team,
+        (SELECT count(*)::int FROM public.leads WHERE assigned_to IS NULL) AS leads_without_owner,
+        (SELECT count(*)::int FROM public.leads WHERE assigned_team_id IS NULL) AS leads_without_team`)).rows[0];
+      assert.ok(Object.values(report.ownershipCounts).every(count=>count===0),
+        'Production ownership counts differ from the approved zero baseline');
+    }
     report.usersByRoleAndTeam=(await client.query(`SELECT job_role,team_id,COUNT(*)::int AS total
       FROM brokers GROUP BY job_role,team_id ORDER BY job_role,team_id`)).rows;
     Object.assign(report,await readProductionPrivilegeEvidence(client));

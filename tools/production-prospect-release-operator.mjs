@@ -1,3 +1,4 @@
+import {requireInstallWorkers} from './hosted-worker-lifecycle.mjs';
 import {inspectProductionNodeTools,assertApprovedProductionNodeTools} from './production-node-tools.mjs';
 import {fileHash,parseRuntimeManifest,safeName,verifyRuntime} from './production-runtime-manifest.mjs';
 export {parseRuntimeManifest} from './production-runtime-manifest.mjs';
@@ -205,6 +206,9 @@ async function stage(config,stageDir){
   assert.equal(manifest.commit,config.commit);
   assert.equal(manifest.version,config.version);
   assert.equal(manifest.packageSha256,config.packageSha256);
+  if (config.expectedCandidateMigrations !== undefined) {
+    assert.equal(manifest.migrationCount,config.expectedCandidateMigrations);
+  }
   assert.ok(manifest.testReceipt.passed>0&&manifest.testReceipt.failed===0);
   const names=storedNames(config.package);
   assert.ok(names.every(safeName)&&new Set(names).size===names.length&&names.length===manifest.entryCount,'Unsafe package entries');
@@ -312,6 +316,16 @@ async function main(args){
   assert.equal(preflight.baselineCommit,config.baselineCommit);
   assert.equal(preflight.installedVersion,approvedBaseline.version);
   assert.equal(preflight.runtimeFiles?.verified,approvedBaseline.runtimeFiles);
+  if (approvedBaseline.version === '2.1.0-dev.272') {
+    assert.equal(config.expectedBaselineMigrations,172);
+    assert.equal(config.expectedCandidateMigrations,172);
+    assert.equal(preflightConfig.expectedBaselineMigrations,config.expectedBaselineMigrations);
+    assert.equal(preflightConfig.expectedCandidateMigrations,config.expectedCandidateMigrations);
+    assert.equal(preflight.catalog?.migrations,172);
+    for (const key of ['customers_without_owner','customers_without_team','leads_without_owner','leads_without_team']) {
+      assert.equal(preflight.ownershipCounts?.[key],0,'Production ownership check failed: '+key);
+    }
+  }
   const freshnessMs=config.freshnessMinutes*60000;
   assert.ok(Number.isFinite(freshnessMs)&&freshnessMs>=600000&&freshnessMs<=14400000);
   if(phase==='backup'){
@@ -333,7 +347,7 @@ async function main(args){
       assert.equal(read(path.join(ROOT,'package.json')).version,approvedBaseline.version);
       await verifyRuntime(ROOT,baseline);
       report.catalog=await catalog(config);
-      report.workers=inspectProductionWorkers();
+      report.workers=requireInstallWorkers(inspectProductionWorkers());
       report.staleWorkersFound=report.workers.filter(worker=>worker.stale);
       const entries=await stage(config,stageDir);
       checkAccountQuota(report,'after-candidate-extraction');
