@@ -1,0 +1,104 @@
+Round 2 execution record (incomplete transcript)
+Origin: cd26d8ebe0ca5be89432a1ed986bf21934eb8894
+Script SHA-256: 395d57661d2efe621fe7f66fdf026ef406841a94363e8b5730b66517926d35c8
+SSH command exited 1. The tool output exceeded its capture limit, and this record preserves the available excerpt. The run was not repeated.
+
+production-disk-cleanup-round2.sh: OK
+Filesystem before cleanup
+Filesystem          1-blocks          Used     Available Capacity Mounted on
+/dev/md4       7619639189504 3837014966272 3398539157504      54% /home/nysareal
+Removed /home/nysareal/.dev144s-000
+Removed /home/nysareal/.dev144s-001
+Removed /home/nysareal/.dev144s-002
+Removed /home/nysareal/.dev144s-003
+Removed /home/nysareal/.dev144s-004
+Removed /home/nysareal/.dev144s-005
+Removed /home/nysareal/.dev144s-006
+Removed /home/nysareal/.dev144s-007
+Removed /home/nysareal/.dev144s-008
+Removed /home/nysareal/.dev144s-009
+Removed /home/nysareal/.dev144s-010
+Removed /home/nysareal/.dev144s-011
+Removed /home/nysareal/.dev144s-012
+Removed /home/nysareal/.dev144s-013
+Removed /home/nysareal/.dev144s-014
+Removed /home/nysareal/.dev144s-015
+Removed /home/nysareal/.dev144s-016
+Removed /home/nysareal/.dev144s-017
+Removed /home/nysareal/.dev144s-018
+Removed /home/nysareal/.dev144s-019
+Removed /home/nysareal/.dev144s-020
+Removed /home/nysareal/.dev144s-021
+Removed /home/nysareal/.dev144s-022
+Removed /home/nysareal/.dev144s-023
+Removed /home/nysareal/.dev144s-024
+Removed /home/nysareal/.dev144s-025
+Removed /home/nysareal/.dev144s-026
+Removed /home/nysareal/.dev144s-027
+Removed /home/nysareal/.dev144s-028
+Removed /home/nysareal/.dev144s-029
+Removed /home/nysareal/.dev144s-030
+Removed /home/nysareal/.dev144s-031
+Removed /home/nysareal/.dev144s-032
+Removed /home/nysareal/.dev144s-033
+Removed /home/nysareal/.dev144s-034
+Removed /home/nysareal/.dev144s-035
+Removed /home/nysareal/.dev144s-036
+Removed /home/nysareal/.dev144s-037
+Removed /home/nysareal/.dev144s-038
+Removed /home/nysareal/.dev144s-039
+Removed /home/nysareal/.dev144s-040
+Removed /home/nysareal/.dev144s-041
+Removed /home/nysareal/.dev144s-042
+Removed /home/nysareal/.dev144s-043
+Removed /home/nysareal/.dev144s-044
+Removed /home/nysareal/.dev144s-045
+Removed /home/nysareal/.dev144s-046
+Removed /home/nysareal/.dev144s-047
+Removed /home/nysareal/.dev144s-048
+Removed /home/nysareal/.dev144s-049
+Removed /home/nysareal/.dev144s-050
+Removed /home/nysareal/.dev144s-051
+Removed /home/nysareal/.dev144s-052
+Removed /home/nysareal/.dev144s-053
+Removed /home/nysareal/.dev144s-054
+Removed /home/nysareal/.dev144s-055
+Removed /home/nysareal/.dev144s-056
+Removed /home/nysareal/.dev144s-057
+Removed /home/nysareal/.dev144s-058
+Removed /home/nysareal/.dev144s-059
+Removed /home/nysareal/.dev144s-060
+Removed /home/nysareal/.dev144s-061
+Removed /home/nysareal/.dev144s-062
+Removed /home/nysareal/.dev144s-063
+Removed /home/nysareal/.dev144s-064
+Removed /home/nysareal/.dev144s-065
+Removed /home/nysareal/.dev144s-066
+Removed /home/nysareal/.dev144s-067
+Removed /home/nysareal/.dev144s-068
+Removed /home/nysareal/.dev144s-069
+Removed /home/nysareal/.dev144s-070
+Removed /home/nysareal/.dev144s-071
+Removed /home/nysareal/.dev144s-072
+Removed /home/nysareal/.dev144s-073
+Removed /home/nysareal/.dev144s-074
+Removed /home/nysareal/.dev144s-075
+Removed /home/nysareal/.dev144s-076
+Removed /home/nysareal/.dev144s-077
+Removed /home/nysareal/.dev144s-078
+Removed /home/nysareal/.dev144s-079
+Removed /home/nysareal/.dev144s-080
+Removed /home/nysareal/.dev144s-081
+Removed /home/nysareal/.dev144s-082
+Removed /home/nysareal/.dev144s-083
+Removed /home/nysareal/.dev144s-084
+Removed /home/nysareal/.dev144s-085
+Removed /home/nysareal/.dev144s-086
+Removed /home/nysareal/.dev144s-087
+Removed /home/nysareal/.dev144s-088
+Removed /home/nysareal/crm-release-preparation/20261101-dev260
+Removed /home/nysareal/crm-release-preparation/20261101-wa258
+Removed /home/nysareal/crm-release-preparation/20261101-wa259a
+Removed /home/nysareal/crm-release-preparation/20261102-dev261
+rm: cannot remove '/home/nysareal/nysa-core-dashboard-dd6262a-stage.dev244-mixed-20261028T055500Z/tmp/r2-6-dev69.M84Fxi/src/inventory-domain.js': Permission denied
+[Further permission errors omitted. The script stopped during this target. The following two targets and the final df were not reached.]
