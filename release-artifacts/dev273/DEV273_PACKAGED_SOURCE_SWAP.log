@@ -1,0 +1,5 @@
+Candidate 7039ed921841dd01d396f557041ca20217b8e845
+Baseline source files verified: 406
+Candidate source files verified: 406
+Restored source files verified: 406
+Operator source swap and restore passed. Windows copy adapter; hosted CLI, readiness, dependencies and workers excluded.
